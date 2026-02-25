@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>aha! Register — Technical Product Brief</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  :root {
+    --gold: #C4A265;
+    --gold-light: #D4B878;
+    --gold-dim: rgba(196, 162, 101, 0.12);
+    --gold-dim2: rgba(196, 162, 101, 0.06);
+    --black: #0A0A0A;
+    --gray-900: #1A1A1A;
+    --gray-700: #444;
+    --gray-500: #777;
+    --gray-300: #BBB;
+    --gray-100: #F0EDE8;
+    --green: #2E7D32;
+    --green-light: #E8F5E9;
+    --blue: #1565C0;
+    --blue-light: #E3F2FD;
+    --surface: #FAFAF7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', -apple-system, sans-serif;
+    color: var(--gray-900);
+    background: #fff;
+    line-height: 1.65;
+    font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Print Styles ── */
+  @media print {
+    body { font-size: 11pt; }
+    .page-break { page-break-before: always; }
+    .no-print { display: none; }
+    .container { max-width: 100%; padding: 0; }
+    section { padding: 24pt 0; }
+    .cover { min-height: auto; padding: 60pt 0 40pt; }
+    .cover-badge { display: none; }
+    table { font-size: 9.5pt; }
+    h2 { font-size: 18pt; }
+    h3 { font-size: 13pt; }
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  /* ── Cover ── */
+  .cover {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 0;
+    position: relative;
+  }
+
+  .cover-badge {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray-500);
+    padding: 6px 14px;
+    border: 1px solid var(--gray-300);
+    border-radius: 4px;
+  }
+
+  .cover .logo {
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 42px;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+
+  .cover .logo span {
+    color: var(--gray-900);
+    font-style: normal;
+    font-weight: 600;
+    font-size: 36px;
+    margin-left: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .cover h1 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 48px;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--black);
+    margin-top: 40px;
+    letter-spacing: -0.02em;
+    max-width: 600px;
+  }
+
+  .cover .subtitle {
+    font-size: 18px;
+    color: var(--gray-700);
+    margin-top: 20px;
+    line-height: 1.6;
+    max-width: 560px;
+  }
+
+  .cover-meta {
+    margin-top: 48px;
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .cover-meta-item {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gray-500);
+  }
+
+  .cover-meta-item strong {
+    display: block;
+    font-size: 14px;
+    color: var(--gray-900);
+    letter-spacing: 0;
+    text-transform: none;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  .cover-divider {
+    width: 60px;
+    height: 3px;
+    background: var(--gold);
+    margin-top: 48px;
+    border-radius: 2px;
+  }
+
+  /* ── Sections ── */
+  section {
+    padding: 56px 0;
+    border-top: 1px solid var(--gray-100);
+  }
+
+  .section-number {
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  h2 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 32px;
+    font-weight: 400;
+    color: var(--black);
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    margin-bottom: 20px;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--black);
+    margin-top: 32px;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    color: var(--gray-700);
+    margin-bottom: 16px;
+    max-width: 640px;
+  }
+
+  /* ── Feature Grid ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 28px;
+  }
+
+  .feature-card {
+    padding: 24px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid rgba(0,0,0,0.04);
+  }
+
+  .feature-card .icon {
+    font-size: 24px;
+    margin-bottom: 12px;
+  }
+
+  .feature-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--black);
+    margin-bottom: 6px;
+  }
+
+  .feature-card p {
+    font-size: 13px;
+    color: var(--gray-500);
+    margin-bottom: 0;
+    line-height: 1.55;
+  }
+
+  /* ── Capability List ── */
+  .capability-list {
+    list-style: none;
+    margin-top: 16px;
+  }
+
+  .capability-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    font-size: 14px;
+    color: var(--gray-700);
+  }
+
+  .capability-list li::before {
+    content: "✓";
+    color: var(--green);
+    font-weight: 700;
+    font-size: 14px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .capability-list li strong {
+    color: var(--gray-900);
+    font-weight: 600;
+  }
+
+  /* ── Compliance Table ── */
+  .compliance-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    font-size: 13px;
+  }
+
+  .compliance-table thead {
+    background: var(--gray-900);
+    color: #fff;
+  }
+
+  .compliance-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .compliance-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  .compliance-table tr:nth-child(even) {
+    background: var(--gold-dim2);
+  }
+
+  .compliance-table .tag {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .tag-green { background: var(--green-light); color: var(--green); }
+  .tag-blue { background: var(--blue-light); color: var(--blue); }
+  .tag-gold { background: var(--gold-dim); color: #8B7240; }
+
+  /* ── Callout Box ── */
+  .callout {
+    padding: 24px 28px;
+    border-radius: 10px;
+    border-left: 4px solid var(--gold);
+    background: var(--gold-dim2);
+    margin: 28px 0;
+  }
+
+  .callout p {
+    color: var(--gray-900);
+    margin-bottom: 0;
+    font-size: 14px;
+  }
+
+  .callout strong {
+    color: var(--black);
+  }
+
+  /* ── Pricing ── */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .price-card {
+    padding: 20px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--gray-100);
+    text-align: center;
+  }
+
+  .price-card.featured {
+    border-color: var(--gold);
+    background: var(--gold-dim2);
+    position: relative;
+  }
+
+  .price-card .tier {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--black);
+  }
+
+  .price-card .amount {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gold);
+    margin: 8px 0 6px;
+  }
+
+  .price-card .details {
+    font-size: 11px;
+    color: var(--gray-500);
+    line-height: 1.5;
+  }
+
+  .price-card .pop-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    background: var(--gold);
+    padding: 3px 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+
+  /* ── Two Column ── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    margin-top: 24px;
+  }
+
+  /* ── Footer ── */
+  .doc-footer {
+    padding: 40px 0;
+    border-top: 1px solid var(--gray-100);
+    text-align: center;
+    color: var(--gray-500);
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .doc-footer .logo-small {
+    font-weight: 800;
+    font-style: italic;
+    font-size: 20px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  /* Brand treatment: aha! is always italic semibold */
+  .brand {
+    font-weight: 600;
+    font-style: italic;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 700px) {
+    .feature-grid, .two-col { grid-template-columns: 1fr; }
+    .pricing-grid { grid-template-columns: 1fr 1fr; }
+    .cover h1 { font-size: 36px; }
+    h2 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- COVER -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="container">
+  <div class="cover">
+    <div class="cover-badge no-print">Technical Product Brief</div>
+    <div class="logo">aha!<span>Register</span></div>
+    <h1>Art inventory and provenance for the people who protect it.</h1>
+    <p class="subtitle">
+      AI-powered capture, archival-grade documentation, and tamper-evident provenance for galleries, museums, institutions, and private collectors. One app. Every object accounted for.
+    </p>
+    <div class="cover-divider"></div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        Version<strong>1.0 — 2026</strong>
+      </div>
+      <div class="cover-meta-item">
+        Platform<strong>iOS · Android · Web</strong>
+      </div>
+      <div class="cover-meta-item">
+        Data Residency<strong>EU (Frankfurt) · US available</strong>
+      </div>
+      <div class="cover-meta-item">
+        Contact<strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="5c2e393b352f28392e1c3d2e28343d292f3d293f28353332723f3331">[email&#160;protected]</a></strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- 01 — WHAT IT DOES -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section>
+    <div class="section-number">01 — The Product</div>
+    <h2>Point your phone at an artwork. Everything else is automatic.</h2>
+    <p>
+      <span class="brand">aha!</span> Register replaces spreadsheets, paper files, and fragmented inventory systems with a single mobile-first platform. Capture an artwork with your camera. AI identifies the artist, medium, dimensions, condition, and style. Every record is anchored with a tamper-evident provenance chain from the moment of capture.
+    </p>
+    <p>
+      The interface is designed so an intern can use it on day one. The infrastructure beneath it is built so a museum director can trust it with a permanent collection.
+    </p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">📸</div>
+        <h4>AI-Powered Capture</h4>
+        <p>Single photo, multi-angle, 3D scan, or batch mode. AI extracts metadata, assesses condition, classifies style. Review, edit, confirm.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📱</div>
+        <h4>Location-Linked QR</h4>
+        <p>Print QR codes for shelves, walls, and vaults. Scan a location to see everything stored there. Batch capture in context.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🛡️</div>
+        <h4>Tamper-Evident Provenance</h4>
+        <p>Every record is hash-chain anchored at creation. Ownership, exhibitions, condition changes tracked chronologically. Verifiable certificates with QR links to live records.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">📊</div>
+        <h4>Museum-Standard Export</h4>
+        <p>Excel, CSV, PDF reports, PDF certificates, JSON, CDWA/LIDO XML, Dublin Core XML, and OAIS-compliant archival packages. Your data in any format, anytime.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">👥</div>
+        <h4>Teams & Permissions</h4>
+        <p>Owner, Admin, Intern, Viewer roles. Control who can edit, export, or delete. Audit log tracks every action across your team.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🏷️</div>
+        <h4>Bridge to Market</h4>
+        <p>When you're ready to sell, list directly on the <span class="brand">aha!</span> marketplace. Provenance, condition, and documentation transfer automatically.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- 02 — TRUST -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="page-break">
+    <div class="section-number">02 — Trust Architecture</div>
+    <h2>Your collection. Your data. Period.</h2>
+    <p>
+      <span class="brand">aha!</span> Register is built for institutions that cannot afford data loss, unauthorized access, or vendor dependency. Every architectural decision prioritizes data sovereignty, portability, and longevity.
+    </p>
+
+    <h3>Data Sovereignty</h3>
+    <ul class="capability-list">
+      <li><strong>EU data residency</strong> — All data stored in Frankfurt, Germany (AWS eu-central-1). Compliant with European institutional procurement requirements.</li>
+      <li><strong>US data residency available</strong> — US-based organizations can opt for domestic hosting at the Enterprise tier.</li>
+      <li><strong>No vendor lock-in</strong> — Export your entire dataset in standard formats at any time. One click. No waiting period, no approval process.</li>
+      <li><strong>Right to deletion</strong> — Delete your account and all associated data permanently. Immediate, verifiable, irreversible.</li>
+      <li><strong>Pre-signed DPA</strong> — Downloadable Data Processing Agreement template. Ready for institutional legal review without a sales call.</li>
+    </ul>
+
+    <h3>AI Transparency</h3>
+    <ul class="capability-list">
+      <li><strong>AI is optional</strong> — Turn off AI analysis entirely in settings. Camera, QR codes, locations, export, provenance, and certificates all work without AI. You type metadata manually. No functionality lost.</li>
+      <li><strong>Inference only</strong> — AI analyzes your photos and returns metadata. Your images are never stored by, used to train, or retained by any AI provider. This is contractually guaranteed by our API agreements.</li>
+      <li><strong>Transparent labeling</strong> — AI-extracted fields are clearly identified. Confidence scores let you trust-but-verify every suggestion. You control what gets saved.</li>
+      <li><strong>Sub-processor transparency</strong> — Complete list of every third-party service that touches your data, available in-app and on our trust page.</li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>The critical distinction:</strong> <span class="brand">aha!</span> Register uses AI for inference (analyze a photo, return structured data), not training (learn from your images to improve a model). Your collection data remains yours. Full stop.</p>
+    </div>
+
+    <h3>Provenance Integrity</h3>
+    <ul class="capability-list">
+      <li><strong>SHA-256 hash chain</strong> — Every record is cryptographically anchored at the moment of capture. Modifications are tracked, not hidden. The chain proves no record has been silently altered.</li>
+      <li><strong>Device-verified capture</strong> — Camera-mode registration embeds GPS coordinates, timestamps, and device identifiers. Higher evidence standard than web upload.</li>
+      <li><strong>Verifiable certificates</strong> — Provenance certificates include cryptographic verification and a QR code linking to the live, current record. Not a static PDF that can be forged.</li>
+      <li><strong>Tamper-evident, not tamper-proof</strong> — We are precise about this claim. No digital system prevents all tampering. Our system ensures that any tampering is detectable. This is the same standard used by the C2PA content provenance framework.</li>
+    </ul>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- 03 — COMPLIANCE -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="page-break">
+    <div class="section-number">03 — Compliance Matrix</div>
+    <h2>Standards, regulations, and what we meet.</h2>
+    <p>The following table maps <span class="brand">aha!</span> Register's features to the regulatory and industry standards relevant to art collection management.</p>
+
+    <table class="compliance-table">
+      <thead>
+        <tr>
+          <th style="width: 28%">Standard / Regulation</th>
+          <th style="width: 42%">How <span class="brand">aha!</span> Register Addresses It</th>
+          <th style="width: 15%">Status</th>
+          <th style="width: 15%">Tier</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>GDPR</strong><br>EU General Data Protection Regulation</td>
+          <td>EU data residency (Frankfurt). Right to access, portability, and erasure. Pre-signed DPA template. Sub-processor disclosure. Consent-based data collection.</td>
+          <td><span class="tag tag-green">Compliant</span></td>
+          <td>All tiers</td>
+        </tr>
+        <tr>
+          <td><strong>EU AI Act</strong><br>Transparency obligations (Aug 2026)</td>
+          <td>AI-generated fields labeled with confidence scores. Opt-out toggle (full functionality without AI). No prohibited AI practices (no biometric categorization, no emotion detection).</td>
+          <td><span class="tag tag-green">Compliant</span></td>
+          <td>All tiers</td>
+        </tr>
+        <tr>
+          <td><strong>OAIS</strong><br>ISO 14721 — Open Archival Information System</td>
+          <td>BagIt-formatted Archival Information Packages available for export. Three-tier storage architecture (hot/warm/cold) with fixity checking and format migration planning.</td>
+          <td><span class="tag tag-green">Supported</span></td>
+          <td>Institutional+</td>
+        </tr>
+        <tr>
+          <td><strong>CDWA / LIDO</strong><br>Museum cataloging standards</td>
+          <td>CDWA Lite and LIDO XML export. Fields mapped to standard vocabulary. Compatible with existing TMS and DAMS workflows.</td>
+          <td><span class="tag tag-green">Supported</span></td>
+          <td>All tiers</td>
+        </tr>
+        <tr>
+          <td><strong>Dublin Core</strong><br>ISO 15836 — Metadata standard</td>
+          <td>Dublin Core XML export for cross-system interoperability and archival deposit.</td>
+          <td><span class="tag tag-green">Supported</span></td>
+          <td>All tiers</td>
+        </tr>
+        <tr>
+          <td><strong>CCPA / CPRA</strong><br>California Consumer Privacy Act</td>
+          <td>Data access, deletion, and portability controls. No sale of personal information. Transparent data practices.</td>
+          <td><span class="tag tag-green">Compliant</span></td>
+          <td>All tiers</td>
+        </tr>
+        <tr>
+          <td><strong>SOC 2 Type II</strong><br>Service Organization Controls</td>
+          <td>Infrastructure providers (Supabase, AWS, Vercel) maintain SOC 2 certification. Application-level audit logging for all data access and modifications.</td>
+          <td><span class="tag tag-blue">Via providers</span></td>
+          <td>Institutional+</td>
+        </tr>
+        <tr>
+          <td><strong>SSO / SAML</strong><br>Enterprise identity management</td>
+          <td>Single Sign-On integration for organizations using existing identity providers (Okta, Azure AD, Google Workspace).</td>
+          <td><span class="tag tag-gold">Institutional+</span></td>
+          <td>Institutional+</td>
+        </tr>
+        <tr>
+          <td><strong>C2PA</strong><br>Content Provenance &amp; Authenticity</td>
+          <td>Hash-chain provenance model is architecturally aligned with C2PA principles. Capture-mode registration embeds origin metadata (device, location, timestamp).</td>
+          <td><span class="tag tag-blue">Aligned</span></td>
+          <td>All tiers</td>
+        </tr>
+        <tr>
+          <td><strong>WORM Storage</strong><br>Write Once, Read Many</td>
+          <td>Immutable archival storage (AWS S3 Object Lock) for institutional records. Records cannot be altered or deleted during retention period.</td>
+          <td><span class="tag tag-green">Supported</span></td>
+          <td>Institutional+</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- 04 — INFRASTRUCTURE -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="page-break">
+    <div class="section-number">04 — Technical Infrastructure</div>
+    <h2>What your IT department needs to know.</h2>
+
+    <div class="two-col">
+      <div>
+        <h3>Application Stack</h3>
+        <ul class="capability-list">
+          <li><strong>Frontend:</strong> Next.js 14, React, deployed on Vercel (EU region)</li>
+          <li><strong>Backend:</strong> Supabase (PostgreSQL), hosted in AWS eu-central-1 (Frankfurt)</li>
+          <li><strong>Authentication:</strong> Supabase Auth with Row Level Security. SSO available at Institutional tier</li>
+          <li><strong>AI Processing:</strong> Google Gemini API (paid tier, contractual no-training guarantee)</li>
+          <li><strong>Encryption:</strong> TLS 1.3 in transit, AES-256 at rest</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Storage Architecture</h3>
+        <ul class="capability-list">
+          <li><strong>Tier 1 — Hot:</strong> Supabase PostgreSQL + Storage. Active data for daily operations</li>
+          <li><strong>Tier 2 — Warm:</strong> AWS S3 with Object Lock (WORM). Immutable archival copies. Multi-provider redundancy</li>
+          <li><strong>Tier 3 — Cold:</strong> Glacier Deep Archive. Quarterly snapshots. Separate region. ~$1/TB/month</li>
+          <li><strong>Fixity:</strong> Monthly SHA-256 verification across all tiers</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Sub-Processors</h3>
+    <table class="compliance-table">
+      <thead>
+        <tr>
+          <th>Provider</th>
+          <th>Function</th>
+          <th>Data Region</th>
+          <th>Certification</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Supabase</strong></td>
+          <td>Database, authentication, file storage</td>
+          <td>EU (Frankfurt)</td>
+          <td>SOC 2 Type II</td>
+        </tr>
+        <tr>
+          <td><strong>Google Cloud (Gemini API)</strong></td>
+          <td>AI image analysis (inference only)</td>
+          <td>EU</td>
+          <td>SOC 2, ISO 27001</td>
+        </tr>
+        <tr>
+          <td><strong>Vercel</strong></td>
+          <td>Application hosting, edge network</td>
+          <td>EU (Frankfurt)</td>
+          <td>SOC 2 Type II</td>
+        </tr>
+        <tr>
+          <td><strong>AWS</strong></td>
+          <td>Archival storage (S3, Glacier)</td>
+          <td>EU (Frankfurt)</td>
+          <td>SOC 2, ISO 27001, C5</td>
+        </tr>
+        <tr>
+          <td><strong>Stripe</strong></td>
+          <td>Payment processing</td>
+          <td>US/EU</td>
+          <td>PCI DSS Level 1</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <p><strong>For European institutions:</strong> All primary data processing occurs within the EU. No personal or collection data is transferred to US jurisdictions for standard operations. AI inference uses EU-region endpoints. US-based sub-processors (Stripe, Vercel corporate) maintain EU-US Data Privacy Framework certification.</p>
+    </div>
+
+    <div class="callout" style="border-left-color: var(--blue);">
+      <p><strong>For American institutions:</strong> All providers are established US technology companies with proven enterprise track records. No data is processed by non-US or non-EU entities. AI services are provided by Google, not third-party or offshore providers. US data residency is available at the Enterprise tier.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- 05 — EXPORT -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section>
+    <div class="section-number">05 — Export &amp; Interoperability</div>
+    <h2>Your data leaves when you want it to, in the format you need.</h2>
+    <p><span class="brand">aha!</span> Register is not a walled garden. Every record you create can be exported in full at any time. No waiting, no approval, no penalty.</p>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h4>Standard Formats</h4>
+        <p>Excel (.xlsx), CSV, JSON — for spreadsheets, databases, and custom integrations.</p>
+      </div>
+      <div class="feature-card">
+        <h4>PDF Reports &amp; Certificates</h4>
+        <p>Collection reports and individual provenance certificates with cryptographic verification and live QR links.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Museum Metadata</h4>
+        <p>CDWA/LIDO XML and Dublin Core XML. Compatible with TMS, Axiell, Gallery Systems, and institutional DAMS.</p>
+      </div>
+      <div class="feature-card">
+        <h4>Archive Package (OAIS)</h4>
+        <p>BagIt-formatted Archival Information Packages. The same standard used by the Library of Congress, Smithsonian, and national archives worldwide.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- 06 — PRICING -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section class="page-break">
+    <div class="section-number">06 — Plans &amp; Pricing</div>
+    <h2>From one collector to an entire institution.</h2>
+
+    <div class="pricing-grid">
+      <div class="price-card">
+        <div class="tier">Free</div>
+        <div class="amount">$0</div>
+        <div class="details">25 objects<br>1 user<br>AI capture<br>Basic export</div>
+      </div>
+      <div class="price-card">
+        <div class="tier">Individual</div>
+        <div class="amount">$9.99</div>
+        <div class="details">Unlimited objects<br>1 user<br>Full export<br>Certificates</div>
+      </div>
+      <div class="price-card">
+        <div class="tier">Gallery</div>
+        <div class="amount">$49</div>
+        <div class="details">Unlimited objects<br>5 users<br>Team & branding<br>Priority AI</div>
+      </div>
+      <div class="price-card featured">
+        <div class="pop-badge">Most Popular</div>
+        <div class="tier">Institutional</div>
+        <div class="amount">$199</div>
+        <div class="details">Unlimited objects<br>25 users<br>EU hosting<br>Archival storage<br>SSO & audit log</div>
+      </div>
+      <div class="price-card">
+        <div class="tier">Enterprise</div>
+        <div class="amount">$499</div>
+        <div class="details">Unlimited<br>Unlimited users<br>Dedicated support<br>SLA & custom<br>infrastructure</div>
+      </div>
+    </div>
+
+    <p style="margin-top: 20px; font-size: 13px; color: var(--gray-500);">
+      All prices monthly. Annual billing available at 20% discount. Enterprise pricing is customizable. Contact <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="87f5e2e0eef4f3e2f5c7e6f5f3efe6f2f4e6f2e4f3eee8e9a9e4e8ea">[email&#160;protected]</a> for institutional inquiries.
+    </p>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- 07 — COMPETITIVE POSITION -->
+  <!-- ═══════════════════════════════════════════ -->
+  <section>
+    <div class="section-number">07 — How We Compare</div>
+    <h2>What exists. What's missing. What we built.</h2>
+
+    <table class="compliance-table">
+      <thead>
+        <tr>
+          <th>Capability</th>
+          <th>Traditional TMS<br><span style="font-weight:400;text-transform:none;letter-spacing:0">($50K+/yr)</span></th>
+          <th>Artwork Archive<br><span style="font-weight:400;text-transform:none;letter-spacing:0">($8–50/mo)</span></th>
+          <th>CatalogIt<br><span style="font-weight:400;text-transform:none;letter-spacing:0">($10–100/mo)</span></th>
+          <th><span class="brand">aha!</span> Register<br><span style="font-weight:400;text-transform:none;letter-spacing:0">($0–499/mo)</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>AI-powered capture</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="tag tag-green">✓ Core feature</span></td>
+        </tr>
+        <tr>
+          <td>Tamper-evident provenance</td>
+          <td>Partial</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="tag tag-green">✓ From capture</span></td>
+        </tr>
+        <tr>
+          <td>Works without AI</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td>N/A</td>
+          <td><span class="tag tag-green">✓ Full toggle</span></td>
+        </tr>
+        <tr>
+          <td>CDWA/LIDO export</td>
+          <td>✓</td>
+          <td>CDWA only</td>
+          <td>Dublin Core</td>
+          <td><span class="tag tag-green">✓ Both + DC</span></td>
+        </tr>
+        <tr>
+          <td>OAIS archival packages</td>
+          <td>Some</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="tag tag-green">✓ BagIt AIP</span></td>
+        </tr>
+        <tr>
+          <td>EU data residency</td>
+          <td>Varies</td>
+          <td>US only</td>
+          <td>US only</td>
+          <td><span class="tag tag-green">✓ EU default</span></td>
+        </tr>
+        <tr>
+          <td>Mobile-first</td>
+          <td>—</td>
+          <td>Partial</td>
+          <td>Partial</td>
+          <td><span class="tag tag-green">✓ Native</span></td>
+        </tr>
+        <tr>
+          <td>QR location system</td>
+          <td>Varies</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="tag tag-green">✓ Built-in</span></td>
+        </tr>
+        <tr>
+          <td>Bridge to marketplace</td>
+          <td>—</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="tag tag-green">✓ <i>aha!</i> market</span></td>
+        </tr>
+        <tr>
+          <td>On-premises option</td>
+          <td>✓</td>
+          <td>—</td>
+          <td>—</td>
+          <td><span class="tag tag-gold">Enterprise tier</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- FOOTER -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="doc-footer">
+    <div class="logo-small">aha!</div>
+    aharegister.com<br>
+    <a 
