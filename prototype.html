@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>aha! Register — Interaktiver Prototyp v5.1</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #030304; overflow-x: hidden; }
+  #back-link {
+    position: fixed; top: 20px; left: 20px; z-index: 9999;
+    padding: 8px 16px; border-radius: 8px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.3); text-decoration: none;
+    font-family: 'SF Mono', 'Fira Code', 'Menlo', monospace;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    transition: all 0.2s;
+  }
+  #back-link:hover { color: #C4A265; border-color: rgba(196,162,101,0.3); }
+</style>
+</head>
+<body>
+<a id="back-link" href="index.html">← Zurück zur Übersicht</a>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useCallback, useEffect } = React;
+
+const SCREENS = {
+  SPLASH: "splash", ONBOARD_1: "onboard_1", ONBOARD_2: "onboard_2",
+  ONBOARD_3: "onboard_3", LOGIN: "login", DOMAIN_SELECT: "domain_select",
+  HOME: "home", CAPTURE_CHOICE: "capture_choice", CAMERA: "camera",
+  CAMERA_MULTI: "camera_multi", CAMERA_3D: "camera_3d", CAMERA_BATCH: "camera_batch",
+  AI_PROCESSING: "ai_processing", AI_RESULTS: "ai_results",
+  OBJECT_DETAIL: "object_detail", OBJECT_PROVENANCE: "object_provenance",
+  OBJECT_3D: "object_3d", INVENTORY: "inventory", QR_SCANNER: "qr_scanner",
+  QR_RESULT: "qr_result", QR_CREATE: "qr_create", LOCATIONS: "locations",
+  LOCATION_DETAIL: "location_detail", COLLECTIONS: "collections",
+  COLLECTION_DETAIL: "collection_detail", EXPORT: "export",
+  EXPORT_PREVIEW: "export_preview", TEAM: "team", SETTINGS: "settings",
+  PLAN: "plan", PRIVACY_ONBOARD: "privacy_onboard",
+  DATA_PRIVACY: "data_privacy", ABOUT: "about",
+};
+
+// ============================================================
+// CUSTOM ICON SYSTEM (from v4)
+// ============================================================
+const Ic = {
+  back: (s = 20) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M14 6L8 12L14 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  chevron: (s = 14) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M10 6L16 12L10 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  homeTab: (s = 22) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="10" rx="1" stroke="currentColor" strokeWidth="1.4"/><path d="M2 12L12 4L22 12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  gridTab: (s = 22) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="13" y="3" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="3" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4"/><rect x="13" y="13" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.4"/></svg>,
+  captureTab: (s = 26) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5"/><circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="1.5"/></svg>,
+  qrTab: (s = 22) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.4"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="1.4"/><circle cx="17.5" cy="17.5" r="2" stroke="currentColor" strokeWidth="1.4"/></svg>,
+  moreTab: (s = 22) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><circle cx="12" cy="6" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="18" r="1.5" fill="currentColor"/></svg>,
+  capture: (s = 48) => <svg width={s} height={s} viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="1.2"/><circle cx="24" cy="24" r="7" stroke="currentColor" strokeWidth="1.2"/><line x1="24" y1="2" x2="24" y2="8" stroke="currentColor" strokeWidth="1.2"/><line x1="24" y1="40" x2="24" y2="46" stroke="currentColor" strokeWidth="1.2"/><line x1="2" y1="24" x2="8" y2="24" stroke="currentColor" strokeWidth="1.2"/><line x1="40" y1="24" x2="46" y2="24" stroke="currentColor" strokeWidth="1.2"/></svg>,
+  organize: (s = 48) => <svg width={s} height={s} viewBox="0 0 48 48" fill="none"><rect x="6" y="6" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2"/><rect x="28" y="6" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2"/><rect x="6" y="28" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2"/><rect x="28" y="28" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2"/><line x1="20" y1="13" x2="28" y2="13" stroke="currentColor" strokeWidth="1.2" strokeDasharray="2 2"/><line x1="13" y1="20" x2="13" y2="28" stroke="currentColor" strokeWidth="1.2" strokeDasharray="2 2"/></svg>,
+  provenance: (s = 48) => <svg width={s} height={s} viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="18" stroke="currentColor" strokeWidth="1.2"/><path d="M16 24L22 30L32 18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="24" cy="24" r="10" stroke="currentColor" strokeWidth="0.8" strokeDasharray="3 3"/></svg>,
+  shield: (s = 48) => <svg width={s} height={s} viewBox="0 0 48 48" fill="none"><path d="M24 4L6 14V24C6 35 24 44 24 44C24 44 42 35 42 24V14L24 4Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><path d="M18 24L22 28L30 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  flash: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M13 2L4 14H12L11 22L20 10H12L13 2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>,
+  flip: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M1 4V10H7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3.51 15A9 9 0 105.64 5.64L1 10" stroke="currentColor" strokeWidth="1.4"/></svg>,
+  layers: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>,
+  check: (s = 16) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  search: (s = 16) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5"/><path d="M16 16L21 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  lock: (s = 14) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.5"/><path d="M8 11V7A4 4 0 0116 7V11" stroke="currentColor" strokeWidth="1.5"/></svg>,
+  cube: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M12 22V12" stroke="currentColor" strokeWidth="1.4"/><path d="M2 7L12 12L22 7" stroke="currentColor" strokeWidth="1.4"/></svg>,
+  cert: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><rect x="4" y="2" width="16" height="20" rx="2" stroke="currentColor" strokeWidth="1.4"/><line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" strokeWidth="1.2"/><line x1="8" y1="12" x2="14" y2="12" stroke="currentColor" strokeWidth="1.2"/><circle cx="12" cy="17" r="2" stroke="currentColor" strokeWidth="1.2"/></svg>,
+  exportIc: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M12 3V15" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M8 7L12 3L16 7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 14V20H20V14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  users: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><circle cx="9" cy="7" r="3" stroke="currentColor" strokeWidth="1.4"/><circle cx="17" cy="9" r="2.5" stroke="currentColor" strokeWidth="1.2"/><path d="M2 21V18A5 5 0 0112 13.5" stroke="currentColor" strokeWidth="1.4"/><path d="M14 21V19A4 4 0 0122 15" stroke="currentColor" strokeWidth="1.2"/></svg>,
+  scan: (s = 18) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M4 8V4H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 4H20V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M20 16V20H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M8 20H4V16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><line x1="6" y1="12" x2="18" y2="12" stroke="currentColor" strokeWidth="1.4"/></svg>,
+  link: (s = 16) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M10 13A5 5 0 0017.54 13.54L20 11A7 7 0 009.93 4.93L8.5 6.36" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/><path d="M14 11A5 5 0 006.46 10.46L4 13A7 7 0 0014.07 19.07L15.5 17.64" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>,
+  toggle: (on) => <svg width="40" height="22" viewBox="0 0 40 22"><rect width="40" height="22" rx="11" fill={on ? "#C4A265" : "#2A2A2A"}/><circle cx={on ? 29 : 11} cy="11" r="8" fill="#fff"/></svg>,
+  sparkle: (s = 20) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><path d="M12 2L14 9L21 9L15.5 13.5L17.5 21L12 16.5L6.5 21L8.5 13.5L3 9L10 9L12 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>,
+  timeline: (s = 16) => <svg width={s} height={s} viewBox="0 0 24 24" fill="none"><line x1="12" y1="2" x2="12" y2="22" stroke="currentColor" strokeWidth="1.4"/><circle cx="12" cy="6" r="3" stroke="currentColor" strokeWidth="1.2"/><circle cx="12" cy="14" r="3" stroke="currentColor" strokeWidth="1.2"/><circle cx="12" cy="22" r="2" fill="currentColor"/></svg>,
+};
+
+// ============================================================
+// MOCK DATA — Enhanced with annotation positions + provenance photos
+// ============================================================
+const WORKS = [
+  { id: 1, title: "Untitled (Composition VII)", artist: "Ana Kovač", year: "2024", medium: "Oil on canvas", dims: "120 × 90 cm", status: "Collection", category: "Painting", color: "#2a4a7a", colorLight: "#4a7aba", colorDark: "#1a2a4a", value: "€4,200", location: "Main Gallery, Wall A", acquired: "March 2024", condition: "Good",
+    annotations: [
+      { x: 72, y: 10, label: "Ana Kovač", field: "Artist", conf: 87 },
+      { x: 15, y: 42, label: "Oil on canvas", field: "Medium", conf: 95 },
+      { x: 55, y: 76, label: "120 × 90 cm", field: "Dimensions", conf: 71 },
+      { x: 30, y: 22, label: "Abstract Expressionism", field: "Style", conf: 74 },
+      { x: 80, y: 58, label: "Good condition", field: "Condition", conf: 82 },
+    ],
+    prov: [
+      { year: "2024", type: "Acquired", party: "Berlin Museum", note: "Purchased from Galerie Nord" },
+      { year: "2023", type: "Exhibition", party: "Galerie Nord", note: "Solo show: New Geometries" },
+      { year: "2022", type: "Created", party: "Ana Kovač (artist)", note: "Studio, Ljubljana" },
+    ],
+  },
+  { id: 2, title: "Fragment Series #12", artist: "Marcus Webb", year: "2023", medium: "Bronze", dims: "45 × 30 × 25 cm", status: "Display", category: "Sculpture", color: "#7a4a2a", colorLight: "#aa7a4a", colorDark: "#4a2a1a", value: "€8,500", location: "Main Gallery, Pedestal 3", acquired: "Jan 2024", condition: "Excellent",
+    annotations: [
+      { x: 50, y: 14, label: "Marcus Webb", field: "Artist", conf: 91 },
+      { x: 25, y: 52, label: "Bronze", field: "Medium", conf: 98 },
+      { x: 70, y: 68, label: "45×30×25 cm", field: "Dimensions", conf: 68 },
+    ],
+    prov: [
+      { year: "2024", type: "Acquired", party: "Berlin Museum", note: "Christie's London" },
+      { year: "2023", type: "Created", party: "Marcus Webb", note: "London Foundry" },
+    ],
+  },
+  { id: 3, title: "Memory Palace", artist: "Yuki Tanaka", year: "2024", medium: "Archival pigment print", dims: "60 × 80 cm", status: "Storage", category: "Photograph", color: "#4a2a6a", colorLight: "#7a5a9a", colorDark: "#2a1a3a", value: "€2,100", location: "Vault A, Shelf 7", acquired: "Jun 2024", condition: "Mint",
+    annotations: [
+      { x: 60, y: 15, label: "Yuki Tanaka", field: "Artist", conf: 94 },
+      { x: 20, y: 60, label: "Archival pigment", field: "Medium", conf: 97 },
+    ],
+    prov: [
+      { year: "2024", type: "Acquired", party: "Berlin Museum", note: "Tokyo Photo Fair" },
+      { year: "2024", type: "Created", party: "Yuki Tanaka", note: "Tokyo" },
+    ],
+  },
+  { id: 4, title: "Erosion Study", artist: "Claire Dubois", year: "2022", medium: "Ceramic", dims: "35 × 35 × 40 cm", status: "On Loan", category: "Ceramic", color: "#5a6a4a", colorLight: "#8a9a6a", colorDark: "#3a4a2a", value: "€3,800", location: "On Loan — MoMA Berlin", acquired: "Dec 2022", condition: "Good — hairline crack",
+    annotations: [
+      { x: 45, y: 12, label: "Claire Dubois", field: "Artist", conf: 88 },
+      { x: 30, y: 48, label: "Ceramic", field: "Medium", conf: 99 },
+      { x: 50, y: 82, label: "Hairline crack", field: "Condition", conf: 91 },
+    ],
+    prov: [
+      { year: "2023", type: "Loan", party: "MoMA Berlin", note: "From Berlin Museum" },
+      { year: "2022", type: "Acquired", party: "Berlin Museum", note: "Dubois Studio, Marseille" },
+    ],
+  },
+  { id: 5, title: "Threshold", artist: "Olumide Adeyemi", year: "2025", medium: "Mixed media on panel", dims: "150 × 100 cm", status: "Collection", category: "Painting", color: "#6a3a3a", colorLight: "#9a5a5a", colorDark: "#3a1a1a", value: "€6,700", location: "Main Gallery, Wall C", acquired: "Feb 2025", condition: "Excellent",
+    annotations: [
+      { x: 55, y: 10, label: "Olumide Adeyemi", field: "Artist", conf: 86 },
+      { x: 18, y: 55, label: "Mixed media", field: "Medium", conf: 92 },
+    ],
+    prov: [
+      { year: "2025", type: "Acquired", party: "Berlin Museum", note: "Frieze Lagos" },
+      { year: "2025", type: "Created", party: "Olumide Adeyemi", note: "Lagos Studio" },
+    ],
+  },
+  { id: 6, title: "Nocturne for Two", artist: "Sven Lindström", year: "2023", medium: "Silkscreen", dims: "50 × 70 cm", status: "Collection", category: "Print", color: "#3a5a6a", colorLight: "#5a8a9a", colorDark: "#1a3a4a", value: "€1,400", location: "Office Wing, Hall B", acquired: "Sep 2023", condition: "Excellent",
+    annotations: [
+      { x: 65, y: 14, label: "Sven Lindström", field: "Artist", conf: 93 },
+      { x: 22, y: 50, label: "Silkscreen", field: "Medium", conf: 96 },
+    ],
+    prov: [
+      { year: "2023", type: "Acquired", party: "Berlin Museum", note: "Stockholm Print Fair" },
+      { year: "2023", type: "Created", party: "Sven Lindström", note: "Stockholm Printshop" },
+    ],
+  },
+];
+
+const LOCS = [
+  { name: "Main Gallery", type: "Room", count: 24 },
+  { name: "Storage Vault A", type: "Vault", count: 156 },
+  { name: "Storage Vault B", type: "Vault", count: 89 },
+  { name: "Office Wing", type: "Floor", count: 12 },
+  { name: "Loading Dock", type: "Room", count: 3 },
+  { name: "Conservation Lab", type: "Room", count: 7 },
+];
+
+const COLLS = [
+  { name: "Permanent Collection", count: 234, color: "#C4A265" },
+  { name: "Spring Exhibition 2026", count: 18, color: "#4a7a9a" },
+  { name: "Acquisitions 2025", count: 12, color: "#7a4a6a" },
+  { name: "Loan — MoMA Berlin", count: 5, color: "#5a8a5a" },
+];
+
+// ============================================================
+// DESIGN TOKENS
+// ============================================================
+const C = {
+  bg: "#09090B", s1: "#111113", s2: "#19191C", s3: "#222225",
+  b1: "rgba(255,255,255,0.05)", b2: "rgba(255,255,255,0.09)", b3: "rgba(255,255,255,0.14)",
+  t1: "#F0EDE6", t2: "rgba(255,255,255,0.55)", t3: "rgba(255,255,255,0.30)", t4: "rgba(255,255,255,0.13)",
+  gold: "#C4A265", goldDim: "rgba(196,162,101,0.12)", goldSoft: "rgba(196,162,101,0.06)",
+  green: "#3DD68C", greenDim: "rgba(61,214,140,0.12)",
+  blue: "#5B9EF5", red: "#F06060", redDim: "rgba(240,96,96,0.10)",
+};
+const mono = "'SF Mono', 'Fira Code', 'Menlo', monospace";
+const display = "'SF Pro Display', -apple-system, 'Helvetica Neue', sans-serif";
+
+// ============================================================
+// GENERATIVE ARTWORK — unique SVG per work
+// ============================================================
+function GenArt({ work, dim = 0.3 }) {
+  const c = work.color, cl = work.colorLight, cd = work.colorDark;
+  const arts = {
+    1: <><defs><filter id="f1"><feTurbulence baseFrequency="0.015" numOctaves="3" seed="42"/><feDisplacementMap in="SourceGraphic" scale="18"/></filter></defs><rect width="400" height="500" fill={cd}/><ellipse cx="160" cy="200" rx="170" ry="110" fill={c} opacity="0.6" filter="url(#f1)"/><ellipse cx="280" cy="320" rx="130" ry="90" fill={cl} opacity="0.35" filter="url(#f1)"/><path d="M80 300 Q150 200 300 280 Q350 400 200 420Z" fill={c} opacity="0.4"/><line x1="40" y1="80" x2="360" y2="180" stroke={cl} strokeWidth="24" strokeLinecap="round" opacity="0.2"/></>,
+    2: <><defs><linearGradient id="g2" x1="0.3" y1="0" x2="0.7" y2="1"><stop offset="0%" stopColor={cl}/><stop offset="50%" stopColor={c}/><stop offset="100%" stopColor={cd}/></linearGradient></defs><rect width="400" height="500" fill="#0e0c0a"/><polygon points="200,60 300,200 260,420 140,420 100,200" fill="url(#g2)" opacity="0.9"/><polygon points="200,60 300,200 200,180" fill={cl} opacity="0.25"/><ellipse cx="200" cy="440" rx="100" ry="15" fill="rgba(255,255,255,0.03)"/></>,
+    3: <><rect width="400" height="500" fill="#0a0510"/><rect x="0" y="0" width="200" height="500" fill={cd} opacity="0.4"/><rect x="200" y="0" width="200" height="250" fill={c} opacity="0.3"/><rect x="200" y="250" width="200" height="250" fill={cl} opacity="0.15"/><circle cx="200" cy="250" r="80" fill="none" stroke={cl} strokeWidth="0.5" opacity="0.2"/></>,
+    4: <><defs><linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={cl}/><stop offset="100%" stopColor={cd}/></linearGradient></defs><rect width="400" height="500" fill={cd}/><path d="M120 420 Q80 300 110 200 Q130 140 170 110 Q200 95 230 110 Q270 140 290 200 Q320 300 280 420Z" fill="url(#g4)" opacity="0.8"/><ellipse cx="200" cy="110" rx="62" ry="18" fill={c} opacity="0.5"/><ellipse cx="200" cy="420" rx="82" ry="14" fill="rgba(0,0,0,0.3)"/></>,
+    5: <><defs><filter id="f5"><feTurbulence baseFrequency="0.04" numOctaves="4" seed="7"/><feColorMatrix type="saturate" values="0"/><feBlend in="SourceGraphic" mode="multiply"/></filter></defs><rect width="400" height="500" fill={cd}/><rect x="30" y="50" width="280" height="200" fill={c} opacity="0.7" transform="rotate(-3 170 150)"/><rect x="90" y="180" width="260" height="220" fill={cl} opacity="0.35" transform="rotate(2 220 290)"/><circle cx="300" cy="100" r="45" fill={cl} opacity="0.15"/><rect width="400" height="500" fill={cd} opacity="0.12" filter="url(#f5)"/></>,
+    6: <><rect width="400" height="500" fill={cd}/><rect x="0" y="0" width="200" height="250" fill={c} opacity="0.8"/><rect x="200" y="0" width="200" height="250" fill={cl} opacity="0.6"/><rect x="0" y="250" width="200" height="250" fill={cl} opacity="0.5"/><rect x="200" y="250" width="200" height="250" fill={c} opacity="0.4"/><circle cx="200" cy="250" r="100" fill={cd} opacity="0.7"/><circle cx="200" cy="250" r="70" fill={c} opacity="0.5"/><circle cx="200" cy="250" r="40" fill={cl} opacity="0.4"/></>,
+  };
+  return (
+    <div style={{ position: "absolute", inset: 0, opacity: dim || 1 }}>
+      <svg viewBox="0 0 400 500" preserveAspectRatio="xMidYMid slice" style={{ width: "100%", height: "100%", display: "block" }}>
+        {arts[work.id] || arts[1]}
+      </svg>
+    </div>
+  );
+}
+
+// ============================================================
+// STRUCTURAL COMPONENTS (v4 — tool screens)
+// ============================================================
+function PhoneFrame({ children, screenName, onRestart }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#030304", fontFamily: display, padding: 20 }}>
+      <div style={{ fontSize: 9, letterSpacing: "0.18em", textTransform: "uppercase", color: "rgba(255,255,255,0.12)", marginBottom: 14, fontFamily: mono }}>
+        aha! Register · v5.1 · {screenName}
+      </div>
+      <div style={{ width: 390, height: 844, borderRadius: 44, overflow: "hidden", background: C.bg, position: "relative", boxShadow: "0 0 0 1px rgba(255,255,255,0.05), 0 40px 80px rgba(0,0,0,0.9)" }}>
+        <div style={{ height: 54, padding: "14px 28px 0", display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, fontWeight: 600, color: C.t1, position: "absolute", top: 0, left: 0, right: 0, zIndex: 100, fontFamily: mono }}>
+          <span>9:41</span>
+          <svg width="14" height="10" viewBox="0 0 14 10"><rect x="0.5" y="0.5" width="13" height="9" rx="1.5" stroke="currentColor" strokeWidth="0.8" fill="none"/><rect x="2" y="2" width="7" height="6" rx="0.5" fill="currentColor"/></svg>
+        </div>
+        <div style={{ height: "100%", overflow: "hidden", display: "flex", flexDirection: "column" }}>{children}</div>
+        <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", width: 134, height: 5, background: "rgba(255,255,255,0.15)", borderRadius: 3, zIndex: 100 }}/>
+        {/* Noise */}
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0.012, backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")", backgroundSize: "128px 128px" }}/>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginTop: 16 }}>
+        <span style={{ fontSize: 8, color: "rgba(255,255,255,0.1)", letterSpacing: "0.14em", textTransform: "uppercase", fontFamily: mono }}>v4 bones · v5 soul</span>
+        {onRestart && <button onClick={onRestart} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 6, padding: "5px 12px", cursor: "pointer", fontSize: 9, color: "rgba(255,255,255,0.2)", letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600, fontFamily: mono }}>↻ Restart</button>}
+      </div>
+    </div>
+  );
+}
+
+function TabBar({ active, onNavigate }) {
+  const tabs = [
+    { id: SCREENS.HOME, label: "Home", icon: Ic.homeTab },
+    { id: SCREENS.INVENTORY, label: "Inventory", icon: Ic.gridTab },
+    { id: "capture", label: "", icon: Ic.captureTab, isCapture: true },
+    { id: SCREENS.QR_SCANNER, label: "Scan", icon: Ic.qrTab },
+    { id: SCREENS.SETTINGS, label: "More", icon: Ic.moreTab },
+  ];
+  return (
+    <div style={{ height: 82, paddingBottom: 20, display: "flex", borderTop: `1px solid ${C.b1}`, background: C.s1, flexShrink: 0 }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onNavigate(t.isCapture ? SCREENS.CAPTURE_CHOICE : t.id)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3, background: "none", border: "none", cursor: "pointer", padding: 0, color: t.isCapture ? C.gold : active === t.id ? C.t1 : C.t3 }}>
+          {t.isCapture ? (
+            <div style={{ width: 46, height: 46, borderRadius: 23, background: C.gold, display: "flex", alignItems: "center", justifyContent: "center", color: C.bg, marginTop: -22, boxShadow: `0 4px 24px ${C.goldDim}` }}>{t.icon(24)}</div>
+          ) : (
+            <>{t.icon()}<span style={{ fontSize: 9, letterSpacing: "0.04em", fontFamily: mono }}>{t.label}</span></>
+          )}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Header({ title, onBack, right, rightLabel }) {
+  return (
+    <div style={{ height: 44, marginTop: 54, padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+      {onBack ? <button onClick={onBack} style={{ background: "none", border: "none", color: C.t2, cursor: "pointer", display: "flex", alignItems: "center", padding: 0 }}>{Ic.back()}</button> : <div style={{ width: 32 }}/>}
+      <span style={{ fontSize: 14, fontWeight: 600, color: C.t1, letterSpacing: "-0.01em" }}>{title}</span>
+      {right ? <button onClick={right} style={{ background: "none", border: "none", color: C.gold, cursor: "pointer", fontSize: 13, padding: 0, fontWeight: 500 }}>{rightLabel}</button> : <div style={{ width: 32 }}/>}
+    </div>
+  );
+}
+
+function Row({ label, sub, icon, onClick, accent, right }) {
+  return (
+    <button onClick={onClick} style={{ display: "flex", alignItems: "center", gap: 14, padding: "15px 0", borderBottom: `1px solid ${C.b1}`, background: "none", border: "none", borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: C.b1, width: "100%", cursor: onClick ? "pointer" : "default", textAlign: "left" }}>
+      {icon && <span style={{ color: accent ? C.gold : C.t3, display: "flex" }}>{icon}</span>}
+      <div style={{ flex: 1 }}>
+        <span style={{ fontSize: 14, color: accent ? C.gold : C.t1, fontWeight: 450 }}>{label}</span>
+        {sub && <div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>{sub}</div>}
+      </div>
+      {right && <span style={{ fontSize: 12, color: C.t3, fontFamily: mono }}>{right}</span>}
+      {onClick && <span style={{ color: C.t4 }}>{Ic.chevron()}</span>}
+    </button>
+  );
+}
+
+function Label({ text }) {
+  return <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: C.t3, fontFamily: mono }}>{text}</span>;
+}
+
+function Pill({ text, color = C.t3, bg = C.b1 }) {
+  return <span style={{ fontSize: 9, padding: "3px 7px", borderRadius: 4, background: bg, color, fontFamily: mono, letterSpacing: "0.02em", fontWeight: 500 }}>{text}</span>;
+}
+
+function ArtCard({ obj, size = "100%", onClick, showTitle }) {
+  return (
+    <button onClick={onClick} style={{ width: size, aspectRatio: "1 / 1.2", borderRadius: 10, overflow: "hidden", position: "relative", border: "none", cursor: "pointer", flexShrink: 0 }}>
+      <GenArt work={obj} dim={1} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 8px 8px", background: "linear-gradient(transparent, rgba(0,0,0,0.75))", zIndex: 1 }}>
+        <div style={{ fontSize: 10, fontWeight: 500, color: "rgba(255,255,255,0.85)" }}>{obj.artist}</div>
+        {showTitle && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.4)", marginTop: 2, fontFamily: mono }}>{obj.year}</div>}
+      </div>
+    </button>
+  );
+}
+
+// ============================================================
+// ANNOTATION PIN (v5 — art screens)
+// ============================================================
+function Pin({ x, y, label, field, conf, delay = 0, accent }) {
+  const [vis, setVis] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setVis(true), delay); return () => clearTimeout(t); }, [delay]);
+  return (
+    <div style={{ position: "absolute", left: `${x}%`, top: `${y}%`, transform: "translate(-50%, -50%)", opacity: vis ? 1 : 0, transition: `all 0.6s cubic-bezier(0.16,1,0.3,1) ${delay}ms`, zIndex: 10 }}>
+      <div style={{ position: "absolute", inset: -8, borderRadius: "50%", border: `1px solid ${accent}`, opacity: 0.3, animation: "v5pulse 2s ease-in-out infinite" }}/>
+      <div style={{ width: 10, height: 10, borderRadius: 5, background: accent, boxShadow: `0 0 20px ${accent}60` }}/>
+      <div style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", whiteSpace: "nowrap", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(10px)", padding: "4px 10px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 6 }}>
+        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", fontFamily: mono, letterSpacing: "0.06em", textTransform: "uppercase" }}>{field}</span>
+        <span style={{ fontSize: 11, color: "#fff", fontFamily: mono }}>{label}</span>
+        <span style={{ fontSize: 8, fontFamily: mono, fontWeight: 600, padding: "1px 4px", borderRadius: 2, background: conf >= 90 ? "rgba(61,214,140,0.2)" : conf >= 75 ? `${accent}25` : "rgba(240,96,96,0.2)", color: conf >= 90 ? "#3DD68C" : conf >= 75 ? accent : "#F06060" }}>{conf}%</span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// TOOL SCREENS (v4 architecture)
+// ============================================================
+
+function SplashScreen({ onNavigate }) {
+  return (
+    <div onClick={() => onNavigate(SCREENS.ONBOARD_1)} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", paddingTop: 54 }}>
+      <div style={{ width: 72, height: 72, borderRadius: 18, background: C.gold, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 12px 48px rgba(196,162,101,0.25)` }}>
+        <span style={{ fontSize: 28, fontWeight: 800, fontStyle: "italic", color: C.bg }}>a!</span>
+      </div>
+      <div style={{ marginTop: 28, fontSize: 26, fontWeight: 700, letterSpacing: "-0.03em", color: C.t1 }}>aha! Register</div>
+      <div style={{ marginTop: 6, fontSize: 12, color: C.t3, letterSpacing: "0.12em", textTransform: "uppercase", fontFamily: mono }}>Document everything</div>
+      <div style={{ marginTop: 80, fontSize: 11, color: C.t4, fontFamily: mono }}>tap to begin</div>
+    </div>
+  );
+}
+
+function OnboardScreen({ step, onNavigate }) {
+  const screens = [
+    { title: "Capture\nin seconds", desc: "Point your phone at any artwork. AI identifies artist, medium, dimensions, and condition — instantly.", icon: Ic.capture, color: C.blue },
+    { title: "Organize\neverything", desc: "QR codes for shelves, walls, and vaults. Scan a location, capture what's there. Your entire collection, mapped.", icon: Ic.organize, color: C.gold },
+    { title: "Provenance\nbuilt in", desc: "Every object gets a verifiable record with archival-grade documentation. Export in museum-standard formats.", icon: Ic.provenance, color: C.green },
+  ];
+  const s = screens[step - 1];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: 54 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 36px" }}>
+        <div style={{ color: s.color, marginBottom: 32 }}>{s.icon()}</div>
+        <div style={{ fontSize: 32, fontWeight: 700, color: C.t1, lineHeight: 1.1, letterSpacing: "-0.03em", whiteSpace: "pre-line" }}>{s.title}</div>
+        <div style={{ marginTop: 16, fontSize: 14, color: C.t2, lineHeight: 1.7 }}>{s.desc}</div>
+      </div>
+      <div style={{ padding: "0 24px 40px", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 20 }}>
+          {[1,2,3].map(i => <div key={i} style={{ width: i === step ? 28 : 6, height: 3, borderRadius: 2, background: i === step ? C.gold : C.t4 }}/>)}
+        </div>
+        <button onClick={() => onNavigate(step < 3 ? `onboard_${step+1}` : SCREENS.PRIVACY_ONBOARD)} style={{ padding: "15px", borderRadius: 10, background: C.gold, border: "none", fontSize: 14, fontWeight: 600, color: C.bg, cursor: "pointer" }}>{step < 3 ? "Continue" : "Get Started"}</button>
+        {step < 3 && <button onClick={() => onNavigate(SCREENS.LOGIN)} style={{ padding: "10px", background: "none", border: "none", fontSize: 12, color: C.t3, cursor: "pointer", fontFamily: mono }}>skip</button>}
+      </div>
+    </div>
+  );
+}
+
+function PrivacyScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: 54 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 32px" }}>
+        <div style={{ color: C.gold, marginBottom: 28 }}>{Ic.shield()}</div>
+        <div style={{ fontSize: 28, fontWeight: 700, color: C.t1, lineHeight: 1.15, letterSpacing: "-0.03em" }}>Your collection.<br/>Your data. Period.</div>
+        <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 20 }}>
+          {[{ t: <>Images <strong>never</strong> used to train AI</>, ic: Ic.shield }, { t: "Stored in EU — Frankfurt, Germany", ic: Ic.lock }, { t: "Export or delete everything, anytime", ic: Ic.exportIc }, { t: "AI optional — everything else still works", ic: Ic.sparkle }].map((item, i) => (
+            <div key={i} style={{ display: "flex", gap: 16, alignItems: "center" }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: C.s2, display: "flex", alignItems: "center", justifyContent: "center", color: C.gold, flexShrink: 0 }}>{item.ic(16)}</div>
+              <span style={{ fontSize: 14, color: C.t1, lineHeight: 1.4 }}>{item.t}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div style={{ padding: "0 24px 40px" }}>
+        <button onClick={() => onNavigate(SCREENS.LOGIN)} style={{ width: "100%", padding: "15px", borderRadius: 10, background: C.gold, border: "none", fontSize: 14, fontWeight: 600, color: C.bg, cursor: "pointer" }}>Continue</button>
+      </div>
+    </div>
+  );
+}
+
+function LoginScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: 54 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 32px" }}>
+        <span style={{ fontSize: 34, fontWeight: 800, fontStyle: "italic", color: C.gold }}>aha!</span>
+        <span style={{ fontSize: 11, color: C.t3, letterSpacing: "0.16em", textTransform: "uppercase", marginTop: 4, fontFamily: mono }}>Register</span>
+        <div style={{ width: "100%", marginTop: 40, display: "flex", flexDirection: "column", gap: 10 }}>
+          <input placeholder="Email" readOnly style={{ padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.s1, color: C.t1, fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box" }}/>
+          <input placeholder="Password" type="password" readOnly style={{ padding: "14px 16px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.s1, color: C.t1, fontSize: 14, outline: "none", width: "100%", boxSizing: "border-box" }}/>
+          <button onClick={() => onNavigate(SCREENS.DOMAIN_SELECT)} style={{ padding: "15px", borderRadius: 10, background: C.gold, border: "none", fontSize: 14, fontWeight: 600, color: C.bg, cursor: "pointer", marginTop: 6 }}>Sign In</button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "6px 0" }}><div style={{ flex: 1, height: 1, background: C.b2 }}/><span style={{ fontSize: 10, color: C.t4, fontFamily: mono }}>or</span><div style={{ flex: 1, height: 1, background: C.b2 }}/></div>
+          {["Apple", "Google"].map(p => <button key={p} onClick={() => onNavigate(SCREENS.DOMAIN_SELECT)} style={{ padding: "13px", borderRadius: 8, border: `1px solid ${C.b2}`, background: C.s1, fontSize: 14, color: C.t1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>Continue with {p}</button>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DomainSelectScreen({ onNavigate }) {
+  const domains = [
+    { id: "art", label: "Art & Design", active: true, def: true },
+    { id: "museum", label: "Museum", active: true },
+    { id: "books", label: "Rare Books", active: false },
+    { id: "ceramics", label: "Ceramics", active: false },
+    { id: "textiles", label: "Textiles", active: false },
+    { id: "natural", label: "Natural History", active: false },
+    { id: "ethno", label: "Ethnographic", active: false },
+    { id: "arch", label: "Architecture", active: false },
+  ];
+  const patterns = {
+    art: <><circle cx="50" cy="40" r="18" stroke="currentColor" strokeWidth="1" fill="none"/><rect x="25" y="55" width="50" height="20" rx="2" stroke="currentColor" strokeWidth="1" fill="none"/></>,
+    museum: <><rect x="20" y="40" width="60" height="35" rx="1" stroke="currentColor" strokeWidth="1" fill="none"/><path d="M20 40L50 22L80 40" stroke="currentColor" strokeWidth="1" fill="none"/><line x1="35" y1="40" x2="35" y2="75" stroke="currentColor" strokeWidth="0.8"/><line x1="50" y1="40" x2="50" y2="75" stroke="currentColor" strokeWidth="0.8"/><line x1="65" y1="40" x2="65" y2="75" stroke="currentColor" strokeWidth="0.8"/></>,
+    books: <><rect x="28" y="20" width="24" height="60" rx="2" stroke="currentColor" strokeWidth="1" fill="none"/><rect x="48" y="25" width="24" height="55" rx="2" stroke="currentColor" strokeWidth="1" fill="none"/></>,
+    ceramics: <><ellipse cx="50" cy="70" rx="20" ry="6" stroke="currentColor" strokeWidth="1" fill="none"/><path d="M30 70 Q30 35 42 28 Q50 24 58 28 Q70 35 70 70" stroke="currentColor" strokeWidth="1" fill="none"/></>,
+    textiles: <>{[0,1,2,3,4].map(i=><line key={`h${i}`} x1="20" y1={25+i*13} x2="80" y2={25+i*13} stroke="currentColor" strokeWidth="0.6"/>)}{[0,1,2,3,4].map(i=><line key={`v${i}`} x1={20+i*15} y1="25" x2={20+i*15} y2="77" stroke="currentColor" strokeWidth="0.6"/>)}</>,
+    natural: <><circle cx="50" cy="45" r="22" stroke="currentColor" strokeWidth="1" fill="none"/><path d="M50 23 Q55 35 50 45 Q45 55 50 67" stroke="currentColor" strokeWidth="0.8" fill="none"/></>,
+    ethno: <><circle cx="50" cy="50" r="25" stroke="currentColor" strokeWidth="1" fill="none"/><circle cx="50" cy="50" r="15" stroke="currentColor" strokeWidth="0.8" fill="none"/><circle cx="50" cy="50" r="5" stroke="currentColor" strokeWidth="0.8" fill="none"/></>,
+    arch: <><rect x="25" y="30" width="50" height="45" rx="1" stroke="currentColor" strokeWidth="1" fill="none"/><path d="M38 75 L38 55 Q38 48 50 48 Q62 48 62 55 L62 75" stroke="currentColor" strokeWidth="1" fill="none"/></>,
+  };
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", paddingTop: 54 }}>
+      <div style={{ padding: "20px 20px 4px" }}>
+        <div style={{ fontSize: 24, fontWeight: 700, color: C.t1, letterSpacing: "-0.03em" }}>What are you<br/>documenting?</div>
+        <div style={{ fontSize: 11, color: C.t3, marginTop: 6, fontFamily: mono }}>Select your field</div>
+      </div>
+      <div style={{ flex: 1, overflow: "auto", padding: "16px 20px 40px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {domains.map(d => (
+            <button key={d.id} onClick={d.active ? () => onNavigate(SCREENS.HOME) : undefined} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 8px 14px", borderRadius: 14, textAlign: "center", background: C.s1, border: d.def ? `1.5px solid ${C.gold}` : `1px solid ${d.active ? C.b2 : C.b1}`, cursor: d.active ? "pointer" : "default", opacity: d.active ? 1 : 0.35, position: "relative", minHeight: 120, justifyContent: "center" }}>
+              <svg width="50" height="50" viewBox="0 0 100 100" style={{ color: d.def ? C.gold : d.active ? C.t2 : C.t4, marginBottom: 8 }}>{patterns[d.id]}</svg>
+              <div style={{ fontSize: 12, fontWeight: 600, color: d.active ? C.t1 : C.t3 }}>{d.label}</div>
+              {d.def && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 7, fontWeight: 700, color: C.gold, background: C.goldDim, padding: "2px 5px", borderRadius: 4, fontFamily: mono, letterSpacing: "0.06em", textTransform: "uppercase" }}>default</span>}
+              {!d.active && <span style={{ position: "absolute", top: 8, right: 8, fontSize: 7, color: C.t4, background: C.b1, padding: "2px 5px", borderRadius: 4, fontFamily: mono, textTransform: "uppercase" }}>soon</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HomeScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "66px 20px 12px", flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div><Label text="Welcome back"/><div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.03em", color: C.t1, marginTop: 4 }}>Berlin Museum</div></div>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: C.gold, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: C.bg }}>BM</div>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+        <button onClick={() => onNavigate(SCREENS.INVENTORY)} style={{ width: "100%", padding: "11px 14px", borderRadius: 8, background: C.s2, border: `1px solid ${C.b1}`, display: "flex", alignItems: "center", gap: 8, cursor: "pointer", boxSizing: "border-box", marginBottom: 16 }}>
+          <span style={{ color: C.t4 }}>{Ic.search()}</span><span style={{ fontSize: 13, color: C.t4, fontFamily: mono }}>Search 291 objects…</span>
+        </button>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
+          <div style={{ gridColumn: "1/3", padding: "18px 16px", borderRadius: 12, background: C.s1, border: `1px solid ${C.b1}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div><div style={{ fontSize: 36, fontWeight: 700, color: C.gold, fontFamily: mono, letterSpacing: "-0.04em" }}>291</div><div style={{ fontSize: 11, color: C.t3, marginTop: -2 }}>objects registered</div></div>
+            <div style={{ display: "flex", gap: 16 }}>
+              <div style={{ textAlign: "right" }}><div style={{ fontSize: 20, fontWeight: 700, color: C.blue, fontFamily: mono }}>6</div><div style={{ fontSize: 9, color: C.t3, fontFamily: mono }}>locations</div></div>
+              <div style={{ textAlign: "right" }}><div style={{ fontSize: 20, fontWeight: 700, color: C.green, fontFamily: mono }}>12</div><div style={{ fontSize: 9, color: C.t3, fontFamily: mono }}>this week</div></div>
+            </div>
+          </div>
+          {[{ label: "Capture", icon: Ic.captureTab, screen: SCREENS.CAPTURE_CHOICE, accent: true }, { label: "Scan QR", icon: Ic.scan, screen: SCREENS.QR_SCANNER }, { label: "Export", icon: Ic.exportIc, screen: SCREENS.EXPORT }, { label: "Team", icon: Ic.users, screen: SCREENS.TEAM }].map(a => (
+            <button key={a.label} onClick={() => onNavigate(a.screen)} style={{ padding: "14px", borderRadius: 10, background: a.accent ? C.goldSoft : C.s1, border: `1px solid ${a.accent ? C.goldDim : C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: a.accent ? C.gold : C.t2 }}>
+              {a.icon(18)}<span style={{ fontSize: 13, color: a.accent ? C.gold : C.t1, fontWeight: 500 }}>{a.label}</span>
+            </button>
+          ))}
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}><Label text="Recently added"/><button onClick={() => onNavigate(SCREENS.INVENTORY)} style={{ background: "none", border: "none", color: C.t3, cursor: "pointer", fontSize: 11, fontFamily: mono }}>View all →</button></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 24 }}>
+          {WORKS.slice(0, 4).map(obj => <ArtCard key={obj.id} obj={obj} onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)} showTitle/>)}
+        </div>
+        <Label text="Activity"/>
+        <div style={{ marginTop: 10 }}>
+          {[{ who: "Emmanuelle", action: "added 3 objects to Vault B", time: "2h" }, { who: "Michael", action: "generated certificate", time: "5h" }, { who: "Lena", action: "batch captured 14 objects", time: "1d" }].map((a, i) => (
+            <div key={i} style={{ padding: "11px 0", borderBottom: `1px solid ${C.b1}`, display: "flex", justifyContent: "space-between" }}>
+              <div style={{ fontSize: 13 }}><span style={{ color: C.gold, fontWeight: 500 }}>{a.who}</span><span style={{ color: C.t2 }}> {a.action}</span></div>
+              <span style={{ fontSize: 10, color: C.t4, fontFamily: mono, flexShrink: 0, marginLeft: 12 }}>{a.time}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <TabBar active={SCREENS.HOME} onNavigate={onNavigate}/>
+    </div>
+  );
+}
+
+function CaptureChoiceScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Capture" onBack={() => onNavigate(SCREENS.HOME)}/>
+      <div style={{ flex: 1, padding: "20px", display: "flex", flexDirection: "column", gap: 10 }}>
+        {[{ title: "Single Photo", desc: "Quick capture. AI extracts all metadata.", icon: Ic.captureTab, screen: SCREENS.CAMERA },
+          { title: "Multi-Angle", desc: "Front, back, detail, signature.", icon: Ic.layers, screen: SCREENS.CAMERA_MULTI },
+          { title: "3D Scan", desc: "Walk around. Full 3D model.", icon: Ic.cube, screen: SCREENS.CAMERA_3D, pill: "Kiri" },
+          { title: "Batch Mode", desc: "Rapid-fire. Dozens in minutes.", icon: Ic.flash, screen: SCREENS.CAMERA_BATCH, pill: "Pro" },
+        ].map(m => (
+          <button key={m.title} onClick={() => onNavigate(m.screen)} style={{ padding: "18px", borderRadius: 12, background: C.s1, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", gap: 16, alignItems: "center", textAlign: "left" }}>
+            <div style={{ width: 44, height: 44, borderRadius: 12, background: C.s2, display: "flex", alignItems: "center", justifyContent: "center", color: C.t2, flexShrink: 0 }}>{m.icon(20)}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 15, fontWeight: 600, color: C.t1 }}>{m.title}</span>{m.pill && <Pill text={m.pill} color={C.gold} bg={C.goldDim}/>}</div>
+              <div style={{ fontSize: 12, color: C.t3, marginTop: 3 }}>{m.desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// ART SCREENS (v5 soul)
+// ============================================================
+
+// ── CAMERA — Zero Chrome (v5) ──
+function CameraScreen({ onNavigate, mode = "single" }) {
+  const labels = { single: "single photo", multi: "multi-angle · 1/4", "3d": "3d scan · move slowly", batch: "batch · tap to capture" };
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#000" }}>
+      <div style={{ flex: 1, position: "relative", background: "linear-gradient(170deg, #0a0d12, #111820, #0a0d12)" }}>
+        {/* Minimal center guide — barely visible */}
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 220, height: 280, border: "1px solid rgba(255,255,255,0.04)" }}/>
+        {mode === "3d" && <div style={{ position: "absolute", bottom: 120, left: 20, right: 20, height: 2, borderRadius: 1, background: "rgba(255,255,255,0.06)" }}><div style={{ width: "24%", height: "100%", background: C.green, borderRadius: 1 }}/></div>}
+        {/* Back */}
+        <button onClick={() => onNavigate(SCREENS.CAPTURE_CHOICE)} style={{ position: "absolute", top: 60, left: 20, width: 36, height: 36, borderRadius: 18, background: "rgba(0,0,0,0.3)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>‹</button>
+      </div>
+      {/* Mode label */}
+      <div style={{ padding: "6px 0", textAlign: "center", fontSize: 9, color: C.gold, background: "rgba(0,0,0,0.8)", fontFamily: mono, letterSpacing: "0.12em", textTransform: "uppercase" }}>{labels[mode]}</div>
+      {/* Shutter — the dominant element */}
+      <div style={{ padding: "14px 0 38px", display: "flex", alignItems: "center", justifyContent: "center", gap: 36, background: "#000" }}>
+        <div style={{ width: 40, height: 40, borderRadius: 8, overflow: "hidden", border: "1.5px solid rgba(255,255,255,0.1)" }}>
+          <div style={{ width: "100%", height: "100%", background: `linear-gradient(135deg, ${WORKS[0].color}, ${WORKS[0].color}88)` }}/>
+        </div>
+        <button onClick={() => onNavigate(SCREENS.AI_PROCESSING)} style={{ width: 68, height: 68, borderRadius: 34, background: "none", border: `2px solid rgba(255,255,255,0.6)`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 54, height: 54, borderRadius: 27, background: mode === "3d" ? C.red : "rgba(255,255,255,0.85)" }}/>
+        </button>
+        <div style={{ width: 40, height: 40 }}/>
+      </div>
+    </div>
+  );
+}
+
+function AIProcessingScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 54 }}>
+      <div style={{ width: 80, height: 80, borderRadius: 20, background: C.goldDim, display: "flex", alignItems: "center", justifyContent: "center", color: C.gold }}>{Ic.sparkle(32)}</div>
+      <div style={{ marginTop: 24, fontSize: 18, fontWeight: 600, color: C.t1 }}>Analyzing…</div>
+      <div style={{ marginTop: 8, fontSize: 12, color: C.t3, fontFamily: mono }}>Gemini AI</div>
+      <div style={{ marginTop: 32, width: "100%", padding: "0 48px" }}>
+        {["Metadata extraction", "Material analysis", "Condition assessment", "Style classification", "Provenance anchor"].map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 0" }}>
+            <div style={{ width: 20, height: 20, borderRadius: 10, background: C.green, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>{Ic.check(10)}</div>
+            <span style={{ fontSize: 13, color: C.t1 }}>{s}</span>
+          </div>
+        ))}
+      </div>
+      <button onClick={() => onNavigate(SCREENS.AI_RESULTS)} style={{ marginTop: 36, padding: "13px 44px", borderRadius: 10, background: C.gold, border: "none", fontSize: 14, fontWeight: 600, color: C.bg, cursor: "pointer" }}>View Results</button>
+    </div>
+  );
+}
+
+// ── AI RESULTS — Spatial Annotation Pins (v5) ──
+function AIResultsScreen({ onNavigate }) {
+  const obj = WORKS[0];
+  return (
+    <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <GenArt work={obj} dim={0.7}/>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.25)" }}/>
+      {obj.annotations.map((a, i) => <Pin key={i} x={a.x} y={a.y} label={a.label} field={a.field} conf={a.conf} delay={400 + i * 200} accent={obj.colorLight}/>)}
+      <div style={{ position: "absolute", top: 64, left: 24, zIndex: 20 }}>
+        <div style={{ fontSize: 9, color: obj.colorLight, letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: mono }}>AI Analysis Complete</div>
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 4, fontFamily: mono }}>Tap any pin to edit</div>
+      </div>
+      <button onClick={() => onNavigate(SCREENS.CAMERA)} style={{ position: "absolute", top: 60, right: 20, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)", border: "none", color: C.t2, cursor: "pointer", padding: "6px 10px", borderRadius: 6, fontSize: 10, fontFamily: mono, zIndex: 20 }}>‹ Retake</button>
+      <div style={{ position: "absolute", bottom: 36, left: 24, right: 24, zIndex: 20 }}>
+        <button onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)} style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: obj.colorLight, color: "#000", fontSize: 13, fontWeight: 600, fontFamily: mono, cursor: "pointer" }}>Accept All & Save</button>
+      </div>
+    </div>
+  );
+}
+
+// ── OBJECT DETAIL — Full-bleed Art + Pull-up Sheet (v5) ──
+function ObjectDetailScreen({ onNavigate }) {
+  const [sheet, setSheet] = useState(false);
+  const obj = WORKS[0];
+  const accent = obj.colorLight;
+  return (
+    <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <GenArt work={obj} dim={1}/>
+      {/* Back button */}
+      <button onClick={() => onNavigate(SCREENS.HOME)} style={{ position: "absolute", top: 60, left: 20, width: 36, height: 36, borderRadius: 18, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)", border: "none", color: "#fff", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, zIndex: 20 }}>‹</button>
+      {/* 3D button */}
+      <button onClick={() => onNavigate(SCREENS.OBJECT_3D)} style={{ position: "absolute", top: 60, right: 20, padding: "6px 12px", borderRadius: 8, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(10px)", border: "none", color: C.t1, cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 10, fontFamily: mono, zIndex: 20 }}>{Ic.cube(12)} 3D</button>
+      {/* Title overlay */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "60px 24px 100px", background: "linear-gradient(transparent, rgba(0,0,0,0.85))", zIndex: 10 }}>
+        <div style={{ fontSize: 22, fontWeight: 600, color: "#fff", letterSpacing: "-0.03em", lineHeight: 1.2, textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}>{obj.title}</div>
+        <div style={{ fontSize: 13, color: accent, marginTop: 6 }}>{obj.artist}, {obj.year}</div>
+        <div style={{ display: "flex", gap: 5, marginTop: 10, flexWrap: "wrap" }}>
+          <Pill text={obj.category}/><Pill text={obj.status} color={C.green} bg={C.greenDim}/><Pill text={obj.value} color={C.gold} bg={C.goldDim}/>
+        </div>
+      </div>
+      {/* Pull-up hint */}
+      <div onClick={() => setSheet(true)} style={{ position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)", zIndex: 15, cursor: "pointer", textAlign: "center" }}>
+        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: mono, letterSpacing: "0.1em" }}>↑ details</div>
+      </div>
+      {/* Tab bar sits on top */}
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 30 }}>
+        <TabBar active="" onNavigate={onNavigate}/>
+      </div>
+      {/* ── METADATA SHEET ── */}
+      {sheet && (
+        <div style={{ position: "absolute", inset: 0, zIndex: 50 }}>
+          <div onClick={() => setSheet(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", cursor: "pointer" }}/>
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, maxHeight: "78%", borderRadius: "20px 20px 0 0", background: "rgba(12,12,14,0.94)", backdropFilter: "blur(40px)", border: "1px solid rgba(255,255,255,0.06)", borderBottom: "none", overflowY: "auto" }}>
+            <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 6px" }}><div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,0.12)" }}/></div>
+            <div style={{ padding: "4px 24px 100px" }}>
+              <div style={{ fontSize: 20, fontWeight: 500, color: "#fff", letterSpacing: "-0.03em" }}>{obj.title}</div>
+              <div style={{ fontSize: 12, color: accent, marginTop: 4 }}>{obj.artist}, {obj.year}</div>
+              <div style={{ marginTop: 20 }}>
+                {[{ l: "Medium", v: obj.medium }, { l: "Dimensions", v: obj.dims }, { l: "Location", v: obj.location }, { l: "Acquired", v: obj.acquired }, { l: "Condition", v: obj.condition }].map((d, i) => (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "11px 0", borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{d.l}</span>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.8)" }}>{d.v}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+                <button onClick={() => { setSheet(false); onNavigate(SCREENS.OBJECT_PROVENANCE); }} style={{ padding: "13px 16px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", gap: 8 }}>{Ic.timeline(14)} Provenance History</div><span style={{ color: C.t4 }}>›</span></button>
+                <button style={{ padding: "13px 16px", borderRadius: 8, background: `${accent}12`, border: `1px solid ${accent}25`, cursor: "pointer", textAlign: "left" }}><div style={{ fontSize: 12, color: accent }}>Generate Certificate</div></button>
+                <button onClick={() => { setSheet(false); onNavigate(SCREENS.QR_CREATE); }} style={{ padding: "13px 16px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", cursor: "pointer", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center" }}><div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>QR Code</div><span style={{ color: C.t4 }}>›</span></button>
+                <button style={{ padding: "13px 16px", borderRadius: 8, background: `${C.goldSoft}`, border: `1px solid ${C.goldDim}`, cursor: "pointer", textAlign: "left" }}><div style={{ fontSize: 12, color: C.gold }}>List on aha! Marketplace</div><div style={{ fontSize: 9, color: C.t3, marginTop: 2 }}>Sell or auction this work</div></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── PROVENANCE — Visual Story Cards (v5) ──
+function ProvenanceScreen({ onNavigate }) {
+  const obj = WORKS[0];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#060608" }}>
+      <button onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)} style={{ position: "absolute", top: 60, left: 20, zIndex: 10, width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,0.05)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
+      <div style={{ position: "absolute", top: 64, right: 24, fontSize: 9, color: obj.colorLight, letterSpacing: "0.15em", textTransform: "uppercase", fontFamily: mono, zIndex: 10 }}>Provenance</div>
+      <div style={{ flex: 1, overflowY: "auto", paddingTop: 100, paddingBottom: 100 }}>
+        <div style={{ padding: "0 20px", display: "flex", flexDirection: "column", gap: 12 }}>
+          {obj.prov.map((p, i) => (
+            <div key={i} style={{ borderRadius: 14, overflow: "hidden", background: obj.colorDark, position: "relative", height: 150, flexShrink: 0 }}>
+              <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 80, height: 100, borderRadius: 3, overflow: "hidden", boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }}><GenArt work={obj} dim={0.8}/></div>
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "28px 16px 12px", background: "linear-gradient(transparent, rgba(0,0,0,0.8))" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: obj.colorLight, fontFamily: mono }}>{p.year}</span>
+                  <Pill text={p.type}/>
+                </div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 3 }}>{p.party}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", marginTop: 1 }}>{p.note}</div>
+              </div>
+            </div>
+          ))}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0" }}>
+            <span style={{ color: C.green }}>{Ic.lock(12)}</span>
+            <span style={{ fontSize: 10, color: C.green, fontWeight: 500, fontFamily: mono }}>Chain verified</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ position: "absolute", bottom: 36, left: 24, right: 24 }}>
+        <button onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)} style={{ width: "100%", padding: "14px", borderRadius: 10, background: obj.colorLight, border: "none", color: "#000", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: mono }}>Generate Certificate</button>
+      </div>
+    </div>
+  );
+}
+
+// ── 3D Model (immersive, v5 treatment) ──
+function Object3DScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#040406" }}>
+      <button onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)} style={{ position: "absolute", top: 60, left: 20, zIndex: 10, width: 36, height: 36, borderRadius: 18, background: "rgba(255,255,255,0.05)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 260, height: 260, borderRadius: 16, background: "radial-gradient(circle at 40% 40%, #1a2030, #0a0a0e)", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          <svg width="140" height="160" viewBox="0 0 140 160" fill="none" stroke="rgba(196,162,101,0.25)" strokeWidth="0.7">
+            <ellipse cx="70" cy="140" rx="50" ry="10"/><path d="M35 140 Q25 90 45 50 Q55 30 70 25 Q85 30 95 50 Q115 90 105 140"/><ellipse cx="70" cy="50" rx="25" ry="8" strokeDasharray="3 2"/><line x1="70" y1="25" x2="70" y2="140" strokeDasharray="4 4"/><line x1="35" y1="90" x2="105" y2="90" strokeDasharray="3 3"/>
+          </svg>
+          <div style={{ position: "absolute", bottom: 14, fontSize: 10, color: C.t4, fontFamily: mono }}>drag · pinch · rotate</div>
+        </div>
+        <div style={{ marginTop: 18, display: "flex", gap: 8 }}>
+          {["OBJ", "FBX", "GLB", "USDZ"].map(f => <button key={f} style={{ padding: "7px 12px", borderRadius: 6, background: C.s1, border: `1px solid ${C.b1}`, color: C.t2, fontSize: 11, cursor: "pointer", fontFamily: mono }}>{f}</button>)}
+        </div>
+        <button style={{ marginTop: 16, padding: "11px 28px", borderRadius: 8, background: C.gold, border: "none", fontSize: 13, fontWeight: 600, color: C.bg, cursor: "pointer" }}>Download</button>
+        <div style={{ marginTop: 6, fontSize: 10, color: C.t4, fontFamily: mono }}>Kiri Engine · 142 MB</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// REMAINING TOOL SCREENS (v4 architecture — compact)
+// ============================================================
+
+function InventoryScreen({ onNavigate }) {
+  const [view, setView] = useState("grid");
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "66px 20px 0", flexShrink: 0 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 20, fontWeight: 700, color: C.t1 }}>Inventory</span>
+          <div style={{ display: "flex", gap: 3 }}>{["grid", "list"].map(v => <button key={v} onClick={() => setView(v)} style={{ padding: "5px 9px", borderRadius: 5, background: view === v ? C.s2 : "none", border: `1px solid ${view === v ? C.b2 : "transparent"}`, color: view === v ? C.t1 : C.t4, fontSize: 11, cursor: "pointer", fontFamily: mono }}>{v}</button>)}</div>
+        </div>
+        <div style={{ display: "flex", gap: 5, marginTop: 12, paddingBottom: 8 }}>
+          {["All", "Painting", "Sculpture", "Print", "Photo"].map(f => <button key={f} style={{ padding: "5px 12px", borderRadius: 16, background: f === "All" ? C.gold : C.s1, border: `1px solid ${f === "All" ? C.gold : C.b1}`, color: f === "All" ? C.bg : C.t2, fontSize: 11, cursor: "pointer", fontWeight: f === "All" ? 600 : 400 }}>{f}</button>)}
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "10px 20px 0" }}>
+        {view === "grid" ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
+            {WORKS.map(obj => <ArtCard key={obj.id} obj={obj} onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)}/>)}
+          </div>
+        ) : WORKS.map(obj => (
+          <button key={obj.id} onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)} style={{ display: "flex", gap: 12, padding: "11px 0", borderBottom: `1px solid ${C.b1}`, background: "none", border: "none", borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: C.b1, width: "100%", cursor: "pointer", textAlign: "left" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 8, background: obj.color, flexShrink: 0 }}/>
+            <div><div style={{ fontSize: 13, fontWeight: 500, color: C.t1 }}>{obj.title}</div><div style={{ fontSize: 11, color: C.t3 }}>{obj.artist}, {obj.year}</div></div>
+          </button>
+        ))}
+      </div>
+      <TabBar active={SCREENS.INVENTORY} onNavigate={onNavigate}/>
+    </div>
+  );
+}
+
+function QRScannerScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#000" }}>
+      <div style={{ flex: 1, position: "relative", background: "linear-gradient(160deg, #080810, #101018)" }}>
+        <div style={{ position: "absolute", top: 72, left: "50%", transform: "translateX(-50%)", fontSize: 14, fontWeight: 600, color: C.t1 }}>QR Scanner</div>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 200, height: 200 }}>
+          {[[0,0],[0,1],[1,0],[1,1]].map(([r,c]) => <div key={`${r}${c}`} style={{ position: "absolute", [r?"bottom":"top"]: 0, [c?"right":"left"]: 0, width: 32, height: 32, [`border${r?"Bottom":"Top"}`]: `2.5px solid ${C.gold}`, [`border${c?"Right":"Left"}`]: `2.5px solid ${C.gold}` }}/>)}
+          <div style={{ position: "absolute", top: "42%", left: 6, right: 6, height: 1.5, background: `linear-gradient(90deg, transparent, ${C.gold}, transparent)`, opacity: 0.7 }}/>
+        </div>
+        <button onClick={() => onNavigate(SCREENS.HOME)} style={{ position: "absolute", top: 60, left: 20, width: 34, height: 34, borderRadius: 8, background: "rgba(0,0,0,0.4)", border: "none", color: C.t1, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>{Ic.back()}</button>
+        <div style={{ position: "absolute", bottom: 110, left: "50%", transform: "translateX(-50%)", fontSize: 12, color: C.t3, fontFamily: mono }}>point at QR code</div>
+      </div>
+      <div style={{ padding: "14px 20px 38px", background: "#000", display: "flex", gap: 8 }}>
+        <button onClick={() => onNavigate(SCREENS.QR_RESULT)} style={{ flex: 1, padding: "13px", borderRadius: 8, background: C.s1, border: `1px solid ${C.b1}`, color: C.t1, fontSize: 13, cursor: "pointer" }}>Simulate Scan</button>
+        <button onClick={() => onNavigate(SCREENS.QR_CREATE)} style={{ flex: 1, padding: "13px", borderRadius: 8, background: C.gold, border: "none", color: C.bg, fontSize: 13, cursor: "pointer", fontWeight: 600 }}>Create QR</button>
+      </div>
+    </div>
+  );
+}
+
+function QRResultScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="QR Scanned" onBack={() => onNavigate(SCREENS.QR_SCANNER)}/>
+      <div style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ width: 64, height: 64, borderRadius: 16, background: C.greenDim, display: "flex", alignItems: "center", justifyContent: "center", marginTop: 16, color: C.green }}>{Ic.check(28)}</div>
+        <div style={{ fontSize: 16, fontWeight: 600, color: C.t1, marginTop: 14 }}>Location Detected</div>
+        <div style={{ fontSize: 13, color: C.t3, marginTop: 3, fontFamily: mono }}>Storage Vault A — Shelf 3</div>
+        <button onClick={() => onNavigate(SCREENS.CAMERA)} style={{ width: "100%", marginTop: 20, padding: "14px", borderRadius: 10, background: C.gold, border: "none", fontSize: 14, fontWeight: 600, color: C.bg, cursor: "pointer" }}>Capture Objects Here</button>
+      </div>
+    </div>
+  );
+}
+
+function QRCreateScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Create QR" onBack={() => onNavigate(SCREENS.QR_SCANNER)}/>
+      <div style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 20, width: "100%" }}>
+          {["Object", "Location", "Collection", "Batch"].map((t, i) => <button key={t} style={{ flex: 1, padding: "9px 2px", borderRadius: 6, background: i === 0 ? C.goldDim : C.s1, border: `1px solid ${i === 0 ? C.gold : C.b1}`, color: i === 0 ? C.gold : C.t3, fontSize: 10, cursor: "pointer", fontFamily: mono }}>{t}</button>)}
+        </div>
+        <div style={{ width: 180, height: 180, background: "#fff", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: 14 }}>
+          <div style={{ width: "100%", height: "100%", backgroundImage: "repeating-linear-gradient(0deg, #000 0px, #000 8px, transparent 8px, transparent 12px), repeating-linear-gradient(90deg, #000 0px, #000 8px, transparent 8px, transparent 12px)", backgroundSize: "40% 40%", opacity: 0.8, borderRadius: 3 }}/>
+        </div>
+        <div style={{ marginTop: 12, textAlign: "center" }}><div style={{ fontSize: 12, color: C.t2 }}>Untitled (Composition VII)</div><div style={{ fontSize: 10, color: C.t4, fontFamily: mono, marginTop: 2 }}>aharegister.com/o/abc123</div></div>
+        <div style={{ width: "100%", marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+          <button style={{ padding: "13px", borderRadius: 8, background: C.gold, border: "none", fontSize: 14, fontWeight: 600, color: C.bg, cursor: "pointer" }}>Print Labels</button>
+          <button style={{ padding: "13px", borderRadius: 8, background: C.s1, border: `1px solid ${C.b1}`, fontSize: 14, color: C.t1, cursor: "pointer" }}>Share QR</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LocationsScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Locations" onBack={() => onNavigate(SCREENS.HOME)} right={() => {}} rightLabel="+ Add"/>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>{LOCS.map((l, i) => <Row key={i} label={l.name} sub={l.type} right={`${l.count}`} onClick={() => onNavigate(SCREENS.LOCATION_DETAIL)}/>)}</div>
+    </div>
+  );
+}
+
+function LocationDetailScreen({ onNavigate }) {
+  const loc = LOCS[0];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title={loc.name} onBack={() => onNavigate(SCREENS.LOCATIONS)}/>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <div style={{ flex: 1, padding: "14px", borderRadius: 10, background: C.s1, border: `1px solid ${C.b1}` }}><div style={{ fontSize: 22, fontWeight: 700, color: C.gold, fontFamily: mono }}>{loc.count}</div><div style={{ fontSize: 10, color: C.t3 }}>objects</div></div>
+          <button onClick={() => onNavigate(SCREENS.QR_CREATE)} style={{ flex: 1, padding: "14px", borderRadius: 10, background: C.s1, border: `1px solid ${C.b1}`, cursor: "pointer", textAlign: "left" }}><div style={{ fontSize: 13, fontWeight: 500, color: C.t1, display: "flex", alignItems: "center", gap: 6 }}>{Ic.qrTab(14)} QR Code</div><div style={{ fontSize: 10, color: C.t3, marginTop: 2 }}>Print for shelf</div></button>
+        </div>
+        <button onClick={() => onNavigate(SCREENS.CAMERA_BATCH)} style={{ width: "100%", padding: "12px", borderRadius: 8, background: C.goldDim, border: `1px solid ${C.goldDim}`, cursor: "pointer", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, color: C.gold, fontSize: 13, fontWeight: 600 }}>{Ic.flash(14)} Batch Capture Here</button>
+        <Label text="Objects here"/>
+        <div style={{ marginTop: 8 }}>{WORKS.slice(0, 4).map(obj => (
+          <button key={obj.id} onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)} style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 0", borderBottom: `1px solid ${C.b1}`, background: "none", border: "none", borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: C.b1, width: "100%", cursor: "pointer", textAlign: "left" }}>
+            <div style={{ width: 40, height: 40, borderRadius: 8, background: obj.color }}/><div><div style={{ fontSize: 13, color: C.t1 }}>{obj.title}</div><div style={{ fontSize: 10, color: C.t3 }}>{obj.artist}</div></div>
+          </button>
+        ))}</div>
+      </div>
+    </div>
+  );
+}
+
+function CollectionsScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Collections" onBack={() => onNavigate(SCREENS.HOME)} right={() => {}} rightLabel="+ New"/>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>{COLLS.map((c, i) => (
+        <button key={i} onClick={() => onNavigate(SCREENS.COLLECTION_DETAIL)} style={{ display: "flex", gap: 14, alignItems: "center", padding: "15px 0", borderBottom: `1px solid ${C.b1}`, background: "none", border: "none", borderBottomWidth: 1, borderBottomStyle: "solid", borderBottomColor: C.b1, width: "100%", cursor: "pointer", textAlign: "left" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: `${c.color}18`, display: "flex", alignItems: "center", justifyContent: "center", color: c.color }}>{Ic.layers()}</div>
+          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>{c.name}</div><div style={{ fontSize: 11, color: C.t3, fontFamily: mono }}>{c.count} objects</div></div>
+          <span style={{ color: C.t4 }}>{Ic.chevron()}</span>
+        </button>
+      ))}</div>
+    </div>
+  );
+}
+
+function CollectionDetailScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Spring Exhibition 2026" onBack={() => onNavigate(SCREENS.COLLECTIONS)} right={() => {}} rightLabel="Edit"/>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+        <div style={{ fontSize: 13, color: C.t2, marginBottom: 14 }}>18 works. Opening March 15, 2026.</div>
+        <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>{["Export", "QR Code", "Certificates"].map(t => <button key={t} style={{ flex: 1, padding: "9px", borderRadius: 6, background: C.s1, border: `1px solid ${C.b1}`, color: C.t1, fontSize: 11, cursor: "pointer" }}>{t}</button>)}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>{WORKS.map(obj => <ArtCard key={obj.id} obj={obj} onClick={() => onNavigate(SCREENS.OBJECT_DETAIL)}/>)}</div>
+      </div>
+    </div>
+  );
+}
+
+function ExportScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Export" onBack={() => onNavigate(SCREENS.HOME)}/>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+        <Label text="Scope"/><div style={{ marginTop: 8, marginBottom: 20 }}>
+          {["All Objects (291)", "Spring Exhibition (18)", "Storage Vault A (156)", "Custom…"].map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 0", borderBottom: `1px solid ${C.b1}` }}>
+              <div style={{ width: 16, height: 16, borderRadius: 8, border: i === 0 ? `5px solid ${C.gold}` : `1.5px solid ${C.t4}`, boxSizing: "border-box" }}/><span style={{ fontSize: 13, color: i === 0 ? C.t1 : C.t2 }}>{s}</span>
+            </div>
+          ))}</div>
+        <Label text="Standard Formats"/><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+          {["Excel", "CSV", "PDF Report", "Certificates", "JSON"].map(f => <button key={f} onClick={() => onNavigate(SCREENS.EXPORT_PREVIEW)} style={{ padding: "14px 12px", borderRadius: 8, background: C.s1, border: `1px solid ${C.b1}`, cursor: "pointer", textAlign: "left" }}><div style={{ fontSize: 13, color: C.t1 }}>{f}</div></button>)}</div>
+        <div style={{ marginTop: 24 }}><Label text="Institutional Formats"/></div><div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+          {["CDWA / LIDO", "OAIS Archive", "Dublin Core"].map(f => <button key={f} onClick={() => onNavigate(SCREENS.EXPORT_PREVIEW)} style={{ padding: "14px 12px", borderRadius: 8, background: C.s1, border: `1px solid ${C.b1}`, cursor: "pointer", textAlign: "left" }}><div style={{ fontSize: 13, color: C.t1 }}>{f}</div></button>)}</div>
+      </div>
+    </div>
+  );
+}
+
+function ExportPreviewScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Export Preview" onBack={() => onNavigate(SCREENS.EXPORT)}/>
+      <div style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: C.gold, marginBottom: 12 }}>{Ic.exportIc(32)}</div>
+        <div style={{ fontSize: 17, fontWeight: 600, color: C.t1 }}>Ready to Export</div>
+        <div style={{ fontSize: 12, color: C.t3, marginTop: 6, fontFamily: mono }}>291 objects · Excel · 24 columns</div>
+        <button style={{ width: "100%", marginTop: 20, padding: "14px", borderRadius: 10, background: C.gold, border: "none", fontSize: 14, fontWeight: 600, color: C.bg, cursor: "pointer" }}>Download</button>
+      </div>
+    </div>
+  );
+}
+
+function TeamScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Team" onBack={() => onNavigate(SCREENS.HOME)} right={() => {}} rightLabel="Invite"/>
+      <div style={{ flex: 1, padding: "0 20px" }}>
+        {[{ name: "Michael Taudevin", role: "Owner", initials: "MT", color: C.gold }, { name: "Emmanuelle", role: "Admin", initials: "EM", color: C.blue }, { name: "Lena Braun", role: "Intern", initials: "LB", color: "#7a4a9a" }, { name: "Dr. Klaus Fischer", role: "Viewer", initials: "KF", color: C.green }].map((m, i) => (
+          <div key={i} style={{ display: "flex", gap: 14, alignItems: "center", padding: "14px 0", borderBottom: `1px solid ${C.b1}` }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: m.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 600, color: C.bg, fontFamily: mono }}>{m.initials}</div>
+            <div><div style={{ fontSize: 14, color: C.t1 }}>{m.name}</div><div style={{ fontSize: 11, color: C.t3, fontFamily: mono }}>{m.role}</div></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SettingsScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "66px 20px 12px" }}><span style={{ fontSize: 20, fontWeight: 700, color: C.t1 }}>More</span></div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px" }}>
+        <Row label="Locations" icon={Ic.scan(16)} onClick={() => onNavigate(SCREENS.LOCATIONS)}/>
+        <Row label="Collections" icon={Ic.layers(16)} onClick={() => onNavigate(SCREENS.COLLECTIONS)}/>
+        <Row label="Export Center" icon={Ic.exportIc(16)} onClick={() => onNavigate(SCREENS.EXPORT)}/>
+        <Row label="Team" icon={Ic.users(16)} onClick={() => onNavigate(SCREENS.TEAM)}/>
+        <div style={{ height: 20 }}/>
+        <Row label="Subscription" icon={Ic.cert(16)} onClick={() => onNavigate(SCREENS.PLAN)}/>
+        <Row label="Link Marketplace" icon={Ic.link(16)} onClick={() => {}}/>
+        <Row label="Switch Field" icon={Ic.gridTab(16)} onClick={() => onNavigate(SCREENS.DOMAIN_SELECT)}/>
+        <Row label="Data & Privacy" icon={Ic.lock(16)} onClick={() => onNavigate(SCREENS.DATA_PRIVACY)}/>
+        <div style={{ height: 20 }}/>
+        <Row label="About" icon={Ic.captureTab(16)} onClick={() => onNavigate(SCREENS.ABOUT)}/>
+        <div style={{ height: 20 }}/>
+        <button onClick={() => onNavigate("__RESTART__")} style={{ width: "100%", padding: "12px 16px", borderRadius: 10, background: "transparent", border: `1px dashed ${C.gold}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}><span style={{ color: C.gold, fontSize: 13, fontWeight: 600 }}>↻ Restart Demo</span></button>
+        <div style={{ marginTop: 20, textAlign: "center", fontSize: 9, color: C.t4, paddingBottom: 20, fontFamily: mono }}>v5.1</div>
+      </div>
+      <TabBar active={SCREENS.SETTINGS} onNavigate={onNavigate}/>
+    </div>
+  );
+}
+
+function PlanScreen({ onNavigate }) {
+  const plans = [
+    { name: "Free", price: "$0", cap: "25 objects · 1 user", features: ["AI capture", "Basic export"] },
+    { name: "Individual", price: "$10", cap: "Unlimited · 1 user", features: ["Full exports", "Certificates", "Provenance chain"] },
+    { name: "Gallery", price: "$49", cap: "Unlimited · 5 users", features: ["Team management", "Custom branding", "Priority AI", "Condition reports"] },
+    { name: "Institutional", price: "$199", cap: "Unlimited · 25 users", features: ["EU hosting", "Archival storage", "SSO", "Audit log"], pop: true },
+    { name: "Enterprise", price: "$499", cap: "Unlimited · Unlimited", features: ["Dedicated support", "SLA guarantee", "Custom infra"] },
+  ];
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Plans" onBack={() => onNavigate(SCREENS.SETTINGS)}/>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+        {plans.map((p, i) => (
+          <button key={i} onClick={() => onNavigate(SCREENS.HOME)} style={{ width: "100%", padding: "14px 16px", borderRadius: 10, marginBottom: 8, background: p.pop ? C.goldDim : C.s1, border: `1px solid ${p.pop ? C.gold : C.b1}`, cursor: "pointer", textAlign: "left" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}><span style={{ fontSize: 15, fontWeight: 600, color: C.t1 }}>{p.name}</span><span style={{ fontSize: 18, fontWeight: 700, color: p.pop ? C.gold : C.t1, fontFamily: mono }}>{p.price}<span style={{ fontSize: 11, fontWeight: 400, color: C.t3 }}>/mo</span></span></div>
+            <div style={{ fontSize: 11, color: C.t3, marginTop: 4, fontFamily: mono }}>{p.cap}</div>
+            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 3 }}>{p.features.map((f, fi) => <div key={fi} style={{ fontSize: 11, color: C.t2, display: "flex", alignItems: "center", gap: 6 }}><span style={{ color: C.green }}>{Ic.check(8)}</span>{f}</div>)}</div>
+            {p.pop && <div style={{ fontSize: 8, color: C.gold, marginTop: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: mono }}>Most popular</div>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DataPrivacyScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="Data & Privacy" onBack={() => onNavigate(SCREENS.SETTINGS)}/>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 20px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", borderBottom: `1px solid ${C.b1}` }}>
+          <div style={{ flex: 1, paddingRight: 12 }}><div style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>AI Analysis</div><div style={{ fontSize: 11, color: C.t3, marginTop: 3 }}>When off, you enter all metadata manually.</div></div>
+          {Ic.toggle(true)}
+        </div>
+        <div style={{ padding: "14px 0", borderBottom: `1px solid ${C.b1}`, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 7, background: C.s2, display: "flex", alignItems: "center", justifyContent: "center", color: C.gold }}>{Ic.lock(12)}</div>
+          <div><div style={{ fontSize: 14, fontWeight: 500, color: C.t1 }}>Data Residency</div><div style={{ fontSize: 11, color: C.t3, marginTop: 2 }}>Frankfurt, Germany</div></div>
+        </div>
+        <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 8 }}>
+          <button style={{ padding: "12px 16px", borderRadius: 8, background: C.s1, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: C.t2 }}>{Ic.exportIc(14)}<span style={{ fontSize: 13, color: C.t1 }}>Export All Data</span></button>
+          <button style={{ padding: "12px 16px", borderRadius: 8, background: C.s1, border: `1px solid ${C.b1}`, cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: C.t2 }}>{Ic.cert(14)}<span style={{ fontSize: 13, color: C.t1 }}>Download DPA</span></button>
+        </div>
+        <div style={{ marginTop: 24 }}><Label text="Sub-processors"/></div>
+        {[{ n: "Supabase", r: "Database", l: "EU" }, { n: "Gemini API", r: "AI inference", l: "EU" }, { n: "Vercel", r: "Hosting", l: "EU" }, { n: "AWS S3", r: "Archive", l: "EU" }].map((sp, i) => (
+          <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "9px 0", borderBottom: `1px solid ${C.b1}` }}><div><div style={{ fontSize: 12, color: C.t1 }}>{sp.n}</div><div style={{ fontSize: 10, color: C.t4 }}>{sp.r}</div></div><span style={{ fontSize: 10, color: C.t3, fontFamily: mono }}>{sp.l}</span></div>
+        ))}
+        <button style={{ width: "100%", marginTop: 28, padding: "12px", borderRadius: 8, background: C.redDim, border: "1px solid rgba(240,96,96,0.15)", cursor: "pointer", textAlign: "center" }}><span style={{ fontSize: 13, color: C.red, fontWeight: 500 }}>Delete Account</span></button>
+      </div>
+    </div>
+  );
+}
+
+function AboutScreen({ onNavigate }) {
+  return (
+    <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <Header title="About" onBack={() => onNavigate(SCREENS.SETTINGS)}/>
+      <div style={{ flex: 1, padding: 20, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ width: 56, height: 56, borderRadius: 14, background: C.gold, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 8px 30px rgba(196,162,101,0.2)`, marginTop: 20 }}><span style={{ fontSize: 20, fontWeight: 800, fontStyle: "italic", color: C.bg }}>a!</span></div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: C.t1, marginTop: 14 }}>aha! Register</div>
+        <div style={{ fontSize: 11, color: C.t3, marginTop: 3, fontFamily: mono, letterSpacing: "0.1em", textTransform: "uppercase" }}>Document everything</div>
+        <div style={{ fontSize: 10, color: C.t4, marginTop: 4, fontFamily: mono }}>v5.1 — hybrid</div>
+        <div style={{ width: "100%", marginTop: 24, padding: "14px", borderRadius: 10, background: C.s1, border: `1px solid ${C.b1}` }}>
+          <Label text="Standards"/><div style={{ marginTop: 8 }}>
+            {["OAIS (ISO 14721) archival", "SHA-256 integrity", "Multi-provider storage", "GDPR compliant · EU"].map((item, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", padding: "5px 0" }}><span style={{ color: C.green }}>{Ic.check(10)}</span><span style={{ fontSize: 12, color: C.t2 }}>{item}</span></div>
+            ))}</div>
+        </div>
+        <div style={{ marginTop: "auto", paddingBottom: 20, textAlign: "center", fontSize: 9, color: C.t4, lineHeight: 1.8, fontFamily: mono }}>© 2026 TEDE Holdings LLC<br/>NYC · Durham · Berlin</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// CSS INJECTION — animation keyframes for v5 art screens
+// ============================================================
+function StyleInjector() {
+  useEffect(() => {
+    const s = document.createElement("style");
+    s.textContent = `@keyframes v5pulse{0%,100%{transform:scale(1);opacity:.3}50%{transform:scale(1.8);opacity:0}}@keyframes v5fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`;
+    document.head.appendChild(s);
+    return () => document.head.removeChild(s);
+  }, []);
+  return null;
+}
+
+// ============================================================
+// MAIN ROUTER
+// ============================================================
+function AhaRegisterV51() {
+  const [screen, setScreen] = useState(SCREENS.SPLASH);
+  const navigate = useCallback((target) => {
+    if (target === "__RESTART__") { setScreen(SCREENS.SPLASH); return; }
+    setScreen(target);
+  }, []);
+
+  const names = {
+    [SCREENS.SPLASH]: "Splash", [SCREENS.ONBOARD_1]: "Onboard 1/3", [SCREENS.ONBOARD_2]: "Onboard 2/3", [SCREENS.ONBOARD_3]: "Onboard 3/3",
+    [SCREENS.LOGIN]: "Sign In", [SCREENS.DOMAIN_SELECT]: "Field Select", [SCREENS.HOME]: "Home", [SCREENS.CAPTURE_CHOICE]: "Capture",
+    [SCREENS.CAMERA]: "Camera", [SCREENS.CAMERA_MULTI]: "Multi-Angle", [SCREENS.CAMERA_3D]: "3D Scan", [SCREENS.CAMERA_BATCH]: "Batch",
+    [SCREENS.AI_PROCESSING]: "Processing", [SCREENS.AI_RESULTS]: "✦ AI Annotations", [SCREENS.OBJECT_DETAIL]: "✦ Artwork",
+    [SCREENS.OBJECT_PROVENANCE]: "✦ Provenance", [SCREENS.OBJECT_3D]: "✦ 3D Model", [SCREENS.INVENTORY]: "Inventory",
+    [SCREENS.QR_SCANNER]: "Scanner", [SCREENS.QR_RESULT]: "QR Result", [SCREENS.QR_CREATE]: "Create QR",
+    [SCREENS.LOCATIONS]: "Locations", [SCREENS.LOCATION_DETAIL]: "Location", [SCREENS.COLLECTIONS]: "Collections",
+    [SCREENS.COLLECTION_DETAIL]: "Collection", [SCREENS.EXPORT]: "Export", [SCREENS.EXPORT_PREVIEW]: "Export Preview",
+    [SCREENS.TEAM]: "Team", [SCREENS.SETTINGS]: "More", [SCREENS.PLAN]: "Plans",
+    [SCREENS.PRIVACY_ONBOARD]: "Privacy", [SCREENS.DATA_PRIVACY]: "Data & Privacy", [SCREENS.ABOUT]: "About",
+  };
+
+  const S = SCREENS;
+  const r = () => {
+    switch (screen) {
+      case S.SPLASH: return <SplashScreen onNavigate={navigate}/>;
+      case S.ONBOARD_1: return <OnboardScreen step={1} onNavigate={navigate}/>;
+      case S.ONBOARD_2: return <OnboardScreen step={2} onNavigate={navigate}/>;
+      case S.ONBOARD_3: return <OnboardScreen step={3} onNavigate={navigate}/>;
+      case S.PRIVACY_ONBOARD: return <PrivacyScreen onNavigate={navigate}/>;
+      case S.LOGIN: return <LoginScreen onNavigate={navigate}/>;
+      case S.DOMAIN_SELECT: return <DomainSelectScreen onNavigate={navigate}/>;
+      case S.HOME: return <HomeScreen onNavigate={navigate}/>;
+      case S.CAPTURE_CHOICE: return <CaptureChoiceScreen onNavigate={navigate}/>;
+      case S.CAMERA: case S.CAMERA_MULTI: case S.CAMERA_3D: case S.CAMERA_BATCH:
+        return <CameraScreen onNavigate={navigate} mode={screen === S.CAMERA ? "single" : screen === S.CAMERA_MULTI ? "multi" : screen === S.CAMERA_3D ? "3d" : "batch"}/>;
+      case S.AI_PROCESSING: return <AIProcessingScreen onNavigate={navigate}/>;
+      case S.AI_RESULTS: return <AIResultsScreen onNavigate={navigate}/>;
+      case S.OBJECT_DETAIL: return <ObjectDetailScreen onNavigate={navigate}/>;
+      case S.OBJECT_PROVENANCE: return <ProvenanceScreen onNavigate={navigate}/>;
+      case S.OBJECT_3D: return <Object3DScreen onNavigate={navigate}/>;
+      case S.INVENTORY: return <InventoryScreen onNavigate={navigate}/>;
+      case S.QR_SCANNER: return <QRScannerScreen onNavigate={navigate}/>;
+      case S.QR_RESULT: return <QRResultScreen onNavigate={navigate}/>;
+      case S.QR_CREATE: return <QRCreateScreen onNavigate={navigate}/>;
+      case S.LOCATIONS: return <LocationsScreen onNavigate={navigate}/>;
+      case S.LOCATION_DETAIL: return <LocationDetailScreen onNavigate={navigate}/>;
+      case S.COLLECTIONS: return <CollectionsScreen onNavigate={navigate}/>;
+      case S.COLLECTION_DETAIL: return <CollectionDetailScreen onNavigate={navigate}/>;
+      case S.EXPORT: return <ExportScreen onNavigate={navigate}/>;
+      case S.EXPORT_PREVIEW: return <ExportPreviewScreen onNavigate={navigate}/>;
+      case S.TEAM: return <TeamScreen onNavigate={navigate}/>;
+      case S.SETTINGS: return <SettingsScreen onNavigate={navigate}/>;
+      case S.PLAN: return <PlanScreen onNavigate={navigate}/>;
+      case S.DATA_PRIVACY: return <DataPrivacyScreen onNavigate={navigate}/>;
+      case S.ABOUT: return <AboutScreen onNavigate={navigate}/>;
+      default: return <HomeScreen onNavigate={navigate}/>;
+    }
+  };
+
+  return (
+    <>
+      <StyleInjector/>
+      <PhoneFrame screenName={names[screen] || screen} onRestart={() => navigate("__RESTART__")}>{r()}</PhoneFrame>
+    </>
+  );
+}
+
+// Mount
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(AhaRegisterV51));
+</script>
+</body>
+</html>
