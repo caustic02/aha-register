@@ -1,0 +1,60 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "search": "Suchen",
+    "loading": "Wird geladen…",
+    "error": "Da ist etwas schiefgelaufen",
+    "success": "Fertig",
+    "back": "Zurück",
+    "next": "Weiter",
+    "done": "Fertig"
+  },
+  "objects": {
+    "title": "Titel",
+    "description": "Beschreibung",
+    "creator": "Urheber",
+    "materials": "Materialien",
+    "dimensions": "Maße",
+    "date": "Datum",
+    "inventory_number": "Inventarnummer",
+    "object_type": "Objekttyp"
+  },
+  "object_types": {
+    "museum_object": "Museumsobjekt",
+    "site": "Fundstätte",
+    "incident": "Vorfall",
+    "specimen": "Exemplar",
+    "architectural_element": "Architekturelement",
+    "environmental_sample": "Umweltprobe",
+    "conservation_record": "Restaurierungsbericht"
+  },
+  "capture": {
+    "take_photo": "Foto aufnehmen",
+    "choose_from_library": "Aus Bibliothek wählen",
+    "add_annotation": "Anmerkung hinzufügen",
+    "save_draft": "Entwurf speichern"
+  },
+  "sync": {
+    "pending": "Ausstehend",
+    "syncing": "Wird synchronisiert…",
+    "synced": "Synchronisiert",
+    "failed": "Synchronisierung fehlgeschlagen",
+    "offline": "Offline",
+    "online": "Online",
+    "last_synced": "Zuletzt synchronisiert: {{time}}"
+  },
+  "privacy": {
+    "public": "Öffentlich",
+    "confidential": "Vertraulich",
+    "anonymous": "Anonym"
+  },
+  "evidence": {
+    "primary": "Primär",
+    "corroborative": "Bestätigend",
+    "contextual": "Kontextuell",
+    "legal_hold_active": "Rechtliche Sperrung aktiv"
+  }
+}

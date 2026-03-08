@@ -1,0 +1,60 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "loading": "Loading…",
+    "error": "Something went wrong",
+    "success": "Done",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done"
+  },
+  "objects": {
+    "title": "Title",
+    "description": "Description",
+    "creator": "Creator",
+    "materials": "Materials",
+    "dimensions": "Dimensions",
+    "date": "Date",
+    "inventory_number": "Inventory Number",
+    "object_type": "Object Type"
+  },
+  "object_types": {
+    "museum_object": "Museum Object",
+    "site": "Site",
+    "incident": "Incident",
+    "specimen": "Specimen",
+    "architectural_element": "Architectural Element",
+    "environmental_sample": "Environmental Sample",
+    "conservation_record": "Conservation Record"
+  },
+  "capture": {
+    "take_photo": "Take Photo",
+    "choose_from_library": "Choose from Library",
+    "add_annotation": "Add Annotation",
+    "save_draft": "Save Draft"
+  },
+  "sync": {
+    "pending": "Pending",
+    "syncing": "Syncing…",
+    "synced": "Synced",
+    "failed": "Sync Failed",
+    "offline": "Offline",
+    "online": "Online",
+    "last_synced": "Last synced: {{time}}"
+  },
+  "privacy": {
+    "public": "Public",
+    "confidential": "Confidential",
+    "anonymous": "Anonymous"
+  },
+  "evidence": {
+    "primary": "Primary",
+    "corroborative": "Corroborative",
+    "contextual": "Contextual",
+    "legal_hold_active": "Legal Hold Active"
+  }
+}
