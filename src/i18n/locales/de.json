@@ -23,7 +23,29 @@
     "object_type": "Objekttyp",
     "collections_section": "Sammlungen",
     "no_collections": "In keiner Sammlung",
-    "add_to_collection": "Zu Sammlung hinzuf\u00fcgen"
+    "add_to_collection": "Zu Sammlung hinzuf\u00fcgen",
+    "not_found": "Objekt nicht gefunden",
+    "placeholder_title": "Ohne Titel",
+    "placeholder_creator": "Unbekannt",
+    "placeholder_date": "ca. 1920",
+    "placeholder_description": "Dieses Objekt beschreiben\u2026",
+    "placeholder_materials": "Bronze, Holz, Pigment\u2026",
+    "evidence_section": "Belege & Datenschutz",
+    "privacy_label": "Datenschutz",
+    "evidence_class_label": "Beweisklasse",
+    "event_start": "Ereignisbeginn",
+    "event_end": "Ereignisende",
+    "event_date_placeholder": "JJJJ-MM-TT oder frei eingeben",
+    "annotations_section": "Anmerkungen",
+    "note_placeholder": "Eine Notiz schreiben\u2026",
+    "metadata_section": "Metadaten",
+    "meta_created": "Erstellt",
+    "meta_updated": "Aktualisiert",
+    "copied": "Kopiert!",
+    "sha256_label": "SHA-256",
+    "uuid_label": "UUID",
+    "header_count": "{{count}} Objekte",
+    "empty": "Noch keine Objekte"
   },
   "object_types": {
     "museum_object": "Museumsobjekt",
@@ -34,11 +56,28 @@
     "environmental_sample": "Umweltprobe",
     "conservation_record": "Restaurierungsbericht"
   },
+  "location": {
+    "section_title": "Standort",
+    "lat": "Breite",
+    "lng": "L\u00e4nge",
+    "alt": "H\u00f6he",
+    "source": "Quelle",
+    "accuracy": "Genauigkeit"
+  },
   "capture": {
     "take_photo": "Foto aufnehmen",
     "choose_from_library": "Aus Bibliothek w\u00e4hlen",
     "add_annotation": "Anmerkung hinzuf\u00fcgen",
-    "save_draft": "Entwurf speichern"
+    "save_draft": "Entwurf speichern",
+    "securing": "Belege werden gesichert\u2026",
+    "view_objects": "Objekte anzeigen",
+    "capture_another": "Noch eins aufnehmen",
+    "coordinates": "Koordinaten",
+    "coordinates_unavailable": "Nicht verf\u00fcgbar",
+    "timestamp": "Zeitstempel",
+    "dimensions": "Abmessungen",
+    "sha256": "SHA-256",
+    "retake": "Neu aufnehmen"
   },
   "collections": {
     "title": "Sammlungen",

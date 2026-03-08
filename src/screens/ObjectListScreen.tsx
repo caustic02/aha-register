@@ -95,7 +95,7 @@ export function ObjectListScreen({ navigation }: Props) {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('common.search')}</Text>
-        <Text style={styles.headerCount}>{count} objects</Text>
+        <Text style={styles.headerCount}>{t('objects.header_count', { count })}</Text>
       </View>
 
       <FlatList
@@ -104,7 +104,7 @@ export function ObjectListScreen({ navigation }: Props) {
         renderItem={renderItem}
         contentContainerStyle={objects.length === 0 ? styles.emptyList : undefined}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No objects yet</Text>
+          <Text style={styles.emptyText}>{t('objects.empty')}</Text>
         }
         refreshControl={
           <RefreshControl

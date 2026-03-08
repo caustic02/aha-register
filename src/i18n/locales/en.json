@@ -23,7 +23,29 @@
     "object_type": "Object Type",
     "collections_section": "Collections",
     "no_collections": "Not in any collection",
-    "add_to_collection": "Add to Collection"
+    "add_to_collection": "Add to Collection",
+    "not_found": "Object not found",
+    "placeholder_title": "Untitled",
+    "placeholder_creator": "Unknown",
+    "placeholder_date": "ca. 1920",
+    "placeholder_description": "Describe this object...",
+    "placeholder_materials": "Bronze, wood, pigment...",
+    "evidence_section": "Evidence & Privacy",
+    "privacy_label": "Privacy",
+    "evidence_class_label": "Evidence Class",
+    "event_start": "Event Start",
+    "event_end": "Event End",
+    "event_date_placeholder": "YYYY-MM-DD or freeform",
+    "annotations_section": "Annotations",
+    "note_placeholder": "Write a note...",
+    "metadata_section": "Metadata",
+    "meta_created": "Created",
+    "meta_updated": "Updated",
+    "copied": "Copied!",
+    "sha256_label": "SHA-256",
+    "uuid_label": "UUID",
+    "header_count": "{{count}} objects",
+    "empty": "No objects yet"
   },
   "object_types": {
     "museum_object": "Museum Object",
@@ -34,11 +56,28 @@
     "environmental_sample": "Environmental Sample",
     "conservation_record": "Conservation Record"
   },
+  "location": {
+    "section_title": "Location",
+    "lat": "Lat",
+    "lng": "Lng",
+    "alt": "Alt",
+    "source": "Source",
+    "accuracy": "Accuracy"
+  },
   "capture": {
     "take_photo": "Take Photo",
     "choose_from_library": "Choose from Library",
     "add_annotation": "Add Annotation",
-    "save_draft": "Save Draft"
+    "save_draft": "Save Draft",
+    "securing": "Securing evidence...",
+    "view_objects": "View Objects",
+    "capture_another": "Capture Another",
+    "coordinates": "Coordinates",
+    "coordinates_unavailable": "Not available",
+    "timestamp": "Timestamp",
+    "dimensions": "Dimensions",
+    "sha256": "SHA-256",
+    "retake": "Retake"
   },
   "collections": {
     "title": "Collections",

@@ -312,7 +312,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   if (!obj) {
     return (
       <View style={styles.center}>
-        <Text style={styles.errorText}>Object not found</Text>
+        <Text style={styles.errorText}>{t('objects.not_found')}</Text>
       </View>
     );
   }
@@ -350,7 +350,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           value={title}
           onChangeText={setTitle}
           onBlur={handleTitleBlur}
-          placeholder="Untitled"
+          placeholder={t('objects.placeholder_title')}
         />
 
         <Text style={styles.sectionLabel}>{t('objects.object_type')}</Text>
@@ -363,7 +363,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             value={creator}
             onChangeText={setCreator}
             onBlur={saveTypeSpecificData}
-            placeholder="Unknown"
+            placeholder={t('objects.placeholder_creator')}
           />
         )}
 
@@ -372,7 +372,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           value={date}
           onChangeText={setDate}
           onBlur={saveTypeSpecificData}
-          placeholder="ca. 1920"
+          placeholder={t('objects.placeholder_date')}
         />
 
         <FieldInput
@@ -381,7 +381,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           onChangeText={setDescription}
           onBlur={handleDescriptionBlur}
           multiline
-          placeholder="Describe this object..."
+          placeholder={t('objects.placeholder_description')}
         />
 
         {!TYPES_HIDE_MATERIALS.includes(objectType) && (
@@ -390,7 +390,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             value={materials}
             onChangeText={setMaterials}
             onBlur={saveTypeSpecificData}
-            placeholder="Bronze, wood, pigment..."
+            placeholder={t('objects.placeholder_materials')}
           />
         )}
       </View>
@@ -398,31 +398,31 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       {/* SECTION 3 — Location */}
       {obj.latitude != null && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
+          <Text style={styles.sectionTitle}>{t('location.section_title')}</Text>
           <View style={styles.locationCard}>
             <View style={styles.locationRow}>
-              <Text style={styles.locationLabel}>Lat</Text>
+              <Text style={styles.locationLabel}>{t('location.lat')}</Text>
               <Text style={styles.locationValue}>{obj.latitude.toFixed(6)}</Text>
             </View>
             <View style={styles.locationRow}>
-              <Text style={styles.locationLabel}>Lng</Text>
+              <Text style={styles.locationLabel}>{t('location.lng')}</Text>
               <Text style={styles.locationValue}>{obj.longitude?.toFixed(6)}</Text>
             </View>
             {obj.altitude != null && (
               <View style={styles.locationRow}>
-                <Text style={styles.locationLabel}>Alt</Text>
+                <Text style={styles.locationLabel}>{t('location.alt')}</Text>
                 <Text style={styles.locationValue}>{obj.altitude.toFixed(1)}m</Text>
               </View>
             )}
             {obj.coordinate_source && (
               <View style={styles.locationRow}>
-                <Text style={styles.locationLabel}>Source</Text>
+                <Text style={styles.locationLabel}>{t('location.source')}</Text>
                 <Text style={styles.locationValue}>{obj.coordinate_source}</Text>
               </View>
             )}
             {obj.coordinate_accuracy != null && (
               <View style={styles.locationRow}>
-                <Text style={styles.locationLabel}>Accuracy</Text>
+                <Text style={styles.locationLabel}>{t('location.accuracy')}</Text>
                 <Text style={styles.locationValue}>{'\u00B1'}{obj.coordinate_accuracy.toFixed(1)}m</Text>
               </View>
             )}
@@ -436,7 +436,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           style={styles.collapseHeader}
           onPress={() => setEvidenceExpanded(!evidenceExpanded)}
         >
-          <Text style={styles.sectionTitle}>Evidence & Privacy</Text>
+          <Text style={styles.sectionTitle}>{t('objects.evidence_section')}</Text>
           <Text style={styles.collapseArrow}>
             {evidenceExpanded ? '\u25B2' : '\u25BC'}
           </Text>
@@ -445,7 +445,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         {evidenceExpanded && (
           <View style={styles.collapseBody}>
             {/* Privacy tier */}
-            <Text style={styles.fieldLabel}>{t('objects.object_type') === 'Object Type' ? 'Privacy' : 'Privacy'}</Text>
+            <Text style={styles.fieldLabel}>{t('objects.privacy_label')}</Text>
             <View style={styles.chipRow}>
               {PRIVACY_TIERS.map((tier) => (
                 <Pressable
@@ -461,7 +461,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             </View>
 
             {/* Evidence class */}
-            <Text style={styles.fieldLabel}>Evidence Class</Text>
+            <Text style={styles.fieldLabel}>{t('objects.evidence_class_label')}</Text>
             <View style={styles.chipRow}>
               {EVIDENCE_CLASSES.map((ec) => (
                 <Pressable
@@ -489,18 +489,18 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
             {/* Event dates */}
             <FieldInput
-              label="Event Start"
+              label={t('objects.event_start')}
               value={eventStart}
               onChangeText={setEventStart}
               onBlur={handleEventStartBlur}
-              placeholder="YYYY-MM-DD or freeform"
+              placeholder={t('objects.event_date_placeholder')}
             />
             <FieldInput
-              label="Event End"
+              label={t('objects.event_end')}
               value={eventEnd}
               onChangeText={setEventEnd}
               onBlur={handleEventEndBlur}
-              placeholder="YYYY-MM-DD or freeform"
+              placeholder={t('objects.event_date_placeholder')}
             />
           </View>
         )}
@@ -508,7 +508,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
       {/* SECTION 5 — Annotations */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Annotations</Text>
+        <Text style={styles.sectionTitle}>{t('objects.annotations_section')}</Text>
 
         {annotations.map((a) => (
           <View key={a.id} style={styles.annotationCard}>
@@ -525,7 +525,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               style={styles.noteInput}
               value={noteText}
               onChangeText={setNoteText}
-              placeholder="Write a note..."
+              placeholder={t('objects.note_placeholder')}
               placeholderTextColor="#4A4A5A"
               multiline
               autoFocus
@@ -601,33 +601,33 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
       {/* SECTION 7 — Metadata Footer */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Metadata</Text>
+        <Text style={styles.sectionTitle}>{t('objects.metadata_section')}</Text>
         <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Created</Text>
+          <Text style={styles.metaLabel}>{t('objects.meta_created')}</Text>
           <Text style={styles.metaValue}>
             {obj.created_at.slice(0, 19).replace('T', ' ')}
           </Text>
         </View>
         <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>Updated</Text>
+          <Text style={styles.metaLabel}>{t('objects.meta_updated')}</Text>
           <Text style={styles.metaValue}>
             {obj.updated_at.slice(0, 19).replace('T', ' ')}
           </Text>
         </View>
         {primaryHash && (
           <Pressable style={styles.metaRow} onPress={() => handleCopy('hash', primaryHash)}>
-            <Text style={styles.metaLabel}>SHA-256</Text>
+            <Text style={styles.metaLabel}>{t('objects.sha256_label')}</Text>
             <Text style={styles.metaValue}>
               {primaryHash.slice(0, 16)}...
-              {copiedField === 'hash' ? ' Copied!' : ' \u2398'}
+              {copiedField === 'hash' ? ` ${t('objects.copied')}` : ' \u2398'}
             </Text>
           </Pressable>
         )}
         <Pressable style={styles.metaRow} onPress={() => handleCopy('id', objectId)}>
-          <Text style={styles.metaLabel}>UUID</Text>
+          <Text style={styles.metaLabel}>{t('objects.uuid_label')}</Text>
           <Text style={styles.metaValue}>
             {objectId.slice(0, 8)}...
-            {copiedField === 'id' ? ' Copied!' : ' \u2398'}
+            {copiedField === 'id' ? ` ${t('objects.copied')}` : ' \u2398'}
           </Text>
         </Pressable>
       </View>

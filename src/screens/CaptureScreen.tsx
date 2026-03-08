@@ -94,7 +94,7 @@ export function CaptureScreen() {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color="#74B9FF" />
-        <Text style={styles.spinnerText}>Securing evidence...</Text>
+        <Text style={styles.spinnerText}>{t('capture.securing')}</Text>
       </View>
     );
   }
@@ -116,10 +116,10 @@ export function CaptureScreen() {
         <Text style={styles.doneTitle}>{t('common.success')}</Text>
         <Text style={styles.doneId}>ID: {savedId?.slice(0, 8)}...</Text>
         <Pressable style={styles.primaryBtn} onPress={handleViewObjects}>
-          <Text style={styles.primaryBtnText}>View Objects</Text>
+          <Text style={styles.primaryBtnText}>{t('capture.view_objects')}</Text>
         </Pressable>
         <Pressable style={styles.secondaryBtn} onPress={handleRetake}>
-          <Text style={styles.secondaryBtnText}>Capture Another</Text>
+          <Text style={styles.secondaryBtnText}>{t('capture.capture_another')}</Text>
         </Pressable>
       </View>
     );
@@ -135,25 +135,25 @@ export function CaptureScreen() {
         <Image source={{ uri: capture.uri }} style={styles.preview} />
 
         <View style={styles.metaSection}>
-          <Text style={styles.metaLabel}>Coordinates</Text>
+          <Text style={styles.metaLabel}>{t('capture.coordinates')}</Text>
           <Text style={styles.metaValue}>
             {metadata.latitude != null
               ? `${metadata.latitude.toFixed(6)}, ${metadata.longitude?.toFixed(6)}`
-              : 'Not available'}
+              : t('capture.coordinates_unavailable')}
             {metadata.coordinateSource ? ` (${metadata.coordinateSource})` : ''}
           </Text>
 
-          <Text style={styles.metaLabel}>Timestamp</Text>
+          <Text style={styles.metaLabel}>{t('capture.timestamp')}</Text>
           <Text style={styles.metaValue}>{metadata.timestamp ?? '—'}</Text>
 
-          <Text style={styles.metaLabel}>Dimensions</Text>
+          <Text style={styles.metaLabel}>{t('capture.dimensions')}</Text>
           <Text style={styles.metaValue}>
             {capture.width} x {capture.height}
           </Text>
 
           {hash && (
             <>
-              <Text style={styles.metaLabel}>SHA-256</Text>
+              <Text style={styles.metaLabel}>{t('capture.sha256')}</Text>
               <Text style={styles.metaValue}>{hash.slice(0, 16)}...</Text>
             </>
           )}
@@ -164,7 +164,7 @@ export function CaptureScreen() {
         </Pressable>
 
         <Pressable style={styles.secondaryBtn} onPress={handleRetake}>
-          <Text style={styles.secondaryBtnText}>Retake</Text>
+          <Text style={styles.secondaryBtnText}>{t('capture.retake')}</Text>
         </Pressable>
       </ScrollView>
     );
