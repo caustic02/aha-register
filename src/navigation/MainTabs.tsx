@@ -1,16 +1,19 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 
 import { ObjectStack } from './ObjectStack';
+import type { ObjectStackParamList } from './ObjectStack';
 import { CaptureScreen } from '../screens/CaptureScreen';
-import { CollectionsScreen } from '../screens/CollectionsScreen';
+import { CollectionStack } from './CollectionStack';
+import type { CollectionStackParamList } from './CollectionStack';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
 export type MainTabParamList = {
-  Objects: undefined;
+  Objects: NavigatorScreenParams<ObjectStackParamList> | undefined;
   Capture: undefined;
-  Collections: undefined;
+  Collections: NavigatorScreenParams<CollectionStackParamList> | undefined;
   Settings: undefined;
 };
 
@@ -51,7 +54,7 @@ export function MainTabs() {
     >
       <Tab.Screen name="Objects" component={ObjectStack} />
       <Tab.Screen name="Capture" component={CaptureScreen} />
-      <Tab.Screen name="Collections" component={CollectionsScreen} />
+      <Tab.Screen name="Collections" component={CollectionStack} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
   );

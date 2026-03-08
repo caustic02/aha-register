@@ -2,13 +2,13 @@
   "common": {
     "save": "Speichern",
     "cancel": "Abbrechen",
-    "delete": "Löschen",
+    "delete": "L\u00f6schen",
     "edit": "Bearbeiten",
     "search": "Suchen",
-    "loading": "Wird geladen…",
+    "loading": "Wird geladen\u2026",
     "error": "Da ist etwas schiefgelaufen",
     "success": "Fertig",
-    "back": "Zurück",
+    "back": "Zur\u00fcck",
     "next": "Weiter",
     "done": "Fertig"
   },
@@ -17,14 +17,14 @@
     "description": "Beschreibung",
     "creator": "Urheber",
     "materials": "Materialien",
-    "dimensions": "Maße",
+    "dimensions": "Ma\u00dfe",
     "date": "Datum",
     "inventory_number": "Inventarnummer",
     "object_type": "Objekttyp"
   },
   "object_types": {
     "museum_object": "Museumsobjekt",
-    "site": "Fundstätte",
+    "site": "Fundst\u00e4tte",
     "incident": "Vorfall",
     "specimen": "Exemplar",
     "architectural_element": "Architekturelement",
@@ -33,13 +33,43 @@
   },
   "capture": {
     "take_photo": "Foto aufnehmen",
-    "choose_from_library": "Aus Bibliothek wählen",
-    "add_annotation": "Anmerkung hinzufügen",
+    "choose_from_library": "Aus Bibliothek w\u00e4hlen",
+    "add_annotation": "Anmerkung hinzuf\u00fcgen",
     "save_draft": "Entwurf speichern"
+  },
+  "collections": {
+    "title": "Sammlungen",
+    "empty_title": "Noch keine Sammlungen",
+    "empty_subtitle": "Erstelle deine erste Sammlung, um Objekte zu organisieren",
+    "create": "Neue Sammlung",
+    "object_count": "{{count}} Objekte",
+    "object_count_one": "1 Objekt",
+    "object_count_zero": "Keine Objekte",
+    "delete": "Sammlung l\u00f6schen",
+    "delete_confirm": "Diese Sammlung l\u00f6schen? Objekte werden nicht gel\u00f6scht.",
+    "type": {
+      "general": "Allgemein",
+      "department": "Abteilung",
+      "exhibition": "Ausstellung",
+      "project": "Projekt",
+      "research": "Forschung",
+      "conservation": "Restaurierung"
+    },
+    "detail": {
+      "empty": "Keine Objekte in dieser Sammlung",
+      "add_objects": "Objekte hinzuf\u00fcgen"
+    },
+    "create_screen": {
+      "title": "Neue Sammlung",
+      "name": "Name der Sammlung",
+      "name_required": "Name ist erforderlich",
+      "description": "Beschreibung",
+      "type": "Typ"
+    }
   },
   "sync": {
     "pending": "Ausstehend",
-    "syncing": "Wird synchronisiert…",
+    "syncing": "Wird synchronisiert\u2026",
     "synced": "Synchronisiert",
     "failed": "Synchronisierung fehlgeschlagen",
     "offline": "Offline",
@@ -47,13 +77,13 @@
     "last_synced": "Zuletzt synchronisiert: {{time}}"
   },
   "privacy": {
-    "public": "Öffentlich",
+    "public": "\u00d6ffentlich",
     "confidential": "Vertraulich",
     "anonymous": "Anonym"
   },
   "evidence": {
-    "primary": "Primär",
-    "corroborative": "Bestätigend",
+    "primary": "Prim\u00e4r",
+    "corroborative": "Best\u00e4tigend",
     "contextual": "Kontextuell",
     "legal_hold_active": "Rechtliche Sperrung aktiv"
   }

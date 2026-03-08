@@ -5,7 +5,7 @@
     "delete": "Delete",
     "edit": "Edit",
     "search": "Search",
-    "loading": "Loading…",
+    "loading": "Loading\u2026",
     "error": "Something went wrong",
     "success": "Done",
     "back": "Back",
@@ -37,9 +37,39 @@
     "add_annotation": "Add Annotation",
     "save_draft": "Save Draft"
   },
+  "collections": {
+    "title": "Collections",
+    "empty_title": "No collections yet",
+    "empty_subtitle": "Create your first collection to organize objects",
+    "create": "New Collection",
+    "object_count": "{{count}} objects",
+    "object_count_one": "1 object",
+    "object_count_zero": "No objects",
+    "delete": "Delete Collection",
+    "delete_confirm": "Delete this collection? Objects will not be deleted.",
+    "type": {
+      "general": "General",
+      "department": "Department",
+      "exhibition": "Exhibition",
+      "project": "Project",
+      "research": "Research",
+      "conservation": "Conservation"
+    },
+    "detail": {
+      "empty": "No objects in this collection",
+      "add_objects": "Add Objects"
+    },
+    "create_screen": {
+      "title": "New Collection",
+      "name": "Collection Name",
+      "name_required": "Name is required",
+      "description": "Description",
+      "type": "Type"
+    }
+  },
   "sync": {
     "pending": "Pending",
-    "syncing": "Syncing…",
+    "syncing": "Syncing\u2026",
     "synced": "Synced",
     "failed": "Sync Failed",
     "offline": "Offline",
