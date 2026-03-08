@@ -39,6 +39,7 @@ import {
   type CollectionWithCount,
 } from '../services/collectionService';
 import { exportObjectToPDF, sharePDF } from '../services/exportService';
+import { deleteObject } from '../services/objectService';
 import type { ObjectStackParamList } from '../navigation/ObjectStack';
 import type { MainTabParamList } from '../navigation/MainTabs';
 import type {
@@ -397,6 +398,25 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     [db, t, reloadMedia],
   );
 
+  const handleDelete = useCallback(() => {
+    if (!obj) return;
+    Alert.alert(
+      t('objects.delete_title'),
+      t('objects.delete_confirm', { title: obj.title }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            await deleteObject(db, objectId);
+            navigation.goBack();
+          },
+        },
+      ],
+    );
+  }, [obj, db, objectId, t, navigation]);
+
   const handleExport = useCallback(async () => {
     setExporting(true);
     try {
@@ -742,6 +762,13 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         </Pressable>
       </View>
 
+      {/* Delete */}
+      <View style={styles.deleteSection}>
+        <Pressable style={styles.deleteBtn} onPress={handleDelete}>
+          <Text style={styles.deleteBtnText}>{t('objects.delete_title')}</Text>
+        </Pressable>
+      </View>
+
       <View style={styles.bottomPad} />
     </ScrollView>
   );
@@ -959,5 +986,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  deleteSection: {
+    paddingHorizontal: 20,
+    paddingTop: 32,
+  },
+  deleteBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,107,0.4)',
+    borderRadius: 10,
+    padding: 14,
+    alignItems: 'center',
+  },
+  deleteBtnText: {
+    color: '#FF6B6B',
+    fontSize: 15,
+    fontWeight: '600',
+  },
   bottomPad: { height: 40 },
 });

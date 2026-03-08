@@ -45,7 +45,14 @@
     "sha256_label": "SHA-256",
     "uuid_label": "UUID",
     "header_count": "{{count}} objects",
-    "empty": "No objects yet"
+    "empty": "No objects yet",
+    "search_placeholder": "Search objects...",
+    "search_results": "{{count}} of {{total}} objects",
+    "search_empty": "No objects match your search",
+    "filter_all": "All",
+    "delete_title": "Delete Object",
+    "delete_confirm": "Delete \"{{title}}\"? This will also delete all photos and remove it from all collections. This cannot be undone.",
+    "deleted": "Object deleted"
   },
   "object_types": {
     "museum_object": "Museum Object",

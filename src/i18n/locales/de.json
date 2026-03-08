@@ -45,7 +45,14 @@
     "sha256_label": "SHA-256",
     "uuid_label": "UUID",
     "header_count": "{{count}} Objekte",
-    "empty": "Noch keine Objekte"
+    "empty": "Noch keine Objekte",
+    "search_placeholder": "Objekte suchen...",
+    "search_results": "{{count}} von {{total}} Objekten",
+    "search_empty": "Keine Objekte gefunden",
+    "filter_all": "Alle",
+    "delete_title": "Objekt l\u00f6schen",
+    "delete_confirm": "\"{{title}}\" l\u00f6schen? Alle Fotos werden gel\u00f6scht und es wird aus allen Sammlungen entfernt. Dies kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
+    "deleted": "Objekt gel\u00f6scht"
   },
   "object_types": {
     "museum_object": "Museumsobjekt",
