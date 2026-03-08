@@ -1,13 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
+  Pressable,
   RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
+import type { ObjectStackParamList } from '../navigation/ObjectStack';
+
+type Props = NativeStackScreenProps<ObjectStackParamList, 'ObjectList'>;
 
 interface ObjectRow {
   id: string;
@@ -17,7 +22,7 @@ interface ObjectRow {
   file_path: string | null;
 }
 
-export function ObjectListScreen() {
+export function ObjectListScreen({ navigation }: Props) {
   const db = useDatabase();
   const { t } = useAppTranslation();
   const [count, setCount] = useState(0);
@@ -44,18 +49,28 @@ export function ObjectListScreen() {
     loadObjects();
   }, [loadObjects]);
 
+  // Reload when returning from detail screen
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadObjects();
+    });
+    return unsubscribe;
+  }, [navigation, loadObjects]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadObjects();
     setRefreshing(false);
   }, [loadObjects]);
 
-  const typeKey = (type: string) =>
-    `object_types.${type}` as const;
+  const typeKey = (type: string) => `object_types.${type}` as const;
 
   const renderItem = useCallback(
     ({ item }: { item: ObjectRow }) => (
-      <View style={styles.row}>
+      <Pressable
+        style={styles.row}
+        onPress={() => navigation.navigate('ObjectDetail', { objectId: item.id })}
+      >
         <View style={styles.rowContent}>
           <Text style={styles.rowTitle} numberOfLines={1}>
             {item.title}
@@ -71,9 +86,9 @@ export function ObjectListScreen() {
             </Text>
           </View>
         </View>
-      </View>
+      </Pressable>
     ),
-    [t],
+    [t, navigation],
   );
 
   return (

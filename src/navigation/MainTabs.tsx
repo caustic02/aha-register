@@ -2,7 +2,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-import { ObjectListScreen } from '../screens/ObjectListScreen';
+import { ObjectStack } from './ObjectStack';
 import { CaptureScreen } from '../screens/CaptureScreen';
 import { CollectionsScreen } from '../screens/CollectionsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -42,7 +42,7 @@ export function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Objects" component={ObjectListScreen} />
+      <Tab.Screen name="Objects" component={ObjectStack} />
       <Tab.Screen name="Capture" component={CaptureScreen} />
       <Tab.Screen name="Collections" component={CollectionsScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
