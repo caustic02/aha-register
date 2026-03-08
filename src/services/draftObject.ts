@@ -47,10 +47,10 @@ export async function createDraftObject(
   // 3. Insert object record
   await db.runAsync(
     `INSERT INTO objects
-       (id, object_type, title, latitude, longitude, altitude,
+       (id, object_type, status, title, latitude, longitude, altitude,
         coordinate_accuracy, coordinate_source, privacy_tier,
         legal_hold, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'public', 0, ?, ?)`,
+     VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, 'public', 0, ?, ?)`,
     [
       objectId,
       'museum_object',
@@ -65,17 +65,24 @@ export async function createDraftObject(
     ],
   );
 
-  // 4. Insert media record (sort_order=0 → primary)
+  // 4. Insert media record (is_primary=1 → primary display image)
+  const fileType = params.mimeType.split('/')[0]; // 'image', 'video', 'audio'
+  const normalizedFileType =
+    fileType === 'image' || fileType === 'video' || fileType === 'audio'
+      ? fileType
+      : 'document';
+
   await db.runAsync(
     `INSERT INTO media
-       (id, object_id, file_path, file_name, mime_type, file_size,
-        sha256_hash, privacy_tier, sort_order, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, 'public', 0, ?, ?)`,
+       (id, object_id, file_path, file_name, file_type, mime_type, file_size,
+        sha256_hash, privacy_tier, is_primary, sort_order, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'public', 1, 0, ?, ?)`,
     [
       mediaId,
       objectId,
       destUri,
       params.fileName ?? storageName,
+      normalizedFileType,
       params.mimeType,
       params.fileSize ?? null,
       sha256,

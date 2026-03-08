@@ -128,11 +128,16 @@ export interface Site {
   updated_at: string;
 }
 
+export type ObjectStatus = 'draft' | 'active' | 'archived' | 'under_review';
+
+export type MediaFileType = 'image' | 'video' | 'audio' | 'document' | '3d_scan';
+
 export interface RegisterObject {
   id: string;
   institution_id: string | null;
   site_id: string | null;
   object_type: ObjectType;
+  status: ObjectStatus;
   title: string;
   description: string | null;
   inventory_number: string | null;
@@ -160,11 +165,13 @@ export interface Media {
   object_id: string | null;
   file_path: string;
   file_name: string;
+  file_type: MediaFileType;
   mime_type: string;
   file_size: number | null;
   sha256_hash: string | null;
   caption: string | null;
   privacy_tier: PrivacyTier;
+  is_primary: number; // 0 or 1
   sort_order: number;
   created_at: string;
   updated_at: string;

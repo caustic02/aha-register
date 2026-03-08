@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS objects (
   institution_id        TEXT REFERENCES institutions(id) ON DELETE SET NULL,
   site_id               TEXT REFERENCES sites(id) ON DELETE SET NULL,
   object_type           TEXT NOT NULL,
+  status                TEXT NOT NULL DEFAULT 'draft', -- draft | active | archived | under_review
   title                 TEXT NOT NULL,
   description           TEXT,
   inventory_number      TEXT,
@@ -77,11 +78,13 @@ CREATE TABLE IF NOT EXISTS media (
   object_id     TEXT REFERENCES objects(id) ON DELETE CASCADE,
   file_path     TEXT NOT NULL,
   file_name     TEXT NOT NULL,
+  file_type     TEXT NOT NULL DEFAULT 'image', -- image | video | audio | document | 3d_scan
   mime_type     TEXT NOT NULL,
   file_size     INTEGER,
   sha256_hash   TEXT,
   caption       TEXT,
   privacy_tier  TEXT NOT NULL DEFAULT 'public',
+  is_primary    INTEGER NOT NULL DEFAULT 0, -- 1 = primary display image
   sort_order    INTEGER NOT NULL DEFAULT 0,
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL

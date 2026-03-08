@@ -33,7 +33,7 @@ export function ObjectListScreen() {
     const rows = await db.getAllAsync<ObjectRow>(
       `SELECT o.id, o.title, o.object_type, o.created_at, m.file_path
        FROM objects o
-       LEFT JOIN media m ON m.object_id = o.id AND m.sort_order = 0
+       LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
        ORDER BY o.created_at DESC
        LIMIT 20`,
     );
