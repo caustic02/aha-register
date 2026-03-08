@@ -151,6 +151,104 @@
     "from_library": "Choose from Library",
     "cancel": "Cancel"
   },
+  "type_forms": {
+    "change_type_title": "Change Type?",
+    "change_type_confirm": "Changing the object type will clear type-specific fields. Continue?",
+    "comma_separated": "Separate with commas",
+    "yes": "Yes",
+    "no": "No",
+    "condition": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "fair": "Fair",
+      "poor": "Poor",
+      "critical": "Critical"
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical"
+    },
+    "museum_object": {
+      "title": "Museum Object Details",
+      "material": "Materials",
+      "technique": "Technique",
+      "dimensions": "Dimensions",
+      "height": "H",
+      "width": "W",
+      "depth": "D",
+      "unit": "Unit",
+      "period": "Period",
+      "culture": "Culture",
+      "provenance": "Provenance",
+      "condition": "Condition",
+      "inscription": "Inscription"
+    },
+    "site": {
+      "title": "Site Details",
+      "site_classification": "Site Classification",
+      "period_from": "Period From",
+      "period_to": "Period To",
+      "survey_method": "Survey Method",
+      "land_use": "Land Use",
+      "threats": "Threats",
+      "protection_status": "Protection Status"
+    },
+    "incident": {
+      "title": "Incident Details",
+      "incident_type": "Incident Type",
+      "date_reported": "Date Reported",
+      "date_occurred": "Date Occurred",
+      "severity": "Severity",
+      "perpetrator_info": "Perpetrator Info",
+      "law_enforcement_notified": "Law Enforcement Notified",
+      "case_number": "Case Number",
+      "recovery_status": "Recovery Status"
+    },
+    "specimen": {
+      "title": "Specimen Details",
+      "taxon": "Taxon",
+      "specimen_type": "Specimen Type",
+      "collection_method": "Collection Method",
+      "preservation_method": "Preservation Method",
+      "storage_requirements": "Storage Requirements",
+      "genetic_data_available": "Genetic Data Available"
+    },
+    "architectural_element": {
+      "title": "Architectural Element Details",
+      "element_type": "Element Type",
+      "style": "Style",
+      "construction_material": "Construction Materials",
+      "construction_date": "Construction Date",
+      "structural_condition": "Structural Condition",
+      "load_bearing": "Load Bearing",
+      "restoration_history": "Restoration History"
+    },
+    "environmental_sample": {
+      "title": "Environmental Sample Details",
+      "sample_type": "Sample Type",
+      "collection_method": "Collection Method",
+      "storage_conditions": "Storage Conditions",
+      "analysis_method": "Analysis Method",
+      "results": "Results",
+      "contamination_level": "Contamination Level",
+      "ph_level": "pH Level",
+      "temperature": "Temperature"
+    },
+    "conservation_record": {
+      "title": "Conservation Record Details",
+      "treatment_type": "Treatment Type",
+      "conservator": "Conservator",
+      "date_started": "Date Started",
+      "date_completed": "Date Completed",
+      "materials_used": "Materials Used",
+      "before_condition": "Before Condition",
+      "after_condition": "After Condition",
+      "recommendations": "Recommendations",
+      "next_review_date": "Next Review Date"
+    }
+  },
   "export": {
     "share": "Share",
     "export_pdf": "Export PDF",

@@ -151,6 +151,104 @@
     "from_library": "Aus Bibliothek w\u00e4hlen",
     "cancel": "Abbrechen"
   },
+  "type_forms": {
+    "change_type_title": "Typ \u00e4ndern?",
+    "change_type_confirm": "Beim \u00c4ndern des Objekttyps werden typspezifische Felder gel\u00f6scht. Fortfahren?",
+    "comma_separated": "Mit Kommas trennen",
+    "yes": "Ja",
+    "no": "Nein",
+    "condition": {
+      "excellent": "Ausgezeichnet",
+      "good": "Gut",
+      "fair": "Befriedigend",
+      "poor": "Schlecht",
+      "critical": "Kritisch"
+    },
+    "severity": {
+      "low": "Niedrig",
+      "medium": "Mittel",
+      "high": "Hoch",
+      "critical": "Kritisch"
+    },
+    "museum_object": {
+      "title": "Museumsobjekt-Details",
+      "material": "Materialien",
+      "technique": "Technik",
+      "dimensions": "Ma\u00dfe",
+      "height": "H",
+      "width": "B",
+      "depth": "T",
+      "unit": "Einheit",
+      "period": "Epoche",
+      "culture": "Kultur",
+      "provenance": "Provenienz",
+      "condition": "Zustand",
+      "inscription": "Inschrift"
+    },
+    "site": {
+      "title": "Fundst\u00e4tten-Details",
+      "site_classification": "Klassifizierung",
+      "period_from": "Zeitraum von",
+      "period_to": "Zeitraum bis",
+      "survey_method": "Untersuchungsmethode",
+      "land_use": "Landnutzung",
+      "threats": "Gef\u00e4hrdungen",
+      "protection_status": "Schutzstatus"
+    },
+    "incident": {
+      "title": "Vorfall-Details",
+      "incident_type": "Art des Vorfalls",
+      "date_reported": "Meldedatum",
+      "date_occurred": "Datum des Vorfalls",
+      "severity": "Schweregrad",
+      "perpetrator_info": "T\u00e4terinformationen",
+      "law_enforcement_notified": "Strafverfolgung benachrichtigt",
+      "case_number": "Aktenzeichen",
+      "recovery_status": "Sicherstellungsstatus"
+    },
+    "specimen": {
+      "title": "Exemplar-Details",
+      "taxon": "Taxon",
+      "specimen_type": "Exemplartyp",
+      "collection_method": "Sammelmethode",
+      "preservation_method": "Konservierungsmethode",
+      "storage_requirements": "Lageranforderungen",
+      "genetic_data_available": "Genetische Daten vorhanden"
+    },
+    "architectural_element": {
+      "title": "Architekturelement-Details",
+      "element_type": "Elementtyp",
+      "style": "Stil",
+      "construction_material": "Baumaterialien",
+      "construction_date": "Baudatum",
+      "structural_condition": "Bauzustand",
+      "load_bearing": "Tragend",
+      "restoration_history": "Restaurierungshistorie"
+    },
+    "environmental_sample": {
+      "title": "Umweltproben-Details",
+      "sample_type": "Probentyp",
+      "collection_method": "Entnahmemethode",
+      "storage_conditions": "Lagerbedingungen",
+      "analysis_method": "Analysemethode",
+      "results": "Ergebnisse",
+      "contamination_level": "Kontaminationsgrad",
+      "ph_level": "pH-Wert",
+      "temperature": "Temperatur"
+    },
+    "conservation_record": {
+      "title": "Restaurierungsbericht-Details",
+      "treatment_type": "Behandlungsart",
+      "conservator": "Restaurator",
+      "date_started": "Begonnen am",
+      "date_completed": "Abgeschlossen am",
+      "materials_used": "Verwendete Materialien",
+      "before_condition": "Zustand vorher",
+      "after_condition": "Zustand nachher",
+      "recommendations": "Empfehlungen",
+      "next_review_date": "N\u00e4chste \u00dcberpr\u00fcfung"
+    }
+  },
   "export": {
     "share": "Teilen",
     "export_pdf": "PDF exportieren",

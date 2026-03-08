@@ -20,6 +20,7 @@ import { generateId } from '../utils/uuid';
 import { FieldInput } from '../components/FieldInput';
 import { TypePicker } from '../components/TypePicker';
 import { ImageGallery } from '../components/ImageGallery';
+import { TYPE_FORM_MAP } from '../components/type-forms';
 import {
   captureFromCamera,
   pickFromLibrary,
@@ -52,8 +53,6 @@ type Props = NativeStackScreenProps<ObjectStackParamList, 'ObjectDetail'>;
 
 const PRIVACY_TIERS: PrivacyTier[] = ['public', 'confidential', 'anonymous'];
 const EVIDENCE_CLASSES: EvidenceClass[] = ['primary', 'corroborative', 'contextual'];
-const TYPES_HIDE_CREATOR: ObjectType[] = ['incident', 'specimen', 'site'];
-const TYPES_HIDE_MATERIALS: ObjectType[] = ['incident', 'site'];
 
 interface ObjectData {
   id: string;
@@ -91,9 +90,8 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [title, setTitle] = useState('');
   const [objectType, setObjectType] = useState<ObjectType>('museum_object');
   const [description, setDescription] = useState('');
-  const [creator, setCreator] = useState('');
-  const [date, setDate] = useState('');
-  const [materials, setMaterials] = useState('');
+  const [typeSpecificData, setTypeSpecificData] = useState<Record<string, any>>({});
+  const [typeFormExpanded, setTypeFormExpanded] = useState(true);
   const [privacyTier, setPrivacyTier] = useState<PrivacyTier>('public');
   const [evidenceClass, setEvidenceClass] = useState<EvidenceClass | null>(null);
   const [legalHold, setLegalHold] = useState(false);
@@ -136,13 +134,12 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     // Parse type-specific data
     if (row.type_specific_data) {
       try {
-        const tsd = JSON.parse(row.type_specific_data);
-        setCreator(tsd.creator ?? '');
-        setDate(tsd.date ?? '');
-        setMaterials(tsd.materials ?? '');
+        setTypeSpecificData(JSON.parse(row.type_specific_data));
       } catch {
-        // invalid JSON, ignore
+        setTypeSpecificData({});
       }
+    } else {
+      setTypeSpecificData({});
     }
 
     const mediaRows = await getMediaForObject(db, objectId);
@@ -189,10 +186,14 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     [db, objectId],
   );
 
-  const saveTypeSpecificData = useCallback(async () => {
-    const tsd = JSON.stringify({ creator, date, materials });
-    await saveField('type_specific_data', tsd);
-  }, [creator, date, materials, saveField]);
+  const handleTypeSpecificChange = useCallback(
+    async (data: Record<string, any>) => {
+      setTypeSpecificData(data);
+      const tsd = JSON.stringify(data);
+      await saveField('type_specific_data', tsd);
+    },
+    [saveField],
+  );
 
   const handleTitleBlur = useCallback(() => {
     if (obj && title !== obj.title) {
@@ -208,11 +209,29 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
   const handleTypeChange = useCallback(
     (type: ObjectType) => {
-      const old = objectType;
-      setObjectType(type);
-      saveField('object_type', type, old);
+      if (type === objectType) return;
+      const hasData = Object.keys(typeSpecificData).length > 0;
+      const doChange = () => {
+        const old = objectType;
+        setObjectType(type);
+        setTypeSpecificData({});
+        saveField('object_type', type, old);
+        saveField('type_specific_data', null);
+      };
+      if (hasData) {
+        Alert.alert(
+          t('type_forms.change_type_title'),
+          t('type_forms.change_type_confirm'),
+          [
+            { text: t('common.cancel'), style: 'cancel' },
+            { text: t('common.done'), onPress: doChange },
+          ],
+        );
+      } else {
+        doChange();
+      }
     },
-    [objectType, saveField],
+    [objectType, typeSpecificData, saveField, t],
   );
 
   const handlePrivacyChange = useCallback(
@@ -449,24 +468,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         <TypePicker selected={objectType} onChange={handleTypeChange} />
         <View style={styles.spacer} />
 
-        {!TYPES_HIDE_CREATOR.includes(objectType) && (
-          <FieldInput
-            label={t('objects.creator')}
-            value={creator}
-            onChangeText={setCreator}
-            onBlur={saveTypeSpecificData}
-            placeholder={t('objects.placeholder_creator')}
-          />
-        )}
-
-        <FieldInput
-          label={t('objects.date')}
-          value={date}
-          onChangeText={setDate}
-          onBlur={saveTypeSpecificData}
-          placeholder={t('objects.placeholder_date')}
-        />
-
         <FieldInput
           label={t('objects.description')}
           value={description}
@@ -475,16 +476,33 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           multiline
           placeholder={t('objects.placeholder_description')}
         />
+      </View>
 
-        {!TYPES_HIDE_MATERIALS.includes(objectType) && (
-          <FieldInput
-            label={t('objects.materials')}
-            value={materials}
-            onChangeText={setMaterials}
-            onBlur={saveTypeSpecificData}
-            placeholder={t('objects.placeholder_materials')}
-          />
-        )}
+      {/* SECTION 2b — Type-Specific Fields (collapsible) */}
+      <View style={styles.section}>
+        <Pressable
+          style={styles.collapseHeader}
+          onPress={() => setTypeFormExpanded(!typeFormExpanded)}
+        >
+          <Text style={styles.sectionTitle}>
+            {t(`type_forms.${objectType}.title`)}
+          </Text>
+          <Text style={styles.collapseArrow}>
+            {typeFormExpanded ? '\u25B2' : '\u25BC'}
+          </Text>
+        </Pressable>
+        {typeFormExpanded && (() => {
+          const FormComponent = TYPE_FORM_MAP[objectType];
+          return (
+            <View style={styles.collapseBody}>
+              <FormComponent
+                data={typeSpecificData}
+                onChange={handleTypeSpecificChange}
+                t={t}
+              />
+            </View>
+          );
+        })()}
       </View>
 
       {/* SECTION 3 — Location */}

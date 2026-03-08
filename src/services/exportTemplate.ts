@@ -1,4 +1,9 @@
-import type { AuditTrailEntry, Media, RegisterObject } from '../db/types';
+import type {
+  AuditTrailEntry,
+  Media,
+  ObjectType,
+  RegisterObject,
+} from '../db/types';
 import type { CollectionForObject } from './collectionService';
 
 export interface MediaWithBase64 extends Media {
@@ -84,28 +89,126 @@ function buildImagesSection(media: MediaWithBase64[]): string {
   return html;
 }
 
-function buildMetadataSection(obj: RegisterObject): string {
-  let typeSpecific = '';
-  if (obj.type_specific_data) {
-    try {
-      const tsd = JSON.parse(obj.type_specific_data);
-      if (tsd.creator) {
-        typeSpecific += `<tr><td>Creator</td><td>${escapeHtml(tsd.creator)}</td></tr>`;
-      }
-      if (tsd.date) {
-        typeSpecific += `<tr><td>Date</td><td>${escapeHtml(tsd.date)}</td></tr>`;
-      }
-      if (tsd.materials) {
-        typeSpecific += `<tr><td>Materials</td><td>${escapeHtml(tsd.materials)}</td></tr>`;
-      }
-    } catch {
-      // ignore
+/** Field label maps for each object type, used by the export PDF. */
+const TYPE_FIELD_LABELS: Record<ObjectType, Record<string, string>> = {
+  museum_object: {
+    material: 'Materials',
+    technique: 'Technique',
+    dimensions: 'Dimensions',
+    period: 'Period',
+    culture: 'Culture',
+    provenance: 'Provenance',
+    condition: 'Condition',
+    inscription: 'Inscription',
+  },
+  site: {
+    site_classification: 'Site Classification',
+    period_from: 'Period From',
+    period_to: 'Period To',
+    survey_method: 'Survey Method',
+    land_use: 'Land Use',
+    threats: 'Threats',
+    protection_status: 'Protection Status',
+  },
+  incident: {
+    incident_type: 'Incident Type',
+    date_reported: 'Date Reported',
+    date_occurred: 'Date Occurred',
+    severity: 'Severity',
+    perpetrator_info: 'Perpetrator Info',
+    law_enforcement_notified: 'Law Enforcement Notified',
+    case_number: 'Case Number',
+    recovery_status: 'Recovery Status',
+  },
+  specimen: {
+    taxon: 'Taxon',
+    specimen_type: 'Specimen Type',
+    collection_method: 'Collection Method',
+    preservation_method: 'Preservation Method',
+    storage_requirements: 'Storage Requirements',
+    genetic_data_available: 'Genetic Data Available',
+  },
+  architectural_element: {
+    element_type: 'Element Type',
+    style: 'Style',
+    construction_material: 'Construction Materials',
+    construction_date: 'Construction Date',
+    structural_condition: 'Structural Condition',
+    load_bearing: 'Load Bearing',
+    restoration_history: 'Restoration History',
+  },
+  environmental_sample: {
+    sample_type: 'Sample Type',
+    collection_method: 'Collection Method',
+    storage_conditions: 'Storage Conditions',
+    analysis_method: 'Analysis Method',
+    results: 'Results',
+    contamination_level: 'Contamination Level',
+    ph_level: 'pH Level',
+    temperature: 'Temperature',
+  },
+  conservation_record: {
+    treatment_type: 'Treatment Type',
+    conservator: 'Conservator',
+    date_started: 'Date Started',
+    date_completed: 'Date Completed',
+    materials_used: 'Materials Used',
+    before_condition: 'Before Condition',
+    after_condition: 'After Condition',
+    recommendations: 'Recommendations',
+    next_review_date: 'Next Review Date',
+  },
+};
+
+function formatTsdValue(key: string, value: unknown): string | null {
+  if (value == null) return null;
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (Array.isArray(value)) {
+    const joined = value.join(', ');
+    return joined || null;
+  }
+  if (key === 'dimensions' && typeof value === 'object') {
+    const dim = value as Record<string, unknown>;
+    const parts: string[] = [];
+    if (dim.height != null) parts.push(String(dim.height));
+    if (dim.width != null) parts.push(String(dim.width));
+    if (dim.depth != null) parts.push(String(dim.depth));
+    if (parts.length === 0) return null;
+    const unit = typeof dim.unit === 'string' ? ` ${dim.unit}` : '';
+    return parts.join(' \u00D7 ') + unit;
+  }
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'string' && value.trim()) return value;
+  return null;
+}
+
+function buildTypeSpecificRows(obj: RegisterObject): string {
+  if (!obj.type_specific_data) return '';
+  let tsd: Record<string, unknown>;
+  try {
+    tsd = JSON.parse(obj.type_specific_data);
+  } catch {
+    return '';
+  }
+  const labels = TYPE_FIELD_LABELS[obj.object_type];
+  if (!labels) return '';
+
+  let rows = '';
+  for (const [key, label] of Object.entries(labels)) {
+    const formatted = formatTsdValue(key, tsd[key]);
+    if (formatted) {
+      rows += `<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(formatted)}</td></tr>`;
     }
   }
+  return rows;
+}
 
+function buildMetadataSection(obj: RegisterObject): string {
   const objectTypeLabel = obj.object_type
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const typeSpecific = buildTypeSpecificRows(obj);
 
   return `
     <div class="section">
