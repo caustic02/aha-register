@@ -7,6 +7,17 @@ export interface CollectionWithCount extends Collection {
   objectCount: number;
 }
 
+export interface CollectionForObject extends Collection {
+  added_at: string;
+}
+
+export interface PickerObject {
+  id: string;
+  title: string;
+  object_type: string;
+  file_path: string | null;
+}
+
 export interface CollectionObject {
   id: string;
   title: string;
@@ -143,4 +154,87 @@ export async function updateCollection(
       newValues: data,
     });
   });
+}
+
+export async function addObjectToCollection(
+  db: SQLiteDatabase,
+  objectId: string,
+  collectionId: string,
+  addedBy?: string,
+): Promise<void> {
+  const id = generateId();
+  const now = new Date().toISOString();
+
+  try {
+    await db.withTransactionAsync(async () => {
+      await db.runAsync(
+        `INSERT INTO object_collections (id, object_id, collection_id, added_at, added_by)
+         VALUES (?, ?, ?, ?, ?)`,
+        [id, objectId, collectionId, now, addedBy ?? null],
+      );
+
+      await logAuditEntry(db, {
+        tableName: 'object_collections',
+        recordId: id,
+        action: 'insert',
+        userId: addedBy ?? 'local',
+        newValues: { objectId, collectionId },
+      });
+    });
+  } catch (err: unknown) {
+    // Ignore UNIQUE constraint violation (object already in collection)
+    if (String(err).includes('UNIQUE constraint')) return;
+    throw err;
+  }
+}
+
+export async function removeObjectFromCollection(
+  db: SQLiteDatabase,
+  objectId: string,
+  collectionId: string,
+): Promise<void> {
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      'DELETE FROM object_collections WHERE object_id = ? AND collection_id = ?',
+      [objectId, collectionId],
+    );
+
+    await logAuditEntry(db, {
+      tableName: 'object_collections',
+      recordId: `${objectId}_${collectionId}`,
+      action: 'delete',
+      userId: 'local',
+      oldValues: { objectId, collectionId },
+    });
+  });
+}
+
+export async function getCollectionsForObject(
+  db: SQLiteDatabase,
+  objectId: string,
+): Promise<CollectionForObject[]> {
+  return db.getAllAsync<CollectionForObject>(
+    `SELECT c.*, oc.added_at
+     FROM object_collections oc
+     JOIN collections c ON c.id = oc.collection_id
+     WHERE oc.object_id = ?
+     ORDER BY oc.added_at DESC`,
+    [objectId],
+  );
+}
+
+export async function getObjectsNotInCollection(
+  db: SQLiteDatabase,
+  collectionId: string,
+): Promise<PickerObject[]> {
+  return db.getAllAsync<PickerObject>(
+    `SELECT o.id, o.title, o.object_type, m.file_path
+     FROM objects o
+     LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
+     WHERE o.id NOT IN (
+       SELECT object_id FROM object_collections WHERE collection_id = ?
+     )
+     ORDER BY o.created_at DESC`,
+    [collectionId],
+  );
 }

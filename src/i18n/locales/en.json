@@ -20,7 +20,10 @@
     "dimensions": "Dimensions",
     "date": "Date",
     "inventory_number": "Inventory Number",
-    "object_type": "Object Type"
+    "object_type": "Object Type",
+    "collections_section": "Collections",
+    "no_collections": "Not in any collection",
+    "add_to_collection": "Add to Collection"
   },
   "object_types": {
     "museum_object": "Museum Object",
@@ -55,6 +58,16 @@
       "research": "Research",
       "conservation": "Conservation"
     },
+    "add_objects": {
+      "title": "Add Objects",
+      "search": "Search objects...",
+      "add_count": "Add {{count}} Objects",
+      "add_one": "Add 1 Object",
+      "all_added": "All objects are already in this collection",
+      "none_selected": "Select objects to add"
+    },
+    "remove_object": "Remove from Collection",
+    "remove_confirm": "Remove this object from the collection?",
     "detail": {
       "empty": "No objects in this collection",
       "add_objects": "Add Objects"

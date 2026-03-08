@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Image,
   Pressable,
@@ -15,6 +16,7 @@ import { FieldInput } from '../components/FieldInput';
 import {
   getCollectionById,
   updateCollection,
+  removeObjectFromCollection,
   type CollectionObject,
 } from '../services/collectionService';
 import type { Collection } from '../db/types';
@@ -46,6 +48,14 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     load();
   }, [load]);
 
+  // Reload when returning from AddObjectsScreen
+  useEffect(() => {
+    const unsub = navigation.addListener('focus', () => {
+      load();
+    });
+    return unsub;
+  }, [navigation, load]);
+
   const handleNameBlur = useCallback(() => {
     if (collection && name.trim() && name !== collection.name) {
       updateCollection(db, collectionId, { name: name.trim() });
@@ -72,6 +82,27 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     [navigation],
   );
 
+  const handleRemoveObject = useCallback(
+    (objectId: string) => {
+      Alert.alert(
+        t('collections.remove_object'),
+        t('collections.remove_confirm'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('common.delete'),
+            style: 'destructive',
+            onPress: async () => {
+              await removeObjectFromCollection(db, objectId, collectionId);
+              load();
+            },
+          },
+        ],
+      );
+    },
+    [db, collectionId, t, load],
+  );
+
   const typeKey = (type: string) => `object_types.${type}` as const;
 
   const objectCountLabel = (count: number) => {
@@ -82,7 +113,11 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
 
   const renderObject = useCallback(
     ({ item }: { item: CollectionObject }) => (
-      <Pressable style={styles.objectRow} onPress={() => navigateToObject(item.id)}>
+      <Pressable
+        style={styles.objectRow}
+        onPress={() => navigateToObject(item.id)}
+        onLongPress={() => handleRemoveObject(item.id)}
+      >
         {item.file_path ? (
           <Image source={{ uri: item.file_path }} style={styles.thumb} />
         ) : (
@@ -105,7 +140,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         </View>
       </Pressable>
     ),
-    [t, navigateToObject],
+    [t, navigateToObject, handleRemoveObject],
   );
 
   if (!collection) return null;
@@ -156,6 +191,18 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
               placeholder={t('collections.create_screen.description')}
             />
 
+            {/* Add Objects button (always visible) */}
+            <Pressable
+              style={styles.addObjectsHeaderBtn}
+              onPress={() =>
+                navigation.navigate('AddObjects', { collectionId })
+              }
+            >
+              <Text style={styles.addObjectsHeaderBtnText}>
+                + {t('collections.detail.add_objects')}
+              </Text>
+            </Pressable>
+
             {/* Objects section header */}
             <Text style={styles.sectionTitle}>
               {t('objects.title')}
@@ -165,7 +212,12 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         ListEmptyComponent={
           <View style={styles.emptyContent}>
             <Text style={styles.emptyText}>{t('collections.detail.empty')}</Text>
-            <Pressable style={styles.addObjectsBtn}>
+            <Pressable
+              style={styles.addObjectsBtn}
+              onPress={() =>
+                navigation.navigate('AddObjects', { collectionId })
+              }
+            >
               <Text style={styles.addObjectsBtnText}>
                 {t('collections.detail.add_objects')}
               </Text>
@@ -215,6 +267,19 @@ const styles = StyleSheet.create({
   countText: {
     color: '#636E72',
     fontSize: 13,
+  },
+  addObjectsHeaderBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(116,185,255,0.2)',
+    borderRadius: 10,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  addObjectsHeaderBtnText: {
+    color: '#74B9FF',
+    fontSize: 14,
+    fontWeight: '500',
   },
   sectionTitle: {
     color: '#FFFFFF',

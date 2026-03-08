@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { logAuditEntry } from '../db/audit';
@@ -18,7 +19,15 @@ import { SyncEngine } from '../sync/engine';
 import { generateId } from '../utils/uuid';
 import { FieldInput } from '../components/FieldInput';
 import { TypePicker } from '../components/TypePicker';
+import {
+  getCollectionsForObject,
+  getAllCollections,
+  addObjectToCollection,
+  type CollectionForObject,
+  type CollectionWithCount,
+} from '../services/collectionService';
 import type { ObjectStackParamList } from '../navigation/ObjectStack';
+import type { MainTabParamList } from '../navigation/MainTabs';
 import type {
   ObjectType,
   PrivacyTier,
@@ -87,6 +96,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   // Copy feedback
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
+  // Collections
+  const [objectCollections, setObjectCollections] = useState<CollectionForObject[]>([]);
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+  const [pickerCollections, setPickerCollections] = useState<CollectionWithCount[]>([]);
+
   const loadData = useCallback(async () => {
     const row = await db.getFirstAsync<ObjectData>(
       'SELECT * FROM objects WHERE id = ?',
@@ -127,6 +141,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       [objectId],
     );
     setAnnotations(annotationRows);
+
+    const objCols = await getCollectionsForObject(db, objectId);
+    setObjectCollections(objCols);
 
     setLoading(false);
   }, [db, objectId]);
@@ -255,6 +272,34 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 1500);
   }, []);
+
+  const handleShowCollectionPicker = useCallback(async () => {
+    const all = await getAllCollections(db);
+    setPickerCollections(all);
+    setShowCollectionPicker(true);
+  }, [db]);
+
+  const handleAddToCollection = useCallback(
+    async (collectionId: string) => {
+      await addObjectToCollection(db, objectId, collectionId);
+      const objCols = await getCollectionsForObject(db, objectId);
+      setObjectCollections(objCols);
+      setShowCollectionPicker(false);
+    },
+    [db, objectId],
+  );
+
+  const navigateToCollection = useCallback(
+    (collectionId: string) => {
+      const tabNav =
+        navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
+      tabNav?.navigate('Collections', {
+        screen: 'CollectionDetail',
+        params: { collectionId },
+      });
+    },
+    [navigation],
+  );
 
   if (loading) {
     return (
@@ -501,7 +546,60 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         )}
       </View>
 
-      {/* SECTION 6 — Metadata Footer */}
+      {/* SECTION 6 — Collections */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>{t('objects.collections_section')}</Text>
+        {objectCollections.length > 0 ? (
+          <View style={styles.collectionChips}>
+            {objectCollections.map((col) => (
+              <Pressable
+                key={col.id}
+                style={styles.collectionChip}
+                onPress={() => navigateToCollection(col.id)}
+              >
+                <Text style={styles.collectionChipText}>{col.name}</Text>
+              </Pressable>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noCollectionsText}>{t('objects.no_collections')}</Text>
+        )}
+        <Pressable
+          style={styles.addToCollectionBtn}
+          onPress={handleShowCollectionPicker}
+        >
+          <Text style={styles.addToCollectionBtnText}>
+            + {t('objects.add_to_collection')}
+          </Text>
+        </Pressable>
+        {showCollectionPicker && (
+          <View style={styles.pickerContainer}>
+            {pickerCollections
+              .filter((c) => !objectCollections.some((oc) => oc.id === c.id))
+              .map((col) => (
+                <Pressable
+                  key={col.id}
+                  style={styles.pickerRow}
+                  onPress={() => handleAddToCollection(col.id)}
+                >
+                  <Text style={styles.pickerRowText}>{col.name}</Text>
+                  <Text style={styles.pickerRowType}>
+                    {t(`collections.type.${col.collection_type}`)}
+                  </Text>
+                </Pressable>
+              ))}
+            {pickerCollections.filter(
+              (c) => !objectCollections.some((oc) => oc.id === c.id),
+            ).length === 0 && (
+              <Text style={styles.pickerEmptyText}>
+                {t('collections.add_objects.all_added')}
+              </Text>
+            )}
+          </View>
+        )}
+      </View>
+
+      {/* SECTION 7 — Metadata Footer */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Metadata</Text>
         <View style={styles.metaRow}>
@@ -691,6 +789,72 @@ const styles = StyleSheet.create({
   },
   metaLabel: { color: '#636E72', fontSize: 13 },
   metaValue: { color: '#DFE6E9', fontSize: 13 },
+
+  // Collections
+  collectionChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  collectionChip: {
+    backgroundColor: 'rgba(116,185,255,0.12)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  collectionChipText: {
+    color: '#74B9FF',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  noCollectionsText: {
+    color: '#636E72',
+    fontSize: 14,
+    marginBottom: 12,
+  },
+  addToCollectionBtn: {
+    borderWidth: 1,
+    borderColor: 'rgba(116,185,255,0.2)',
+    borderRadius: 10,
+    padding: 12,
+    alignItems: 'center',
+  },
+  addToCollectionBtnText: {
+    color: '#74B9FF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  pickerContainer: {
+    marginTop: 12,
+    backgroundColor: 'rgba(116,185,255,0.06)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(116,185,255,0.1)',
+    overflow: 'hidden',
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  pickerRowText: {
+    color: '#DFE6E9',
+    fontSize: 15,
+  },
+  pickerRowType: {
+    color: '#636E72',
+    fontSize: 12,
+  },
+  pickerEmptyText: {
+    color: '#636E72',
+    fontSize: 14,
+    padding: 14,
+    textAlign: 'center',
+  },
 
   bottomPad: { height: 40 },
 });

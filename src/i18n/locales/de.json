@@ -20,7 +20,10 @@
     "dimensions": "Ma\u00dfe",
     "date": "Datum",
     "inventory_number": "Inventarnummer",
-    "object_type": "Objekttyp"
+    "object_type": "Objekttyp",
+    "collections_section": "Sammlungen",
+    "no_collections": "In keiner Sammlung",
+    "add_to_collection": "Zu Sammlung hinzuf\u00fcgen"
   },
   "object_types": {
     "museum_object": "Museumsobjekt",
@@ -55,6 +58,16 @@
       "research": "Forschung",
       "conservation": "Restaurierung"
     },
+    "add_objects": {
+      "title": "Objekte hinzuf\u00fcgen",
+      "search": "Objekte suchen...",
+      "add_count": "{{count}} Objekte hinzuf\u00fcgen",
+      "add_one": "1 Objekt hinzuf\u00fcgen",
+      "all_added": "Alle Objekte sind bereits in dieser Sammlung",
+      "none_selected": "Objekte zum Hinzuf\u00fcgen ausw\u00e4hlen"
+    },
+    "remove_object": "Aus Sammlung entfernen",
+    "remove_confirm": "Dieses Objekt aus der Sammlung entfernen?",
     "detail": {
       "empty": "Keine Objekte in dieser Sammlung",
       "add_objects": "Objekte hinzuf\u00fcgen"
