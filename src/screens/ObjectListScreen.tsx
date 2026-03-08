@@ -1,23 +1,104 @@
-import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
+
+interface ObjectRow {
+  id: string;
+  title: string;
+  object_type: string;
+  created_at: string;
+  file_path: string | null;
+}
 
 export function ObjectListScreen() {
   const db = useDatabase();
   const { t } = useAppTranslation();
-  const [count, setCount] = useState<number>(0);
+  const [count, setCount] = useState(0);
+  const [objects, setObjects] = useState<ObjectRow[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadObjects = useCallback(async () => {
+    const countRow = await db.getFirstAsync<{ c: number }>(
+      'SELECT COUNT(*) as c FROM objects',
+    );
+    setCount(countRow?.c ?? 0);
+
+    const rows = await db.getAllAsync<ObjectRow>(
+      `SELECT o.id, o.title, o.object_type, o.created_at, m.file_path
+       FROM objects o
+       LEFT JOIN media m ON m.object_id = o.id AND m.sort_order = 0
+       ORDER BY o.created_at DESC
+       LIMIT 20`,
+    );
+    setObjects(rows);
+  }, [db]);
 
   useEffect(() => {
-    db.getFirstAsync<{ c: number }>('SELECT COUNT(*) as c FROM objects').then(
-      (row) => setCount(row?.c ?? 0),
-    );
-  }, [db]);
+    loadObjects();
+  }, [loadObjects]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadObjects();
+    setRefreshing(false);
+  }, [loadObjects]);
+
+  const typeKey = (type: string) =>
+    `object_types.${type}` as const;
+
+  const renderItem = useCallback(
+    ({ item }: { item: ObjectRow }) => (
+      <View style={styles.row}>
+        <View style={styles.rowContent}>
+          <Text style={styles.rowTitle} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <View style={styles.rowMeta}>
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {t(typeKey(item.object_type))}
+              </Text>
+            </View>
+            <Text style={styles.rowDate}>
+              {item.created_at.slice(0, 10)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    ),
+    [t],
+  );
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{t('common.search')}</Text>
-      <Text style={styles.count}>{count} objects</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{t('common.search')}</Text>
+        <Text style={styles.headerCount}>{count} objects</Text>
+      </View>
+
+      <FlatList
+        data={objects}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={objects.length === 0 ? styles.emptyList : undefined}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No objects yet</Text>
+        }
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#74B9FF"
+          />
+        }
+      />
     </View>
   );
 }
@@ -26,9 +107,63 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#08080F',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-  title: { color: '#FFFFFF', fontSize: 24, fontWeight: '600' },
-  count: { color: '#636E72', fontSize: 14, marginTop: 8 },
+  header: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  headerTitle: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '700',
+  },
+  headerCount: {
+    color: '#636E72',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  row: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(255,255,255,0.06)',
+  },
+  rowContent: {
+    gap: 6,
+  },
+  rowTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  rowMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  badge: {
+    backgroundColor: 'rgba(116,185,255,0.12)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  badgeText: {
+    color: '#74B9FF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  rowDate: {
+    color: '#636E72',
+    fontSize: 12,
+  },
+  emptyList: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#636E72',
+    fontSize: 16,
+  },
 });
