@@ -103,6 +103,21 @@ export async function deleteCollection(
   id: string,
 ): Promise<void> {
   await db.withTransactionAsync(async () => {
+    // Before CASCADE removes them, log each object_collections row being disassociated
+    const members = await db.getAllAsync<{ id: string; object_id: string }>(
+      'SELECT id, object_id FROM object_collections WHERE collection_id = ?',
+      [id],
+    );
+    for (const row of members) {
+      await logAuditEntry(db, {
+        tableName: 'object_collections',
+        recordId: row.id,
+        action: 'delete',
+        userId: 'local',
+        oldValues: { objectId: row.object_id, collectionId: id },
+      });
+    }
+
     await db.runAsync('DELETE FROM collections WHERE id = ?', [id]);
 
     await logAuditEntry(db, {
