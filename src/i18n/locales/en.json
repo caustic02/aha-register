@@ -84,7 +84,18 @@
     "timestamp": "Timestamp",
     "dimensions": "Dimensions",
     "sha256": "SHA-256",
-    "retake": "Retake"
+    "retake": "Retake",
+    "select_type": "Select Object Type",
+    "select_type_subtitle": "Choose the type that best describes this object",
+    "skip_use_default": "Skip (use default)",
+    "default_badge": "Default",
+    "type_desc_museum_object": "Physical artifacts, artworks, and cultural heritage items",
+    "type_desc_site": "Archaeological sites, landmarks, and locations of interest",
+    "type_desc_incident": "Damage events, theft, vandalism, or loss incidents",
+    "type_desc_specimen": "Biological, geological, or scientific specimens",
+    "type_desc_architectural_element": "Structural components, facades, and building elements",
+    "type_desc_environmental_sample": "Soil, water, air, or material samples for analysis",
+    "type_desc_conservation_record": "Treatment records and restoration documentation"
   },
   "collections": {
     "title": "Collections",

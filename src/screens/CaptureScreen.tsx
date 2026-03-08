@@ -21,8 +21,11 @@ import {
 import { extractMetadata, type CaptureMetadata } from '../services/metadata';
 import { createDraftObject } from '../services/draftObject';
 import { computeSHA256 } from '../utils/hash';
+import { getSetting, SETTING_KEYS } from '../services/settingsService';
+import { TypeSelector } from '../components/TypeSelector';
+import type { ObjectType } from '../db/types';
 
-type Phase = 'idle' | 'extracting' | 'preview' | 'saving' | 'done';
+type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
 
 export function CaptureScreen() {
   const db = useDatabase();
@@ -34,18 +37,23 @@ export function CaptureScreen() {
   const [metadata, setMetadata] = useState<CaptureMetadata | null>(null);
   const [hash, setHash] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
+  const [defaultObjectType, setDefaultObjectType] = useState<ObjectType | null>(null);
 
   const processCapture = useCallback(
     async (result: CaptureResult) => {
       setCapture(result);
       setPhase('extracting');
-      const meta = await extractMetadata(result.exif);
+      const [meta, fileHash, storedType] = await Promise.all([
+        extractMetadata(result.exif),
+        computeSHA256(result.uri),
+        getSetting(db, SETTING_KEYS.DEFAULT_OBJECT_TYPE),
+      ]);
       setMetadata(meta);
-      const fileHash = await computeSHA256(result.uri);
       setHash(fileHash);
+      setDefaultObjectType((storedType as ObjectType) ?? null);
       setPhase('preview');
     },
-    [],
+    [db],
   );
 
   const handleCamera = useCallback(async () => {
@@ -58,29 +66,45 @@ export function CaptureScreen() {
     if (results.length > 0) await processCapture(results[0]);
   }, [processCapture]);
 
-  const handleSave = useCallback(async () => {
-    if (!capture || !metadata) return;
-    setPhase('saving');
-    try {
-      const objectId = await createDraftObject(db, {
-        imageUri: capture.uri,
-        fileName: capture.fileName,
-        fileSize: capture.fileSize,
-        mimeType: capture.mimeType,
-        metadata,
-      });
-      setSavedId(objectId);
-      setPhase('done');
-    } catch (err) {
-      setPhase('preview');
-    }
-  }, [capture, metadata, db]);
+  const handleSave = useCallback(
+    async (objectType: ObjectType) => {
+      if (!capture || !metadata) return;
+      setPhase('saving');
+      try {
+        const objectId = await createDraftObject(db, {
+          imageUri: capture.uri,
+          fileName: capture.fileName,
+          fileSize: capture.fileSize,
+          mimeType: capture.mimeType,
+          metadata,
+          objectType,
+        });
+        setSavedId(objectId);
+        setPhase('done');
+      } catch {
+        setPhase('type_select');
+      }
+    },
+    [capture, metadata, db],
+  );
+
+  const handleTypeSelect = useCallback(
+    (type: ObjectType) => {
+      handleSave(type);
+    },
+    [handleSave],
+  );
+
+  const handleSkipType = useCallback(() => {
+    handleSave(defaultObjectType ?? 'museum_object');
+  }, [handleSave, defaultObjectType]);
 
   const handleRetake = useCallback(() => {
     setCapture(null);
     setMetadata(null);
     setHash(null);
     setSavedId(null);
+    setDefaultObjectType(null);
     setPhase('idle');
   }, []);
 
@@ -159,14 +183,26 @@ export function CaptureScreen() {
           )}
         </View>
 
-        <Pressable style={styles.primaryBtn} onPress={handleSave}>
-          <Text style={styles.primaryBtnText}>{t('capture.save_draft')}</Text>
+        <Pressable style={styles.primaryBtn} onPress={() => setPhase('type_select')}>
+          <Text style={styles.primaryBtnText}>{t('common.next')}</Text>
         </Pressable>
 
         <Pressable style={styles.secondaryBtn} onPress={handleRetake}>
           <Text style={styles.secondaryBtnText}>{t('capture.retake')}</Text>
         </Pressable>
       </ScrollView>
+    );
+  }
+
+  // --- Type Selection ---
+  if (phase === 'type_select') {
+    return (
+      <TypeSelector
+        defaultType={defaultObjectType}
+        onSelect={handleTypeSelect}
+        onSkip={handleSkipType}
+        t={t}
+      />
     );
   }
 

@@ -84,7 +84,18 @@
     "timestamp": "Zeitstempel",
     "dimensions": "Abmessungen",
     "sha256": "SHA-256",
-    "retake": "Neu aufnehmen"
+    "retake": "Neu aufnehmen",
+    "select_type": "Objekttyp w\u00e4hlen",
+    "select_type_subtitle": "W\u00e4hle den Typ, der dieses Objekt am besten beschreibt",
+    "skip_use_default": "\u00dcberspringen (Standard verwenden)",
+    "default_badge": "Standard",
+    "type_desc_museum_object": "Physische Artefakte, Kunstwerke und Kulturerbe-Objekte",
+    "type_desc_site": "Arch\u00e4ologische St\u00e4tten, Landmarken und bedeutende Orte",
+    "type_desc_incident": "Sch\u00e4den, Diebstahl, Vandalismus oder Verlustf\u00e4lle",
+    "type_desc_specimen": "Biologische, geologische oder wissenschaftliche Exemplare",
+    "type_desc_architectural_element": "Bauteile, Fassaden und Geb\u00e4udeelemente",
+    "type_desc_environmental_sample": "Boden-, Wasser-, Luft- oder Materialproben zur Analyse",
+    "type_desc_conservation_record": "Behandlungsprotokolle und Restaurierungsdokumentation"
   },
   "collections": {
     "title": "Sammlungen",

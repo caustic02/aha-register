@@ -14,6 +14,7 @@ export interface CreateDraftParams {
   fileSize: number | null;
   mimeType: string;
   metadata: CaptureMetadata;
+  objectType?: string;
 }
 
 /**
@@ -67,7 +68,7 @@ export async function createDraftObject(
        VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
       [
         objectId,
-        'museum_object',
+        params.objectType ?? 'museum_object',
         'Untitled',
         params.metadata.latitude ?? null,
         params.metadata.longitude ?? null,
