@@ -1,3 +1,4 @@
+// TODO: Wire into sync engine when cloud sync is implemented
 import { Paths } from 'expo-file-system';
 
 export interface StorageConfig {

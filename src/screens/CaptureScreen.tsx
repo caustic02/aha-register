@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { MainTabParamList } from '../navigation/MainTabs';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
@@ -18,13 +20,14 @@ import {
 } from '../services/capture';
 import { extractMetadata, type CaptureMetadata } from '../services/metadata';
 import { createDraftObject } from '../services/draftObject';
+import { computeSHA256 } from '../utils/hash';
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'saving' | 'done';
 
 export function CaptureScreen() {
   const db = useDatabase();
   const { t } = useAppTranslation();
-  const navigation = useNavigation();
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [capture, setCapture] = useState<CaptureResult | null>(null);
@@ -38,7 +41,8 @@ export function CaptureScreen() {
       setPhase('extracting');
       const meta = await extractMetadata(result.exif);
       setMetadata(meta);
-      setHash(null);
+      const fileHash = await computeSHA256(result.uri);
+      setHash(fileHash);
       setPhase('preview');
     },
     [],
@@ -82,7 +86,7 @@ export function CaptureScreen() {
 
   const handleViewObjects = useCallback(() => {
     handleRetake();
-    (navigation as any).navigate('Objects');
+    navigation.navigate('Objects');
   }, [navigation, handleRetake]);
 
   // --- Extracting / Saving spinners ---

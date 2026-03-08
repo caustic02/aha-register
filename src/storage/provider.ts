@@ -1,4 +1,5 @@
-import { File, Directory, Paths } from 'expo-file-system';
+// TODO: Wire into sync engine when cloud sync is implemented
+import { File, Paths } from 'expo-file-system';
 
 export interface StorageProvider {
   upload(key: string, data: Blob | ArrayBuffer, contentType: string): Promise<string>;

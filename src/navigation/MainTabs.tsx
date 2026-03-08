@@ -7,7 +7,14 @@ import { CaptureScreen } from '../screens/CaptureScreen';
 import { CollectionsScreen } from '../screens/CollectionsScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
-const Tab = createBottomTabNavigator();
+export type MainTabParamList = {
+  Objects: undefined;
+  Capture: undefined;
+  Collections: undefined;
+  Settings: undefined;
+};
+
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const ICONS: Record<string, string> = {
   Objects: '\u25CE',     // ◎
