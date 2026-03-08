@@ -9,6 +9,7 @@ export const SETTING_KEYS = {
   DEFAULT_OBJECT_TYPE: 'default_object_type',
   LANGUAGE: 'language',
   USER_DISPLAY_NAME: 'user_display_name',
+  ONBOARDING_COMPLETE: 'onboarding_complete',
 } as const;
 
 export const INSTITUTION_TYPES = [

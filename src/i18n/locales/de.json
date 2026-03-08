@@ -322,5 +322,30 @@
       "field_organization": "Feldorganisation",
       "other": "Sonstige"
     }
+  },
+  "onboarding": {
+    "skip": "\u00dcberspringen",
+    "next": "Weiter",
+    "get_started": "Loslegen",
+    "step_welcome_headline": "Dokumentieren. Bewahren. Beweisen.",
+    "step_welcome_body": "Das manipulationssichere Feldregister f\u00fcr Fachleute im Kulturerbe-Bereich.",
+    "step_capture_title": "Belege erfassen",
+    "step_capture_body": "Fotografiere ein Objekt und erstelle sofort einen manipulationssicheren Nachweis.",
+    "step_capture_f1": "SHA-256-Hash wird bei der Aufnahme berechnet",
+    "step_capture_f2": "GPS-Koordinaten und Zeitstempel eingebettet",
+    "step_capture_f3": "Vollst\u00e4ndiger Pr\u00fcfpfad ab dem ersten Foto",
+    "step_organize_title": "Organisieren & Exportieren",
+    "step_organize_body": "Strukturiere deine Dokumentation f\u00fcr rechtliche, archivische oder wissenschaftliche Zwecke.",
+    "step_organize_f1": "Objekte in benannten Sammlungen gruppieren",
+    "step_organize_f2": "Typspezifische Formulare f\u00fcr 7 Objekttypen ausf\u00fcllen",
+    "step_organize_f3": "Signierte PDF-Berichte f\u00fcr jedes Objekt oder jede Sammlung exportieren",
+    "step_setup_title": "Deine Institution",
+    "step_setup_body": "Erz\u00e4hle uns etwas \u00fcber deine Organisation. Diese Einstellungen k\u00f6nnen jederzeit ge\u00e4ndert werden.",
+    "institution_name": "Name der Institution",
+    "institution_name_placeholder": "Name eingeben",
+    "institution_type": "Typ der Institution",
+    "default_object_type": "Standard-Objekttyp",
+    "language": "Sprache",
+    "select_placeholder": "Ausw\u00e4hlen\u2026"
   }
 }

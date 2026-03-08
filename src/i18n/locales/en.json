@@ -322,5 +322,30 @@
       "field_organization": "Field Organization",
       "other": "Other"
     }
+  },
+  "onboarding": {
+    "skip": "Skip",
+    "next": "Next",
+    "get_started": "Get Started",
+    "step_welcome_headline": "Document. Preserve. Prove.",
+    "step_welcome_body": "The tamper-evident field register for cultural heritage professionals.",
+    "step_capture_title": "Capture Evidence",
+    "step_capture_body": "Photograph any object and instantly create a tamper-evident record.",
+    "step_capture_f1": "SHA-256 hash computed at capture",
+    "step_capture_f2": "GPS coordinates and timestamp embedded",
+    "step_capture_f3": "Full audit trail from first photograph",
+    "step_organize_title": "Organize & Export",
+    "step_organize_body": "Structure your documentation for legal, archival, or research use.",
+    "step_organize_f1": "Group objects into named collections",
+    "step_organize_f2": "Fill in type-specific forms for 7 object types",
+    "step_organize_f3": "Export signed PDF reports for any object or collection",
+    "step_setup_title": "Your Institution",
+    "step_setup_body": "Tell us a bit about your organisation. You can change these settings at any time.",
+    "institution_name": "Institution Name",
+    "institution_name_placeholder": "Enter name",
+    "institution_type": "Institution Type",
+    "default_object_type": "Default Object Type",
+    "language": "Language",
+    "select_placeholder": "Select\u2026"
   }
 }

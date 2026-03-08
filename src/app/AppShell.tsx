@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import type { SQLiteDatabase } from 'expo-sqlite';
@@ -8,22 +8,31 @@ import { initDatabase } from '../db/database';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
 import { MainTabs } from '../navigation/MainTabs';
 import { getSetting, SETTING_KEYS } from '../services/settingsService';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
 
 export default function AppShell() {
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
 
   useEffect(() => {
     initDatabase()
       .then(async (database) => {
-        // Apply saved language preference (overrides device locale)
-        const savedLang = await getSetting(database, SETTING_KEYS.LANGUAGE);
+        const [savedLang, obComplete] = await Promise.all([
+          getSetting(database, SETTING_KEYS.LANGUAGE),
+          getSetting(database, SETTING_KEYS.ONBOARDING_COMPLETE),
+        ]);
         if (savedLang) {
           i18n.changeLanguage(savedLang);
         }
+        setOnboardingComplete(obComplete === 'true');
         setDb(database);
       })
       .catch((err) => setError(String(err)));
+  }, []);
+
+  const handleOnboardingFinish = useCallback(() => {
+    setOnboardingComplete(true);
   }, []);
 
   if (error) {
@@ -45,9 +54,13 @@ export default function AppShell() {
 
   return (
     <DatabaseProvider db={db}>
-      <NavigationContainer>
-        <MainTabs />
-      </NavigationContainer>
+      {onboardingComplete ? (
+        <NavigationContainer>
+          <MainTabs />
+        </NavigationContainer>
+      ) : (
+        <OnboardingScreen onFinish={handleOnboardingFinish} />
+      )}
     </DatabaseProvider>
   );
 }
