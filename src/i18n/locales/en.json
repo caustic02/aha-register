@@ -139,6 +139,18 @@
     "contextual": "Contextual",
     "legal_hold_active": "Legal Hold Active"
   },
+  "media": {
+    "add_photo": "Add Photo",
+    "set_primary": "Set as Primary",
+    "delete": "Delete Photo",
+    "delete_confirm": "Delete this photo? This cannot be undone.",
+    "delete_last": "Cannot delete the only photo",
+    "counter": "{{current}}/{{total}}",
+    "capture_or_library": "Add Photo",
+    "from_camera": "Take Photo",
+    "from_library": "Choose from Library",
+    "cancel": "Cancel"
+  },
   "settings": {
     "title": "Settings",
     "institution": "Institution",

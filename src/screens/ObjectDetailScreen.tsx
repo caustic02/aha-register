@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Image,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +19,17 @@ import { SyncEngine } from '../sync/engine';
 import { generateId } from '../utils/uuid';
 import { FieldInput } from '../components/FieldInput';
 import { TypePicker } from '../components/TypePicker';
+import { ImageGallery } from '../components/ImageGallery';
+import {
+  captureFromCamera,
+  pickFromLibrary,
+} from '../services/capture';
+import {
+  getMediaForObject,
+  addMediaToObject,
+  setAsPrimary,
+  deleteMedia,
+} from '../services/mediaService';
 import {
   getCollectionsForObject,
   getAllCollections,
@@ -130,10 +141,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       }
     }
 
-    const mediaRows = await db.getAllAsync<Media>(
-      'SELECT * FROM media WHERE object_id = ? ORDER BY is_primary DESC, sort_order ASC',
-      [objectId],
-    );
+    const mediaRows = await getMediaForObject(db, objectId);
     setMedia(mediaRows);
 
     const annotationRows = await db.getAllAsync<Annotation>(
@@ -301,6 +309,71 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     [navigation],
   );
 
+  const reloadMedia = useCallback(async () => {
+    const rows = await getMediaForObject(db, objectId);
+    setMedia(rows);
+  }, [db, objectId]);
+
+  const handleAddPhoto = useCallback(() => {
+    Alert.alert(
+      t('media.capture_or_library'),
+      undefined,
+      [
+        {
+          text: t('media.from_camera'),
+          onPress: async () => {
+            const result = await captureFromCamera();
+            if (result) {
+              await addMediaToObject(db, objectId, result.uri, result.mimeType, {
+                fileName: result.fileName ?? undefined,
+                fileSize: result.fileSize ?? undefined,
+              });
+              await reloadMedia();
+            }
+          },
+        },
+        {
+          text: t('media.from_library'),
+          onPress: async () => {
+            const results = await pickFromLibrary();
+            for (const result of results) {
+              await addMediaToObject(db, objectId, result.uri, result.mimeType, {
+                fileName: result.fileName ?? undefined,
+                fileSize: result.fileSize ?? undefined,
+              });
+            }
+            if (results.length > 0) {
+              await reloadMedia();
+            }
+          },
+        },
+        { text: t('media.cancel'), style: 'cancel' },
+      ],
+    );
+  }, [db, objectId, t, reloadMedia]);
+
+  const handleSetPrimary = useCallback(
+    async (mediaId: string) => {
+      await setAsPrimary(db, mediaId, objectId);
+      await reloadMedia();
+    },
+    [db, objectId, reloadMedia],
+  );
+
+  const handleDeleteMedia = useCallback(
+    async (mediaId: string) => {
+      try {
+        await deleteMedia(db, mediaId);
+        await reloadMedia();
+      } catch (err) {
+        if (err instanceof Error && err.message === 'LAST_MEDIA') {
+          Alert.alert(t('media.delete'), t('media.delete_last'));
+        }
+      }
+    },
+    [db, t, reloadMedia],
+  );
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -327,21 +400,13 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
       </Pressable>
 
-      {/* SECTION 1 — Hero Image */}
-      <View style={styles.heroContainer}>
-        {primaryMedia ? (
-          <Image source={{ uri: primaryMedia.file_path }} style={styles.heroImage} />
-        ) : (
-          <View style={styles.heroPlaceholder}>
-            <Text style={styles.heroPlaceholderText}>{'\u25A3'}</Text>
-          </View>
-        )}
-        {media.length > 1 && (
-          <View style={styles.mediaBadge}>
-            <Text style={styles.mediaBadgeText}>1/{media.length}</Text>
-          </View>
-        )}
-      </View>
+      {/* SECTION 1 — Image Gallery */}
+      <ImageGallery
+        media={media}
+        onAddPhoto={handleAddPhoto}
+        onSetPrimary={handleSetPrimary}
+        onDelete={handleDeleteMedia}
+      />
 
       {/* SECTION 2 — Core Fields */}
       <View style={styles.section}>
@@ -649,28 +714,6 @@ const styles = StyleSheet.create({
   errorText: { color: '#FF6B6B', fontSize: 16 },
   backBtn: { paddingTop: 56, paddingHorizontal: 20, paddingBottom: 8 },
   backText: { color: '#74B9FF', fontSize: 16 },
-
-  // Hero
-  heroContainer: { position: 'relative' },
-  heroImage: { width: '100%', height: 250, backgroundColor: '#1A1A2E' },
-  heroPlaceholder: {
-    width: '100%',
-    height: 250,
-    backgroundColor: '#1A1A2E',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroPlaceholderText: { fontSize: 48, color: '#2D2D3A' },
-  mediaBadge: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  mediaBadgeText: { color: '#FFFFFF', fontSize: 12, fontWeight: '600' },
 
   // Sections
   section: { paddingHorizontal: 20, paddingTop: 24 },

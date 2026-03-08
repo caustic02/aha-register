@@ -139,6 +139,18 @@
     "contextual": "Kontextuell",
     "legal_hold_active": "Rechtliche Sperrung aktiv"
   },
+  "media": {
+    "add_photo": "Foto hinzuf\u00fcgen",
+    "set_primary": "Als Hauptbild setzen",
+    "delete": "Foto l\u00f6schen",
+    "delete_confirm": "Dieses Foto l\u00f6schen? Das kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
+    "delete_last": "Das einzige Foto kann nicht gel\u00f6scht werden",
+    "counter": "{{current}}/{{total}}",
+    "capture_or_library": "Foto hinzuf\u00fcgen",
+    "from_camera": "Foto aufnehmen",
+    "from_library": "Aus Bibliothek w\u00e4hlen",
+    "cancel": "Abbrechen"
+  },
   "settings": {
     "title": "Einstellungen",
     "institution": "Institution",
