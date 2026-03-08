@@ -99,5 +99,42 @@
     "corroborative": "Best\u00e4tigend",
     "contextual": "Kontextuell",
     "legal_hold_active": "Rechtliche Sperrung aktiv"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "institution": "Institution",
+    "institution_name": "Name der Institution",
+    "institution_name_placeholder": "Name eingeben",
+    "institution_type": "Typ der Institution",
+    "default_privacy": "Standard-Datenschutzstufe",
+    "default_privacy_description": "Wird automatisch auf neue Erfassungen angewendet",
+    "default_object_type": "Standard-Objekttyp",
+    "language": "Sprache",
+    "storage": "Speicher",
+    "object_count": "Objekte",
+    "media_count": "Mediendateien",
+    "collection_count": "Sammlungen",
+    "pending_sync": "Ausstehende Synchronisierung",
+    "about": "\u00dcber",
+    "version": "Version",
+    "build": "Build",
+    "powered_by": "Ein Produkt von TEDE Holdings LLC",
+    "privacy": {
+      "public": "\u00d6ffentlich",
+      "public_desc": "Sichtbar f\u00fcr alle Nutzer mit Zugang",
+      "confidential": "Vertraulich",
+      "confidential_desc": "Nur f\u00fcr autorisiertes Personal",
+      "anonymous": "Anonym",
+      "anonymous_desc": "Identifizierende Metadaten werden beim Sync entfernt"
+    },
+    "institution_type": {
+      "museum": "Museum",
+      "gallery": "Galerie",
+      "archive": "Archiv",
+      "university": "Universit\u00e4t",
+      "research_institute": "Forschungsinstitut",
+      "field_organization": "Feldorganisation",
+      "other": "Sonstige"
+    }
   }
 }

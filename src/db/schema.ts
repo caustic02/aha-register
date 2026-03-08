@@ -1,7 +1,7 @@
 /**
- * aha! Register — SQLite schema v1.1
+ * aha! Register — SQLite schema v1.2
  *
- * 13 tables supporting universal heritage documentation.
+ * 14 tables supporting universal heritage documentation.
  * All primary keys are TEXT (UUID v4, generated client-side).
  * JSONB columns stored as TEXT in SQLite.
  */
@@ -163,7 +163,14 @@ CREATE TABLE IF NOT EXISTS documents (
   updated_at    TEXT NOT NULL
 );
 
--- 12. audit_trail
+-- 12. app_settings
+CREATE TABLE IF NOT EXISTS app_settings (
+  key         TEXT PRIMARY KEY,
+  value       TEXT NOT NULL,
+  updated_at  TEXT NOT NULL
+);
+
+-- 13. audit_trail
 CREATE TABLE IF NOT EXISTS audit_trail (
   id               TEXT PRIMARY KEY,
   table_name       TEXT NOT NULL,
@@ -177,7 +184,7 @@ CREATE TABLE IF NOT EXISTS audit_trail (
   created_at       TEXT NOT NULL
 );
 
--- 13. sync_queue
+-- 14. sync_queue
 CREATE TABLE IF NOT EXISTS sync_queue (
   id          TEXT PRIMARY KEY,
   table_name  TEXT NOT NULL,

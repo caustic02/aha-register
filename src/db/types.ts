@@ -218,6 +218,12 @@ export interface ObjectCollection {
   display_order: number;
 }
 
+export interface AppSetting {
+  key: string;
+  value: string;
+  updated_at: string;
+}
+
 export interface Location {
   id: string;
   site_id: string | null;

@@ -6,6 +6,7 @@ import { computeSHA256 } from '../utils/hash';
 import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import type { CaptureMetadata } from './metadata';
+import { getSetting, SETTING_KEYS } from './settingsService';
 
 export interface CreateDraftParams {
   imageUri: string;
@@ -44,72 +45,82 @@ export async function createDraftObject(
   // 2. Compute SHA-256 hash
   const sha256 = await computeSHA256(destUri);
 
-  // 3. Insert object record
-  await db.runAsync(
-    `INSERT INTO objects
-       (id, object_type, status, title, latitude, longitude, altitude,
-        coordinate_accuracy, coordinate_source, privacy_tier,
-        legal_hold, created_at, updated_at)
-     VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, 'public', 0, ?, ?)`,
-    [
-      objectId,
-      'museum_object',
-      'Untitled',
-      params.metadata.latitude ?? null,
-      params.metadata.longitude ?? null,
-      params.metadata.altitude ?? null,
-      params.metadata.accuracy ?? null,
-      params.metadata.coordinateSource ?? null,
-      now,
-      now,
-    ],
-  );
+  // 2b. Read default privacy tier from settings
+  const privacyTier =
+    (await getSetting(db, SETTING_KEYS.DEFAULT_PRIVACY_TIER)) ?? 'public';
 
-  // 4. Insert media record (is_primary=1 → primary display image)
+  // 3-6. All database writes in a single transaction.
+  // If any INSERT fails, the entire capture rolls back cleanly.
   const fileType = params.mimeType.split('/')[0]; // 'image', 'video', 'audio'
   const normalizedFileType =
     fileType === 'image' || fileType === 'video' || fileType === 'audio'
       ? fileType
       : 'document';
 
-  await db.runAsync(
-    `INSERT INTO media
-       (id, object_id, file_path, file_name, file_type, mime_type, file_size,
-        sha256_hash, privacy_tier, is_primary, sort_order, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'public', 1, 0, ?, ?)`,
-    [
-      mediaId,
+  await db.withTransactionAsync(async () => {
+    // 3. Insert object record
+    await db.runAsync(
+      `INSERT INTO objects
+         (id, object_type, status, title, latitude, longitude, altitude,
+          coordinate_accuracy, coordinate_source, privacy_tier,
+          legal_hold, created_at, updated_at)
+       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+      [
+        objectId,
+        'museum_object',
+        'Untitled',
+        params.metadata.latitude ?? null,
+        params.metadata.longitude ?? null,
+        params.metadata.altitude ?? null,
+        params.metadata.accuracy ?? null,
+        params.metadata.coordinateSource ?? null,
+        privacyTier,
+        now,
+        now,
+      ],
+    );
+
+    // 4. Insert media record (is_primary=1 → primary display image)
+    await db.runAsync(
+      `INSERT INTO media
+         (id, object_id, file_path, file_name, file_type, mime_type, file_size,
+          sha256_hash, privacy_tier, is_primary, sort_order, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)`,
+      [
+        mediaId,
+        objectId,
+        destUri,
+        params.fileName ?? storageName,
+        normalizedFileType,
+        params.mimeType,
+        params.fileSize ?? null,
+        sha256,
+        privacyTier,
+        now,
+        now,
+      ],
+    );
+
+    // 5. Audit trail
+    await logAuditEntry(db, {
+      tableName: 'objects',
+      recordId: objectId,
+      action: 'insert',
+      userId: 'local',
+      newValues: { objectId, mediaId, sha256 },
+      deviceInfo: {
+        model: params.metadata.deviceModel,
+        os: params.metadata.osVersion,
+        app: params.metadata.appVersion,
+      },
+    });
+
+    // 6. Queue sync
+    const syncEngine = new SyncEngine(db);
+    await syncEngine.queueChange('objects', objectId, 'insert', {
       objectId,
-      destUri,
-      params.fileName ?? storageName,
-      normalizedFileType,
-      params.mimeType,
-      params.fileSize ?? null,
-      sha256,
-      now,
-      now,
-    ],
-  );
-
-  // 5. Audit trail
-  await logAuditEntry(db, {
-    tableName: 'objects',
-    recordId: objectId,
-    action: 'insert',
-    userId: 'local',
-    newValues: { objectId, mediaId, sha256 },
-    deviceInfo: {
-      model: params.metadata.deviceModel,
-      os: params.metadata.osVersion,
-      app: params.metadata.appVersion,
-    },
-  });
-
-  // 6. Queue sync
-  const syncEngine = new SyncEngine(db);
-  await syncEngine.queueChange('objects', objectId, 'insert', {
-    objectId,
-    mediaId,
+      mediaId,
+    });
   });
 
   return objectId;

@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import type { SQLiteDatabase } from 'expo-sqlite';
+import i18n from 'i18next';
 
 import { initDatabase } from '../db/database';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
 import { MainTabs } from '../navigation/MainTabs';
+import { getSetting, SETTING_KEYS } from '../services/settingsService';
 
 export default function AppShell() {
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
@@ -13,7 +15,14 @@ export default function AppShell() {
 
   useEffect(() => {
     initDatabase()
-      .then(setDb)
+      .then(async (database) => {
+        // Apply saved language preference (overrides device locale)
+        const savedLang = await getSetting(database, SETTING_KEYS.LANGUAGE);
+        if (savedLang) {
+          i18n.changeLanguage(savedLang);
+        }
+        setDb(database);
+      })
       .catch((err) => setError(String(err)));
   }, []);
 

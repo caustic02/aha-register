@@ -99,5 +99,42 @@
     "corroborative": "Corroborative",
     "contextual": "Contextual",
     "legal_hold_active": "Legal Hold Active"
+  },
+  "settings": {
+    "title": "Settings",
+    "institution": "Institution",
+    "institution_name": "Institution Name",
+    "institution_name_placeholder": "Enter institution name",
+    "institution_type": "Institution Type",
+    "default_privacy": "Default Privacy Tier",
+    "default_privacy_description": "Applied to new captures automatically",
+    "default_object_type": "Default Object Type",
+    "language": "Language",
+    "storage": "Storage",
+    "object_count": "Objects",
+    "media_count": "Media Files",
+    "collection_count": "Collections",
+    "pending_sync": "Pending Sync",
+    "about": "About",
+    "version": "Version",
+    "build": "Build",
+    "powered_by": "Powered by TEDE Holdings LLC",
+    "privacy": {
+      "public": "Public",
+      "public_desc": "Visible to all users with access",
+      "confidential": "Confidential",
+      "confidential_desc": "Restricted to authorized personnel",
+      "anonymous": "Anonymous",
+      "anonymous_desc": "Identifying metadata stripped on sync"
+    },
+    "institution_type": {
+      "museum": "Museum",
+      "gallery": "Gallery",
+      "archive": "Archive",
+      "university": "University",
+      "research_institute": "Research Institute",
+      "field_organization": "Field Organization",
+      "other": "Other"
+    }
   }
 }
