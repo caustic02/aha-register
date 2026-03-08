@@ -1,7 +1,7 @@
 /**
  * aha! Register — Index definitions for SQLite schema v1.1
  *
- * 17 indexes covering the primary query patterns.
+ * 19 indexes covering the primary query patterns.
  */
 export const INDEXES_SQL = `
 -- objects
@@ -21,6 +21,10 @@ CREATE INDEX IF NOT EXISTS idx_annotations_object_id    ON annotations(object_id
 
 -- collections
 CREATE INDEX IF NOT EXISTS idx_collections_institution_id ON collections(institution_id);
+
+-- object_collections
+CREATE INDEX IF NOT EXISTS idx_object_collections_object     ON object_collections(object_id);
+CREATE INDEX IF NOT EXISTS idx_object_collections_collection ON object_collections(collection_id);
 
 -- locations
 CREATE INDEX IF NOT EXISTS idx_locations_site_id        ON locations(site_id);

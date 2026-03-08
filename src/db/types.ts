@@ -208,6 +208,16 @@ export interface Collection {
   updated_at: string;
 }
 
+export interface ObjectCollection {
+  id: string;
+  object_id: string;
+  collection_id: string;
+  added_at: string;
+  added_by: string | null;
+  notes: string | null;
+  display_order: number;
+}
+
 export interface Location {
   id: string;
   site_id: string | null;

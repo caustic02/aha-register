@@ -1,7 +1,7 @@
 /**
  * aha! Register — SQLite schema v1.1
  *
- * 12 tables supporting universal heritage documentation.
+ * 13 tables supporting universal heritage documentation.
  * All primary keys are TEXT (UUID v4, generated client-side).
  * JSONB columns stored as TEXT in SQLite.
  */
@@ -124,7 +124,19 @@ CREATE TABLE IF NOT EXISTS collections (
   updated_at      TEXT NOT NULL
 );
 
--- 9. locations
+-- 9. object_collections (many-to-many join: objects <-> collections)
+CREATE TABLE IF NOT EXISTS object_collections (
+  id              TEXT PRIMARY KEY,
+  object_id       TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  collection_id   TEXT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+  added_at        TEXT NOT NULL,
+  added_by        TEXT REFERENCES users(id) ON DELETE SET NULL,
+  notes           TEXT,
+  display_order   INTEGER DEFAULT 0,
+  UNIQUE(object_id, collection_id)
+);
+
+-- 10. locations
 CREATE TABLE IF NOT EXISTS locations (
   id            TEXT PRIMARY KEY,
   site_id       TEXT REFERENCES sites(id) ON DELETE SET NULL,
@@ -136,7 +148,7 @@ CREATE TABLE IF NOT EXISTS locations (
   updated_at    TEXT NOT NULL
 );
 
--- 10. documents
+-- 11. documents
 CREATE TABLE IF NOT EXISTS documents (
   id            TEXT PRIMARY KEY,
   object_id     TEXT REFERENCES objects(id) ON DELETE CASCADE,
@@ -151,7 +163,7 @@ CREATE TABLE IF NOT EXISTS documents (
   updated_at    TEXT NOT NULL
 );
 
--- 11. audit_trail
+-- 12. audit_trail
 CREATE TABLE IF NOT EXISTS audit_trail (
   id               TEXT PRIMARY KEY,
   table_name       TEXT NOT NULL,
@@ -165,7 +177,7 @@ CREATE TABLE IF NOT EXISTS audit_trail (
   created_at       TEXT NOT NULL
 );
 
--- 12. sync_queue
+-- 13. sync_queue
 CREATE TABLE IF NOT EXISTS sync_queue (
   id          TEXT PRIMARY KEY,
   table_name  TEXT NOT NULL,
