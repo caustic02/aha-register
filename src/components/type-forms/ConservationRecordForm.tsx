@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FieldInput } from '../FieldInput';
+import { DateField } from '../DateField';
 import type { TypeFormProps } from './index';
 import type { ConservationRecordData } from '../../db/types';
 
@@ -11,15 +12,12 @@ export default function ConservationRecordForm({ data, onChange, t }: TypeFormPr
 
   const [treatmentType, setTreatmentType] = useState(d.treatment_type ?? '');
   const [conservator, setConservator] = useState(d.conservator ?? '');
-  const [dateStarted, setDateStarted] = useState(d.date_started ?? '');
-  const [dateCompleted, setDateCompleted] = useState(d.date_completed ?? '');
   const [materialsUsed, setMaterialsUsed] = useState(
     (d.materials_used ?? []).join(', '),
   );
   const [beforeCondition, setBeforeCondition] = useState(d.before_condition ?? '');
   const [afterCondition, setAfterCondition] = useState(d.after_condition ?? '');
   const [recommendations, setRecommendations] = useState(d.recommendations ?? '');
-  const [nextReviewDate, setNextReviewDate] = useState(d.next_review_date ?? '');
 
   const save = useCallback(
     (patch: Partial<ConservationRecordData>) => {
@@ -45,19 +43,17 @@ export default function ConservationRecordForm({ data, onChange, t }: TypeFormPr
         onChangeText={setConservator}
         onBlur={() => save({ conservator: conservator || undefined })}
       />
-      <FieldInput
+      <DateField
         label={t('type_forms.conservation_record.date_started')}
-        value={dateStarted}
-        onChangeText={setDateStarted}
-        onBlur={() => save({ date_started: dateStarted || undefined })}
-        placeholder={t('objects.event_date_placeholder')}
+        value={d.date_started}
+        onChange={(iso) => save({ date_started: iso })}
+        t={t}
       />
-      <FieldInput
+      <DateField
         label={t('type_forms.conservation_record.date_completed')}
-        value={dateCompleted}
-        onChangeText={setDateCompleted}
-        onBlur={() => save({ date_completed: dateCompleted || undefined })}
-        placeholder={t('objects.event_date_placeholder')}
+        value={d.date_completed}
+        onChange={(iso) => save({ date_completed: iso })}
+        t={t}
       />
       <FieldInput
         label={t('type_forms.conservation_record.materials_used')}
@@ -126,12 +122,11 @@ export default function ConservationRecordForm({ data, onChange, t }: TypeFormPr
         onBlur={() => save({ recommendations: recommendations || undefined })}
         multiline
       />
-      <FieldInput
+      <DateField
         label={t('type_forms.conservation_record.next_review_date')}
-        value={nextReviewDate}
-        onChangeText={setNextReviewDate}
-        onBlur={() => save({ next_review_date: nextReviewDate || undefined })}
-        placeholder={t('objects.event_date_placeholder')}
+        value={d.next_review_date}
+        onChange={(iso) => save({ next_review_date: iso })}
+        t={t}
       />
     </View>
   );

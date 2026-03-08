@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { FieldInput } from '../FieldInput';
+import { DateField } from '../DateField';
 import type { TypeFormProps } from './index';
 import type { IncidentData } from '../../db/types';
 
@@ -10,8 +11,6 @@ export default function IncidentForm({ data, onChange, t }: TypeFormProps) {
   const d = data as IncidentData;
 
   const [incidentType, setIncidentType] = useState(d.incident_type ?? '');
-  const [dateReported, setDateReported] = useState(d.date_reported ?? '');
-  const [dateOccurred, setDateOccurred] = useState(d.date_occurred ?? '');
   const [severity, setSeverity] = useState(d.severity ?? '');
   const [perpetratorInfo, setPerpetratorInfo] = useState(d.perpetrator_info ?? '');
   const [lawEnforcement, setLawEnforcement] = useState(d.law_enforcement_notified ?? false);
@@ -33,19 +32,17 @@ export default function IncidentForm({ data, onChange, t }: TypeFormProps) {
         onChangeText={setIncidentType}
         onBlur={() => save({ incident_type: incidentType || undefined })}
       />
-      <FieldInput
+      <DateField
         label={t('type_forms.incident.date_reported')}
-        value={dateReported}
-        onChangeText={setDateReported}
-        onBlur={() => save({ date_reported: dateReported || undefined })}
-        placeholder={t('objects.event_date_placeholder')}
+        value={d.date_reported}
+        onChange={(iso) => save({ date_reported: iso })}
+        t={t}
       />
-      <FieldInput
+      <DateField
         label={t('type_forms.incident.date_occurred')}
-        value={dateOccurred}
-        onChangeText={setDateOccurred}
-        onBlur={() => save({ date_occurred: dateOccurred || undefined })}
-        placeholder={t('objects.event_date_placeholder')}
+        value={d.date_occurred}
+        onChange={(iso) => save({ date_occurred: iso })}
+        t={t}
       />
 
       <Text style={styles.fieldLabel}>

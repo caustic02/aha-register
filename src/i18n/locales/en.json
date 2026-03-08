@@ -326,6 +326,12 @@
       "other": "Other"
     }
   },
+  "date_field": {
+    "placeholder": "Select date",
+    "year": "Year",
+    "month": "Month",
+    "day": "Day"
+  },
   "batch": {
     "selected_count": "{{count}} selected",
     "select_all": "Select All",

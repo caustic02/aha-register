@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { FieldInput } from '../FieldInput';
+import { DateField } from '../DateField';
 import type { TypeFormProps } from './index';
 import type { ArchitecturalElementData } from '../../db/types';
 
@@ -14,7 +15,6 @@ export default function ArchitecturalElementForm({ data, onChange, t }: TypeForm
   const [constructionMaterial, setConstructionMaterial] = useState(
     (d.construction_material ?? []).join(', '),
   );
-  const [constructionDate, setConstructionDate] = useState(d.construction_date ?? '');
   const [structuralCondition, setStructuralCondition] = useState(d.structural_condition ?? '');
   const [loadBearing, setLoadBearing] = useState(d.load_bearing ?? false);
   const [restorationHistory, setRestorationHistory] = useState(
@@ -52,12 +52,11 @@ export default function ArchitecturalElementForm({ data, onChange, t }: TypeForm
         onBlur={() => save({ construction_material: splitCsv(constructionMaterial) })}
         placeholder={t('type_forms.comma_separated')}
       />
-      <FieldInput
+      <DateField
         label={t('type_forms.architectural_element.construction_date')}
-        value={constructionDate}
-        onChangeText={setConstructionDate}
-        onBlur={() => save({ construction_date: constructionDate || undefined })}
-        placeholder={t('objects.event_date_placeholder')}
+        value={d.construction_date}
+        onChange={(iso) => save({ construction_date: iso })}
+        t={t}
       />
 
       <Text style={styles.fieldLabel}>
