@@ -1,12 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   FlatList,
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -37,6 +39,10 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(async () => {
     const result = await getCollectionById(db, collectionId);
@@ -58,6 +64,37 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     });
     return unsub;
   }, [navigation, load]);
+
+  // Debounce search input
+  useEffect(() => {
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedQuery(searchText);
+    }, 300);
+    return () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    };
+  }, [searchText]);
+
+  const availableTypes = useMemo(() => {
+    const seen = new Set<string>();
+    for (const o of objects) seen.add(o.object_type);
+    return Array.from(seen);
+  }, [objects]);
+
+  const filteredObjects = useMemo(() => {
+    let result = objects;
+    if (selectedType) {
+      result = result.filter((o) => o.object_type === selectedType);
+    }
+    if (debouncedQuery.trim()) {
+      const q = debouncedQuery.trim().toLowerCase();
+      result = result.filter((o) => o.title.toLowerCase().includes(q));
+    }
+    return result;
+  }, [objects, selectedType, debouncedQuery]);
+
+  const isFiltering = debouncedQuery.trim().length > 0 || selectedType !== null;
 
   const handleNameBlur = useCallback(() => {
     if (collection && name.trim() && name !== collection.name) {
@@ -181,10 +218,11 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
       </View>
 
       <FlatList
-        data={objects}
+        data={filteredObjects}
         keyExtractor={(item) => item.id}
         renderItem={renderObject}
         contentContainerStyle={styles.listContent}
+        keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View>
             {/* Editable name */}
@@ -233,22 +271,112 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
             <Text style={styles.sectionTitle}>
               {t('objects.title')}
             </Text>
+
+            {/* Search bar */}
+            <View style={styles.searchRow}>
+              <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
+              <TextInput
+                style={styles.searchInput}
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder={t('collections.detail.search_placeholder')}
+                placeholderTextColor="#4A4A5A"
+                returnKeyType="search"
+                clearButtonMode="never"
+              />
+              {searchText.length > 0 && (
+                <Pressable
+                  onPress={() => {
+                    setSearchText('');
+                    setDebouncedQuery('');
+                  }}
+                  hitSlop={8}
+                >
+                  <Text style={styles.clearBtn}>{'\u2715'}</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {/* Filtered count */}
+            {isFiltering && (
+              <Text style={styles.filterCount}>
+                {t('collections.detail.search_results', {
+                  count: filteredObjects.length,
+                  total: objects.length,
+                })}
+              </Text>
+            )}
+
+            {/* Type filter chips */}
+            {availableTypes.length > 1 && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterRow}
+              >
+                <Pressable
+                  style={[
+                    styles.filterChip,
+                    selectedType === null && styles.filterChipActive,
+                  ]}
+                  onPress={() => setSelectedType(null)}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedType === null && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {t('objects.filter_all')}
+                  </Text>
+                </Pressable>
+                {availableTypes.map((type) => (
+                  <Pressable
+                    key={type}
+                    style={[
+                      styles.filterChip,
+                      selectedType === type && styles.filterChipActive,
+                    ]}
+                    onPress={() =>
+                      setSelectedType(selectedType === type ? null : type)
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.filterChipText,
+                        selectedType === type && styles.filterChipTextActive,
+                      ]}
+                    >
+                      {t(`object_types.${type}`)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.emptyContent}>
-            <Text style={styles.emptyText}>{t('collections.detail.empty')}</Text>
-            <Pressable
-              style={styles.addObjectsBtn}
-              onPress={() =>
-                navigation.navigate('AddObjects', { collectionId })
-              }
-            >
-              <Text style={styles.addObjectsBtnText}>
-                {t('collections.detail.add_objects')}
+          isFiltering ? (
+            <View style={styles.emptyContent}>
+              <Text style={styles.emptyText}>
+                {t('collections.detail.search_empty')}
               </Text>
-            </Pressable>
-          </View>
+            </View>
+          ) : (
+            <View style={styles.emptyContent}>
+              <Text style={styles.emptyText}>{t('collections.detail.empty')}</Text>
+              <Pressable
+                style={styles.addObjectsBtn}
+                onPress={() =>
+                  navigation.navigate('AddObjects', { collectionId })
+                }
+              >
+                <Text style={styles.addObjectsBtnText}>
+                  {t('collections.detail.add_objects')}
+                </Text>
+              </Pressable>
+            </View>
+          )
         }
       />
     </View>
@@ -327,6 +455,61 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 24,
     marginBottom: 12,
+  },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(116,185,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(116,185,255,0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 8,
+  },
+  searchIcon: {
+    fontSize: 14,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    color: '#DFE6E9',
+    fontSize: 15,
+    padding: 0,
+  },
+  clearBtn: {
+    color: '#636E72',
+    fontSize: 14,
+    paddingLeft: 8,
+  },
+  filterCount: {
+    color: '#636E72',
+    fontSize: 13,
+    marginBottom: 8,
+  },
+  filterRow: {
+    gap: 8,
+    paddingBottom: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(116,185,255,0.2)',
+  },
+  filterChipActive: {
+    backgroundColor: '#74B9FF',
+    borderColor: '#74B9FF',
+  },
+  filterChipText: {
+    color: '#636E72',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  filterChipTextActive: {
+    color: '#08080F',
+    fontWeight: '700',
   },
   objectRow: {
     flexDirection: 'row',

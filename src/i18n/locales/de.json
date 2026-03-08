@@ -127,7 +127,10 @@
     "remove_confirm": "Dieses Objekt aus der Sammlung entfernen?",
     "detail": {
       "empty": "Keine Objekte in dieser Sammlung",
-      "add_objects": "Objekte hinzuf\u00fcgen"
+      "add_objects": "Objekte hinzuf\u00fcgen",
+      "search_placeholder": "Diese Sammlung durchsuchen\u2026",
+      "search_results": "{{count}} von {{total}} Objekten",
+      "search_empty": "Keine \u00fcbereinstimmenden Objekte in dieser Sammlung"
     },
     "create_screen": {
       "title": "Neue Sammlung",

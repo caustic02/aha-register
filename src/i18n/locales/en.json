@@ -127,7 +127,10 @@
     "remove_confirm": "Remove this object from the collection?",
     "detail": {
       "empty": "No objects in this collection",
-      "add_objects": "Add Objects"
+      "add_objects": "Add Objects",
+      "search_placeholder": "Search this collection\u2026",
+      "search_results": "{{count}} of {{total}} objects",
+      "search_empty": "No matching objects in this collection"
     },
     "create_screen": {
       "title": "New Collection",
