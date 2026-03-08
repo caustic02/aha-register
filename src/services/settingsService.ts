@@ -10,6 +10,7 @@ export const SETTING_KEYS = {
   LANGUAGE: 'language',
   USER_DISPLAY_NAME: 'user_display_name',
   ONBOARDING_COMPLETE: 'onboarding_complete',
+  CAMERA_FLASH_MODE: 'camera_flash_mode',
 } as const;
 
 export const INSTITUTION_TYPES = [
