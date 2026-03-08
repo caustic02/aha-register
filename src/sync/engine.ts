@@ -1,20 +1,8 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import * as Crypto from 'expo-crypto';
+import type { SyncAction, SyncStatus, SyncQueueItem } from '../db/types';
+import { generateId } from '../utils/uuid';
 
-export type SyncAction = 'insert' | 'update' | 'delete';
-export type SyncStatus = 'pending' | 'syncing' | 'failed';
-
-export interface SyncQueueRow {
-  id: string;
-  table_name: string;
-  record_id: string;
-  action: SyncAction;
-  payload: string; // JSON
-  status: SyncStatus;
-  retry_count: number;
-  created_at: string;
-  updated_at: string;
-}
+export type { SyncAction, SyncStatus, SyncQueueItem };
 
 const MAX_RETRIES = 5;
 
@@ -27,7 +15,7 @@ export class SyncEngine {
     action: SyncAction,
     payload: unknown,
   ): Promise<void> {
-    const id = Crypto.randomUUID();
+    const id = generateId();
     const now = new Date().toISOString();
     await this.db.runAsync(
       `INSERT INTO sync_queue (id, table_name, record_id, action, payload, status, retry_count, created_at, updated_at)
@@ -40,7 +28,7 @@ export class SyncEngine {
     let synced = 0;
     let failed = 0;
 
-    const rows = await this.db.getAllAsync<SyncQueueRow>(
+    const rows = await this.db.getAllAsync<SyncQueueItem>(
       `SELECT * FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC`,
     );
 
@@ -99,7 +87,7 @@ export class SyncEngine {
   }
 
   // Placeholder — throws until a real transport is wired in
-  private async pushToRemote(_row: SyncQueueRow): Promise<void> {
+  private async pushToRemote(_row: SyncQueueItem): Promise<void> {
     throw new Error('Not connected');
   }
 }

@@ -1,18 +1,8 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import * as Crypto from 'expo-crypto';
+import type { AuditTrailEntry } from './types';
+import { generateId } from '../utils/uuid';
 
-export interface AuditTrailEntry {
-  id: string;
-  table_name: string;
-  record_id: string;
-  action: string;
-  user_id: string;
-  old_values: string | null;   // JSON
-  new_values: string | null;   // JSON
-  device_info: string | null;  // JSON
-  evidence_context: string | null; // JSON
-  created_at: string;
-}
+export type { AuditTrailEntry };
 
 export interface LogAuditParams {
   tableName: string;
@@ -29,7 +19,7 @@ export async function logAuditEntry(
   db: SQLiteDatabase,
   params: LogAuditParams,
 ): Promise<void> {
-  const id = Crypto.randomUUID();
+  const id = generateId();
   const now = new Date().toISOString();
 
   await db.runAsync(
