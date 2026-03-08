@@ -326,6 +326,20 @@
       "other": "Sonstige"
     }
   },
+  "batch": {
+    "selected_count": "{{count}} ausgewählt",
+    "select_all": "Alle auswählen",
+    "deselect_all": "Alle abwählen",
+    "add_to_collection": "Zu Sammlung hinzufügen",
+    "export_pdf": "PDF exportieren",
+    "delete": "Löschen",
+    "delete_title": "Objekte löschen",
+    "delete_confirm": "{{count}} Objekte löschen? Alle Fotos werden gelöscht und sie werden aus allen Sammlungen entfernt. Dies kann nicht rückgängig gemacht werden.",
+    "added_to_collection": "{{count}} Objekte zu {{name}} hinzugefügt",
+    "pick_collection": "Sammlung wählen",
+    "no_collections": "Keine Sammlungen vorhanden",
+    "export_title": "Ausgewählte Objekte"
+  },
   "onboarding": {
     "skip": "\u00dcberspringen",
     "next": "Weiter",

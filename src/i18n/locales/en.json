@@ -326,6 +326,20 @@
       "other": "Other"
     }
   },
+  "batch": {
+    "selected_count": "{{count}} selected",
+    "select_all": "Select All",
+    "deselect_all": "Deselect All",
+    "add_to_collection": "Add to Collection",
+    "export_pdf": "Export PDF",
+    "delete": "Delete",
+    "delete_title": "Delete Objects",
+    "delete_confirm": "Delete {{count}} objects? This will also delete all photos and remove them from all collections. This cannot be undone.",
+    "added_to_collection": "Added {{count}} objects to {{name}}",
+    "pick_collection": "Choose Collection",
+    "no_collections": "No collections available",
+    "export_title": "Selected Objects"
+  },
   "onboarding": {
     "skip": "Skip",
     "next": "Next",

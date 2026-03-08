@@ -19,11 +19,14 @@ import { FieldInput } from '../components/FieldInput';
 import {
   getCollectionById,
   updateCollection,
-  removeObjectFromCollection,
+  addObjectToCollection,
   type CollectionObject,
 } from '../services/collectionService';
 import type { Collection } from '../db/types';
-import { exportCollectionToPDF, sharePDF } from '../services/exportService';
+import { exportCollectionToPDF, exportBatchToPDF, sharePDF } from '../services/exportService';
+import { deleteObject } from '../services/objectService';
+import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBar';
+import { CollectionPickerModal } from '../components/CollectionPickerModal';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
 import type { MainTabParamList } from '../navigation/MainTabs';
 
@@ -43,6 +46,12 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Selection mode
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+  const [batchExporting, setBatchExporting] = useState(false);
 
   const load = useCallback(async () => {
     const result = await getCollectionById(db, collectionId);
@@ -122,27 +131,6 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     [navigation],
   );
 
-  const handleRemoveObject = useCallback(
-    (objectId: string) => {
-      Alert.alert(
-        t('collections.remove_object'),
-        t('collections.remove_confirm'),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('common.delete'),
-            style: 'destructive',
-            onPress: async () => {
-              await removeObjectFromCollection(db, objectId, collectionId);
-              load();
-            },
-          },
-        ],
-      );
-    },
-    [db, collectionId, t, load],
-  );
-
   const handleExportCollection = useCallback(async () => {
     setExporting(true);
     try {
@@ -155,6 +143,96 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     }
   }, [db, collectionId, t]);
 
+  // ── Selection mode handlers ──────────────────────────────────────────────
+
+  const enterSelectionMode = useCallback((itemId: string) => {
+    setSelectionMode(true);
+    setSelectedIds(new Set([itemId]));
+  }, []);
+
+  const toggleSelection = useCallback((itemId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }, []);
+
+  const cancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const allSelected = useMemo(
+    () =>
+      filteredObjects.length > 0 &&
+      filteredObjects.every((o) => selectedIds.has(o.id)),
+    [filteredObjects, selectedIds],
+  );
+
+  const toggleSelectAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredObjects.map((o) => o.id)));
+    }
+  }, [allSelected, filteredObjects]);
+
+  const handleBatchDelete = useCallback(() => {
+    const count = selectedIds.size;
+    Alert.alert(
+      t('batch.delete_title'),
+      t('batch.delete_confirm', { count }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            for (const id of selectedIds) {
+              await deleteObject(db, id);
+            }
+            cancelSelection();
+            await load();
+          },
+        },
+      ],
+    );
+  }, [selectedIds, db, t, cancelSelection, load]);
+
+  const handleBatchExport = useCallback(async () => {
+    setBatchExporting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const uri = await exportBatchToPDF(db, ids, t('batch.export_title'));
+      await sharePDF(uri);
+      cancelSelection();
+    } catch {
+      Alert.alert(t('export.error_title'), t('export.error_message'));
+    } finally {
+      setBatchExporting(false);
+    }
+  }, [selectedIds, db, t, cancelSelection]);
+
+  const handleCollectionSelected = useCallback(
+    async (collection: { id: string; name: string }) => {
+      setShowCollectionPicker(false);
+      const ids = Array.from(selectedIds);
+      for (const objId of ids) {
+        await addObjectToCollection(db, objId, collection.id);
+      }
+      Alert.alert(
+        t('common.success'),
+        t('batch.added_to_collection', { count: ids.length, name: collection.name }),
+      );
+      cancelSelection();
+    },
+    [selectedIds, db, t, cancelSelection],
+  );
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
   const typeKey = (type: string) => `object_types.${type}` as const;
 
   const objectCountLabel = (count: number) => {
@@ -166,10 +244,28 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   const renderObject = useCallback(
     ({ item }: { item: CollectionObject }) => (
       <Pressable
-        style={styles.objectRow}
-        onPress={() => navigateToObject(item.id)}
-        onLongPress={() => handleRemoveObject(item.id)}
+        style={[styles.objectRow, selectionMode && styles.objectRowSelection]}
+        onPress={() =>
+          selectionMode
+            ? toggleSelection(item.id)
+            : navigateToObject(item.id)
+        }
+        onLongPress={() => {
+          if (!selectionMode) enterSelectionMode(item.id);
+        }}
       >
+        {selectionMode && (
+          <View
+            style={[
+              styles.checkbox,
+              selectedIds.has(item.id) && styles.checkboxChecked,
+            ]}
+          >
+            {selectedIds.has(item.id) && (
+              <Text style={styles.checkMark}>{'\u2713'}</Text>
+            )}
+          </View>
+        )}
         {item.file_path ? (
           <Image source={{ uri: item.file_path }} style={styles.thumb} />
         ) : (
@@ -192,7 +288,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         </View>
       </Pressable>
     ),
-    [t, navigateToObject, handleRemoveObject],
+    [t, navigateToObject, selectionMode, selectedIds, toggleSelection, enterSelectionMode],
   );
 
   if (!collection) return null;
@@ -200,160 +296,173 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
-        </Pressable>
-        <Pressable
-          style={styles.exportBtn}
-          onPress={handleExportCollection}
-          disabled={exporting}
-        >
-          {exporting ? (
-            <ActivityIndicator size="small" color="#74B9FF" />
-          ) : (
-            <Text style={styles.exportBtnText}>{t('export.export_pdf')}</Text>
-          )}
-        </Pressable>
-      </View>
+      {selectionMode ? (
+        <SelectionHeader
+          selectedCount={selectedIds.size}
+          allSelected={allSelected}
+          onToggleAll={toggleSelectAll}
+          onCancel={cancelSelection}
+          t={t}
+        />
+      ) : (
+        <View style={styles.header}>
+          <Pressable onPress={() => navigation.goBack()}>
+            <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
+          </Pressable>
+          <Pressable
+            style={styles.exportBtn}
+            onPress={handleExportCollection}
+            disabled={exporting}
+          >
+            {exporting ? (
+              <ActivityIndicator size="small" color="#74B9FF" />
+            ) : (
+              <Text style={styles.exportBtnText}>{t('export.export_pdf')}</Text>
+            )}
+          </Pressable>
+        </View>
+      )}
 
       <FlatList
         data={filteredObjects}
         keyExtractor={(item) => item.id}
         renderItem={renderObject}
+        extraData={selectedIds}
         contentContainerStyle={styles.listContent}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
-          <View>
-            {/* Editable name */}
-            <FieldInput
-              label={t('collections.create_screen.name')}
-              value={name}
-              onChangeText={setName}
-              onBlur={handleNameBlur}
-            />
+          selectionMode ? undefined : (
+            <View>
+              {/* Editable name */}
+              <FieldInput
+                label={t('collections.create_screen.name')}
+                value={name}
+                onChangeText={setName}
+                onBlur={handleNameBlur}
+              />
 
-            {/* Type badge + count */}
-            <View style={styles.metaRow}>
-              <View style={styles.typeBadge}>
-                <Text style={styles.typeBadgeText}>
-                  {t(`collections.type.${collection.collection_type}`)}
+              {/* Type badge + count */}
+              <View style={styles.metaRow}>
+                <View style={styles.typeBadge}>
+                  <Text style={styles.typeBadgeText}>
+                    {t(`collections.type.${collection.collection_type}`)}
+                  </Text>
+                </View>
+                <Text style={styles.countText}>
+                  {objectCountLabel(objects.length)}
                 </Text>
               </View>
-              <Text style={styles.countText}>
-                {objectCountLabel(objects.length)}
-              </Text>
-            </View>
 
-            {/* Editable description */}
-            <FieldInput
-              label={t('collections.create_screen.description')}
-              value={description}
-              onChangeText={setDescription}
-              onBlur={handleDescriptionBlur}
-              multiline
-              placeholder={t('collections.create_screen.description')}
-            />
-
-            {/* Add Objects button (always visible) */}
-            <Pressable
-              style={styles.addObjectsHeaderBtn}
-              onPress={() =>
-                navigation.navigate('AddObjects', { collectionId })
-              }
-            >
-              <Text style={styles.addObjectsHeaderBtnText}>
-                + {t('collections.detail.add_objects')}
-              </Text>
-            </Pressable>
-
-            {/* Objects section header */}
-            <Text style={styles.sectionTitle}>
-              {t('objects.title')}
-            </Text>
-
-            {/* Search bar */}
-            <View style={styles.searchRow}>
-              <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
-              <TextInput
-                style={styles.searchInput}
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholder={t('collections.detail.search_placeholder')}
-                placeholderTextColor="#4A4A5A"
-                returnKeyType="search"
-                clearButtonMode="never"
+              {/* Editable description */}
+              <FieldInput
+                label={t('collections.create_screen.description')}
+                value={description}
+                onChangeText={setDescription}
+                onBlur={handleDescriptionBlur}
+                multiline
+                placeholder={t('collections.create_screen.description')}
               />
-              {searchText.length > 0 && (
-                <Pressable
-                  onPress={() => {
-                    setSearchText('');
-                    setDebouncedQuery('');
-                  }}
-                  hitSlop={8}
-                >
-                  <Text style={styles.clearBtn}>{'\u2715'}</Text>
-                </Pressable>
-              )}
-            </View>
 
-            {/* Filtered count */}
-            {isFiltering && (
-              <Text style={styles.filterCount}>
-                {t('collections.detail.search_results', {
-                  count: filteredObjects.length,
-                  total: objects.length,
-                })}
-              </Text>
-            )}
-
-            {/* Type filter chips */}
-            {availableTypes.length > 1 && (
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.filterRow}
+              {/* Add Objects button (always visible) */}
+              <Pressable
+                style={styles.addObjectsHeaderBtn}
+                onPress={() =>
+                  navigation.navigate('AddObjects', { collectionId })
+                }
               >
-                <Pressable
-                  style={[
-                    styles.filterChip,
-                    selectedType === null && styles.filterChipActive,
-                  ]}
-                  onPress={() => setSelectedType(null)}
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      selectedType === null && styles.filterChipTextActive,
-                    ]}
-                  >
-                    {t('objects.filter_all')}
-                  </Text>
-                </Pressable>
-                {availableTypes.map((type) => (
+                <Text style={styles.addObjectsHeaderBtnText}>
+                  + {t('collections.detail.add_objects')}
+                </Text>
+              </Pressable>
+
+              {/* Objects section header */}
+              <Text style={styles.sectionTitle}>
+                {t('objects.title')}
+              </Text>
+
+              {/* Search bar */}
+              <View style={styles.searchRow}>
+                <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  placeholder={t('collections.detail.search_placeholder')}
+                  placeholderTextColor="#4A4A5A"
+                  returnKeyType="search"
+                  clearButtonMode="never"
+                />
+                {searchText.length > 0 && (
                   <Pressable
-                    key={type}
+                    onPress={() => {
+                      setSearchText('');
+                      setDebouncedQuery('');
+                    }}
+                    hitSlop={8}
+                  >
+                    <Text style={styles.clearBtn}>{'\u2715'}</Text>
+                  </Pressable>
+                )}
+              </View>
+
+              {/* Filtered count */}
+              {isFiltering && (
+                <Text style={styles.filterCount}>
+                  {t('collections.detail.search_results', {
+                    count: filteredObjects.length,
+                    total: objects.length,
+                  })}
+                </Text>
+              )}
+
+              {/* Type filter chips */}
+              {availableTypes.length > 1 && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filterRow}
+                >
+                  <Pressable
                     style={[
                       styles.filterChip,
-                      selectedType === type && styles.filterChipActive,
+                      selectedType === null && styles.filterChipActive,
                     ]}
-                    onPress={() =>
-                      setSelectedType(selectedType === type ? null : type)
-                    }
+                    onPress={() => setSelectedType(null)}
                   >
                     <Text
                       style={[
                         styles.filterChipText,
-                        selectedType === type && styles.filterChipTextActive,
+                        selectedType === null && styles.filterChipTextActive,
                       ]}
                     >
-                      {t(`object_types.${type}`)}
+                      {t('objects.filter_all')}
                     </Text>
                   </Pressable>
-                ))}
-              </ScrollView>
-            )}
-          </View>
+                  {availableTypes.map((type) => (
+                    <Pressable
+                      key={type}
+                      style={[
+                        styles.filterChip,
+                        selectedType === type && styles.filterChipActive,
+                      ]}
+                      onPress={() =>
+                        setSelectedType(selectedType === type ? null : type)
+                      }
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          selectedType === type && styles.filterChipTextActive,
+                        ]}
+                      >
+                        {t(`object_types.${type}`)}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )
         }
         ListEmptyComponent={
           isFiltering ? (
@@ -378,6 +487,24 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
             </View>
           )
         }
+      />
+
+      {selectionMode && (
+        <BatchActionButtons
+          onAddToCollection={() => setShowCollectionPicker(true)}
+          onExportPDF={handleBatchExport}
+          onDelete={handleBatchDelete}
+          disabled={selectedIds.size === 0}
+          exporting={batchExporting}
+          t={t}
+        />
+      )}
+
+      <CollectionPickerModal
+        visible={showCollectionPicker}
+        onClose={() => setShowCollectionPicker(false)}
+        onSelect={handleCollectionSelected}
+        t={t}
       />
     </View>
   );
@@ -518,6 +645,27 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(255,255,255,0.06)',
     gap: 12,
+  },
+  objectRowSelection: {
+    gap: 12,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: 'rgba(116,185,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#74B9FF',
+    borderColor: '#74B9FF',
+  },
+  checkMark: {
+    color: '#08080F',
+    fontSize: 13,
+    fontWeight: '700',
   },
   thumb: {
     width: 48,

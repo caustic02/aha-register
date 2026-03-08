@@ -14,6 +14,10 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { deleteObject } from '../services/objectService';
+import { addObjectToCollection } from '../services/collectionService';
+import { exportBatchToPDF, sharePDF } from '../services/exportService';
+import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBar';
+import { CollectionPickerModal } from '../components/CollectionPickerModal';
 import type { ObjectStackParamList } from '../navigation/ObjectStack';
 
 type Props = NativeStackScreenProps<ObjectStackParamList, 'ObjectList'>;
@@ -36,6 +40,12 @@ export function ObjectListScreen({ navigation }: Props) {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Selection mode
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
+  const [batchExporting, setBatchExporting] = useState(false);
 
   const loadObjects = useCallback(async () => {
     const rows = await db.getAllAsync<ObjectRow>(
@@ -102,37 +112,127 @@ export function ObjectListScreen({ navigation }: Props) {
 
   const isFiltering = debouncedQuery.trim().length > 0 || selectedType !== null;
 
-  const handleDelete = useCallback(
-    (item: ObjectRow) => {
-      Alert.alert(
-        t('objects.delete_title'),
-        t('objects.delete_confirm', { title: item.title }),
-        [
-          { text: t('common.cancel'), style: 'cancel' },
-          {
-            text: t('common.delete'),
-            style: 'destructive',
-            onPress: async () => {
-              await deleteObject(db, item.id);
-              await loadObjects();
-            },
-          },
-        ],
-      );
-    },
-    [db, t, loadObjects],
+  // ── Selection mode handlers ──────────────────────────────────────────────
+
+  const enterSelectionMode = useCallback((itemId: string) => {
+    setSelectionMode(true);
+    setSelectedIds(new Set([itemId]));
+  }, []);
+
+  const toggleSelection = useCallback((itemId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) next.delete(itemId);
+      else next.add(itemId);
+      return next;
+    });
+  }, []);
+
+  const cancelSelection = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }, []);
+
+  const allSelected = useMemo(
+    () =>
+      filteredObjects.length > 0 &&
+      filteredObjects.every((o) => selectedIds.has(o.id)),
+    [filteredObjects, selectedIds],
   );
+
+  const toggleSelectAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredObjects.map((o) => o.id)));
+    }
+  }, [allSelected, filteredObjects]);
+
+  // Batch delete
+  const handleBatchDelete = useCallback(() => {
+    const count = selectedIds.size;
+    Alert.alert(
+      t('batch.delete_title'),
+      t('batch.delete_confirm', { count }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            for (const id of selectedIds) {
+              await deleteObject(db, id);
+            }
+            cancelSelection();
+            await loadObjects();
+          },
+        },
+      ],
+    );
+  }, [selectedIds, db, t, cancelSelection, loadObjects]);
+
+  // Batch export
+  const handleBatchExport = useCallback(async () => {
+    setBatchExporting(true);
+    try {
+      const ids = Array.from(selectedIds);
+      const uri = await exportBatchToPDF(db, ids, t('batch.export_title'));
+      await sharePDF(uri);
+      cancelSelection();
+    } catch {
+      Alert.alert(t('export.error_title'), t('export.error_message'));
+    } finally {
+      setBatchExporting(false);
+    }
+  }, [selectedIds, db, t, cancelSelection]);
+
+  // Batch add to collection
+  const handleCollectionSelected = useCallback(
+    async (collection: { id: string; name: string }) => {
+      setShowCollectionPicker(false);
+      const ids = Array.from(selectedIds);
+      for (const objId of ids) {
+        await addObjectToCollection(db, objId, collection.id);
+      }
+      Alert.alert(
+        t('common.success'),
+        t('batch.added_to_collection', { count: ids.length, name: collection.name }),
+      );
+      cancelSelection();
+    },
+    [selectedIds, db, t, cancelSelection],
+  );
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   const typeKey = (type: string) => `object_types.${type}` as const;
 
   const renderItem = useCallback(
     ({ item }: { item: ObjectRow }) => (
       <Pressable
-        style={styles.row}
-        onPress={() => navigation.navigate('ObjectDetail', { objectId: item.id })}
-        onLongPress={() => handleDelete(item)}
+        style={[styles.row, selectionMode && styles.rowSelection]}
+        onPress={() =>
+          selectionMode
+            ? toggleSelection(item.id)
+            : navigation.navigate('ObjectDetail', { objectId: item.id })
+        }
+        onLongPress={() => {
+          if (!selectionMode) enterSelectionMode(item.id);
+        }}
       >
-        <View style={styles.rowContent}>
+        {selectionMode && (
+          <View
+            style={[
+              styles.checkbox,
+              selectedIds.has(item.id) && styles.checkboxChecked,
+            ]}
+          >
+            {selectedIds.has(item.id) && (
+              <Text style={styles.checkMark}>{'\u2713'}</Text>
+            )}
+          </View>
+        )}
+        <View style={[styles.rowContent, selectionMode && styles.rowContentFlex]}>
           <Text style={styles.rowTitle} numberOfLines={1}>
             {item.title}
           </Text>
@@ -149,7 +249,7 @@ export function ObjectListScreen({ navigation }: Props) {
         </View>
       </Pressable>
     ),
-    [t, navigation, handleDelete],
+    [t, navigation, selectionMode, selectedIds, toggleSelection, enterSelectionMode],
   );
 
   const emptyText =
@@ -161,88 +261,98 @@ export function ObjectListScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        {/* Search bar */}
-        <View style={styles.searchRow}>
-          <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
-          <TextInput
-            style={styles.searchInput}
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholder={t('objects.search_placeholder')}
-            placeholderTextColor="#4A4A5A"
-            returnKeyType="search"
-            clearButtonMode="never"
-          />
-          {searchText.length > 0 && (
-            <Pressable
-              onPress={() => {
-                setSearchText('');
-                setDebouncedQuery('');
-              }}
-              hitSlop={8}
-            >
-              <Text style={styles.clearBtn}>{'\u2715'}</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {/* Count */}
-        <Text style={styles.headerCount}>{countLabel}</Text>
-
-        {/* Type filter chips */}
-        {availableTypes.length > 1 && (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterRow}
-          >
-            <Pressable
-              style={[
-                styles.filterChip,
-                selectedType === null && styles.filterChipActive,
-              ]}
-              onPress={() => setSelectedType(null)}
-            >
-              <Text
-                style={[
-                  styles.filterChipText,
-                  selectedType === null && styles.filterChipTextActive,
-                ]}
-              >
-                {t('objects.filter_all')}
-              </Text>
-            </Pressable>
-            {availableTypes.map((type) => (
+      {selectionMode ? (
+        <SelectionHeader
+          selectedCount={selectedIds.size}
+          allSelected={allSelected}
+          onToggleAll={toggleSelectAll}
+          onCancel={cancelSelection}
+          t={t}
+        />
+      ) : (
+        <View style={styles.header}>
+          {/* Search bar */}
+          <View style={styles.searchRow}>
+            <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
+            <TextInput
+              style={styles.searchInput}
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder={t('objects.search_placeholder')}
+              placeholderTextColor="#4A4A5A"
+              returnKeyType="search"
+              clearButtonMode="never"
+            />
+            {searchText.length > 0 && (
               <Pressable
-                key={type}
+                onPress={() => {
+                  setSearchText('');
+                  setDebouncedQuery('');
+                }}
+                hitSlop={8}
+              >
+                <Text style={styles.clearBtn}>{'\u2715'}</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Count */}
+          <Text style={styles.headerCount}>{countLabel}</Text>
+
+          {/* Type filter chips */}
+          {availableTypes.length > 1 && (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              <Pressable
                 style={[
                   styles.filterChip,
-                  selectedType === type && styles.filterChipActive,
+                  selectedType === null && styles.filterChipActive,
                 ]}
-                onPress={() =>
-                  setSelectedType(selectedType === type ? null : type)
-                }
+                onPress={() => setSelectedType(null)}
               >
                 <Text
                   style={[
                     styles.filterChipText,
-                    selectedType === type && styles.filterChipTextActive,
+                    selectedType === null && styles.filterChipTextActive,
                   ]}
                 >
-                  {t(typeKey(type))}
+                  {t('objects.filter_all')}
                 </Text>
               </Pressable>
-            ))}
-          </ScrollView>
-        )}
-      </View>
+              {availableTypes.map((type) => (
+                <Pressable
+                  key={type}
+                  style={[
+                    styles.filterChip,
+                    selectedType === type && styles.filterChipActive,
+                  ]}
+                  onPress={() =>
+                    setSelectedType(selectedType === type ? null : type)
+                  }
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selectedType === type && styles.filterChipTextActive,
+                    ]}
+                  >
+                    {t(typeKey(type))}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+        </View>
+      )}
 
       <FlatList
         data={filteredObjects}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        extraData={selectedIds}
         contentContainerStyle={
           filteredObjects.length === 0 ? styles.emptyList : undefined
         }
@@ -256,6 +366,24 @@ export function ObjectListScreen({ navigation }: Props) {
             tintColor="#74B9FF"
           />
         }
+      />
+
+      {selectionMode && (
+        <BatchActionButtons
+          onAddToCollection={() => setShowCollectionPicker(true)}
+          onExportPDF={handleBatchExport}
+          onDelete={handleBatchDelete}
+          disabled={selectedIds.size === 0}
+          exporting={batchExporting}
+          t={t}
+        />
+      )}
+
+      <CollectionPickerModal
+        visible={showCollectionPicker}
+        onClose={() => setShowCollectionPicker(false)}
+        onSelect={handleCollectionSelected}
+        t={t}
       />
     </View>
   );
@@ -334,8 +462,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: 'rgba(255,255,255,0.06)',
   },
+  rowSelection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
   rowContent: {
     gap: 6,
+  },
+  rowContentFlex: {
+    flex: 1,
   },
   rowTitle: {
     color: '#FFFFFF',
@@ -361,6 +497,24 @@ const styles = StyleSheet.create({
   rowDate: {
     color: '#636E72',
     fontSize: 12,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: 'rgba(116,185,255,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#74B9FF',
+    borderColor: '#74B9FF',
+  },
+  checkMark: {
+    color: '#08080F',
+    fontSize: 13,
+    fontWeight: '700',
   },
   emptyList: {
     flex: 1,

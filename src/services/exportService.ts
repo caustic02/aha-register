@@ -94,6 +94,27 @@ export async function exportCollectionToPDF(
 }
 
 /**
+ * Generates a PDF for multiple objects (batch export) and returns the file URI.
+ */
+export async function exportBatchToPDF(
+  db: SQLiteDatabase,
+  objectIds: string[],
+  title: string,
+): Promise<string> {
+  const institutionName = await getSetting(db, SETTING_KEYS.INSTITUTION_NAME);
+
+  const objectsData: ObjectExportData[] = [];
+  for (const id of objectIds) {
+    const data = await loadObjectExportData(db, id, institutionName);
+    if (data) objectsData.push(data);
+  }
+
+  const html = buildCollectionHTML(title, objectsData, institutionName);
+  const { uri } = await Print.printToFileAsync({ html });
+  return uri;
+}
+
+/**
  * Opens the native share sheet for a PDF file.
  */
 export async function sharePDF(pdfUri: string): Promise<void> {
