@@ -151,6 +151,25 @@
     "from_library": "Aus Bibliothek w\u00e4hlen",
     "cancel": "Abbrechen"
   },
+  "export": {
+    "share": "Teilen",
+    "export_pdf": "PDF exportieren",
+    "export_collection": "Sammlung exportieren",
+    "generating": "PDF wird erstellt\u2026",
+    "error_title": "Export fehlgeschlagen",
+    "error_message": "Das PDF konnte nicht erstellt werden. Bitte erneut versuchen.",
+    "report_title": "Objektdokumentationsbericht",
+    "collection_report_title": "Sammlungsbericht",
+    "section_metadata": "Objektmetadaten",
+    "section_location": "Standortdaten",
+    "section_evidence": "Belege & Datenschutz",
+    "section_provenance": "Provenienzkette",
+    "section_hashes": "Datei-Integrit\u00e4tspr\u00fcfsummen",
+    "section_images": "Dokumentationsbilder",
+    "section_collections": "Sammlungen",
+    "footer_verify": "Integrit\u00e4t pr\u00fcfen durch Abgleich der SHA-256-Hashwerte mit den Originaldaten.",
+    "footer_generated": "Erstellt mit aha! Register | aharegister.com"
+  },
   "settings": {
     "title": "Einstellungen",
     "institution": "Institution",

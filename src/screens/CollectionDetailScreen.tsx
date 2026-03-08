@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Image,
@@ -20,6 +21,7 @@ import {
   type CollectionObject,
 } from '../services/collectionService';
 import type { Collection } from '../db/types';
+import { exportCollectionToPDF, sharePDF } from '../services/exportService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
 import type { MainTabParamList } from '../navigation/MainTabs';
 
@@ -34,6 +36,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   const [objects, setObjects] = useState<CollectionObject[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(async () => {
     const result = await getCollectionById(db, collectionId);
@@ -103,6 +106,18 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     [db, collectionId, t, load],
   );
 
+  const handleExportCollection = useCallback(async () => {
+    setExporting(true);
+    try {
+      const uri = await exportCollectionToPDF(db, collectionId);
+      await sharePDF(uri);
+    } catch {
+      Alert.alert(t('export.error_title'), t('export.error_message'));
+    } finally {
+      setExporting(false);
+    }
+  }, [db, collectionId, t]);
+
   const typeKey = (type: string) => `object_types.${type}` as const;
 
   const objectCountLabel = (count: number) => {
@@ -151,6 +166,17 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.exportBtn}
+          onPress={handleExportCollection}
+          disabled={exporting}
+        >
+          {exporting ? (
+            <ActivityIndicator size="small" color="#74B9FF" />
+          ) : (
+            <Text style={styles.exportBtnText}>{t('export.export_pdf')}</Text>
+          )}
         </Pressable>
       </View>
 
@@ -235,6 +261,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#08080F',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 56,
     paddingHorizontal: 20,
     paddingBottom: 8,
@@ -242,6 +271,17 @@ const styles = StyleSheet.create({
   backText: {
     color: '#74B9FF',
     fontSize: 16,
+  },
+  exportBtn: {
+    backgroundColor: 'rgba(116,185,255,0.12)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  exportBtnText: {
+    color: '#74B9FF',
+    fontSize: 14,
+    fontWeight: '500',
   },
   listContent: {
     paddingHorizontal: 20,

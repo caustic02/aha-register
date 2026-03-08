@@ -37,6 +37,7 @@ import {
   type CollectionForObject,
   type CollectionWithCount,
 } from '../services/collectionService';
+import { exportObjectToPDF, sharePDF } from '../services/exportService';
 import type { ObjectStackParamList } from '../navigation/ObjectStack';
 import type { MainTabParamList } from '../navigation/MainTabs';
 import type {
@@ -106,6 +107,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
   // Copy feedback
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  // Export
+  const [exporting, setExporting] = useState(false);
 
   // Collections
   const [objectCollections, setObjectCollections] = useState<CollectionForObject[]>([]);
@@ -374,6 +378,18 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     [db, t, reloadMedia],
   );
 
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const uri = await exportObjectToPDF(db, objectId);
+      await sharePDF(uri);
+    } catch {
+      Alert.alert(t('export.error_title'), t('export.error_message'));
+    } finally {
+      setExporting(false);
+    }
+  }, [db, objectId, t]);
+
   if (loading) {
     return (
       <View style={styles.center}>
@@ -395,10 +411,21 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
-      {/* Back button */}
-      <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
-        <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
-      </Pressable>
+      {/* Header row */}
+      <View style={styles.headerRow}>
+        <Pressable style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
+        </Pressable>
+        <Pressable
+          style={styles.exportBtn}
+          onPress={handleExport}
+          disabled={exporting}
+        >
+          <Text style={styles.exportBtnText}>
+            {exporting ? t('export.generating') : t('export.share')}
+          </Text>
+        </Pressable>
+      </View>
 
       {/* SECTION 1 — Image Gallery */}
       <ImageGallery
@@ -712,8 +739,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   errorText: { color: '#FF6B6B', fontSize: 16 },
-  backBtn: { paddingTop: 56, paddingHorizontal: 20, paddingBottom: 8 },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 56,
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
+  backBtn: {},
   backText: { color: '#74B9FF', fontSize: 16 },
+  exportBtn: {
+    backgroundColor: 'rgba(116,185,255,0.12)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  exportBtnText: { color: '#74B9FF', fontSize: 14, fontWeight: '500' },
 
   // Sections
   section: { paddingHorizontal: 20, paddingTop: 24 },
