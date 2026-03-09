@@ -31,6 +31,12 @@
     "plugins": [
       "expo-sqlite",
       "expo-sharing"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/REPLACE_WITH_PROJECT_ID"
+    }
   }
 }
