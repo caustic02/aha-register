@@ -29,6 +29,7 @@ const ICONS: Record<string, string> = {
 export function MainTabs() {
   return (
     <Tab.Navigator
+      initialRouteName="Objects"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarShowLabel: false,
