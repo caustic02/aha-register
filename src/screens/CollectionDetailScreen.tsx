@@ -29,6 +29,7 @@ import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBa
 import { CollectionPickerModal } from '../components/CollectionPickerModal';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
 import type { MainTabParamList } from '../navigation/MainTabs';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionDetail'>;
 
@@ -315,7 +316,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
             disabled={exporting}
           >
             {exporting ? (
-              <ActivityIndicator size="small" color="#74B9FF" />
+              <ActivityIndicator size="small" color={colors.accent} />
             ) : (
               <Text style={styles.exportBtnText}>{t('export.export_pdf')}</Text>
             )}
@@ -388,7 +389,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                   value={searchText}
                   onChangeText={setSearchText}
                   placeholder={t('collections.detail.search_placeholder')}
-                  placeholderTextColor="#4A4A5A"
+                  placeholderTextColor={colors.textMuted}
                   returnKeyType="search"
                   clearButtonMode="never"
                 />
@@ -513,226 +514,226 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 56,
-    paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.sm,
   },
   backText: {
-    color: '#74B9FF',
-    fontSize: 16,
+    color: colors.accent,
+    fontSize: typography.size.md,
   },
   exportBtn: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
+    backgroundColor: colors.border,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
   },
   exportBtnText: {
-    color: '#74B9FF',
-    fontSize: 14,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
   },
   listContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: 40,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   typeBadge: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
+    backgroundColor: colors.border,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.md,
   },
   typeBadgeText: {
-    color: '#74B9FF',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
   },
   countText: {
-    color: '#636E72',
-    fontSize: 13,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
   },
   addObjectsHeaderBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.2)',
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     padding: 14,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   addObjectsHeaderBtnText: {
-    color: '#74B9FF',
-    fontSize: 14,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
   },
   sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 24,
-    marginBottom: 12,
+    color: colors.white,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    marginTop: spacing.xxl,
+    marginBottom: spacing.md,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: 10,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   searchIcon: {
-    fontSize: 14,
-    marginRight: 8,
+    fontSize: typography.size.base,
+    marginRight: spacing.sm,
   },
   searchInput: {
     flex: 1,
-    color: '#DFE6E9',
-    fontSize: 15,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
     padding: 0,
   },
   clearBtn: {
-    color: '#636E72',
-    fontSize: 14,
-    paddingLeft: 8,
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
+    paddingLeft: spacing.sm,
   },
   filterCount: {
-    color: '#636E72',
-    fontSize: 13,
-    marginBottom: 8,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    marginBottom: spacing.sm,
   },
   filterRow: {
-    gap: 8,
-    paddingBottom: 8,
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.2)',
+    borderColor: colors.border,
   },
   filterChipActive: {
-    backgroundColor: '#74B9FF',
-    borderColor: '#74B9FF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   filterChipText: {
-    color: '#636E72',
-    fontSize: 13,
-    fontWeight: '500',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.medium,
   },
   filterChipTextActive: {
-    color: '#08080F',
-    fontWeight: '700',
+    color: colors.background,
+    fontWeight: typography.weight.bold,
   },
   objectRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-    gap: 12,
+    borderBottomColor: colors.borderLight,
+    gap: spacing.md,
   },
   objectRowSelection: {
-    gap: 12,
+    gap: spacing.md,
   },
   checkbox: {
     width: 22,
     height: 22,
-    borderRadius: 11,
+    borderRadius: radii.lg,
     borderWidth: 2,
-    borderColor: 'rgba(116,185,255,0.3)',
+    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#74B9FF',
-    borderColor: '#74B9FF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   checkMark: {
-    color: '#08080F',
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.background,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
   },
   thumb: {
     width: 48,
     height: 48,
-    borderRadius: 8,
-    backgroundColor: '#1A1A2E',
+    borderRadius: radii.md,
+    backgroundColor: colors.overlayLight,
   },
   thumbPlaceholder: {
     width: 48,
     height: 48,
-    borderRadius: 8,
-    backgroundColor: '#1A1A2E',
+    borderRadius: radii.md,
+    backgroundColor: colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   thumbPlaceholderText: {
-    fontSize: 20,
-    color: '#2D2D3A',
+    fontSize: typography.size.xl,
+    color: colors.border,
   },
   objectInfo: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   objectTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '500',
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.medium,
   },
   objectMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   objectBadge: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
+    backgroundColor: colors.border,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radii.sm,
   },
   objectBadgeText: {
-    color: '#74B9FF',
-    fontSize: 10,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
   },
   objectDate: {
-    color: '#636E72',
-    fontSize: 11,
+    color: colors.textSecondary,
+    fontSize: typography.size.xs,
   },
   emptyContent: {
     alignItems: 'center',
-    paddingVertical: 32,
+    paddingVertical: spacing.xxxl,
   },
   emptyText: {
-    color: '#636E72',
-    fontSize: 15,
-    marginBottom: 16,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
+    marginBottom: spacing.lg,
   },
   addObjectsBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.2)',
-    borderRadius: 10,
-    paddingHorizontal: 20,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    paddingHorizontal: layout.screenPadding,
     paddingVertical: 10,
   },
   addObjectsBtnText: {
-    color: '#74B9FF',
-    fontSize: 14,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
   },
 });

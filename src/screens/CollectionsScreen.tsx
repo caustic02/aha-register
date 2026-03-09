@@ -15,6 +15,7 @@ import {
   type CollectionWithCount,
 } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionList'>;
 
@@ -119,7 +120,7 @@ export function CollectionsScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#74B9FF"
+            tintColor={colors.accent}
           />
         }
       />
@@ -130,46 +131,46 @@ export function CollectionsScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 28,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.bold,
   },
   addBtn: {
     width: 36,
     height: 36,
-    borderRadius: 18,
-    backgroundColor: '#0984E3',
+    borderRadius: radii.xl,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addBtnText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.semibold,
     lineHeight: 24,
   },
   list: {
-    paddingHorizontal: 20,
-    paddingBottom: 24,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.xxl,
   },
   card: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.lg,
+    padding: layout.cardPadding,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
+    borderColor: colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -178,32 +179,32 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardName: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
     flex: 1,
     marginRight: 10,
   },
   typeBadge: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
-    paddingHorizontal: 8,
+    backgroundColor: colors.border,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   typeBadgeText: {
-    color: '#74B9FF',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
   },
   cardDesc: {
-    color: '#636E72',
-    fontSize: 13,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
     lineHeight: 18,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   cardCount: {
-    color: '#636E72',
-    fontSize: 12,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
   },
   emptyContainer: {
     flex: 1,
@@ -212,35 +213,35 @@ const styles = StyleSheet.create({
   },
   emptyContent: {
     alignItems: 'center',
-    padding: 24,
+    padding: spacing.xxl,
   },
   emptyIcon: {
     fontSize: 48,
-    color: '#2D2D3A',
-    marginBottom: 16,
+    color: colors.border,
+    marginBottom: spacing.lg,
   },
   emptyTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
+    color: colors.white,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    marginBottom: spacing.sm,
   },
   emptySubtitle: {
-    color: '#636E72',
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
     lineHeight: 20,
   },
   emptyBtn: {
-    backgroundColor: '#0984E3',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 10,
+    backgroundColor: colors.accent,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
   },
   emptyBtnText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
 });

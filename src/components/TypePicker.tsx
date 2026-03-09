@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { ObjectType } from '../db/types';
+import { colors, typography, radii } from '../theme';
 
 const OBJECT_TYPES: ObjectType[] = [
   'museum_object',
@@ -54,22 +55,22 @@ const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.15)',
+    borderColor: colors.border,
     backgroundColor: 'transparent',
   },
   badgeActive: {
-    backgroundColor: '#0984E3',
-    borderColor: '#0984E3',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   badgeText: {
-    color: '#636E72',
-    fontSize: 13,
-    fontWeight: '500',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.medium,
   },
   badgeTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: colors.white,
+    fontWeight: typography.weight.semibold,
   },
 });

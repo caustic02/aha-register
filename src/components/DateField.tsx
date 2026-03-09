@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import type { NativeSyntheticEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { colors, typography, radii } from '../theme';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -138,8 +139,8 @@ const spinStyles = StyleSheet.create({
     left: 4,
     right: 4,
     height: ITEM_H,
-    backgroundColor: 'rgba(116,185,255,0.12)',
-    borderRadius: 8,
+    backgroundColor: colors.border,
+    borderRadius: radii.sm,
     zIndex: 1,
   },
   content: {
@@ -151,13 +152,13 @@ const spinStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   itemText: {
-    color: '#636E72',
-    fontSize: 17,
+    color: colors.textSecondary,
+    fontSize: typography.size.lg,
   },
   itemTextSelected: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
   },
 });
 
@@ -312,9 +313,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     marginBottom: 8,
   },
@@ -328,39 +329,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
   valueText: {
-    color: '#DFE6E9',
-    fontSize: 15,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
   },
   placeholderText: {
-    color: '#4A4A5A',
+    color: colors.textMuted,
   },
   calIcon: {
-    fontSize: 16,
+    fontSize: typography.size.md,
   },
   clearBtn: {
     padding: 8,
   },
   clearText: {
-    color: '#636E72',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#0A0A14',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     paddingBottom: 40,
   },
   modalHeader: {
@@ -370,21 +371,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: colors.borderLight,
   },
   cancelText: {
-    color: '#636E72',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
   },
   modalTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
   doneText: {
-    color: '#74B9FF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
   colLabels: {
     flexDirection: 'row',
@@ -395,9 +396,9 @@ const styles = StyleSheet.create({
   colLabel: {
     flex: 1,
     textAlign: 'center',
-    color: '#636E72',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
   },
   pickersRow: {

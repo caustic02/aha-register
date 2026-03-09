@@ -19,6 +19,7 @@ import { exportBatchToPDF, sharePDF } from '../services/exportService';
 import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBar';
 import { CollectionPickerModal } from '../components/CollectionPickerModal';
 import type { ObjectStackParamList } from '../navigation/ObjectStack';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 type Props = NativeStackScreenProps<ObjectStackParamList, 'ObjectList'>;
 
@@ -279,7 +280,7 @@ export function ObjectListScreen({ navigation }: Props) {
               value={searchText}
               onChangeText={setSearchText}
               placeholder={t('objects.search_placeholder')}
-              placeholderTextColor="#4A4A5A"
+              placeholderTextColor={colors.textMuted}
               returnKeyType="search"
               clearButtonMode="never"
             />
@@ -363,7 +364,7 @@ export function ObjectListScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor="#74B9FF"
+            tintColor={colors.accent}
           />
         }
       />
@@ -392,75 +393,75 @@ export function ObjectListScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
-    paddingBottom: 8,
+    paddingBottom: spacing.sm,
   },
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 20,
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    marginHorizontal: layout.screenPadding,
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 10,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.md,
   },
   searchIcon: {
-    fontSize: 14,
-    marginRight: 8,
+    fontSize: typography.size.base,
+    marginRight: spacing.sm,
   },
   searchInput: {
     flex: 1,
-    color: '#DFE6E9',
-    fontSize: 15,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
     padding: 0,
   },
   clearBtn: {
-    color: '#636E72',
-    fontSize: 14,
-    paddingLeft: 8,
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
+    paddingLeft: spacing.sm,
   },
   headerCount: {
-    color: '#636E72',
-    fontSize: 13,
-    marginHorizontal: 20,
-    marginBottom: 8,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    marginHorizontal: layout.screenPadding,
+    marginBottom: spacing.sm,
   },
   filterRow: {
-    paddingHorizontal: 20,
-    gap: 8,
-    paddingBottom: 8,
+    paddingHorizontal: layout.screenPadding,
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   filterChip: {
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.2)',
+    borderColor: colors.border,
   },
   filterChipActive: {
-    backgroundColor: '#74B9FF',
-    borderColor: '#74B9FF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   filterChipText: {
-    color: '#636E72',
-    fontSize: 13,
-    fontWeight: '500',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.medium,
   },
   filterChipTextActive: {
-    color: '#08080F',
-    fontWeight: '700',
+    color: colors.white,
+    fontWeight: typography.weight.bold,
   },
   row: {
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.screenPadding,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: colors.borderLight,
   },
   rowSelection: {
     flexDirection: 'row',
@@ -468,53 +469,53 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   rowContent: {
-    gap: 6,
+    gap: spacing.sm,
   },
   rowContentFlex: {
     flex: 1,
   },
   rowTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.medium,
   },
   rowMeta: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.md,
   },
   badge: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
-    paddingHorizontal: 8,
+    backgroundColor: colors.borderLight,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: radii.sm,
   },
   badgeText: {
-    color: '#74B9FF',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
   },
   rowDate: {
-    color: '#636E72',
-    fontSize: 12,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
   },
   checkbox: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: 'rgba(116,185,255,0.3)',
+    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#74B9FF',
-    borderColor: '#74B9FF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   checkMark: {
-    color: '#08080F',
-    fontSize: 13,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.bold,
   },
   emptyList: {
     flex: 1,
@@ -522,7 +523,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#636E72',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
   },
 });

@@ -12,6 +12,7 @@ import {
   getAllCollections,
   type CollectionWithCount,
 } from '../services/collectionService';
+import { colors, typography, radii } from '../theme';
 
 interface CollectionPickerModalProps {
   visible: boolean;
@@ -88,13 +89,13 @@ export function CollectionPickerModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   sheet: {
-    backgroundColor: '#0A0A14',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
     maxHeight: '60%',
     paddingBottom: 40,
   },
@@ -105,31 +106,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.08)',
+    borderBottomColor: colors.borderLight,
   },
   title: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: colors.textPrimary,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
   },
   closeBtn: {
-    color: '#636E72',
-    fontSize: 18,
+    color: colors.textSecondary,
+    fontSize: typography.size.lg,
   },
   row: {
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    borderBottomColor: colors.borderLight,
   },
   name: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '500',
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.medium,
   },
   count: {
-    color: '#636E72',
-    fontSize: 12,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
     marginTop: 2,
   },
   empty: {
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#636E72',
-    fontSize: 15,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
   },
 });

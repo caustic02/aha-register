@@ -12,6 +12,7 @@ import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { createCollection } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CreateCollection'>;
 
@@ -78,7 +79,7 @@ export function CreateCollectionScreen({ navigation }: Props) {
             if (nameError) setNameError(false);
           }}
           placeholder={t('collections.create_screen.name')}
-          placeholderTextColor="#4A4A5A"
+          placeholderTextColor={colors.textMuted}
           autoFocus
         />
         {nameError && (
@@ -120,7 +121,7 @@ export function CreateCollectionScreen({ navigation }: Props) {
           value={description}
           onChangeText={setDescription}
           placeholder={t('collections.create_screen.description')}
-          placeholderTextColor="#4A4A5A"
+          placeholderTextColor={colors.textMuted}
           multiline
         />
       </ScrollView>
@@ -131,59 +132,59 @@ export function CreateCollectionScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
   },
   cancelText: {
-    color: '#636E72',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
   },
   saveText: {
-    color: '#74B9FF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
   saveTextDisabled: {
     opacity: 0.4,
   },
   body: {
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.screenPadding,
   },
   label: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
-    marginTop: 20,
-    marginBottom: 8,
+    marginTop: layout.screenPadding,
+    marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 10,
-    color: '#DFE6E9',
-    fontSize: 15,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
     padding: 14,
   },
   inputError: {
-    borderColor: '#FF6B6B',
+    borderColor: colors.danger,
   },
   errorText: {
-    color: '#FF6B6B',
-    fontSize: 12,
+    color: colors.danger,
+    fontSize: typography.size.sm,
     marginTop: 6,
   },
   textArea: {
@@ -193,27 +194,27 @@ const styles = StyleSheet.create({
   typeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   typeBadge: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.15)',
+    borderColor: colors.border,
     backgroundColor: 'transparent',
   },
   typeBadgeActive: {
-    backgroundColor: '#0984E3',
-    borderColor: '#0984E3',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   typeBadgeText: {
-    color: '#636E72',
-    fontSize: 13,
-    fontWeight: '500',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.medium,
   },
   typeBadgeTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: colors.white,
+    fontWeight: typography.weight.semibold,
   },
 });

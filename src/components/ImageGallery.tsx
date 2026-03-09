@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { Media } from '../db/types';
+import { colors, typography, radii } from '../theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_HEIGHT = 280;
@@ -164,69 +165,69 @@ const styles = StyleSheet.create({
   image: {
     width: SCREEN_WIDTH,
     height: IMAGE_HEIGHT,
-    backgroundColor: '#1A1A2E',
+    backgroundColor: colors.overlayLight,
   },
   placeholder: {
     width: '100%',
     height: IMAGE_HEIGHT,
-    backgroundColor: '#1A1A2E',
+    backgroundColor: colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   placeholderIcon: {
     fontSize: 48,
-    color: '#2D2D3A',
+    color: colors.border,
   },
   addText: {
-    color: '#74B9FF',
-    fontSize: 14,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
     marginTop: 12,
   },
   primaryBadge: {
     position: 'absolute',
     top: 12,
     left: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlayDark,
     width: 28,
     height: 28,
-    borderRadius: 14,
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryBadgeText: {
-    color: '#F9CA24',
-    fontSize: 14,
+    color: colors.warning,
+    fontSize: typography.size.base,
   },
   counterBadge: {
     position: 'absolute',
     bottom: 32,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: colors.overlayDark,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: radii.lg,
   },
   counterText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
   },
   addButton: {
     position: 'absolute',
     bottom: 32,
     left: 12,
-    backgroundColor: 'rgba(9,132,227,0.85)',
+    backgroundColor: colors.accent,
     width: 36,
     height: 36,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addButtonText: {
-    color: '#FFFFFF',
-    fontSize: 22,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.semibold,
     lineHeight: 24,
   },
   dots: {
@@ -234,18 +235,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   dot: {
     width: 6,
     height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2D2D3A',
+    borderRadius: radii.sm,
+    backgroundColor: colors.border,
   },
   dotActive: {
-    backgroundColor: '#74B9FF',
+    backgroundColor: colors.accent,
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.sm,
   },
 });

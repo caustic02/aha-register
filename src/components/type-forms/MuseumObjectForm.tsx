@@ -4,6 +4,7 @@ import { FieldInput } from '../FieldInput';
 import { DateField } from '../DateField';
 import type { TypeFormProps } from './index';
 import type { MuseumObjectData } from '../../db/types';
+import { colors, typography, radii } from '../../theme';
 
 const CONDITIONS = ['excellent', 'good', 'fair', 'poor', 'critical'] as const;
 const UNITS = ['cm', 'mm', 'in', 'm'] as const;
@@ -47,8 +48,8 @@ const secStyles = StyleSheet.create({
   container: {
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.12)',
-    borderRadius: 12,
+    borderColor: colors.border,
+    borderRadius: radii.lg,
     overflow: 'hidden',
   },
   header: {
@@ -57,12 +58,12 @@ const secStyles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 14,
     paddingVertical: 12,
-    backgroundColor: 'rgba(116,185,255,0.04)',
+    backgroundColor: colors.borderLight,
   },
   title: {
-    color: '#DFE6E9',
-    fontSize: 13,
-    fontWeight: '600',
+    color: colors.textPrimary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     flex: 1,
@@ -73,19 +74,19 @@ const secStyles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    backgroundColor: '#0984E3',
-    borderRadius: 10,
+    backgroundColor: colors.accent,
+    borderRadius: radii.md,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   badgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
   },
   chevron: {
-    color: '#636E72',
-    fontSize: 10,
+    color: colors.textSecondary,
+    fontSize: typography.size.xs,
   },
   body: {
     padding: 14,
@@ -292,7 +293,7 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               onChangeText={setHeight}
               onBlur={() => save({ dimensions: parseDim() })}
               keyboardType="numeric"
-              placeholderTextColor="#4A4A5A"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
           <View style={styles.dimField}>
@@ -303,7 +304,7 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               onChangeText={setWidth}
               onBlur={() => save({ dimensions: parseDim() })}
               keyboardType="numeric"
-              placeholderTextColor="#4A4A5A"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
           <View style={styles.dimField}>
@@ -314,7 +315,7 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               onChangeText={setDepth}
               onBlur={() => save({ dimensions: parseDim() })}
               keyboardType="numeric"
-              placeholderTextColor="#4A4A5A"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
         </View>
@@ -379,8 +380,8 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               setDimensionsVerified(v);
               onChange({ ...data, dimensions_verified: v });
             }}
-            trackColor={{ false: 'rgba(116,185,255,0.1)', true: '#0984E3' }}
-            thumbColor="#FFFFFF"
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor={colors.white}
           />
         </View>
       </Section>
@@ -490,8 +491,8 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               setPermanentLoan(v);
               onChange({ ...data, permanent_loan: v });
             }}
-            trackColor={{ false: 'rgba(116,185,255,0.1)', true: '#0984E3' }}
-            thumbColor="#FFFFFF"
+            trackColor={{ false: colors.border, true: colors.accent }}
+            thumbColor={colors.white}
           />
         </View>
         {permanentLoan && (
@@ -620,9 +621,9 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
 
 const styles = StyleSheet.create({
   fieldLabel: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     marginBottom: 8,
     marginTop: 4,
@@ -634,17 +635,17 @@ const styles = StyleSheet.create({
   },
   dimField: { flex: 1 },
   dimLabel: {
-    color: '#636E72',
-    fontSize: 10,
+    color: colors.textSecondary,
+    fontSize: typography.size.xs,
     marginBottom: 4,
   },
   dimInput: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 10,
-    color: '#DFE6E9',
-    fontSize: 15,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -657,13 +658,13 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.15)',
+    borderColor: colors.border,
   },
-  chipActive: { backgroundColor: '#0984E3', borderColor: '#0984E3' },
-  chipText: { color: '#636E72', fontSize: 13 },
-  chipTextActive: { color: '#FFFFFF', fontWeight: '600' },
+  chipActive: { backgroundColor: colors.chipActive, borderColor: colors.chipActive },
+  chipText: { color: colors.textSecondary, fontSize: typography.size.sm },
+  chipTextActive: { color: colors.white, fontWeight: typography.weight.semibold },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -671,9 +672,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   switchLabel: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     flex: 1,
   },

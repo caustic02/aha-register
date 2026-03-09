@@ -13,6 +13,7 @@ import {
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { signIn, signUp } from '../services/auth';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
@@ -99,7 +100,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
               value={email}
               onChangeText={setEmail}
               placeholder="email@example.com"
-              placeholderTextColor="#636E72"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -112,7 +113,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
               value={password}
               onChangeText={setPassword}
               placeholder={'\u2022'.repeat(8)}
-              placeholderTextColor="#636E72"
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry
               returnKeyType={mode === 'signup' ? 'next' : 'done'}
             />
@@ -125,7 +126,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={'\u2022'.repeat(8)}
-                  placeholderTextColor="#636E72"
+                  placeholderTextColor={colors.textSecondary}
                   secureTextEntry
                   returnKeyType="done"
                 />
@@ -140,7 +141,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
+                <ActivityIndicator color={colors.white} size="small" />
               ) : (
                 <Text style={styles.submitBtnText}>
                   {mode === 'signin'
@@ -173,7 +174,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -190,74 +191,74 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   appName: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: '800',
-    marginBottom: 8,
+    color: colors.white,
+    fontSize: typography.size.title,
+    fontWeight: typography.weight.extrabold,
+    marginBottom: spacing.sm,
   },
   subtitle: {
-    color: '#74B9FF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
   },
   form: {
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   fieldLabel: {
-    color: '#636E72',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: spacing.sm,
+    marginTop: spacing.lg,
   },
   textInput: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.15)',
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     paddingHorizontal: 14,
-    paddingVertical: 12,
-    color: '#FFFFFF',
-    fontSize: 15,
+    paddingVertical: spacing.md,
+    color: colors.white,
+    fontSize: typography.size.md,
   },
   errorText: {
-    color: '#FF6B6B',
-    fontSize: 13,
-    marginTop: 12,
+    color: colors.danger,
+    fontSize: typography.size.sm,
+    marginTop: spacing.md,
     textAlign: 'center',
   },
   submitBtn: {
-    backgroundColor: '#0984E3',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.lg,
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: spacing.xxl,
   },
   submitBtnDisabled: {
     opacity: 0.6,
   },
   submitBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.bold,
   },
   toggleBtn: {
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: spacing.lg,
   },
   toggleText: {
-    color: '#74B9FF',
-    fontSize: 14,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
   },
   skipBtn: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: spacing.md,
   },
   skipText: {
-    color: '#636E72',
-    fontSize: 13,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
   },
 });

@@ -4,6 +4,7 @@ import { FieldInput } from '../FieldInput';
 import { DateField } from '../DateField';
 import type { TypeFormProps } from './index';
 import type { IncidentData } from '../../db/types';
+import { colors, typography, radii } from '../../theme';
 
 const SEVERITIES = ['low', 'medium', 'high', 'critical'] as const;
 
@@ -84,8 +85,8 @@ export default function IncidentForm({ data, onChange, t }: TypeFormProps) {
             setLawEnforcement(val);
             save({ law_enforcement_notified: val });
           }}
-          trackColor={{ false: '#2D2D3A', true: '#0984E3' }}
-          thumbColor="#FFFFFF"
+          trackColor={{ false: colors.border, true: colors.accent }}
+          thumbColor={colors.white}
         />
       </View>
 
@@ -107,9 +108,9 @@ export default function IncidentForm({ data, onChange, t }: TypeFormProps) {
 
 const styles = StyleSheet.create({
   fieldLabel: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     marginBottom: 8,
     marginTop: 4,
@@ -123,13 +124,13 @@ const styles = StyleSheet.create({
   chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.15)',
+    borderColor: colors.border,
   },
-  chipActive: { backgroundColor: '#0984E3', borderColor: '#0984E3' },
-  chipText: { color: '#636E72', fontSize: 13 },
-  chipTextActive: { color: '#FFFFFF', fontWeight: '600' },
+  chipActive: { backgroundColor: colors.chipActive, borderColor: colors.chipActive },
+  chipText: { color: colors.textSecondary, fontSize: typography.size.sm },
+  chipTextActive: { color: colors.white, fontWeight: typography.weight.semibold },
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

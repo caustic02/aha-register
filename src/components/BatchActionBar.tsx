@@ -1,4 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { colors, typography, radii } from '../theme';
 
 interface SelectionHeaderProps {
   selectedCount: number;
@@ -40,24 +41,24 @@ const hStyles = StyleSheet.create({
     paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 12,
-    backgroundColor: '#0A0A14',
+    backgroundColor: colors.surface,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(116,185,255,0.2)',
+    borderBottomColor: colors.border,
   },
   cancelText: {
-    color: '#636E72',
-    fontSize: 15,
-    fontWeight: '500',
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.medium,
   },
   countText: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
   selectAllText: {
-    color: '#74B9FF',
-    fontSize: 15,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.medium,
   },
 });
 
@@ -94,7 +95,7 @@ export function BatchActionButtons({
         disabled={disabled || exporting}
       >
         {exporting ? (
-          <ActivityIndicator size="small" color="#74B9FF" />
+          <ActivityIndicator size="small" color={colors.accent} />
         ) : (
           <Text style={aStyles.actionIcon}>{'\u2197'}</Text>
         )}
@@ -118,9 +119,9 @@ const aStyles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     paddingBottom: 36,
-    backgroundColor: '#0A0A14',
+    backgroundColor: colors.surface,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(116,185,255,0.2)',
+    borderTopColor: colors.border,
     gap: 8,
   },
   actionBtn: {
@@ -128,21 +129,21 @@ const aStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(116,185,255,0.1)',
+    borderRadius: radii.md,
+    backgroundColor: colors.border,
     gap: 4,
   },
   disabledBtn: {
     opacity: 0.4,
   },
   actionIcon: {
-    color: '#74B9FF',
-    fontSize: 18,
+    color: colors.accent,
+    fontSize: typography.size.lg,
   },
   actionText: {
-    color: '#74B9FF',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
     textAlign: 'center',
   },
   deleteBtn: {
@@ -150,18 +151,18 @@ const aStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,107,107,0.1)',
+    borderRadius: radii.md,
+    backgroundColor: colors.dangerLight,
     gap: 4,
   },
   deleteIcon: {
-    color: '#FF6B6B',
-    fontSize: 18,
+    color: colors.danger,
+    fontSize: typography.size.lg,
   },
   deleteText: {
-    color: '#FF6B6B',
-    fontSize: 11,
-    fontWeight: '600',
+    color: colors.danger,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
     textAlign: 'center',
   },
 });

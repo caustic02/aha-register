@@ -17,6 +17,7 @@ import {
   type PickerObject,
 } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'AddObjects'>;
 
@@ -114,7 +115,7 @@ export function AddObjectsScreen({ route, navigation }: Props) {
           value={search}
           onChangeText={setSearch}
           placeholder={t('collections.add_objects.search')}
-          placeholderTextColor="#4A4A5A"
+          placeholderTextColor={colors.textMuted}
         />
       </View>
 
@@ -150,108 +151,108 @@ export function AddObjectsScreen({ route, navigation }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
   },
   headerSpacer: {
     width: 60,
   },
   cancelText: {
-    color: '#636E72',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.md,
   },
   searchInput: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 10,
-    color: '#DFE6E9',
-    fontSize: 15,
-    padding: 12,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
+    padding: spacing.md,
   },
   list: {
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.screenPadding,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
-    gap: 12,
+    borderBottomColor: colors.borderLight,
+    gap: spacing.md,
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: radii.sm,
     borderWidth: 2,
-    borderColor: 'rgba(116,185,255,0.3)',
+    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxActive: {
-    backgroundColor: '#0984E3',
-    borderColor: '#0984E3',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   checkmark: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.bold,
   },
   thumb: {
     width: 44,
     height: 44,
-    borderRadius: 8,
-    backgroundColor: '#1A1A2E',
+    borderRadius: radii.md,
+    backgroundColor: colors.overlayLight,
   },
   thumbPlaceholder: {
     width: 44,
     height: 44,
-    borderRadius: 8,
-    backgroundColor: '#1A1A2E',
+    borderRadius: radii.md,
+    backgroundColor: colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   thumbPlaceholderText: {
-    fontSize: 18,
-    color: '#2D2D3A',
+    fontSize: typography.size.lg,
+    color: colors.border,
   },
   info: {
     flex: 1,
-    gap: 4,
+    gap: spacing.xs,
   },
   itemTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: '500',
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.medium,
   },
   badge: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
+    backgroundColor: colors.border,
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: radii.sm,
     alignSelf: 'flex-start',
   },
   badgeText: {
-    color: '#74B9FF',
-    fontSize: 10,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
   },
   emptyContainer: {
     flex: 1,
@@ -259,27 +260,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: '#636E72',
-    fontSize: 15,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
   },
   footer: {
-    padding: 20,
+    padding: layout.screenPadding,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(116,185,255,0.08)',
-    backgroundColor: '#0A0A14',
+    borderTopColor: colors.borderLight,
+    backgroundColor: colors.surface,
   },
   addBtn: {
-    backgroundColor: '#0984E3',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    padding: layout.cardPadding,
     alignItems: 'center',
   },
   addBtnDisabled: {
     opacity: 0.5,
   },
   addBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.bold,
   },
 });

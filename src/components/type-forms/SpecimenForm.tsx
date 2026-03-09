@@ -3,6 +3,7 @@ import { StyleSheet, Switch, Text, View } from 'react-native';
 import { FieldInput } from '../FieldInput';
 import type { TypeFormProps } from './index';
 import type { SpecimenData } from '../../db/types';
+import { colors, typography } from '../../theme';
 
 export default function SpecimenForm({ data, onChange, t }: TypeFormProps) {
   const d = data as SpecimenData;
@@ -63,8 +64,8 @@ export default function SpecimenForm({ data, onChange, t }: TypeFormProps) {
             setGeneticData(val);
             save({ genetic_data_available: val });
           }}
-          trackColor={{ false: '#2D2D3A', true: '#0984E3' }}
-          thumbColor="#FFFFFF"
+          trackColor={{ false: colors.border, true: colors.accent }}
+          thumbColor={colors.white}
         />
       </View>
     </View>
@@ -73,9 +74,9 @@ export default function SpecimenForm({ data, onChange, t }: TypeFormProps) {
 
 const styles = StyleSheet.create({
   fieldLabel: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     marginBottom: 8,
     marginTop: 4,

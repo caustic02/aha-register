@@ -27,6 +27,7 @@ import {
 } from '../services/settingsService';
 import { TypeSelector } from '../components/TypeSelector';
 import type { ObjectType } from '../db/types';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
 type AspectRatio = '4:3' | '1:1';
@@ -200,7 +201,7 @@ export function CaptureScreen() {
   if (phase === 'extracting') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#74B9FF" />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.spinnerText}>{t('capture.securing')}</Text>
       </View>
     );
@@ -209,7 +210,7 @@ export function CaptureScreen() {
   if (phase === 'saving') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#74B9FF" />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.spinnerText}>{t('capture.save_draft')}...</Text>
       </View>
     );
@@ -306,7 +307,7 @@ export function CaptureScreen() {
         ) : (
           <Text style={styles.permissionHint}>{t('capture.permission_settings')}</Text>
         )}
-        <Pressable style={[styles.secondaryBtn, { marginTop: 12 }]} onPress={handleLibrary}>
+        <Pressable style={[styles.secondaryBtn, { marginTop: spacing.md }]} onPress={handleLibrary}>
           <Text style={styles.secondaryBtnText}>{t('capture.choose_from_library')}</Text>
         </Pressable>
       </View>
@@ -315,7 +316,7 @@ export function CaptureScreen() {
 
   // Flash icon color
   const flashColor =
-    flashMode === 'off' ? '#8A8A9A' : flashMode === 'on' ? '#FFD700' : '#74B9FF';
+    flashMode === 'off' ? colors.textMuted : flashMode === 'on' ? colors.warning : colors.accent;
 
   // Android ratio prop (iOS uses container styling)
   const androidRatio: CameraRatio | undefined =
@@ -407,20 +408,20 @@ export function CaptureScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
   },
   center: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    padding: spacing.xxl,
   },
 
   // ── Live camera ─────────────────────────────────────────────────────────────
   cameraContainer: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: colors.camera,
   },
 
   // Crop overlay bars for 1:1 ratio (appear above/below the square zone)
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
     // Height is calculated so the remaining visible area is square (width-based)
     // We overlay ~20% from top and bottom as a darkened guide
     height: '15%',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: colors.overlay,
     zIndex: 2,
   },
   cropBarBottom: {
@@ -441,7 +442,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: '15%',
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: colors.overlay,
     zIndex: 2,
   },
 
@@ -452,40 +453,40 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingTop: 56,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: layout.screenPadding,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: colors.overlayLight,
     zIndex: 10,
   },
   controlBtn: {
     flexDirection: 'column',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.45)',
+    backgroundColor: colors.overlay,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 12,
+    borderColor: colors.overlayLight,
+    borderRadius: radii.lg,
     paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     minWidth: 56,
     gap: 2,
   },
   controlIcon: {
-    fontSize: 20,
-    color: '#FFFFFF',
+    fontSize: typography.size.xl,
+    color: colors.white,
   },
   controlLabel: {
-    fontSize: 9,
-    fontWeight: '700',
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.bold,
     letterSpacing: 0.5,
   },
   ratioText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    paddingVertical: 4,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.bold,
+    color: colors.white,
+    paddingVertical: spacing.xs,
   },
 
   // ── Bottom controls ──────────────────────────────────────────────────────────
@@ -495,37 +496,37 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingBottom: 50,
-    paddingTop: 20,
-    paddingHorizontal: 32,
+    paddingTop: layout.screenPadding,
+    paddingHorizontal: spacing.xxxl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: colors.overlayLight,
     zIndex: 10,
   },
   libraryBtn: {
     width: 52,
     height: 52,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: radii.lg,
+    backgroundColor: colors.overlayLight,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: colors.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   libraryIcon: {
-    fontSize: 24,
-    color: '#FFFFFF',
+    fontSize: typography.size.xxl,
+    color: colors.white,
   },
   shutterBtn: {
     width: 76,
     height: 76,
     borderRadius: 38,
     borderWidth: 4,
-    borderColor: '#FFFFFF',
+    borderColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: colors.overlayLight,
   },
   shutterBtnDisabled: {
     opacity: 0.4,
@@ -534,7 +535,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
   },
   shutterSpacer: {
     width: 52,
@@ -542,23 +543,23 @@ const styles = StyleSheet.create({
 
   // ── Permission screen ────────────────────────────────────────────────────────
   permissionTitle: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.semibold,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: spacing.md,
   },
   permissionBody: {
-    color: '#636E72',
-    fontSize: 15,
+    color: colors.textSecondary,
+    fontSize: typography.size.md,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: spacing.xxl,
   },
   permissionHint: {
-    color: '#636E72',
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
 
   // ── Preview phase ────────────────────────────────────────────────────────────
@@ -568,73 +569,73 @@ const styles = StyleSheet.create({
   preview: {
     width: '100%',
     aspectRatio: 3 / 4,
-    backgroundColor: '#1A1A2E',
+    backgroundColor: colors.overlayLight,
   },
   metaSection: {
-    padding: 20,
+    padding: layout.screenPadding,
   },
   metaLabel: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   metaValue: {
-    color: '#FFFFFF',
-    fontSize: 15,
+    color: colors.white,
+    fontSize: typography.size.md,
     marginTop: 2,
   },
 
   // ── Shared buttons ───────────────────────────────────────────────────────────
   primaryBtn: {
-    backgroundColor: '#0984E3',
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.accent,
+    marginHorizontal: layout.screenPadding,
+    borderRadius: radii.lg,
+    padding: layout.cardPadding,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
   },
   primaryBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.bold,
   },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.3)',
-    marginHorizontal: 20,
-    borderRadius: 12,
-    padding: 16,
+    borderColor: colors.accent,
+    marginHorizontal: layout.screenPadding,
+    borderRadius: radii.lg,
+    padding: layout.cardPadding,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: spacing.md,
   },
   secondaryBtnText: {
-    color: '#74B9FF',
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
 
   // ── Spinners / done ──────────────────────────────────────────────────────────
   spinnerText: {
-    color: '#74B9FF',
-    fontSize: 16,
-    marginTop: 16,
+    color: colors.accent,
+    fontSize: typography.size.md,
+    marginTop: spacing.lg,
   },
   checkmark: {
-    color: '#00B894',
+    color: colors.accent,
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   doneTitle: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: '600',
+    color: colors.white,
+    fontSize: typography.size.xxl,
+    fontWeight: typography.weight.semibold,
   },
   doneId: {
-    color: '#636E72',
-    fontSize: 14,
-    marginTop: 8,
-    marginBottom: 32,
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xxxl,
   },
 });

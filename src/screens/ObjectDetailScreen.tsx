@@ -49,6 +49,7 @@ import type {
   Media,
   Annotation,
 } from '../db/types';
+import { colors, typography, spacing, radii, layout } from '../theme';
 
 type Props = NativeStackScreenProps<ObjectStackParamList, 'ObjectDetail'>;
 
@@ -432,7 +433,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#74B9FF" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -612,8 +613,8 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               <Switch
                 value={legalHold}
                 onValueChange={handleLegalHoldChange}
-                trackColor={{ false: '#2D2D3A', true: '#0984E3' }}
-                thumbColor="#FFFFFF"
+                trackColor={{ false: colors.border, true: colors.accent }}
+                thumbColor={colors.white}
               />
             </View>
 
@@ -656,7 +657,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               value={noteText}
               onChangeText={setNoteText}
               placeholder={t('objects.note_placeholder')}
-              placeholderTextColor="#4A4A5A"
+              placeholderTextColor={colors.textMuted}
               multiline
               autoFocus
             />
@@ -775,60 +776,60 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#08080F' },
+  container: { flex: 1, backgroundColor: colors.background },
   scroll: { paddingBottom: 40 },
   center: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  errorText: { color: '#FF6B6B', fontSize: 16 },
+  errorText: { color: colors.danger, fontSize: typography.size.md },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 56,
-    paddingHorizontal: 20,
-    paddingBottom: 8,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.sm,
   },
   backBtn: {},
-  backText: { color: '#74B9FF', fontSize: 16 },
+  backText: { color: colors.accent, fontSize: typography.size.md },
   exportBtn: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
+    backgroundColor: colors.borderLight,
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
   },
-  exportBtnText: { color: '#74B9FF', fontSize: 14, fontWeight: '500' },
+  exportBtnText: { color: colors.accent, fontSize: typography.size.base, fontWeight: typography.weight.medium },
 
   // Sections
-  section: { paddingHorizontal: 20, paddingTop: 24 },
+  section: { paddingHorizontal: layout.screenPadding, paddingTop: spacing.xxl },
   sectionLabel: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  sectionTitle: { color: '#FFFFFF', fontSize: 18, fontWeight: '600', marginBottom: 12 },
-  spacer: { height: 16 },
+  sectionTitle: { color: colors.textPrimary, fontSize: typography.size.lg, fontWeight: typography.weight.semibold, marginBottom: spacing.md },
+  spacer: { height: spacing.lg },
 
   // Location card
   locationCard: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
-    borderRadius: 12,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.lg,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
+    borderColor: colors.border,
   },
   locationRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
-  locationLabel: { color: '#636E72', fontSize: 13, fontWeight: '500' },
-  locationValue: { color: '#DFE6E9', fontSize: 13 },
+  locationLabel: { color: colors.textSecondary, fontSize: typography.size.sm, fontWeight: typography.weight.medium },
+  locationValue: { color: colors.textPrimary, fontSize: typography.size.sm },
 
   // Collapsible
   collapseHeader: {
@@ -836,131 +837,131 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  collapseArrow: { color: '#636E72', fontSize: 12 },
-  collapseBody: { marginTop: 12 },
+  collapseArrow: { color: colors.textSecondary, fontSize: typography.size.sm },
+  collapseBody: { marginTop: spacing.md },
 
   // Chips (privacy/evidence)
   fieldLabel: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
-    marginBottom: 8,
-    marginTop: 12,
+    marginBottom: spacing.sm,
+    marginTop: spacing.md,
   },
-  chipRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  chipRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.sm },
   chip: {
     paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.15)',
+    borderColor: colors.border,
   },
-  chipActive: { backgroundColor: '#0984E3', borderColor: '#0984E3' },
-  chipText: { color: '#636E72', fontSize: 13 },
-  chipTextActive: { color: '#FFFFFF', fontWeight: '600' },
+  chipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  chipText: { color: colors.textSecondary, fontSize: typography.size.sm },
+  chipTextActive: { color: colors.white, fontWeight: typography.weight.semibold },
 
   // Toggle
   toggleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 16,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
 
   // Annotations
   annotationCard: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 8,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.08)',
+    borderColor: colors.borderLight,
   },
-  annotationContent: { color: '#DFE6E9', fontSize: 14, lineHeight: 20 },
-  annotationMeta: { color: '#636E72', fontSize: 11, marginTop: 6 },
+  annotationContent: { color: colors.textPrimary, fontSize: typography.size.base, lineHeight: 20 },
+  annotationMeta: { color: colors.textSecondary, fontSize: typography.size.xs, marginTop: spacing.sm },
   addNoteBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.2)',
-    borderRadius: 10,
+    borderColor: colors.border,
+    borderRadius: radii.md,
     padding: 14,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
-  addNoteBtnText: { color: '#74B9FF', fontSize: 14, fontWeight: '500' },
-  noteInputContainer: { marginTop: 8 },
+  addNoteBtnText: { color: colors.accent, fontSize: typography.size.base, fontWeight: typography.weight.medium },
+  noteInputContainer: { marginTop: spacing.sm },
   noteInput: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 10,
-    color: '#DFE6E9',
-    fontSize: 14,
-    padding: 12,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    color: colors.textPrimary,
+    fontSize: typography.size.base,
+    padding: spacing.md,
     minHeight: 70,
     textAlignVertical: 'top',
   },
-  noteActions: { flexDirection: 'row', gap: 16, marginTop: 10 },
+  noteActions: { flexDirection: 'row', gap: spacing.lg, marginTop: spacing.md },
   noteSaveBtn: {
-    backgroundColor: '#0984E3',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 8,
+    backgroundColor: colors.accent,
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
   },
-  noteSaveText: { color: '#FFFFFF', fontSize: 14, fontWeight: '600' },
-  noteCancelText: { color: '#636E72', fontSize: 14, paddingVertical: 8 },
+  noteSaveText: { color: colors.white, fontSize: typography.size.base, fontWeight: typography.weight.semibold },
+  noteCancelText: { color: colors.textSecondary, fontSize: typography.size.base, paddingVertical: spacing.sm },
 
   // Metadata footer
   metaRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
+    paddingVertical: spacing.sm,
   },
-  metaLabel: { color: '#636E72', fontSize: 13 },
-  metaValue: { color: '#DFE6E9', fontSize: 13 },
+  metaLabel: { color: colors.textSecondary, fontSize: typography.size.sm },
+  metaValue: { color: colors.textPrimary, fontSize: typography.size.sm },
 
   // Collections
   collectionChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
   collectionChip: {
-    backgroundColor: 'rgba(116,185,255,0.12)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: colors.borderLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.xl,
   },
   collectionChipText: {
-    color: '#74B9FF',
-    fontSize: 13,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.medium,
   },
   noCollectionsText: {
-    color: '#636E72',
-    fontSize: 14,
-    marginBottom: 12,
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
+    marginBottom: spacing.md,
   },
   addToCollectionBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.2)',
-    borderRadius: 10,
-    padding: 12,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    padding: spacing.md,
     alignItems: 'center',
   },
   addToCollectionBtnText: {
-    color: '#74B9FF',
-    fontSize: 14,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
   },
   pickerContainer: {
-    marginTop: 12,
-    backgroundColor: 'rgba(116,185,255,0.06)',
-    borderRadius: 10,
+    marginTop: spacing.md,
+    backgroundColor: colors.borderLight,
+    borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
+    borderColor: colors.border,
     overflow: 'hidden',
   },
   pickerRow: {
@@ -969,38 +970,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.06)',
+    borderBottomColor: colors.borderLight,
   },
   pickerRowText: {
-    color: '#DFE6E9',
-    fontSize: 15,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
   },
   pickerRowType: {
-    color: '#636E72',
-    fontSize: 12,
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
   },
   pickerEmptyText: {
-    color: '#636E72',
-    fontSize: 14,
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
     padding: 14,
     textAlign: 'center',
   },
 
   deleteSection: {
-    paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.xxxl,
   },
   deleteBtn: {
     borderWidth: 1,
-    borderColor: 'rgba(255,107,107,0.4)',
-    borderRadius: 10,
+    borderColor: colors.dangerLight,
+    borderRadius: radii.md,
     padding: 14,
     alignItems: 'center',
   },
   deleteBtnText: {
-    color: '#FF6B6B',
-    fontSize: 15,
-    fontWeight: '600',
+    color: colors.danger,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
   bottomPad: { height: 40 },
 });

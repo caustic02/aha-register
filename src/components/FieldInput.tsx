@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { colors, typography, radii } from '../theme';
 
 interface FieldInputProps {
   label: string;
@@ -33,7 +34,7 @@ export function FieldInput({
           onBlur={onBlur}
           multiline={multiline}
           placeholder={placeholder}
-          placeholderTextColor="#4A4A5A"
+          placeholderTextColor={colors.textMuted}
           textAlignVertical={multiline ? 'top' : 'center'}
         />
       )}
@@ -46,19 +47,19 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    color: '#636E72',
-    fontSize: 12,
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     marginBottom: 6,
   },
   input: {
-    backgroundColor: 'rgba(116,185,255,0.06)',
+    backgroundColor: colors.borderLight,
     borderWidth: 1,
-    borderColor: 'rgba(116,185,255,0.1)',
-    borderRadius: 10,
-    color: '#DFE6E9',
-    fontSize: 15,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
     paddingHorizontal: 14,
     paddingVertical: 12,
   },
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   readonlyValue: {
-    color: '#DFE6E9',
-    fontSize: 15,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
   },
 });
