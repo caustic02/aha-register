@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { colors, typography, spacing } from '../theme';
 import { NavigationContainer } from '@react-navigation/native';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import i18n from 'i18next';
@@ -99,7 +100,7 @@ export default function AppShell() {
   if (!db || !authChecked) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#74B9FF" />
+        <ActivityIndicator size="large" color={colors.accent} />
         <Text style={styles.loading}>aha! Register</Text>
       </View>
     );
@@ -126,15 +127,15 @@ export default function AppShell() {
 const styles = StyleSheet.create({
   center: {
     flex: 1,
-    backgroundColor: '#08080F',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
   loading: {
-    color: '#74B9FF',
-    fontSize: 18,
-    marginTop: 16,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: typography.size.lg,
+    marginTop: spacing.lg,
+    fontWeight: typography.weight.semibold,
   },
-  error: { color: '#FF6B6B', fontSize: 16, textAlign: 'center', padding: 24 },
+  error: { color: colors.danger, fontSize: typography.size.base, textAlign: 'center', padding: spacing.xxl },
 });

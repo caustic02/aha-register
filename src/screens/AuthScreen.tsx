@@ -13,7 +13,7 @@ import {
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { signIn, signUp } from '../services/auth';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import { colors, typography, spacing, radii } from '../theme';
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
@@ -77,7 +77,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
     <View style={styles.container}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -87,9 +87,20 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.appName}>aha! Register</Text>
-            <Text style={styles.subtitle}>
-              {mode === 'signin' ? t('auth.sign_in') : t('auth.sign_up')}
+          </View>
+
+          {/* Primary action: Start Documenting */}
+          <Pressable style={styles.startBtn} onPress={onSkip}>
+            <Text style={styles.startBtnText}>
+              {t('auth.start_documenting')}
             </Text>
+          </Pressable>
+
+          {/* Divider with account prompt */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('auth.have_account')}</Text>
+            <View style={styles.dividerLine} />
           </View>
 
           {/* Form */}
@@ -100,7 +111,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
               value={email}
               onChangeText={setEmail}
               placeholder="email@example.com"
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -113,7 +124,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
               value={password}
               onChangeText={setPassword}
               placeholder={'\u2022'.repeat(8)}
-              placeholderTextColor={colors.textSecondary}
+              placeholderTextColor={colors.textMuted}
               secureTextEntry
               returnKeyType={mode === 'signup' ? 'next' : 'done'}
             />
@@ -126,7 +137,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder={'\u2022'.repeat(8)}
-                  placeholderTextColor={colors.textSecondary}
+                  placeholderTextColor={colors.textMuted}
                   secureTextEntry
                   returnKeyType="done"
                 />
@@ -152,18 +163,13 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
             </Pressable>
           </View>
 
-          {/* Toggle */}
+          {/* Toggle sign-in / sign-up */}
           <Pressable style={styles.toggleBtn} onPress={toggleMode} hitSlop={12}>
             <Text style={styles.toggleText}>
               {mode === 'signin'
                 ? t('auth.no_account')
                 : t('auth.already_have_account')}
             </Text>
-          </Pressable>
-
-          {/* Skip */}
-          <Pressable style={styles.skipBtn} onPress={onSkip} hitSlop={12}>
-            <Text style={styles.skipText}>{t('auth.continue_without')}</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -182,27 +188,53 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 28,
-    paddingTop: 100,
+    paddingTop: 80,
     paddingBottom: 48,
-    justifyContent: 'center',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 36,
   },
   appName: {
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: typography.size.title,
     fontWeight: typography.weight.extrabold,
-    marginBottom: spacing.sm,
   },
-  subtitle: {
-    color: colors.accent,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-  },
-  form: {
+
+  /* Primary skip/start button */
+  startBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
     marginBottom: spacing.xxl,
+  },
+  startBtnText: {
+    color: colors.white,
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.bold,
+  },
+
+  /* Divider */
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerText: {
+    color: colors.textSecondary,
+    fontSize: typography.size.sm,
+    marginHorizontal: spacing.md,
+  },
+
+  /* Form */
+  form: {
+    marginBottom: spacing.lg,
   },
   fieldLabel: {
     color: colors.textSecondary,
@@ -220,7 +252,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: spacing.md,
-    color: colors.white,
+    color: colors.textPrimary,
     fontSize: typography.size.md,
   },
   errorText: {
@@ -252,13 +284,5 @@ const styles = StyleSheet.create({
     color: colors.accent,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
-  },
-  skipBtn: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  skipText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
   },
 });
