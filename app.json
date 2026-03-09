@@ -32,13 +32,17 @@
     },
     "plugins": [
       "expo-sqlite",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-updates"
     ],
     "runtimeVersion": {
-      "policy": "sdkVersion"
+      "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/bec4d444-c862-47d2-b326-37eaa5a4519e"
+      "enabled": true,
+      "url": "https://u.expo.dev/bec4d444-c862-47d2-b326-37eaa5a4519e",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
     },
     "extra": {
       "eas": {
