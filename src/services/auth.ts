@@ -2,7 +2,6 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { getSetting, setSetting, SETTING_KEYS } from './settingsService';
-import { generateId } from '../utils/uuid';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,38 +32,22 @@ export async function signUp(
     const institutionType =
       (await getSetting(db, SETTING_KEYS.INSTITUTION_TYPE)) || 'other';
 
-    // 3. Create institution in cloud
-    const institutionId = generateId();
-    const { error: instErr } = await supabase.from('institutions').insert({
-      id: institutionId,
-      name: institutionName,
-      institution_type: institutionType,
-    });
-    if (instErr) throw new Error(instErr.message);
+    // 3. Create institution + user profile + membership via SECURITY DEFINER RPC
+    //    This bypasses RLS, solving both the null-session (email confirmation)
+    //    and the chicken-and-egg membership bootstrapping problems.
+    const { data: institutionId, error: rpcError } = await supabase.rpc(
+      'create_institution_for_user',
+      {
+        _auth_user_id: authUserId,
+        _email: email,
+        _display_name: displayName,
+        _institution_name: institutionName,
+        _institution_type: institutionType,
+      },
+    );
+    if (rpcError) throw new Error(rpcError.message);
 
-    // 4. Create user record in cloud
-    const userId = generateId();
-    const { error: userErr } = await supabase.from('users').insert({
-      id: userId,
-      auth_user_id: authUserId,
-      email,
-      display_name: displayName,
-      role: 'owner',
-      institution_id: institutionId,
-    });
-    if (userErr) throw new Error(userErr.message);
-
-    // 5. Create institution_members record (owner)
-    const { error: memberErr } = await supabase
-      .from('institution_members')
-      .insert({
-        institution_id: institutionId,
-        user_id: authUserId,
-        role: 'owner',
-      });
-    if (memberErr) throw new Error(memberErr.message);
-
-    // 6. Save to local settings
+    // 4. Save to local settings
     await setSetting(db, SETTING_KEYS.SYNC_INSTITUTION_ID, institutionId);
     await setSetting(db, SETTING_KEYS.SYNC_ENABLED, 'true');
 
