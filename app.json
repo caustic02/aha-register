@@ -36,7 +36,13 @@
       "policy": "sdkVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/REPLACE_WITH_PROJECT_ID"
-    }
+      "url": "https://u.expo.dev/bec4d444-c862-47d2-b326-37eaa5a4519e"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bec4d444-c862-47d2-b326-37eaa5a4519e"
+      }
+    },
+    "owner": "aha-register"
   }
 }
