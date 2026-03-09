@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>aha! Register — Object Report Preview</title>
+  <style>
+    @page { size: A4; margin: 18mm 20mm; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, system-ui, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 9.5pt;
+      color: #1A1A1A;
+      line-height: 1.45;
+      background: #FFFFFF;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 20mm;
+    }
+    .preview-notice {
+      background: #FFF8E6; border: 1px solid #D4A017; border-radius: 6px;
+      padding: 8px 14px; margin-bottom: 20px; font-size: 10px;
+      color: #6B6B6B; display: none;
+    }
+    @media screen { .preview-notice { display: block; } }
+    code, .mono { font-family: 'Courier New', Courier, monospace; font-size: 8.5pt; word-break: break-all; }
+    .accent-bar { height: 8pt; background: #2D5A27; width: 100%; margin-bottom: 14pt; }
+    .accent-bar-sm { height: 5pt; background: #2D5A27; width: 100%; margin-bottom: 10pt; }
+    .page-break { page-break-after: always; border-top: 1px dashed #ccc; margin: 30px 0; padding-top: 20px; }
+    .report-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12pt; }
+    .header-brand { display: flex; align-items: baseline; gap: 4pt; }
+    .brand-aha { font-style: italic; font-weight: 800; font-size: 20pt; color: #2D5A27; }
+    .brand-register { font-size: 11pt; color: #6B6B6B; font-weight: 400; }
+    .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4pt; }
+    .header-badge { background: #2D5A27; color: #FFF; font-size: 7.5pt; font-weight: 700; letter-spacing: 1pt; padding: 3pt 8pt; border-radius: 3pt; }
+    .header-institution { font-size: 8pt; color: #999; }
+    .title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12pt; margin-bottom: 14pt; padding-bottom: 10pt; border-bottom: 1pt solid #E8E8E4; }
+    .title-block { flex: 1; }
+    .obj-type-label { font-size: 7.5pt; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.8pt; margin-bottom: 3pt; }
+    .obj-title { font-size: 16pt; font-weight: 700; color: #1A1A1A; margin-bottom: 3pt; line-height: 1.2; }
+    .obj-subtitle { font-size: 9.5pt; color: #6B6B6B; }
+    .inv-badge { background: #E8F0E6; border: 1pt solid #2D5A27; color: #2D5A27; font-size: 8.5pt; font-weight: 600; padding: 4pt 10pt; border-radius: 5pt; white-space: nowrap; flex-shrink: 0; }
+    .main-columns { display: flex; gap: 14pt; margin-bottom: 14pt; }
+    .col-image { flex: 0 0 55%; }
+    .col-facts { flex: 1; }
+    .image-wrapper { position: relative; background: #FAFAF8; border: 1pt solid #E8E8E4; border-radius: 7pt; overflow: hidden; margin-bottom: 6pt; }
+    .primary-img { width: 100%; max-height: 200pt; object-fit: contain; display: block; }
+    .image-placeholder { width: 100%; height: 150pt; display: flex; align-items: center; justify-content: center; background: #FAFAF8; color: #999; font-size: 9pt; }
+    .img-count-badge { position: absolute; bottom: 6pt; right: 6pt; background: rgba(0,0,0,0.5); color: #FFF; font-size: 7.5pt; font-weight: 600; padding: 2pt 7pt; border-radius: 10pt; }
+    .thumb-strip { display: flex; gap: 5pt; }
+    .thumb { flex: 1; max-width: 60pt; height: 40pt; object-fit: cover; border-radius: 4pt; border: 0.5pt solid #E8E8E4; }
+    .facts-card { background: #FAFAF8; border: 1pt solid #E8E8E4; border-radius: 8pt; padding: 10pt; }
+    .fact-row { display: flex; gap: 6pt; padding: 4pt 0; border-bottom: 0.5pt solid #E8E8E4; align-items: flex-start; }
+    .fact-row:last-child { border-bottom: none; }
+    .fact-label { font-size: 8pt; color: #999; font-weight: 600; width: 70pt; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.5pt; padding-top: 1pt; }
+    .fact-value { font-size: 9pt; color: #1A1A1A; font-weight: 500; flex: 1; display: flex; align-items: center; }
+    .section { margin-bottom: 12pt; }
+    .section-header { margin-bottom: 7pt; }
+    .section-title { font-size: 11pt; font-weight: 700; color: #1A1A1A; }
+    .section-underline { height: 2pt; background: #2D5A27; border-radius: 2pt; margin-top: 3pt; }
+    .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14pt; }
+    .data-row { display: flex; gap: 6pt; padding: 4pt 0; border-bottom: 0.5pt solid #E8E8E4; }
+    .data-label { font-size: 8pt; color: #999; width: 72pt; flex-shrink: 0; padding-top: 1pt; }
+    .data-value { font-size: 9pt; color: #1A1A1A; font-weight: 500; flex: 1; }
+    .prov-row { margin-bottom: 6pt; }
+    .prov-label { font-size: 8pt; font-weight: 600; color: #999; text-transform: uppercase; letter-spacing: 0.5pt; margin-bottom: 2pt; }
+    .prov-text { font-size: 9pt; color: #1A1A1A; }
+    .tamper-footer { background: #E8F0E6; border: 1pt solid #2D5A27; border-radius: 7pt; padding: 9pt 12pt; display: flex; gap: 10pt; align-items: flex-start; margin-top: 14pt; }
+    .tamper-info { flex: 1; }
+    .tamper-title { font-size: 7.5pt; font-weight: 700; color: #2D5A27; text-transform: uppercase; letter-spacing: 0.8pt; margin-bottom: 4pt; }
+    .tamper-hash { font-family: 'Courier New', Courier, monospace; font-size: 8pt; color: #1A1A1A; word-break: break-all; margin-bottom: 4pt; }
+    .tamper-meta { display: flex; gap: 14pt; }
+    .tamper-meta-item { font-size: 7.5pt; color: #6B6B6B; }
+    .tamper-meta-item strong { color: #1A1A1A; }
+    .qr-box { width: 44pt; height: 44pt; border: 1.5pt solid #2D5A27; border-radius: 4pt; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2pt; flex-shrink: 0; }
+    .qr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5pt; padding: 5pt; width: 100%; height: 100%; }
+    .qr-cell { background: #2D5A27; border-radius: 0.5pt; }
+    .qr-cell-w { background: #FFF; border-radius: 0.5pt; }
+    .page-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10pt; padding-top: 8pt; border-top: 0.5pt solid #E8E8E4; font-size: 7.5pt; color: #999; }
+    .narrative { font-size: 9.5pt; color: #1A1A1A; line-height: 1.6; }
+    .activity-card { background: #FFF8E6; border: 1pt solid #D4A017; border-radius: 6pt; padding: 8pt 12pt; margin-bottom: 10pt; }
+    .activity-date { font-size: 8pt; color: #D4A017; font-weight: 700; margin-bottom: 3pt; }
+    .activity-text { font-size: 9pt; color: #1A1A1A; }
+    .bib-list { list-style: none; padding: 0; }
+    .bib-item { display: flex; gap: 7pt; padding: 4pt 0; border-bottom: 0.5pt solid #E8E8E4; align-items: flex-start; }
+    .bib-dot { width: 6pt; height: 6pt; border-radius: 50%; background: #2D5A27; flex-shrink: 0; margin-top: 3pt; }
+    .bib-text { font-size: 9pt; color: #1A1A1A; }
+    .timeline {}
+    .tl-item { display: flex; gap: 10pt; padding-bottom: 8pt; }
+    .tl-left { display: flex; flex-direction: column; align-items: center; width: 12pt; flex-shrink: 0; }
+    .tl-dot { width: 8pt; height: 8pt; border-radius: 50%; background: #2D5A27; flex-shrink: 0; }
+    .tl-line { flex: 1; width: 1pt; background: #E8E8E4; min-height: 8pt; }
+    .tl-content { flex: 1; padding-bottom: 4pt; }
+    .tl-date { font-size: 8pt; color: #999; font-weight: 600; }
+    .tl-action { font-size: 9pt; color: #1A1A1A; font-weight: 500; }
+    .tl-detail { font-size: 8pt; color: #6B6B6B; }
+    .compact-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12pt; }
+    .compact-brand { display: flex; align-items: baseline; gap: 4pt; }
+    .compact-brand .brand-aha { font-style: italic; font-weight: 800; font-size: 14pt; color: #2D5A27; }
+    .compact-brand .brand-register { font-size: 9pt; color: #6B6B6B; }
+    .compact-title-block { text-align: right; }
+    .compact-obj-title { font-size: 10pt; font-weight: 600; color: #1A1A1A; }
+    .compact-inv { font-size: 8pt; color: #999; }
+  </style>
+</head>
+<body>
+
+<div class="preview-notice">
+  ⓘ Development preview — open this file in a browser to check layout before PDF export.
+  Not for distribution. Data is mock/sample only.
+</div>
+
+<!-- ══════════════════ PAGE 1 ══════════════════ -->
+
+<div class="accent-bar"></div>
+
+<div class="report-header">
+  <div class="header-brand">
+    <span class="brand-aha">aha!</span>
+    <span class="brand-register">Register</span>
+  </div>
+  <div class="header-right">
+    <div class="header-badge">OBJECT REPORT</div>
+    <div class="header-institution">Stadtmuseum Musterstadt</div>
+  </div>
+</div>
+
+<div class="title-row">
+  <div class="title-block">
+    <div class="obj-type-label">Museumsobjekt</div>
+    <div class="obj-title">Bronzefigurine einer stehenden Göttin</div>
+    <div class="obj-subtitle">Weibliche Votivfigurine, möglicherweise Isis oder Fortuna</div>
+  </div>
+  <div class="inv-badge">INV-2024-0047</div>
+</div>
+
+<div class="main-columns">
+  <div class="col-image">
+    <div class="image-wrapper">
+      <div class="image-placeholder">[ Primärbild ]<br/>345 × 512 px</div>
+      <div class="img-count-badge">4 Fotos</div>
+    </div>
+    <div class="thumb-strip">
+      <div style="flex:1;max-width:60pt;height:40pt;border-radius:4pt;border:0.5pt solid #E8E8E4;background:#F0F0EC;"></div>
+      <div style="flex:1;max-width:60pt;height:40pt;border-radius:4pt;border:0.5pt solid #E8E8E4;background:#F0F0EC;"></div>
+      <div style="flex:1;max-width:60pt;height:40pt;border-radius:4pt;border:0.5pt solid #E8E8E4;background:#F0F0EC;"></div>
+    </div>
+  </div>
+  <div class="col-facts">
+    <div class="facts-card">
+      <div class="fact-row">
+        <span class="fact-label">Sammlung</span>
+        <span class="fact-value">Antikensammlung</span>
+      </div>
+      <div class="fact-row">
+        <span class="fact-label">Datierung</span>
+        <span class="fact-value">1. – 2. Jh. n. Chr.</span>
+      </div>
+      <div class="fact-row">
+        <span class="fact-label">Herkunft</span>
+        <span class="fact-value">Ägypten, Alexandria (vermutet)</span>
+      </div>
+      <div class="fact-row">
+        <span class="fact-label">Hersteller</span>
+        <span class="fact-value">Unbekannt / ägyptische Werkstatt</span>
+      </div>
+      <div class="fact-row">
+        <span class="fact-label">Präsenz</span>
+        <span class="fact-value">
+          <span style="display:inline-block;width:7pt;height:7pt;border-radius:50%;background:#2D5A27;margin-right:5pt;vertical-align:middle;"></span>
+          Ausgestellt
+        </span>
+      </div>
+      <div class="fact-row">
+        <span class="fact-label">Standort</span>
+        <span class="fact-value">Raum 12, Vitrine 3B</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">Objektdaten</div>
+    <div class="section-underline"></div>
+  </div>
+  <div class="data-grid">
+    <div class="data-row"><span class="data-label">Material</span><span class="data-value">Bronze, Bleilegierung</span></div>
+    <div class="data-row"><span class="data-label">Eigentümer</span><span class="data-value">Stadtmuseum Musterstadt</span></div>
+    <div class="data-row"><span class="data-label">Technik</span><span class="data-value">Vollguss, Kaltbearbeitung</span></div>
+    <div class="data-row"><span class="data-label">Vers.-Wert</span><span class="data-value">48.000 EUR</span></div>
+    <div class="data-row"><span class="data-label">Maße</span><span class="data-value">H 18.5 × B 6.2 × T 4.8 cm</span></div>
+    <div class="data-row"><span class="data-label">Klassifikation</span><span class="data-value">Kleinskulptur / Votivplastik</span></div>
+    <div class="data-row"><span class="data-label">Zustand</span><span class="data-value">Gut</span></div>
+    <div class="data-row"><span class="data-label">Epoche</span><span class="data-value">Römische Kaiserzeit</span></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">Provenienz &amp; Erwerbung</div>
+    <div class="section-underline"></div>
+  </div>
+  <div class="prov-row">
+    <div class="prov-label">Erwerbung</div>
+    <div class="prov-text">Kauf, Auktionshaus Lempertz, Köln, 14. März 1987</div>
+  </div>
+  <div class="prov-row">
+    <div class="prov-label">Provenienz</div>
+    <div class="prov-text">Privatsammlung Dr. H. Bergmann, München (bis 1987); zuvor Kunsthandel Paris (1960er); Herkunft vor 1945 ungeklärt.</div>
+  </div>
+  <div class="prov-row">
+    <div class="prov-label">Hist. Sammlung</div>
+    <div class="prov-text">Ehemals Sammlung Baron von Müller, Schloss Hohenberg (dokumentiert 1912)</div>
+  </div>
+</div>
+
+<div class="tamper-footer">
+  <div class="tamper-info">
+    <div class="tamper-title">Tamper-Evident Record</div>
+    <div class="tamper-hash mono">a3f7c2e1b4d8f9a0e5c2b7d3f1a8e4c6…</div>
+    <div class="tamper-meta">
+      <div class="tamper-meta-item"><strong>Aufnahme</strong><br/>2024-11-18 09:32:14</div>
+      <div class="tamper-meta-item"><strong>GPS</strong><br/>48.137154, 11.576124</div>
+      <div class="tamper-meta-item"><strong>Ereignisse</strong><br/>7</div>
+    </div>
+  </div>
+  <div class="qr-box">
+    <div class="qr-grid">
+      <div class="qr-cell"></div><div class="qr-cell-w"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+      <div class="qr-cell-w"></div><div class="qr-cell"></div><div class="qr-cell-w"></div><div class="qr-cell"></div>
+      <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell-w"></div><div class="qr-cell"></div>
+      <div class="qr-cell-w"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell-w"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span>Generated by aha! Register &nbsp;|&nbsp; 18.11.2024 &nbsp;|&nbsp; Seite 1 von 2</span>
+  <span>aharegister.com</span>
+</div>
+
+<!-- ══════════════════ PAGE BREAK ══════════════════ -->
+
+<div class="page-break">
+  <p style="font-size:8px;color:#999;text-align:center;margin-top:8px;">— Seitenumbruch (Seite 2) —</p>
+</div>
+
+<!-- ══════════════════ PAGE 2 ══════════════════ -->
+
+<div class="accent-bar-sm"></div>
+
+<div class="compact-header">
+  <div class="compact-brand">
+    <span class="brand-aha">aha!</span>
+    <span class="brand-register">Register</span>
+  </div>
+  <div class="compact-title-block">
+    <div class="compact-obj-title">Bronzefigurine einer stehenden Göttin</div>
+    <div class="compact-inv">INV-2024-0047</div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">Beschreibung</div>
+    <div class="section-underline"></div>
+  </div>
+  <p class="narrative">Stehende weibliche Figur in Frontalansicht, auf einer rechteckigen Standplatte. Die Figur trägt ein gegürtetes Gewand (Chiton) und einen Mantel (Himation). Der rechte Arm ist seitlich ausgestreckt und hielt ursprünglich wohl ein Attribut (verloren). Der linke Arm ist angewinkelt und führt zum Körper. Das Gesicht ist oval mit angedeuteten Augen und Mund. Die Oberfläche zeigt grüne und braune Patina mit einzelnen rötlichen Oxidationspunkten. Inschrift auf der Basis: schwer lesbar, möglicherweise Widmungstext.</p>
+  <p class="narrative" style="margin-top:8pt;color:#6B6B6B;">Wissenschaftliche Einordnung: Typologisch verwandt mit nordafrikanischen Isis-Figurinen des 2. Jh. n. Chr. Vgl. Hölbl 1994, Kat. Nr. 347; Eingartner 1991, Taf. 12.</p>
+</div>
+
+<div class="activity-card">
+  <div class="activity-date">2024-11-18 14:22:07</div>
+  <div class="activity-text">Aktualisiert — Provenienzdaten ergänzt nach Archivrecherche (Stadtarchiv München, Bestand Bergmann)</div>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">Literatur &amp; Quellen</div>
+    <div class="section-underline"></div>
+  </div>
+  <ul class="bib-list">
+    <li class="bib-item">
+      <div class="bib-dot"></div>
+      <span class="bib-text">Hölbl, G. (1994): Zeugnisse ägyptischer Religionsvorstellungen für Ephesos. EPRO 73. Leiden.</span>
+    </li>
+    <li class="bib-item">
+      <div class="bib-dot"></div>
+      <span class="bib-text">Eingartner, J. (1991): Isis und ihre Dienerinnen in der Kunst der römischen Kaiserzeit. Leiden.</span>
+    </li>
+    <li class="bib-item">
+      <div class="bib-dot"></div>
+      <span class="bib-text">Auktionskatalog Lempertz 1987, Los 214. Erwähnt in: Kunstmarkt-Bericht München, April 1987.</span>
+    </li>
+  </ul>
+</div>
+
+<div class="section">
+  <div class="section-header">
+    <div class="section-title">Audit Trail</div>
+    <div class="section-underline"></div>
+  </div>
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content">
+        <div class="tl-date">2024-11-18 09:32:14</div>
+        <div class="tl-action">Erstellt</div>
+        <div class="tl-detail">Ersterfassung via aha! Register App</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content">
+        <div class="tl-date">2024-11-18 10:15:02</div>
+        <div class="tl-action">Aktualisiert</div>
+        <div class="tl-detail">Inventarnummer zugewiesen</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div><div class="tl-line"></div></div>
+      <div class="tl-content">
+        <div class="tl-date">2024-11-18 14:22:07</div>
+        <div class="tl-action">Aktualisiert</div>
+        <div class="tl-detail">Provenienzdaten ergänzt</div>
+      </div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-left"><div class="tl-dot"></div></div>
+      <div class="tl-content">
+        <div class="tl-date">2024-11-19 08:00:00</div>
+        <div class="tl-action">Aktualisiert</div>
+        <div class="tl-detail">Cloud-Sync abgeschlossen</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tamper-footer">
+  <div class="tamper-info">
+    <div class="tamper-title">Tamper-Evident Record</div>
+    <div class="tamper-hash mono">a3f7c2e1b4d8f9a0e5c2b7d3f1a8e4c6d9f2a1b8e3c5d7f0a2b6e8c4d1f9a3b5</div>
+    <div class="tamper-meta">
+      <div class="tamper-meta-item"><strong>Objekt-UUID</strong><br/><span class="mono">3a7f9c2e-b4d8-f9a0-e5c2-b7d3f1a8e4c6</span></div>
+      <div class="tamper-meta-item"><strong>Gesamt-Ereignisse</strong><br/>7</div>
+    </div>
+  </div>
+  <div class="qr-box">
+    <div class="qr-grid">
+      <div class="qr-cell"></div><div class="qr-cell-w"></div><div class="qr-cell"></div><div class="qr-cell"></div>
+      <div class="qr-cell-w"></div><div class="qr-cell"></div><div class="qr-cell-w"></div><div class="qr-cell"></div>
+      <div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell-w"></div><div class="qr-cell"></div>
+      <div class="qr-cell-w"></div><div class="qr-cell"></div><div class="qr-cell"></div><div class="qr-cell-w"></div>
+    </div>
+  </div>
+</div>
+
+<div class="page-footer">
+  <span>Generated by aha! Register &nbsp;|&nbsp; 18.11.2024 &nbsp;|&nbsp; Seite 2 von 2</span>
+  <span>aharegister.com</span>
+</div>
+
+</body>
+</html>

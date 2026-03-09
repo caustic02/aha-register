@@ -8,11 +8,11 @@ import { getMediaForObject } from './mediaService';
 import { getCollectionsForObject, getCollectionById } from './collectionService';
 import { getSetting, SETTING_KEYS } from './settingsService';
 import {
-  buildObjectHTML,
-  buildCollectionHTML,
   type MediaWithBase64,
   type ObjectExportData,
 } from './exportTemplate';
+import { generateObjectReportHTML } from '../templates/object-report';
+import { generateCollectionReportHTML } from '../templates/collection-report';
 
 async function loadObjectExportData(
   db: SQLiteDatabase,
@@ -60,7 +60,7 @@ export async function exportObjectToPDF(
   const data = await loadObjectExportData(db, objectId, institutionName);
   if (!data) throw new Error('Object not found');
 
-  const html = buildObjectHTML(data);
+  const html = generateObjectReportHTML(data);
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
 }
@@ -84,10 +84,11 @@ export async function exportCollectionToPDF(
     if (data) objectsData.push(data);
   }
 
-  const html = buildCollectionHTML(
+  const html = generateCollectionReportHTML(
     result.collection.name,
     objectsData,
     institutionName,
+    result.collection.description,
   );
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
@@ -109,7 +110,7 @@ export async function exportBatchToPDF(
     if (data) objectsData.push(data);
   }
 
-  const html = buildCollectionHTML(title, objectsData, institutionName);
+  const html = generateCollectionReportHTML(title, objectsData, institutionName);
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
 }
