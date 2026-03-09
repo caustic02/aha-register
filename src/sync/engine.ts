@@ -1,5 +1,9 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import * as Network from 'expo-network';
+import { AppState } from 'react-native';
 import type { SyncAction, SyncStatus, SyncQueueItem } from '../db/types';
+import { SyncTransport } from '../services/sync-transport';
+import { getSetting } from '../services/settingsService';
 import { generateId } from '../utils/uuid';
 
 export type { SyncAction, SyncStatus, SyncQueueItem };
@@ -7,7 +11,15 @@ export type { SyncAction, SyncStatus, SyncQueueItem };
 const MAX_RETRIES = 5;
 
 export class SyncEngine {
-  constructor(private db: SQLiteDatabase) {}
+  private transport: SyncTransport;
+  private syncing = false;
+  private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
+
+  constructor(private db: SQLiteDatabase) {
+    this.transport = new SyncTransport(db);
+  }
+
+  // ── Queue management (unchanged public API) ──────────────────────────────
 
   async queueChange(
     tableName: string,
@@ -22,50 +34,6 @@ export class SyncEngine {
        VALUES (?, ?, ?, ?, ?, 'pending', 0, ?, ?)`,
       [id, tableName, recordId, action, JSON.stringify(payload), now, now],
     );
-  }
-
-  async processPendingSync(): Promise<{ synced: number; failed: number }> {
-    let synced = 0;
-    let failed = 0;
-
-    const rows = await this.db.getAllAsync<SyncQueueItem>(
-      `SELECT * FROM sync_queue WHERE status = 'pending' ORDER BY created_at ASC`,
-    );
-
-    for (const row of rows) {
-      const now = new Date().toISOString();
-
-      // Mark as syncing
-      await this.db.runAsync(
-        `UPDATE sync_queue SET status = 'syncing', updated_at = ? WHERE id = ?`,
-        [now, row.id],
-      );
-
-      try {
-        await this.pushToRemote(row);
-
-        await this.db.runAsync(
-          `DELETE FROM sync_queue WHERE id = ?`,
-          [row.id],
-        );
-        synced++;
-      } catch {
-        const newRetryCount = row.retry_count + 1;
-        const newStatus: SyncStatus =
-          newRetryCount >= MAX_RETRIES ? 'failed' : 'pending';
-
-        await this.db.runAsync(
-          `UPDATE sync_queue SET status = ?, retry_count = ?, updated_at = ? WHERE id = ?`,
-          [newStatus, newRetryCount, new Date().toISOString(), row.id],
-        );
-
-        if (newStatus === 'failed') {
-          failed++;
-        }
-      }
-    }
-
-    return { synced, failed };
   }
 
   async getSyncStatus(): Promise<{
@@ -86,8 +54,105 @@ export class SyncEngine {
     return result;
   }
 
-  // Placeholder — throws until a real transport is wired in
-  private async pushToRemote(_row: SyncQueueItem): Promise<void> {
-    throw new Error('Not connected');
+  // ── Full sync cycle ──────────────────────────────────────────────────────
+
+  /**
+   * Run a full sync cycle: push local changes, then pull remote changes.
+   * Returns silently if offline, sync is disabled, or already syncing.
+   */
+  async sync(): Promise<void> {
+    if (this.syncing) {
+      if (__DEV__) console.log('[sync] already in progress, skipping');
+      return;
+    }
+
+    const enabled = await getSetting(this.db, 'sync_enabled');
+    if (enabled !== 'true') {
+      if (__DEV__) console.log('[sync] disabled, skipping');
+      return;
+    }
+
+    const online = await this.transport.isOnline();
+    if (!online) {
+      if (__DEV__) console.log('[sync] offline, skipping');
+      return;
+    }
+
+    this.syncing = true;
+    try {
+      if (__DEV__) console.log('[sync] starting sync cycle');
+
+      // Push
+      const pending = await this.db.getAllAsync<SyncQueueItem>(
+        `SELECT * FROM sync_queue WHERE status IN ('pending', 'failed') AND retry_count <= ? ORDER BY created_at ASC`,
+        [MAX_RETRIES],
+      );
+
+      if (pending.length > 0) {
+        const pushResult = await this.transport.pushChanges(pending);
+        if (__DEV__) console.log(`[sync] push complete: ${pushResult.pushed} pushed, ${pushResult.failed} failed, ${pushResult.skipped} skipped`);
+      }
+
+      // Pull
+      const lastSync = await this.transport.getLastSyncTimestamp();
+      const since = lastSync ?? '1970-01-01T00:00:00.000Z';
+      const pullResult = await this.transport.pullChanges(since);
+      if (__DEV__) console.log(`[sync] pull complete: ${pullResult.inserted} inserted, ${pullResult.updated} updated, ${pullResult.skipped} skipped, ${pullResult.conflicts} conflicts`);
+
+      // Update timestamp
+      await this.transport.setLastSyncTimestamp(new Date().toISOString());
+      if (__DEV__) console.log('[sync] cycle complete');
+    } catch (err) {
+      if (__DEV__) console.warn('[sync] cycle error:', err);
+    } finally {
+      this.syncing = false;
+    }
+  }
+
+  // ── Auto-sync listeners ──────────────────────────────────────────────────
+
+  /**
+   * Start listening for foreground and network-reconnect events.
+   * Call once at app startup.
+   */
+  startAutoSync(): void {
+    // Sync when app comes to foreground
+    this.appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        this.sync();
+      }
+    });
+
+    if (__DEV__) console.log('[sync] auto-sync listeners started');
+  }
+
+  /**
+   * Stop all auto-sync listeners. Call on cleanup.
+   */
+  stopAutoSync(): void {
+    this.appStateSubscription?.remove();
+    this.appStateSubscription = null;
+    if (__DEV__) console.log('[sync] auto-sync listeners stopped');
+  }
+
+  /** Manual trigger for "Sync Now" button. */
+  triggerSync(): void {
+    this.sync();
+  }
+
+  /** Legacy method — now delegates to the full sync cycle. */
+  async processPendingSync(): Promise<{ synced: number; failed: number }> {
+    const pending = await this.db.getAllAsync<SyncQueueItem>(
+      `SELECT * FROM sync_queue WHERE status IN ('pending', 'failed') AND retry_count <= ? ORDER BY created_at ASC`,
+      [MAX_RETRIES],
+    );
+
+    if (pending.length === 0) return { synced: 0, failed: 0 };
+
+    const online = await this.transport.isOnline();
+    if (!online) return { synced: 0, failed: 0 };
+
+    const result = await this.transport.pushChanges(pending);
+    return { synced: result.pushed, failed: result.failed };
   }
 }

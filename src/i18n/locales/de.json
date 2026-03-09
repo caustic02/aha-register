@@ -156,7 +156,14 @@
     "failed": "Synchronisierung fehlgeschlagen",
     "offline": "Offline",
     "online": "Online",
-    "last_synced": "Zuletzt synchronisiert: {{time}}"
+    "last_synced": "Zuletzt synchronisiert: {{time}}",
+    "sync_now": "Jetzt synchronisieren",
+    "push_complete": "{{count}} \u00c4nderungen hochgeladen",
+    "pull_complete": "{{count}} \u00c4nderungen heruntergeladen",
+    "conflict_resolved": "{{count}} Konflikte gel\u00f6st",
+    "permanently_failed": "{{count}} \u00c4nderungen konnten nicht synchronisiert werden",
+    "disabled": "Synchronisierung deaktiviert",
+    "enabled": "Synchronisierung aktiviert"
   },
   "privacy": {
     "public": "\u00d6ffentlich",

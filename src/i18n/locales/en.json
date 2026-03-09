@@ -156,7 +156,14 @@
     "failed": "Sync Failed",
     "offline": "Offline",
     "online": "Online",
-    "last_synced": "Last synced: {{time}}"
+    "last_synced": "Last synced: {{time}}",
+    "sync_now": "Sync Now",
+    "push_complete": "{{count}} changes uploaded",
+    "pull_complete": "{{count}} changes downloaded",
+    "conflict_resolved": "{{count}} conflicts resolved",
+    "permanently_failed": "{{count}} changes could not be synced",
+    "disabled": "Sync Disabled",
+    "enabled": "Sync Enabled"
   },
   "privacy": {
     "public": "Public",

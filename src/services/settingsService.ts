@@ -11,6 +11,9 @@ export const SETTING_KEYS = {
   USER_DISPLAY_NAME: 'user_display_name',
   ONBOARDING_COMPLETE: 'onboarding_complete',
   CAMERA_FLASH_MODE: 'camera_flash_mode',
+  LAST_SYNC_TIMESTAMP: 'last_sync_timestamp',
+  SYNC_INSTITUTION_ID: 'sync_institution_id',
+  SYNC_ENABLED: 'sync_enabled',
 } as const;
 
 export const INSTITUTION_TYPES = [
