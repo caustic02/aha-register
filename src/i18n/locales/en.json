@@ -427,7 +427,9 @@
     "error_weak_password": "Password must be at least 8 characters",
     "error_passwords_mismatch": "Passwords do not match",
     "error_invalid_credentials": "Invalid email or password",
-    "error_email_taken": "An account with this email already exists"
+    "error_email_taken": "This email is already registered. Try signing in instead.",
+    "error_rls": "Account creation is temporarily unavailable. Tap 'Start Documenting' above to begin immediately.",
+    "error_generic": "Something went wrong. Please try again or tap 'Start Documenting' to begin without an account."
   },
   "onboarding": {
     "skip": "Skip",
