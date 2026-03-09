@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -73,6 +74,15 @@ export function CaptureScreen() {
   const [hash, setHash] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [defaultObjectType, setDefaultObjectType] = useState<ObjectType | null>(null);
+
+  // Intro overlay (first-time guidance)
+  const [showIntro, setShowIntro] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('capture_intro_dismissed').then((val) => {
+      if (val !== 'true') setShowIntro(true);
+    });
+  }, []);
 
   // Load persisted flash preference
   useEffect(() => {
@@ -180,6 +190,11 @@ export function CaptureScreen() {
   const handleSkipType = useCallback(() => {
     handleSave(defaultObjectType ?? 'museum_object');
   }, [handleSave, defaultObjectType]);
+
+  const handleDismissIntro = useCallback(() => {
+    setShowIntro(false);
+    AsyncStorage.setItem('capture_intro_dismissed', 'true');
+  }, []);
 
   const handleRetake = useCallback(() => {
     setCapture(null);
@@ -376,6 +391,18 @@ export function CaptureScreen() {
           <Text style={styles.controlIcon}>{'\u21BA'}</Text>
         </Pressable>
       </View>
+
+      {/* Intro overlay for first-time users */}
+      {showIntro && (
+        <View style={styles.introOverlay}>
+          <View style={styles.introCard}>
+            <Text style={styles.introText}>{t('capture.intro_text')}</Text>
+            <Pressable style={styles.introBtn} onPress={handleDismissIntro}>
+              <Text style={styles.introBtnText}>{t('capture.intro_dismiss')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
 
       {/* Bottom controls: Library | Shutter | (spacer) */}
       <View style={styles.bottomControls}>
@@ -637,5 +664,40 @@ const styles = StyleSheet.create({
     fontSize: typography.size.base,
     marginTop: spacing.sm,
     marginBottom: spacing.xxxl,
+  },
+
+  // ── Intro overlay ────────────────────────────────────────────────────────────
+  introOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.overlayDark,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxxl,
+    zIndex: 20,
+  },
+  introCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.xxl,
+    alignItems: 'center',
+    maxWidth: 320,
+  },
+  introText: {
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.xl,
+  },
+  introBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.md,
+  },
+  introBtnText: {
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
 });

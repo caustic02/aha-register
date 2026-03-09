@@ -13,6 +13,7 @@ import {
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { signIn, signUp } from '../services/auth';
+import { AhaLogo } from '../components/AhaLogo';
 import { colors, typography, spacing, radii } from '../theme';
 
 interface AuthScreenProps {
@@ -95,7 +96,8 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.appName}>aha! Register</Text>
+            <AhaLogo width={180} height={56} />
+            <Text style={styles.appNameSub}>Register</Text>
           </View>
 
           {/* Primary action: Start Documenting */}
@@ -204,10 +206,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 36,
   },
-  appName: {
-    color: colors.textPrimary,
-    fontSize: typography.size.title,
-    fontWeight: typography.weight.extrabold,
+  appNameSub: {
+    color: colors.textSecondary,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.semibold,
+    marginTop: spacing.xs,
   },
 
   /* Primary skip/start button */

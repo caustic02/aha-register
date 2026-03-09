@@ -11,6 +11,8 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { MainTabParamList } from '../navigation/MainTabs';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { deleteObject } from '../services/objectService';
@@ -253,6 +255,10 @@ export function ObjectListScreen({ navigation }: Props) {
     [t, navigation, selectionMode, selectedIds, toggleSelection, enterSelectionMode],
   );
 
+  const handleGoToCapture = useCallback(() => {
+    navigation.getParent<BottomTabNavigationProp<MainTabParamList>>()?.navigate('Capture');
+  }, [navigation]);
+
   const emptyText =
     isFiltering ? t('objects.search_empty') : t('objects.empty');
 
@@ -358,7 +364,18 @@ export function ObjectListScreen({ navigation }: Props) {
           filteredObjects.length === 0 ? styles.emptyList : undefined
         }
         ListEmptyComponent={
-          <Text style={styles.emptyText}>{emptyText}</Text>
+          isFiltering ? (
+            <Text style={styles.emptyText}>{emptyText}</Text>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyIcon}>{'\u25CE'}</Text>
+              <Text style={styles.emptyTitle}>{t('objects.empty_title')}</Text>
+              <Text style={styles.emptySubtitle}>{t('objects.empty_subtitle')}</Text>
+              <Pressable style={styles.emptyBtn} onPress={handleGoToCapture}>
+                <Text style={styles.emptyBtnText}>{t('objects.go_to_capture')}</Text>
+              </Pressable>
+            </View>
+          )
         }
         refreshControl={
           <RefreshControl
@@ -525,5 +542,37 @@ const styles = StyleSheet.create({
   emptyText: {
     color: colors.textSecondary,
     fontSize: typography.size.md,
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxxl,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    color: colors.border,
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    color: colors.textPrimary,
+    fontSize: typography.size.xl,
+    fontWeight: typography.weight.semibold,
+    marginBottom: spacing.sm,
+  },
+  emptySubtitle: {
+    color: colors.textSecondary,
+    fontSize: typography.size.base,
+    textAlign: 'center',
+    marginBottom: spacing.xxl,
+  },
+  emptyBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.md,
+  },
+  emptyBtnText: {
+    color: colors.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
   },
 });
