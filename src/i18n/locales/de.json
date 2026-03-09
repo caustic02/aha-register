@@ -357,7 +357,7 @@
     "institution": "Institution",
     "institution_name": "Name der Institution",
     "institution_name_placeholder": "Name eingeben",
-    "institution_type": "Typ der Institution",
+    "institution_type_label": "Typ der Institution",
     "default_privacy": "Standard-Datenschutzstufe",
     "default_privacy_description": "Wird automatisch auf neue Erfassungen angewendet",
     "default_object_type": "Standard-Objekttyp",
@@ -426,15 +426,15 @@
     "sign_out_confirm": "Wirklich abmelden? Deine Daten bleiben auf diesem Ger\u00e4t.",
     "session_expired": "Sitzung abgelaufen. Bitte erneut anmelden.",
     "continue_without": "Ohne Konto fortfahren",
-    "start_documenting": "Dokumentation starten",
+    "start_documenting": "App erkunden",
     "have_account": "Bereits ein Konto?",
     "error_invalid_email": "Bitte eine g\u00fcltige E-Mail-Adresse eingeben",
     "error_weak_password": "Passwort muss mindestens 8 Zeichen lang sein",
     "error_passwords_mismatch": "Passw\u00f6rter stimmen nicht \u00fcberein",
     "error_invalid_credentials": "Ung\u00fcltige E-Mail oder Passwort",
     "error_email_taken": "Diese E-Mail ist bereits registriert. Bitte melde dich stattdessen an.",
-    "error_rls": "Kontoerstellung ist vorübergehend nicht verfügbar. Tippe oben auf 'Dokumentation starten'.",
-    "error_generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen oder oben 'Dokumentation starten' antippen."
+    "error_rls": "Kontoerstellung ist vorübergehend nicht verfügbar. Tippe oben auf 'App erkunden'.",
+    "error_generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen oder oben 'App erkunden' antippen."
   },
   "onboarding": {
     "skip": "\u00dcberspringen",

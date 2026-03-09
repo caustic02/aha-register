@@ -210,7 +210,7 @@ export function SettingsScreen() {
           style={styles.row}
           onPress={() => setShowInstitutionType(!showInstitutionType)}
         >
-          <Text style={styles.label}>{t('settings.institution_type')}</Text>
+          <Text style={styles.label}>{t('settings.institution_type_label')}</Text>
           <Text style={styles.valueText}>
             {institutionType
               ? t(`settings.institution_type.${institutionType}`)

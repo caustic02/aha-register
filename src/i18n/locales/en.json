@@ -357,7 +357,7 @@
     "institution": "Institution",
     "institution_name": "Institution Name",
     "institution_name_placeholder": "Enter institution name",
-    "institution_type": "Institution Type",
+    "institution_type_label": "Institution Type",
     "default_privacy": "Default Privacy Tier",
     "default_privacy_description": "Applied to new captures automatically",
     "default_object_type": "Default Object Type",
@@ -426,15 +426,15 @@
     "sign_out_confirm": "Are you sure you want to sign out? Your data stays on this device.",
     "session_expired": "Session expired. Please sign in again.",
     "continue_without": "Continue without account",
-    "start_documenting": "Start Documenting",
+    "start_documenting": "Explore the App",
     "have_account": "Already have an account?",
     "error_invalid_email": "Please enter a valid email address",
     "error_weak_password": "Password must be at least 8 characters",
     "error_passwords_mismatch": "Passwords do not match",
     "error_invalid_credentials": "Invalid email or password",
     "error_email_taken": "This email is already registered. Try signing in instead.",
-    "error_rls": "Account creation is temporarily unavailable. Tap 'Start Documenting' above to begin immediately.",
-    "error_generic": "Something went wrong. Please try again or tap 'Start Documenting' to begin without an account."
+    "error_rls": "Account creation is temporarily unavailable. Tap 'Explore the App' above to begin immediately.",
+    "error_generic": "Something went wrong. Please try again or tap 'Explore the App' to begin without an account."
   },
   "onboarding": {
     "skip": "Skip",

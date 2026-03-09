@@ -10,6 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { signIn, signUp } from '../services/auth';
@@ -31,6 +32,8 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validate = useCallback((): string | null => {
     if (!email.trim() || !email.includes('@')) {
@@ -80,6 +83,10 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
 
   const toggleMode = useCallback(() => {
     setMode((m) => (m === 'signin' ? 'signup' : 'signin'));
+    setPassword('');
+    setConfirmPassword('');
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setError(null);
   }, []);
 
@@ -88,6 +95,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 80}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -115,7 +123,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
           </View>
 
           {/* Form */}
-          <View style={styles.form}>
+          <View key={mode} style={styles.form}>
             <Text style={styles.fieldLabel}>{t('auth.email')}</Text>
             <TextInput
               style={styles.textInput}
@@ -130,28 +138,54 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
             />
 
             <Text style={styles.fieldLabel}>{t('auth.password')}</Text>
-            <TextInput
-              style={styles.textInput}
-              value={password}
-              onChangeText={setPassword}
-              placeholder={'\u2022'.repeat(8)}
-              placeholderTextColor={colors.textMuted}
-              secureTextEntry
-              returnKeyType={mode === 'signup' ? 'next' : 'done'}
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={styles.passwordInput}
+                value={password}
+                onChangeText={setPassword}
+                placeholder={'\u2022'.repeat(8)}
+                placeholderTextColor={colors.textMuted}
+                secureTextEntry={!showPassword}
+                returnKeyType={mode === 'signup' ? 'next' : 'done'}
+              />
+              <Pressable
+                onPress={() => setShowPassword((v) => !v)}
+                style={styles.eyeBtn}
+                hitSlop={8}
+              >
+                {showPassword ? (
+                  <EyeOff size={20} color={colors.textSecondary} />
+                ) : (
+                  <Eye size={20} color={colors.textSecondary} />
+                )}
+              </Pressable>
+            </View>
 
             {mode === 'signup' && (
               <>
                 <Text style={styles.fieldLabel}>{t('auth.confirm_password')}</Text>
-                <TextInput
-                  style={styles.textInput}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder={'\u2022'.repeat(8)}
-                  placeholderTextColor={colors.textMuted}
-                  secureTextEntry
-                  returnKeyType="done"
-                />
+                <View style={styles.passwordRow}>
+                  <TextInput
+                    style={styles.passwordInput}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    placeholder={'\u2022'.repeat(8)}
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry={!showConfirmPassword}
+                    returnKeyType="done"
+                  />
+                  <Pressable
+                    onPress={() => setShowConfirmPassword((v) => !v)}
+                    style={styles.eyeBtn}
+                    hitSlop={8}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff size={20} color={colors.textSecondary} />
+                    ) : (
+                      <Eye size={20} color={colors.textSecondary} />
+                    )}
+                  </Pressable>
+                </View>
               </>
             )}
 
@@ -200,7 +234,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 28,
     paddingTop: 80,
-    paddingBottom: 48,
+    paddingBottom: 200,
   },
   header: {
     alignItems: 'center',
@@ -266,6 +300,25 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     color: colors.textPrimary,
     fontSize: typography.size.md,
+  },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.borderLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: spacing.md,
+    color: colors.textPrimary,
+    fontSize: typography.size.md,
+  },
+  eyeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: spacing.md,
   },
   errorText: {
     color: colors.danger,
