@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,6 +20,8 @@ import {
   type StorageStats,
   type InstitutionType,
 } from '../services/settingsService';
+import { getSession, signOut } from '../services/auth';
+import { SyncEngine } from '../sync/engine';
 import type { ObjectType, PrivacyTier } from '../db/types';
 
 const OBJECT_TYPES: ObjectType[] = [
@@ -49,6 +52,10 @@ export function SettingsScreen() {
   const [language, setLanguage] = useState(i18n.language);
   const [stats, setStats] = useState<StorageStats | null>(null);
 
+  // Auth state
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [syncEnabled, setSyncEnabledState] = useState(false);
+
   // Expand/collapse pickers
   const [showInstitutionType, setShowInstitutionType] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -57,7 +64,7 @@ export function SettingsScreen() {
   const appVersion = '0.1.0';
 
   const load = useCallback(async () => {
-    const [name, instType, privacy, objType, lang, storageStats] =
+    const [name, instType, privacy, objType, lang, storageStats, syncEn] =
       await Promise.all([
         getSetting(db, SETTING_KEYS.INSTITUTION_NAME),
         getSetting(db, SETTING_KEYS.INSTITUTION_TYPE),
@@ -65,6 +72,7 @@ export function SettingsScreen() {
         getSetting(db, SETTING_KEYS.DEFAULT_OBJECT_TYPE),
         getSetting(db, SETTING_KEYS.LANGUAGE),
         getStorageStats(db),
+        getSetting(db, SETTING_KEYS.SYNC_ENABLED),
       ]);
     setInstitutionName(name ?? '');
     setInstitutionType((instType as InstitutionType) ?? '');
@@ -72,6 +80,11 @@ export function SettingsScreen() {
     setDefaultObjectType((objType as ObjectType) ?? 'museum_object');
     if (lang) setLanguage(lang);
     setStats(storageStats);
+    setSyncEnabledState(syncEn === 'true');
+
+    // Check auth
+    const session = await getSession();
+    setUserEmail(session?.user?.email ?? null);
   }, [db]);
 
   useEffect(() => {
@@ -118,6 +131,26 @@ export function SettingsScreen() {
     [db],
   );
 
+  const handleSignOut = useCallback(() => {
+    Alert.alert(t('auth.sign_out'), t('auth.sign_out_confirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('auth.sign_out'),
+        style: 'destructive',
+        onPress: async () => {
+          await signOut(db);
+          setSyncEnabledState(false);
+          setUserEmail(null);
+        },
+      },
+    ]);
+  }, [db, t]);
+
+  const handleSyncNow = useCallback(() => {
+    const engine = new SyncEngine(db);
+    engine.triggerSync();
+  }, [db]);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -128,6 +161,33 @@ export function SettingsScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
       >
+        {/* ── Account ──────────────────────────────────────── */}
+        {userEmail && (
+          <>
+            <Text style={styles.sectionHeader}>{t('settings.account')}</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>{t('settings.signed_in_as')}</Text>
+              <Text style={styles.valueText} numberOfLines={1}>
+                {userEmail}
+              </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>{t('settings.sync_status')}</Text>
+              <Text style={styles.valueText}>
+                {syncEnabled ? t('sync.enabled') : t('sync.disabled')}
+              </Text>
+            </View>
+            {syncEnabled && (
+              <Pressable style={styles.syncNowBtn} onPress={handleSyncNow}>
+                <Text style={styles.syncNowText}>{t('sync.sync_now')}</Text>
+              </Pressable>
+            )}
+            <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
+              <Text style={styles.signOutText}>{t('auth.sign_out')}</Text>
+            </Pressable>
+          </>
+        )}
+
         {/* ── Institution ────────────────────────────────────── */}
         <Text style={styles.sectionHeader}>{t('settings.institution')}</Text>
 
@@ -358,6 +418,8 @@ const styles = StyleSheet.create({
   valueText: {
     color: '#74B9FF',
     fontSize: 14,
+    flexShrink: 1,
+    marginLeft: 8,
   },
   textInput: {
     flex: 1,
@@ -446,5 +508,33 @@ const styles = StyleSheet.create({
     color: '#636E72',
     fontSize: 13,
     marginTop: 4,
+  },
+  syncNowBtn: {
+    backgroundColor: 'rgba(116,185,255,0.1)',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(116,185,255,0.2)',
+  },
+  syncNowText: {
+    color: '#74B9FF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  signOutBtn: {
+    backgroundColor: 'rgba(255,107,107,0.1)',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,107,107,0.2)',
+  },
+  signOutText: {
+    color: '#FF6B6B',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

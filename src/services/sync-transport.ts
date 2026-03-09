@@ -107,14 +107,31 @@ export class SyncTransport {
     await setSetting(this.db, 'last_sync_timestamp', timestamp);
   }
 
+  /** Verify session is valid; refresh if expired. Returns user id or null. */
+  async ensureSession(): Promise<string | null> {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) return session.user.id;
+
+    // Try refresh
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session) {
+      if (__DEV__) console.warn('[sync] session expired, cannot refresh');
+      return null;
+    }
+    return data.session.user.id;
+  }
+
   // ── Push ─────────────────────────────────────────────────────────────────
 
   async pushChanges(queue: SyncQueueItem[]): Promise<PushResult> {
     const result: PushResult = { pushed: 0, failed: 0, skipped: 0, errors: [] };
 
     const institutionId = await getSetting(this.db, 'sync_institution_id');
-    const { data: { user } } = await supabase.auth.getUser();
-    const userId = user?.id ?? null;
+    const userId = await this.ensureSession();
+    if (!userId) {
+      if (__DEV__) console.warn('[sync] no valid session, aborting push');
+      return result;
+    }
 
     for (let i = 0; i < queue.length; i += BATCH_SIZE) {
       const batch = queue.slice(i, i + BATCH_SIZE);

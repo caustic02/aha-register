@@ -324,6 +324,10 @@
     "version": "Version",
     "build": "Build",
     "powered_by": "Powered by TEDE Holdings LLC",
+    "account": "Account",
+    "signed_in_as": "Signed in as",
+    "sync_status": "Sync Status",
+    "sync_now": "Sync Now",
     "privacy": {
       "public": "Public",
       "public_desc": "Visible to all users with access",
@@ -361,6 +365,25 @@
     "pick_collection": "Choose Collection",
     "no_collections": "No collections available",
     "export_title": "Selected Objects"
+  },
+  "auth": {
+    "sign_in": "Sign In",
+    "sign_up": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirm_password": "Confirm Password",
+    "create_account": "Create Account",
+    "already_have_account": "Already have an account? Sign In",
+    "no_account": "Don't have an account? Sign Up",
+    "sign_out": "Sign Out",
+    "sign_out_confirm": "Are you sure you want to sign out? Your data stays on this device.",
+    "session_expired": "Session expired. Please sign in again.",
+    "continue_without": "Continue without account",
+    "error_invalid_email": "Please enter a valid email address",
+    "error_weak_password": "Password must be at least 8 characters",
+    "error_passwords_mismatch": "Passwords do not match",
+    "error_invalid_credentials": "Invalid email or password",
+    "error_email_taken": "An account with this email already exists"
   },
   "onboarding": {
     "skip": "Skip",

@@ -1,5 +1,4 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import * as Network from 'expo-network';
 import { AppState } from 'react-native';
 import type { SyncAction, SyncStatus, SyncQueueItem } from '../db/types';
 import { SyncTransport } from '../services/sync-transport';
