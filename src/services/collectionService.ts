@@ -82,7 +82,6 @@ export async function createCollection(
       tableName: 'collections',
       recordId: id,
       action: 'insert',
-      userId: 'local',
       newValues: data,
     });
   });
@@ -113,7 +112,6 @@ export async function deleteCollection(
         tableName: 'object_collections',
         recordId: row.id,
         action: 'delete',
-        userId: 'local',
         oldValues: { objectId: row.object_id, collectionId: id },
       });
     }
@@ -124,7 +122,6 @@ export async function deleteCollection(
       tableName: 'collections',
       recordId: id,
       action: 'delete',
-      userId: 'local',
     });
   });
 }
@@ -165,7 +162,6 @@ export async function updateCollection(
       tableName: 'collections',
       recordId: id,
       action: 'update',
-      userId: 'local',
       newValues: data,
     });
   });
@@ -192,7 +188,7 @@ export async function addObjectToCollection(
         tableName: 'object_collections',
         recordId: id,
         action: 'insert',
-        userId: addedBy ?? 'local',
+        userId: addedBy,
         newValues: { objectId, collectionId },
       });
     });
@@ -218,7 +214,6 @@ export async function removeObjectFromCollection(
       tableName: 'object_collections',
       recordId: `${objectId}_${collectionId}`,
       action: 'delete',
-      userId: 'local',
       oldValues: { objectId, collectionId },
     });
   });

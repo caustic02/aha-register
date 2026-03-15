@@ -176,7 +176,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         tableName: 'objects',
         recordId: objectId,
         action: 'update',
-        userId: 'local',
         oldValues: { [column]: oldValue },
         newValues: { [column]: value },
       });
@@ -288,7 +287,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       tableName: 'annotations',
       recordId: id,
       action: 'insert',
-      userId: 'local',
       newValues: { content: noteText.trim() },
     });
     setNoteText('');

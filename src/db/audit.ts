@@ -1,14 +1,29 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type { AuditTrailEntry } from './types';
 import { generateId } from '../utils/uuid';
+import { getSession } from '../services/auth';
 
 export type { AuditTrailEntry };
+
+/**
+ * Resolves the current user ID for audit logging.
+ * Priority: explicit param > Supabase auth session > 'local' fallback.
+ */
+export async function resolveUserId(userId?: string): Promise<string> {
+  if (userId) return userId;
+  try {
+    const session = await getSession();
+    return session?.user?.id ?? 'local';
+  } catch {
+    return 'local';
+  }
+}
 
 export interface LogAuditParams {
   tableName: string;
   recordId: string;
   action: string;
-  userId: string;
+  userId?: string;
   oldValues?: unknown;
   newValues?: unknown;
   deviceInfo?: unknown;
@@ -21,6 +36,7 @@ export async function logAuditEntry(
 ): Promise<void> {
   const id = generateId();
   const now = new Date().toISOString();
+  const effectiveUserId = await resolveUserId(params.userId);
 
   await db.runAsync(
     `INSERT INTO audit_trail
@@ -31,7 +47,7 @@ export async function logAuditEntry(
       params.tableName,
       params.recordId,
       params.action,
-      params.userId,
+      effectiveUserId,
       params.oldValues != null ? JSON.stringify(params.oldValues) : null,
       params.newValues != null ? JSON.stringify(params.newValues) : null,
       params.deviceInfo != null ? JSON.stringify(params.deviceInfo) : null,

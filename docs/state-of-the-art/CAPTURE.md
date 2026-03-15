@@ -50,7 +50,7 @@ All 6 steps run inside `db.withTransactionAsync` — any failure rolls back the 
 3. **Read** `SETTING_KEYS.DEFAULT_PRIVACY_TIER` from `app_settings` (defaults to `'public'`)
 4. **INSERT into `objects`**: status=`'draft'`, title=`'Untitled'`, object_type from TypeSelector (or default), all GPS fields, coordinate_source, privacy_tier, legal_hold=0
 5. **INSERT into `media`**: SHA-256 hash, is_primary=1, sort_order=0, file_path to stored copy
-6. **INSERT into `audit_trail`** via `logAuditEntry`: action=`'insert'`, userId=`'local'`, newValues includes objectId/mediaId/sha256, deviceInfo includes model/os/app version
+6. **INSERT into `audit_trail`** via `logAuditEntry`: action=`'insert'`, userId resolved from auth session (falls back to `'local'` offline), newValues includes objectId/mediaId/sha256, deviceInfo includes model/os/app version
 7. **INSERT into `sync_queue`** via `SyncEngine.queueChange('objects', objectId, 'insert', ...)`
 
 ### Settings Persistence
@@ -91,6 +91,7 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 | 2026-03-08 | Hash raw bytes, not base64 string | SHA-256 integrity fix commit |
 | 2026-03-09 | Friendly error mapping for RLS errors | Device testing bug fixes |
 | 2026-03-09 | Type selector shown post-preview, not pre-capture | Capture flow UX commit |
+| 2026-03-15 | Audit trail userId: param > auth session > 'local' fallback | Gap fix |
 
 ## Known Gaps
 
@@ -98,5 +99,4 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 - No batch capture mode
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - No AI vision layer (architecture planned, not built)
-- `userId` hardcoded to `'local'` in audit trail — not linked to authenticated Supabase user
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer

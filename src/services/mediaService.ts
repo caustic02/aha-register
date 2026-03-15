@@ -99,7 +99,6 @@ export async function addMediaToObject(
       tableName: 'media',
       recordId: mediaId,
       action: 'insert',
-      userId: 'local',
       newValues: { objectId, mediaId, sha256 },
     });
 
@@ -141,7 +140,6 @@ export async function setAsPrimary(
       tableName: 'media',
       recordId: mediaId,
       action: 'update',
-      userId: 'local',
       newValues: { is_primary: 1 },
     });
   });
@@ -194,7 +192,6 @@ export async function deleteMedia(
       tableName: 'media',
       recordId: mediaId,
       action: 'delete',
-      userId: 'local',
       oldValues: { file_path: row.file_path, sha256_hash: row.sha256_hash },
     });
 

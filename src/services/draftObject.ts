@@ -107,7 +107,6 @@ export async function createDraftObject(
       tableName: 'objects',
       recordId: objectId,
       action: 'insert',
-      userId: 'local',
       newValues: { objectId, mediaId, sha256 },
       deviceInfo: {
         model: params.metadata.deviceModel,

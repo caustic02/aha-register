@@ -22,7 +22,6 @@ export async function deleteObject(
     tableName: 'objects',
     recordId: objectId,
     action: 'delete',
-    userId: 'local',
     oldValues: { mediaCount: mediaRows.length },
   });
 
