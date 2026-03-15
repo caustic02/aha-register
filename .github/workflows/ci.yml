@@ -38,3 +38,43 @@ jobs:
             echo "FAIL: i18n key count mismatch (EN=$EN_KEYS, DE=$DE_KEYS)"
             exit 1
           fi
+
+      - name: Sacred file change detection
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "=== Checking for sacred file changes ==="
+          SACRED_FILES=(
+            "db/schema.ts"
+            "db/types.ts"
+            "utils/hash.ts"
+            "utils/audit.ts"
+            "services/sync-engine.ts"
+            "app.json"
+            "app.config.ts"
+            "src/theme/index.ts"
+            "src/theme/icons.ts"
+          )
+          CHANGED=false
+          for file in "${SACRED_FILES[@]}"; do
+            if git diff --name-only origin/main...HEAD | grep -q "^${file}$"; then
+              echo "⚠️  SACRED FILE CHANGED: ${file}"
+              echo "    SHA-256: $(sha256sum ${file} | cut -d' ' -f1)"
+              CHANGED=true
+            fi
+          done
+          if [ "$CHANGED" = true ]; then
+            echo ""
+            echo "🔒 Sacred files were modified. CODEOWNERS review required."
+            echo "   Verify these changes are intentional and approved."
+          else
+            echo "✅ No sacred files modified."
+          fi
+
+      - name: Version audit trail
+        run: |
+          echo "=== Build Audit Trail ==="
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Trigger: ${{ github.event_name }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
