@@ -10,6 +10,7 @@ import { DatabaseProvider } from '../contexts/DatabaseContext';
 import { MainTabs } from '../navigation/MainTabs';
 import { getSetting, SETTING_KEYS } from '../services/settingsService';
 import { getSession, onAuthStateChange } from '../services/auth';
+import { ensureMigrated } from '../services/supabase';
 import { SyncEngine } from '../sync/engine';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { AuthScreen } from '../screens/AuthScreen';
@@ -34,6 +35,9 @@ export default function AppShell() {
         }
         setOnboardingComplete(obComplete === 'true');
         setDb(database);
+
+        // Ensure auth tokens migrated from AsyncStorage → SecureStore
+        await ensureMigrated();
 
         // Check existing auth session
         const session = await getSession();

@@ -19,6 +19,7 @@ doc before auditing or modifying any system. Update it after every build.
 | Auth | AUTH.md | Stub | 2026-03-09 |
 | Sync Engine | SYNC.md | Stub | 2026-03-08 |
 | Error Monitoring | ERROR-MONITORING.md | Active | 2026-03-15 |
+| Secure Storage | SECURE-STORAGE.md | Active | 2026-03-15 |
 
 ## Rules
 

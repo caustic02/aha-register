@@ -34,7 +34,8 @@
       "expo-sqlite",
       "expo-sharing",
       "expo-updates",
-      "@sentry/react-native/expo"
+      "@sentry/react-native/expo",
+      "expo-secure-store"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
