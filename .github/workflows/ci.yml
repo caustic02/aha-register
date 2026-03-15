@@ -1,0 +1,40 @@
+name: Register CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
+
+      - name: ESLint
+        run: npx eslint src/ --ext .ts,.tsx --max-warnings 0
+
+      - name: Expo export (build smoke test)
+        run: npx expo export --platform android
+
+      - name: i18n parity check
+        run: |
+          EN_KEYS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('i18n/locales/en.json','utf8'))).length)")
+          DE_KEYS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('i18n/locales/de.json','utf8'))).length)")
+          echo "EN keys: $EN_KEYS, DE keys: $DE_KEYS"
+          if [ "$EN_KEYS" != "$DE_KEYS" ]; then
+            echo "FAIL: i18n key count mismatch (EN=$EN_KEYS, DE=$DE_KEYS)"
+            exit 1
+          fi
