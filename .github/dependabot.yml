@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+    groups:
+      expo:
+        patterns:
+          - "expo*"
+          - "@expo/*"
+        update-types:
+          - "minor"
+          - "patch"
+      typescript:
+        patterns:
+          - "typescript"
+          - "@typescript-eslint/*"
+      react:
+        patterns:
+          - "react"
+          - "react-native"
+          - "@react-navigation/*"
