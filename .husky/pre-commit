@@ -1,6 +1,17 @@
 #!/bin/sh
 echo "Running pre-commit quality gates..."
 
+# ESLint on staged TypeScript files
+echo "Linting staged files..."
+STAGED_TS=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
+if [ -n "$STAGED_TS" ]; then
+  echo "$STAGED_TS" | xargs npx eslint --max-warnings 0
+  if [ $? -ne 0 ]; then
+    echo "❌ ESLint errors found. Fix before committing."
+    exit 1
+  fi
+fi
+
 # TypeScript type check
 echo "Type checking..."
 npx tsc --noEmit
@@ -11,7 +22,7 @@ fi
 
 # Check for secrets/credentials in staged files
 echo "Scanning for secrets..."
-STAGED=$(git diff --cached --name-only | grep -v '^\.husky/')
+STAGED=$(git diff --cached --name-only | grep -v '^\.husky/' || true)
 if [ -n "$STAGED" ] && echo "$STAGED" | xargs grep -l -E '(sk_live_|sk_test_|SUPABASE_SERVICE_ROLE|password\s*=\s*["\x27])' 2>/dev/null; then
   echo "❌ Potential secrets detected in staged files. Review before committing."
   exit 1
