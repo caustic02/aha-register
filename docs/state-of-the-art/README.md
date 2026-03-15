@@ -18,6 +18,7 @@ doc before auditing or modifying any system. Update it after every build.
 | Collections | COLLECTIONS.md | Stub | 2026-03-09 |
 | Auth | AUTH.md | Stub | 2026-03-09 |
 | Sync Engine | SYNC.md | Stub | 2026-03-08 |
+| Error Monitoring | ERROR-MONITORING.md | Active | 2026-03-15 |
 
 ## Rules
 

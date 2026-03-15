@@ -33,7 +33,8 @@
     "plugins": [
       "expo-sqlite",
       "expo-sharing",
-      "expo-updates"
+      "expo-updates",
+      "@sentry/react-native/expo"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
