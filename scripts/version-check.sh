@@ -1,0 +1,15 @@
+#!/bin/bash
+# Prints version info for legal audit trail
+echo "=== aha! Register Version Info ==="
+echo "Git tag: $(git describe --tags --always)"
+echo "Commit: $(git rev-parse HEAD)"
+echo "Branch: $(git branch --show-current)"
+echo "Date: $(git log -1 --format=%ci)"
+echo "Author: $(git log -1 --format='%an <%ae>')"
+echo ""
+echo "=== Sacred File Hashes ==="
+echo "db/schema.ts: $(shasum -a 256 db/schema.ts 2>/dev/null || sha256sum db/schema.ts)"
+echo "db/types.ts: $(shasum -a 256 db/types.ts 2>/dev/null || sha256sum db/types.ts)"
+echo "utils/hash.ts: $(shasum -a 256 utils/hash.ts 2>/dev/null || sha256sum utils/hash.ts)"
+echo "utils/audit.ts: $(shasum -a 256 utils/audit.ts 2>/dev/null || sha256sum utils/audit.ts)"
+echo "services/sync-engine.ts: $(shasum -a 256 services/sync-engine.ts 2>/dev/null || sha256sum services/sync-engine.ts)"
