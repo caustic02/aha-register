@@ -1,0 +1,30 @@
+# Sacred files - require Michael's review
+# These files are the foundation of Register.
+# Changes require explicit approval.
+
+# Database schema and types (the contract)
+db/schema.ts @caustic02
+db/types.ts @caustic02
+
+# Capture integrity (legal foundation)
+utils/hash.ts @caustic02
+utils/audit.ts @caustic02
+
+# Sync engine (offline-first core)
+services/sync-engine.ts @caustic02
+
+# App configuration (build, permissions, bundle IDs)
+app.json @caustic02
+app.config.ts @caustic02
+
+# Environment and secrets
+.env* @caustic02
+
+# Theme (design system source of truth)
+src/theme/index.ts @caustic02
+src/theme/icons.ts @caustic02
+
+# Quality gates themselves
+.husky/* @caustic02
+.claude/* @caustic02
+.github/* @caustic02
