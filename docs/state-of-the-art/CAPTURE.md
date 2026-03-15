@@ -95,7 +95,6 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 
 ## Known Gaps
 
-- Object type selector not yet in capture flow (everything starts as "draft")
 - No batch capture mode
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - No AI vision layer (architecture planned, not built)
