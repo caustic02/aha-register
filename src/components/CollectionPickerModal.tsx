@@ -18,7 +18,7 @@ interface CollectionPickerModalProps {
   visible: boolean;
   onClose: () => void;
   onSelect: (collection: { id: string; name: string }) => void;
-  t: (key: string, opts?: any) => string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
 }
 
 export function CollectionPickerModal({

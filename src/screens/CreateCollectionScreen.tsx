@@ -196,6 +196,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
   },
+  // eslint-disable-next-line react-native/no-color-literals
   typeBadge: {
     paddingHorizontal: 14,
     paddingVertical: spacing.sm,

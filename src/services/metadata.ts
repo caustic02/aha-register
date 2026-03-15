@@ -20,6 +20,7 @@ const APP_VERSION = '0.1.0';
  * location fix from the device hardware.
  */
 export async function extractMetadata(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   exif: Record<string, any> | null,
 ): Promise<CaptureMetadata> {
   const meta: CaptureMetadata = {

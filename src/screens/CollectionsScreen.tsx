@@ -47,11 +47,14 @@ export function CollectionsScreen({ navigation }: Props) {
     setRefreshing(false);
   }, [load]);
 
-  const objectCountLabel = (count: number) => {
-    if (count === 0) return t('collections.object_count_zero');
-    if (count === 1) return t('collections.object_count_one');
-    return t('collections.object_count', { count });
-  };
+  const objectCountLabel = useCallback(
+    (count: number) => {
+      if (count === 0) return t('collections.object_count_zero');
+      if (count === 1) return t('collections.object_count_one');
+      return t('collections.object_count', { count });
+    },
+    [t],
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: CollectionWithCount }) => (
@@ -79,7 +82,7 @@ export function CollectionsScreen({ navigation }: Props) {
         <Text style={styles.cardCount}>{objectCountLabel(item.objectCount)}</Text>
       </Pressable>
     ),
-    [t, navigation],
+    [t, navigation, objectCountLabel],
   );
 
   return (

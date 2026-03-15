@@ -7,6 +7,7 @@ export type CaptureResult = {
   fileName: string | null;
   fileSize: number | null;
   mimeType: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   exif: Record<string, any> | null;
 };
 

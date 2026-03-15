@@ -27,10 +27,6 @@ function esc(s: string | null | undefined): string {
     .replace(/"/g, '&quot;');
 }
 
-function dash(s: string | null | undefined): string {
-  return s ? esc(s) : '&mdash;';
-}
-
 function fmt(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = iso.slice(0, 10);
