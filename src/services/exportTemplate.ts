@@ -16,6 +16,7 @@ export interface ObjectExportData {
   auditTrail: AuditTrailEntry[];
   collections: CollectionForObject[];
   institutionName: string | null;
+  qrSvg?: string;
 }
 
 function escapeHtml(text: string): string {

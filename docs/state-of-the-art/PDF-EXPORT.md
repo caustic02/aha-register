@@ -30,7 +30,7 @@ All three functions read `SETTING_KEYS.INSTITUTION_NAME` from `app_settings` and
 - Two-column body: primary photo (55% width) + thumbnail strip | facts card (Sammlung, Datierung, Herkunft, Hersteller, Präsenz with status dot, Standort)
 - Objektdaten grid (2 columns): Material, Technik, Maße, Zustand, Eigentümer, Vers.-Wert, Klassifikation, Epoche, Kultur, Inschrift
 - Provenienz & Erwerbung section (conditional — only shown if any provenance fields populated)
-- Tamper-evidence footer: first 32 chars of SHA-256 (monospace), GPS coordinates, capture timestamp, audit event count, decorative QR placeholder
+- Tamper-evidence footer: first 32 chars of SHA-256 (monospace), GPS coordinates, capture timestamp, audit event count, scannable QR code (encodes `https://aharegister.com/verify/{object_id}`)
 
 **Page 2** — Detail and provenance:
 - Compact header (brand + object title)
@@ -52,7 +52,7 @@ Images are read from the app's local file system via `expo-file-system` `File.ba
 Both templates use an `esc()` helper that escapes `&`, `<`, `>`, `"` in all user-supplied strings. No raw string interpolation of untrusted data.
 
 ### CSS
-Inline `<style>` block, A4 page size (`@page { size: A4; margin: 18mm 20mm; }`), system font stack (`-apple-system, system-ui, 'Helvetica Neue'`), base font 9.5pt. Color constants duplicated from `src/theme/index.ts` — must be kept in sync manually.
+Inline `<style>` block, A4 page size (`@page { size: A4; margin: 18mm 20mm; }`), system font stack (`-apple-system, system-ui, 'Helvetica Neue'`), base font 9.5pt. Color constants imported from `src/theme/index.ts` — single source of truth.
 
 ## Key Files
 
@@ -73,13 +73,13 @@ Inline `<style>` block, A4 page size (`@page { size: A4; margin: 18mm 20mm; }`),
 | 2026-03-09 | Duplicate color constants in templates (not imported from theme) | Templates are pure TypeScript strings — no React Native imports allowed |
 | 2026-03-09 | Audit trail capped at last 20 entries in PDF | Page overflow control |
 | 2026-03-09 | QR placeholder is decorative only — not a real QR code | Real QR requires additional library; not yet integrated |
+| 2026-03-15 | QR codes now scannable via `qrcode` library (SVG embedded in HTML) | Gap fix — replaces decorative pixel art with real QR encoding verify URL |
+| 2026-03-15 | PDF labels use i18n (`pdf.*` keys), no longer hardcoded German | Gap fix — templates accept `TFunc` parameter, labels resolve via i18next |
+| 2026-03-15 | PDF colors imported from `src/theme/index.ts`, no duplication | Gap fix — `const C = colors` replaces hardcoded hex constants |
 
 ## Known Gaps
 
-- QR code in tamper footer is decorative pixel art, not a scannable QR
-- Color constants in templates (`#2D5A27` etc.) are hardcoded — drift from `src/theme/index.ts` is undetected
 - No per-institution branding (logo, custom colors)
 - No watermark option
 - `exportBatchToPDF` exists in `exportService.ts` but the batch export UI in `BatchActionBar` calls it — verify integration is wired
-- PDF locale is hardcoded German (`lang="de"`, German field labels) — no EN/DE toggle for reports
 - No digital signature — SHA-256 hash displayed but not cryptographically signed

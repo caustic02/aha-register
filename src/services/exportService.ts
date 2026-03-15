@@ -2,8 +2,11 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { File } from 'expo-file-system';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
+import QRCode from 'qrcode';
 
 import type { AuditTrailEntry, RegisterObject } from '../db/types';
+import { colors } from '../theme';
+import i18n from '../i18n';
 import { getMediaForObject } from './mediaService';
 import { getCollectionsForObject, getCollectionById } from './collectionService';
 import { getSetting, SETTING_KEYS } from './settingsService';
@@ -13,6 +16,22 @@ import {
 } from './exportTemplate';
 import { generateObjectReportHTML } from '../templates/object-report';
 import { generateCollectionReportHTML } from '../templates/collection-report';
+
+async function generateQrSvg(objectId: string): Promise<string | undefined> {
+  try {
+    return await QRCode.toString(
+      `https://aharegister.com/verify/${objectId}`,
+      {
+        type: 'svg',
+        width: 88,
+        margin: 1,
+        color: { dark: colors.accent, light: '#FFFFFF' },
+      },
+    );
+  } catch {
+    return undefined;
+  }
+}
 
 async function loadObjectExportData(
   db: SQLiteDatabase,
@@ -25,13 +44,14 @@ async function loadObjectExportData(
   );
   if (!obj) return null;
 
-  const [mediaRows, auditTrail, collections] = await Promise.all([
+  const [mediaRows, auditTrail, collections, qrSvg] = await Promise.all([
     getMediaForObject(db, objectId),
     db.getAllAsync<AuditTrailEntry>(
       'SELECT * FROM audit_trail WHERE record_id = ? ORDER BY created_at ASC',
       [objectId],
     ),
     getCollectionsForObject(db, objectId),
+    generateQrSvg(objectId),
   ]);
 
   // Convert media files to base64 for embedding in HTML
@@ -46,7 +66,7 @@ async function loadObjectExportData(
     }
   }
 
-  return { object: obj, media, auditTrail, collections, institutionName };
+  return { object: obj, media, auditTrail, collections, institutionName, qrSvg };
 }
 
 /**
@@ -60,7 +80,8 @@ export async function exportObjectToPDF(
   const data = await loadObjectExportData(db, objectId, institutionName);
   if (!data) throw new Error('Object not found');
 
-  const html = generateObjectReportHTML(data);
+  const t = i18n.getFixedT(i18n.language);
+  const html = generateObjectReportHTML(data, t);
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
 }
@@ -84,10 +105,12 @@ export async function exportCollectionToPDF(
     if (data) objectsData.push(data);
   }
 
+  const t = i18n.getFixedT(i18n.language);
   const html = generateCollectionReportHTML(
     result.collection.name,
     objectsData,
     institutionName,
+    t,
     result.collection.description,
   );
   const { uri } = await Print.printToFileAsync({ html });
@@ -110,7 +133,8 @@ export async function exportBatchToPDF(
     if (data) objectsData.push(data);
   }
 
-  const html = generateCollectionReportHTML(title, objectsData, institutionName);
+  const t = i18n.getFixedT(i18n.language);
+  const html = generateCollectionReportHTML(title, objectsData, institutionName, t);
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
 }

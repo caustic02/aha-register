@@ -6,21 +6,15 @@
  */
 
 import type { ObjectExportData } from '../services/exportTemplate';
+import { colors } from '../theme';
 
-// ── Color constants (matches src/theme/index.ts) ────────────────────────────
+// ── Theme colors (imported from centralized design system) ──────────────────
 
-const C = {
-  accent: '#2D5A27',
-  accentLight: '#E8F0E6',
-  background: '#FAFAF8',
-  surface: '#FFFFFF',
-  textPrimary: '#1A1A1A',
-  textSecondary: '#6B6B6B',
-  textMuted: '#999999',
-  border: '#E8E8E4',
-  danger: '#C53030',
-  warning: '#D4A017',
-} as const;
+const C = colors;
+
+// ── Translation function type ───────────────────────────────────────────────
+
+type TFunc = (key: string, options?: Record<string, unknown>) => string;
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -64,19 +58,20 @@ function fmtArr(v: unknown): string | null {
   return v.join(', ');
 }
 
-function fmtDims(v: unknown): string | null {
+function fmtDims(v: unknown, t: TFunc): string | null {
   if (!v || typeof v !== 'object') return null;
   const d = v as Record<string, unknown>;
   const parts: string[] = [];
-  if (d.height != null) parts.push(`H ${d.height}`);
-  if (d.width != null) parts.push(`B ${d.width}`);
-  if (d.depth != null) parts.push(`T ${d.depth}`);
+  if (d.height != null) parts.push(`${t('pdf.dim_height')} ${d.height}`);
+  if (d.width != null) parts.push(`${t('pdf.dim_width')} ${d.width}`);
+  if (d.depth != null) parts.push(`${t('pdf.dim_depth')} ${d.depth}`);
   if (parts.length === 0) return null;
   const unit = typeof d.unit === 'string' ? ` ${d.unit}` : '';
   return parts.join(' × ') + unit;
 }
 
 function statusDot(status: string | null | undefined): string {
+  // Color mapping uses raw DB values (always German strings)
   const map: Record<string, string> = {
     'ausgestellt': C.accent,
     'nicht ausgestellt': C.danger,
@@ -87,17 +82,15 @@ function statusDot(status: string | null | undefined): string {
   return `<span style="display:inline-block;width:7pt;height:7pt;border-radius:50%;background:${col};margin-right:5pt;vertical-align:middle;flex-shrink:0;"></span>`;
 }
 
-function objTypeLabel(type: string): string {
-  const map: Record<string, string> = {
-    museum_object: 'Museumsobjekt',
-    site: 'Fundstätte',
-    incident: 'Vorfall',
-    specimen: 'Exemplar',
-    architectural_element: 'Architekturelement',
-    environmental_sample: 'Umweltprobe',
-    conservation_record: 'Restaurierungsbericht',
+function translateDisplayStatus(rawStatus: string, t: TFunc): string {
+  const keyMap: Record<string, string> = {
+    'ausgestellt': 'type_forms.museum_object.display_status_ausgestellt',
+    'nicht ausgestellt': 'type_forms.museum_object.display_status_nicht_ausgestellt',
+    'in Restaurierung': 'type_forms.museum_object.display_status_in_restaurierung',
+    'Depot': 'type_forms.museum_object.display_status_depot',
   };
-  return map[type] ?? type;
+  const key = keyMap[rawStatus];
+  return key ? t(key) : rawStatus;
 }
 
 // ── CSS ─────────────────────────────────────────────────────────────────────
@@ -230,11 +223,9 @@ code, .mono {
 .qr-box {
   width: 44pt; height: 44pt; border: 1.5pt solid ${C.accent}; border-radius: 4pt;
   display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 2pt; flex-shrink: 0;
+  flex-shrink: 0; overflow: hidden;
 }
-.qr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5pt; padding: 5pt; }
-.qr-cell { background: ${C.accent}; border-radius: 0.5pt; aspect-ratio: 1; }
-.qr-cell-w { background: ${C.surface}; border-radius: 0.5pt; aspect-ratio: 1; }
+.qr-box svg { width: 100%; height: 100%; }
 
 /* ── Page footer ── */
 .page-footer {
@@ -247,7 +238,7 @@ code, .mono {
 .page-break { page-break-after: always; }
 .narrative { font-size: 9.5pt; color: ${C.textPrimary}; line-height: 1.6; }
 .activity-card {
-  background: #FFF8E6; border: 1pt solid ${C.warning};
+  background: ${C.warningLight}; border: 1pt solid ${C.warning};
   border-radius: 6pt; padding: 8pt 12pt; margin-bottom: 10pt;
 }
 .activity-date { font-size: 8pt; color: ${C.warning}; font-weight: 700; margin-bottom: 3pt; }
@@ -281,18 +272,18 @@ code, .mono {
 .compact-inv { font-size: 8pt; color: ${C.textMuted}; }
 `;
 
-// ── QR placeholder (decorative pixel art pattern) ───────────────────────────
+// ── QR code element ──────────────────────────────────────────────────────────
 
-function qrPlaceholder(): string {
-  // Simple decorative grid that looks vaguely like a QR code
-  const p = [1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0];
-  const cells = p.map((v) => `<div class="${v ? 'qr-cell' : 'qr-cell-w'}"></div>`).join('');
-  return `<div class="qr-box"><div class="qr-grid">${cells}</div></div>`;
+function qrElement(qrSvg?: string): string {
+  if (qrSvg) {
+    return `<div class="qr-box">${qrSvg}</div>`;
+  }
+  return `<div class="qr-box" style="font-size:6pt;color:${C.textMuted};text-align:center;">QR</div>`;
 }
 
 // ── Page 1 builder ───────────────────────────────────────────────────────────
 
-function buildPage1(data: ObjectExportData, now: string): string {
+function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
   const { object: obj, media, auditTrail, collections } = data;
   const tsd = parseTypeData(obj.type_specific_data);
   const primary = media.find((m) => m.is_primary === 1) ?? media[0] ?? null;
@@ -317,18 +308,18 @@ function buildPage1(data: ObjectExportData, now: string): string {
   const imageHtml = primary
     ? `<div class="image-wrapper">
         <img class="primary-img" src="data:${primary.mime_type};base64,${primary.base64Data}" />
-        ${media.length > 1 ? `<div class="img-count-badge">${media.length} Fotos</div>` : ''}
+        ${media.length > 1 ? `<div class="img-count-badge">${t('pdf.photos_count', { count: media.length })}</div>` : ''}
        </div>
        <div class="thumb-strip">
          ${others.slice(0, 3).map((m) => `<img class="thumb" src="data:${m.mime_type};base64,${m.base64Data}" />`).join('')}
          ${others.length > 3 ? `<div class="thumb-more">+${others.length - 3}</div>` : ''}
        </div>`
-    : `<div class="image-wrapper"><div class="image-placeholder">Kein Bild verfügbar</div></div>`;
+    : `<div class="image-wrapper"><div class="image-placeholder">${t('pdf.no_image')}</div></div>`;
 
   // ── Objektdaten grid ──
   const material = fmtArr(tsd.material);
   const technique = fmtArr(tsd.technique);
-  const dims = fmtDims(tsd.dimensions);
+  const dims = fmtDims(tsd.dimensions, t);
   const owner = typeof tsd.owner === 'string' ? tsd.owner : null;
   const insurance = typeof tsd.insurance_value === 'string' ? tsd.insurance_value : null;
   const classification = typeof tsd.classification === 'string' ? tsd.classification : null;
@@ -339,16 +330,16 @@ function buildPage1(data: ObjectExportData, now: string): string {
   }
 
   const dataItems = [
-    dataRow('Material', material),
-    dataRow('Technik', technique),
-    dataRow('Maße', dims),
-    dataRow('Zustand', typeof tsd.condition === 'string' ? tsd.condition : null),
-    dataRow('Eigentümer', owner),
-    dataRow('Vers.-Wert', insurance),
-    dataRow('Klassifikation', classification),
-    dataRow('Epoche', typeof tsd.period === 'string' ? tsd.period : null),
-    dataRow('Kultur', typeof tsd.culture === 'string' ? tsd.culture : null),
-    dataRow('Inschrift', typeof tsd.inscription === 'string' ? tsd.inscription : null),
+    dataRow(t('pdf.label_material'), material),
+    dataRow(t('pdf.label_technique'), technique),
+    dataRow(t('pdf.label_dimensions'), dims),
+    dataRow(t('pdf.label_condition'), typeof tsd.condition === 'string' ? tsd.condition : null),
+    dataRow(t('pdf.label_owner'), owner),
+    dataRow(t('pdf.label_insurance_value'), insurance),
+    dataRow(t('pdf.label_classification'), classification),
+    dataRow(t('pdf.label_period'), typeof tsd.period === 'string' ? tsd.period : null),
+    dataRow(t('pdf.label_culture'), typeof tsd.culture === 'string' ? tsd.culture : null),
+    dataRow(t('pdf.label_inscription'), typeof tsd.inscription === 'string' ? tsd.inscription : null),
   ].filter(Boolean);
 
   // ── Provenance ──
@@ -357,7 +348,9 @@ function buildPage1(data: ObjectExportData, now: string): string {
   const histColl = typeof tsd.historical_collections === 'string' ? tsd.historical_collections : null;
   const histInv = typeof tsd.historical_inventory_numbers === 'string' ? tsd.historical_inventory_numbers : null;
   const acquisition = typeof tsd.acquisition_type === 'string' ? tsd.acquisition_type : null;
-  const permLoan = tsd.permanent_loan === true ? 'Ja' + (typeof tsd.permanent_loan_until === 'string' ? ` (bis ${fmt(tsd.permanent_loan_until)})` : '') : null;
+  const permLoan = tsd.permanent_loan === true
+    ? t('pdf.loan_yes') + (typeof tsd.permanent_loan_until === 'string' ? ` ${t('pdf.loan_until', { date: fmt(tsd.permanent_loan_until) })}` : '')
+    : null;
 
   const showProv = provNarrative || provenance || histColl || histInv || acquisition || permLoan;
 
@@ -376,7 +369,7 @@ function buildPage1(data: ObjectExportData, now: string): string {
       <span class="brand-register">Register</span>
     </div>
     <div class="header-right">
-      <div class="header-badge">OBJECT REPORT</div>
+      <div class="header-badge">${esc(t('pdf.object_report_badge'))}</div>
       ${data.institutionName ? `<div class="header-institution">${esc(data.institutionName)}</div>` : ''}
     </div>
   </div>
@@ -384,7 +377,7 @@ function buildPage1(data: ObjectExportData, now: string): string {
   <!-- TITLE ROW -->
   <div class="title-row">
     <div class="title-block">
-      <div class="obj-type-label">${esc(objTypeLabel(obj.object_type))}</div>
+      <div class="obj-type-label">${esc(t(`object_types.${obj.object_type}`))}</div>
       <div class="obj-title">${esc(obj.title)}</div>
       ${subtitle ? `<div class="obj-subtitle">${esc(subtitle)}</div>` : ''}
     </div>
@@ -397,27 +390,27 @@ function buildPage1(data: ObjectExportData, now: string): string {
     <div class="col-facts">
       <div class="facts-card">
         <div class="fact-row">
-          <span class="fact-label">Sammlung</span>
+          <span class="fact-label">${esc(t('pdf.fact_collection'))}</span>
           <span class="fact-value">${collectionName ? esc(collectionName) : '&mdash;'}</span>
         </div>
         <div class="fact-row">
-          <span class="fact-label">Datierung</span>
+          <span class="fact-label">${esc(t('pdf.fact_dating'))}</span>
           <span class="fact-value">${datierung ?? '&mdash;'}</span>
         </div>
         <div class="fact-row">
-          <span class="fact-label">Herkunft</span>
+          <span class="fact-label">${esc(t('pdf.fact_origin'))}</span>
           <span class="fact-value">${herkunft ? esc(herkunft) : '&mdash;'}</span>
         </div>
         <div class="fact-row">
-          <span class="fact-label">Hersteller</span>
+          <span class="fact-label">${esc(t('pdf.fact_maker'))}</span>
           <span class="fact-value">${hersteller ? esc(hersteller) : '&mdash;'}</span>
         </div>
         <div class="fact-row">
-          <span class="fact-label">Präsenz</span>
-          <span class="fact-value">${displayStatus ? statusDot(displayStatus) + esc(displayStatus) : '&mdash;'}</span>
+          <span class="fact-label">${esc(t('pdf.fact_presence'))}</span>
+          <span class="fact-value">${displayStatus ? statusDot(displayStatus) + esc(translateDisplayStatus(displayStatus, t)) : '&mdash;'}</span>
         </div>
         <div class="fact-row">
-          <span class="fact-label">Standort</span>
+          <span class="fact-label">${esc(t('pdf.fact_location'))}</span>
           <span class="fact-value">${standort ? esc(standort) : '&mdash;'}</span>
         </div>
       </div>
@@ -428,7 +421,7 @@ function buildPage1(data: ObjectExportData, now: string): string {
   ${dataItems.length > 0 ? `
   <div class="section">
     <div class="section-header">
-      <div class="section-title">Objektdaten</div>
+      <div class="section-title">${esc(t('pdf.section_object_data'))}</div>
       <div class="section-underline"></div>
     </div>
     <div class="data-grid">${dataItems.join('')}</div>
@@ -438,40 +431,40 @@ function buildPage1(data: ObjectExportData, now: string): string {
   ${showProv ? `
   <div class="section">
     <div class="section-header">
-      <div class="section-title">Provenienz &amp; Erwerbung</div>
+      <div class="section-title">${esc(t('pdf.section_provenance'))}</div>
       <div class="section-underline"></div>
     </div>
-    ${acquisition ? `<div class="prov-row"><div class="prov-label">Erwerbung</div><div class="prov-text">${esc(acquisition)}</div></div>` : ''}
-    ${permLoan ? `<div class="prov-row"><div class="prov-label">Dauerleihgabe</div><div class="prov-text">${esc(permLoan)}</div></div>` : ''}
-    ${(provNarrative || provenance) ? `<div class="prov-row"><div class="prov-label">Provenienz</div><div class="prov-text">${esc(provNarrative ?? provenance ?? '')}</div></div>` : ''}
-    ${histColl ? `<div class="prov-row"><div class="prov-label">Hist. Sammlung</div><div class="prov-text">${esc(histColl)}</div></div>` : ''}
-    ${histInv ? `<div class="prov-row"><div class="prov-label">Hist. Inventar</div><div class="prov-text">${esc(histInv)}</div></div>` : ''}
+    ${acquisition ? `<div class="prov-row"><div class="prov-label">${esc(t('pdf.label_acquisition'))}</div><div class="prov-text">${esc(acquisition)}</div></div>` : ''}
+    ${permLoan ? `<div class="prov-row"><div class="prov-label">${esc(t('pdf.label_permanent_loan'))}</div><div class="prov-text">${esc(permLoan)}</div></div>` : ''}
+    ${(provNarrative || provenance) ? `<div class="prov-row"><div class="prov-label">${esc(t('pdf.label_provenance'))}</div><div class="prov-text">${esc(provNarrative ?? provenance ?? '')}</div></div>` : ''}
+    ${histColl ? `<div class="prov-row"><div class="prov-label">${esc(t('pdf.label_hist_collection'))}</div><div class="prov-text">${esc(histColl)}</div></div>` : ''}
+    ${histInv ? `<div class="prov-row"><div class="prov-label">${esc(t('pdf.label_hist_inventory'))}</div><div class="prov-text">${esc(histInv)}</div></div>` : ''}
   </div>` : ''}
 
   <!-- TAMPER EVIDENCE FOOTER -->
   <div class="tamper-footer">
     <div class="tamper-info">
-      <div class="tamper-title">Tamper-Evident Record</div>
+      <div class="tamper-title">${esc(t('pdf.tamper_title'))}</div>
       <div class="tamper-hash mono">${sha256Display}</div>
       <div class="tamper-meta">
-        <div class="tamper-meta-item"><strong>Aufnahme</strong><br/>${fmtTs(obj.created_at)}</div>
-        <div class="tamper-meta-item"><strong>GPS</strong><br/>${fmtGps(obj.latitude, obj.longitude)}</div>
-        <div class="tamper-meta-item"><strong>Ereignisse</strong><br/>${auditTrail.length}</div>
+        <div class="tamper-meta-item"><strong>${esc(t('pdf.tamper_capture'))}</strong><br/>${fmtTs(obj.created_at)}</div>
+        <div class="tamper-meta-item"><strong>${esc(t('pdf.tamper_gps'))}</strong><br/>${fmtGps(obj.latitude, obj.longitude)}</div>
+        <div class="tamper-meta-item"><strong>${esc(t('pdf.tamper_events'))}</strong><br/>${auditTrail.length}</div>
       </div>
     </div>
-    ${qrPlaceholder()}
+    ${qrElement(data.qrSvg)}
   </div>
 
   <!-- PAGE FOOTER -->
   <div class="page-footer">
-    <span>Generated by aha! Register &nbsp;|&nbsp; ${now} &nbsp;|&nbsp; Seite 1 von 2</span>
+    <span>${esc(t('pdf.generated_by'))} &nbsp;|&nbsp; ${now} &nbsp;|&nbsp; ${esc(t('pdf.page_of', { current: 1, total: 2 }))}</span>
     <span>aharegister.com</span>
   </div>`;
 }
 
 // ── Page 2 builder ───────────────────────────────────────────────────────────
 
-function buildPage2(data: ObjectExportData, now: string): string {
+function buildPage2(data: ObjectExportData, now: string, t: TFunc): string {
   const { object: obj, media, auditTrail } = data;
   const tsd = parseTypeData(obj.type_specific_data);
   const primary = media.find((m) => m.is_primary === 1) ?? media[0] ?? null;
@@ -497,11 +490,14 @@ function buildPage2(data: ObjectExportData, now: string): string {
   const recentAudit = auditTrail.slice(-20);
 
   function fmtAuditAction(action: string): string {
-    const map: Record<string, string> = {
-      insert: 'Erstellt', update: 'Aktualisiert', delete: 'Gelöscht',
-      sync_conflict: 'Sync-Konflikt',
+    const keyMap: Record<string, string> = {
+      insert: 'pdf.audit_insert',
+      update: 'pdf.audit_update',
+      delete: 'pdf.audit_delete',
+      sync_conflict: 'pdf.audit_sync_conflict',
     };
-    return map[action] ?? action;
+    const key = keyMap[action];
+    return key ? t(key) : action;
   }
 
   return `
@@ -527,7 +523,7 @@ function buildPage2(data: ObjectExportData, now: string): string {
   ${descText || scientificNotes ? `
   <div class="section">
     <div class="section-header">
-      <div class="section-title">Beschreibung</div>
+      <div class="section-title">${esc(t('pdf.section_description'))}</div>
       <div class="section-underline"></div>
     </div>
     ${descText ? `<p class="narrative">${esc(descText)}</p>` : ''}
@@ -545,7 +541,7 @@ function buildPage2(data: ObjectExportData, now: string): string {
   ${bibLines.length > 0 ? `
   <div class="section">
     <div class="section-header">
-      <div class="section-title">Literatur &amp; Quellen</div>
+      <div class="section-title">${esc(t('pdf.section_bibliography'))}</div>
       <div class="section-underline"></div>
     </div>
     <ul class="bib-list">
@@ -561,7 +557,7 @@ function buildPage2(data: ObjectExportData, now: string): string {
   ${recentAudit.length > 0 ? `
   <div class="section">
     <div class="section-header">
-      <div class="section-title">Audit Trail</div>
+      <div class="section-title">${esc(t('pdf.section_audit_trail'))}</div>
       <div class="section-underline"></div>
     </div>
     <div class="timeline">
@@ -574,50 +570,51 @@ function buildPage2(data: ObjectExportData, now: string): string {
           <div class="tl-content">
             <div class="tl-date">${fmtTs(entry.created_at)}</div>
             <div class="tl-action">${fmtAuditAction(esc(entry.action))}</div>
-            ${entry.user_id ? `<div class="tl-detail">Benutzer: ${esc(entry.user_id.slice(0, 12))}&hellip;</div>` : ''}
+            ${entry.user_id ? `<div class="tl-detail">${esc(t('pdf.label_user'))}: ${esc(entry.user_id.slice(0, 12))}&hellip;</div>` : ''}
           </div>
         </div>`).join('')}
     </div>
-    ${auditTrail.length > 20 ? `<p style="font-size:8pt;color:${C.textMuted};margin-top:6pt;">Zeige ${recentAudit.length} von ${auditTrail.length} Ereignissen</p>` : ''}
+    ${auditTrail.length > 20 ? `<p style="font-size:8pt;color:${C.textMuted};margin-top:6pt;">${esc(t('pdf.audit_showing', { shown: recentAudit.length, total: auditTrail.length }))}</p>` : ''}
   </div>` : ''}
 
   <!-- TAMPER EVIDENCE FOOTER -->
   <div class="tamper-footer">
     <div class="tamper-info">
-      <div class="tamper-title">Tamper-Evident Record</div>
+      <div class="tamper-title">${esc(t('pdf.tamper_title'))}</div>
       <div class="tamper-hash mono">${sha256Display}</div>
       <div class="tamper-meta">
-        <div class="tamper-meta-item"><strong>Objekt-UUID</strong><br/><span class="mono">${obj.id}</span></div>
-        <div class="tamper-meta-item"><strong>Gesamt-Ereignisse</strong><br/>${auditTrail.length}</div>
+        <div class="tamper-meta-item"><strong>${esc(t('pdf.tamper_object_uuid'))}</strong><br/><span class="mono">${obj.id}</span></div>
+        <div class="tamper-meta-item"><strong>${esc(t('pdf.tamper_total_events'))}</strong><br/>${auditTrail.length}</div>
       </div>
     </div>
-    ${qrPlaceholder()}
+    ${qrElement(data.qrSvg)}
   </div>
 
   <!-- PAGE FOOTER -->
   <div class="page-footer">
-    <span>Generated by aha! Register &nbsp;|&nbsp; ${now} &nbsp;|&nbsp; Seite 2 von 2</span>
+    <span>${esc(t('pdf.generated_by'))} &nbsp;|&nbsp; ${now} &nbsp;|&nbsp; ${esc(t('pdf.page_of', { current: 2, total: 2 }))}</span>
     <span>aharegister.com</span>
   </div>`;
 }
 
 // ── Main export ──────────────────────────────────────────────────────────────
 
-export function generateObjectReportHTML(data: ObjectExportData): string {
-  const now = new Date().toLocaleDateString('de-DE', {
+export function generateObjectReportHTML(data: ObjectExportData, t: TFunc): string {
+  const locale = t('pdf.date_locale');
+  const now = new Date().toLocaleDateString(locale, {
     year: 'numeric', month: '2-digit', day: '2-digit',
   });
 
   return `<!DOCTYPE html>
-<html lang="de">
+<html lang="${t('pdf.html_lang')}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>${CSS}</style>
 </head>
 <body>
-  ${buildPage1(data, now)}
-  ${buildPage2(data, now)}
+  ${buildPage1(data, now, t)}
+  ${buildPage2(data, now, t)}
 </body>
 </html>`;
 }
