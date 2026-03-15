@@ -1,0 +1,20 @@
+#!/bin/sh
+echo "Running pre-commit quality gates..."
+
+# TypeScript type check
+echo "Type checking..."
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript errors found. Fix before committing."
+  exit 1
+fi
+
+# Check for secrets/credentials in staged files
+echo "Scanning for secrets..."
+STAGED=$(git diff --cached --name-only | grep -v '^\.husky/')
+if [ -n "$STAGED" ] && echo "$STAGED" | xargs grep -l -E '(sk_live_|sk_test_|SUPABASE_SERVICE_ROLE|password\s*=\s*["\x27])' 2>/dev/null; then
+  echo "❌ Potential secrets detected in staged files. Review before committing."
+  exit 1
+fi
+
+echo "✅ All checks passed."
