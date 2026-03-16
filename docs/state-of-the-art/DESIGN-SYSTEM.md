@@ -210,6 +210,25 @@ Fixed bottom bars for batch actions. `surface` background, `accent` primary butt
 ### Cards
 `surface` background, `borderLight` stroke, `md` radius, `cardPadding` internal padding.
 
+### AI Field Accent Pattern
+
+AI-generated fields use a gold accent to signal that the value was produced by Gemini and may need review.
+
+**Tokens:**
+| Token | Value | Usage |
+|-------|-------|-------|
+| `colors.ai` | `#A16207` (amber-700) | AI badge text, confidence percentage |
+| `colors.aiLight` | `#FEF3C7` (amber-50) | AI badge background |
+
+**Implementation:**
+1. Wrap the field in `<AIField label="..." confidence={n}>` — shows a gold `Badge variant="ai" label="AI"` + confidence `%` when `confidence > 0`.
+2. Render a `<ConfidenceBar confidence={n} label="..." />` below the field for numerical indication.
+3. When `confidence === 0` (manual or skipped AI), the wrapper renders nothing extra — the field looks normal.
+
+**Usage sites:** `ReviewCardScreen` — all metadata fields prefilled from `AIAnalysisResult`.
+
+**Rule:** Gold = AI-generated, potentially unverified. Never use `colors.ai` for non-AI content.
+
 ---
 
 ## File Structure

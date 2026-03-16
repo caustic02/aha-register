@@ -531,5 +531,18 @@
     "default_object_type": "Default Object Type",
     "language": "Language",
     "select_placeholder": "Select\u2026"
+  },
+  "objectDetail": {
+    "basicInfo": "Basic Information",
+    "captureData": "Capture Data",
+    "associatedPersons": "Associated Persons",
+    "noPersons": "No persons linked",
+    "photo": "Photo",
+    "captureDate": "Capture Date",
+    "uuid": "Object ID",
+    "hash": "SHA-256",
+    "coordinateSource": "Coordinate Source",
+    "editDisabled": "Edit (coming soon)",
+    "exportDisabled": "Export (coming soon)"
   }
 }
