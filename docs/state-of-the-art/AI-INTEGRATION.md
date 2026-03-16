@@ -35,11 +35,24 @@ CaptureScreen → AIProcessingScreen
 
 **Environment variable required:** `GEMINI_API_KEY`
 
+### Authentication
+
+JWT verification is required. The client must include the user's Supabase access token:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+- Supabase Edge Functions verify the JWT automatically (deployed **without** `--no-verify-jwt`)
+- The function performs a secondary `supabase.auth.getUser()` check and logs the user ID for audit
+- Missing or invalid tokens return `401 Unauthorized` before any Gemini call is made
+
 ### Request
 
 ```http
 POST /functions/v1/analyze-object
 Content-Type: application/json
+Authorization: Bearer <access_token>
 
 {
   "image_base64": "<base64-encoded image bytes>",
@@ -189,6 +202,7 @@ AI-generated fields are visually distinguished from manually entered fields usin
 
 | Error | Behaviour |
 |-------|-----------|
+| Missing/invalid JWT | Edge Function returns 401; client shows "Authentication required. Please sign in again." |
 | `GEMINI_API_KEY` not set | Edge Function returns 500 |
 | Gemini API non-200 | Logged server-side; client receives `{ success: false, error: 'Gemini API returned N' }` |
 | JSON parse failure | Edge Function strips markdown code fences and retries parse once |
@@ -219,3 +233,4 @@ When `success: false`, `AIProcessingScreen` shows an error state and the user ca
 | 2026-03-15 | Edge Function pattern chosen — keeps API key server-side | Security design |
 | 2026-03-15 | 30 s client timeout — balances large image processing vs UX | UX testing |
 | 2026-03-15 | `responseMimeType: 'application/json'` + fallback fence-strip | Gemini reliability |
+| 2026-03-16 | JWT verification enabled — deploy without `--no-verify-jwt`; auth check in function + client | Security hardening |

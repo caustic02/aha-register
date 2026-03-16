@@ -1,3 +1,5 @@
+import { supabase } from './supabase';
+
 const EDGE_FUNCTION_URL =
   'https://fdwmfijtpknwaesyvzbg.supabase.co/functions/v1/analyze-object';
 
@@ -48,14 +50,26 @@ export async function analyzeObject(
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      return { success: false, error: 'Authentication required. Please sign in again.' };
+    }
+
     const response = await fetch(EDGE_FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
       body: JSON.stringify({ image_base64, mime_type }),
       signal: controller.signal,
     });
 
     const data = await response.json();
+
+    if (response.status === 401) {
+      return { success: false, error: 'Authentication required. Please sign in again.' };
+    }
 
     if (!response.ok) {
       return {
