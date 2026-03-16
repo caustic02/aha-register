@@ -542,6 +542,23 @@
     "language": "Language",
     "select_placeholder": "Select\u2026"
   },
+  "trust": {
+    "title": "Your data stays yours",
+    "subtitle": "aha! Register was built for professionals who handle sensitive collections and evidence.",
+    "offlineTitle": "Works without internet",
+    "offlineDescription": "All data is stored locally on your device. Network connectivity is never required. Your collection is accessible anywhere.",
+    "euTitle": "EU-hosted infrastructure",
+    "euDescription": "Cloud sync uses servers in Frankfurt, Germany. Your data never leaves the European Union.",
+    "tamperTitle": "Tamper-evident from capture",
+    "tamperDescription": "Every photo is cryptographically hashed the moment it is taken. Any modification is detectable. Meets Berkeley Protocol standards for digital evidence.",
+    "aiTitle": "AI is visible and optional",
+    "aiDescription": "AI-assisted fields are always marked. Confidence scores show how certain the analysis is. Your organization controls whether AI features are enabled.",
+    "privacyTitle": "Privacy tiers built in",
+    "privacyDescription": "Every record has a privacy classification. Anonymous records strip identifying data before sync. Legal holds prevent deletion or modification.",
+    "continue": "Continue",
+    "skip": "Skip",
+    "skipA11y": "Skip trust and privacy information"
+  },
   "home": {
     "title": "Collection",
     "objectCount": "{{count}} objects",

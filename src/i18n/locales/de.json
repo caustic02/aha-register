@@ -542,6 +542,23 @@
     "language": "Sprache",
     "select_placeholder": "Ausw\u00e4hlen\u2026"
   },
+  "trust": {
+    "title": "Deine Daten bleiben deine Daten",
+    "subtitle": "aha! Register wurde f\u00fcr Fachleute entwickelt, die mit sensiblen Sammlungen und Beweismitteln arbeiten.",
+    "offlineTitle": "Funktioniert ohne Internet",
+    "offlineDescription": "Alle Daten werden lokal auf deinem Ger\u00e4t gespeichert. Internetverbindung ist nie erforderlich. Deine Sammlung ist \u00fcberall verf\u00fcgbar.",
+    "euTitle": "Infrastruktur in der EU",
+    "euDescription": "Die Cloud-Synchronisierung l\u00e4uft \u00fcber Server in Frankfurt am Main. Deine Daten verlassen die Europ\u00e4ische Union nie.",
+    "tamperTitle": "Manipulationssicher ab der ersten Aufnahme",
+    "tamperDescription": "Jedes Foto wird in dem Moment, in dem es aufgenommen wird, kryptografisch gehasht. Jede \u00c4nderung ist nachweisbar. Entspricht den Berkeley-Protokoll-Standards f\u00fcr digitale Beweise.",
+    "aiTitle": "KI ist sichtbar und optional",
+    "aiDescription": "KI-gest\u00fctzte Felder sind immer gekennzeichnet. Konfidenzwerte zeigen, wie sicher die Analyse ist. Deine Organisation entscheidet, ob KI-Funktionen aktiviert sind.",
+    "privacyTitle": "Datenschutz ist eingebaut",
+    "privacyDescription": "Jeder Datensatz hat eine Datenschutzklassifizierung. Anonyme Eintr\u00e4ge entfernen identifizierende Daten vor der Synchronisierung. Rechtliche Sperren verhindern L\u00f6schung oder \u00c4nderung.",
+    "continue": "Weiter",
+    "skip": "\u00dcberspringen",
+    "skipA11y": "Datenschutzinformationen \u00fcberspringen"
+  },
   "home": {
     "title": "Sammlung",
     "objectCount": "{{count}} Objekte",
