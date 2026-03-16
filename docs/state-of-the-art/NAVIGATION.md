@@ -23,7 +23,8 @@ RootStack (NativeStack)          — auth gate, onboarding
     ├── CollectionStack (NativeStack)
     │   ├── CollectionList
     │   └── CollectionDetail
-    └── Settings (screen, no sub-stack)
+    └── SettingsStack (screen, no sub-stack)
+        └── Settings
 ```
 
 ---
@@ -150,6 +151,24 @@ navigation.getParent()?.navigate('Objects');
 | `ExportModal` | `src/components/ExportModal.tsx` | ObjectDetail Export button |
 
 `ExportModal` is a bottom-sheet-style `Modal` with three format options (PDF, JSON, CSV). It generates the export file and opens the native share sheet via `expo-sharing`.
+
+---
+
+### Settings — `src/screens/SettingsScreen.tsx`
+
+Registered directly in `MainTabs` (no sub-stack). Renders a scrollable form divided into seven sections:
+
+| Section | Content |
+|---------|---------|
+| Account | Signed-in email, organisation name, sync status, Sign Out button |
+| Institution | Institution name (TextInput), institution type, default privacy tier, default object type — all persisted via `settingsService` |
+| AI Features | "AI Analysis" toggle, "Confidence Scores" toggle — persisted via `useSettings` hook (AsyncStorage) |
+| Collection Type | Radio-style domain selector (6 options) — persisted via `useSettings` hook |
+| Language | EN / DE switcher — persisted via `settingsService` and `i18n.changeLanguage()` |
+| Data & Storage | Local object/pending-sync counts, Export All Data, Clear All Data (destructive alert) |
+| About | App version, build, Open Source Licences link |
+
+**Settings hook:** `src/hooks/useSettings.ts` — reads/writes `settings.*` keys in AsyncStorage; exposes `aiAnalysisEnabled`, `showConfidenceScores`, `collectionDomain`, `loaded` flag, and their setters.
 
 ---
 

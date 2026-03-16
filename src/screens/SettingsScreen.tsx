@@ -2,15 +2,17 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import i18n from 'i18next';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
+import { useSettings } from '../hooks/useSettings';
 import {
   getSetting,
   setSetting,
@@ -21,9 +23,33 @@ import {
   type InstitutionType,
 } from '../services/settingsService';
 import { getSession, signOut } from '../services/auth';
-import { SyncEngine } from '../sync/engine';
-import type { ObjectType, PrivacyTier } from '../db/types';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import {
+  Card,
+  Divider,
+  ListItem,
+  MetadataRow,
+  SectionHeader,
+  TextInput,
+} from '../components/ui';
+import {
+  CheckIcon,
+  DeleteIcon,
+  ExportIcon,
+  IncidentIcon,
+  MuseumObjectIcon,
+  ObjectsTabIcon,
+  SignOutIcon,
+  SiteIcon,
+  SpecimenIcon,
+  ConservationRecordIcon,
+} from '../theme/icons';
+import { colors, spacing, touch, typography } from '../theme';
+import type { PrivacyTier, ObjectType } from '../db/types';
+import type { CollectionDomain } from '../hooks/useSettings';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const APP_VERSION = '0.1.0';
 
 const OBJECT_TYPES: ObjectType[] = [
   'museum_object',
@@ -42,27 +68,75 @@ const LANGUAGES = [
   { code: 'de', label: 'Deutsch', flag: '\uD83C\uDDE9\uD83C\uDDEA' },
 ] as const;
 
+interface DomainOption {
+  value: CollectionDomain;
+  icon: React.ReactNode;
+}
+
+const DOMAIN_OPTIONS: DomainOption[] = [
+  {
+    value: 'museum_collection',
+    icon: <MuseumObjectIcon size={22} color={colors.primary} />,
+  },
+  {
+    value: 'archaeological_site',
+    icon: <SiteIcon size={22} color={colors.primary} />,
+  },
+  {
+    value: 'conservation_lab',
+    icon: <ConservationRecordIcon size={22} color={colors.primary} />,
+  },
+  {
+    value: 'natural_history',
+    icon: <SpecimenIcon size={22} color={colors.primary} />,
+  },
+  {
+    value: 'human_rights',
+    icon: <IncidentIcon size={22} color={colors.primary} />,
+  },
+  {
+    value: 'general',
+    icon: <ObjectsTabIcon size={22} color={colors.primary} />,
+  },
+];
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function SettingsScreen() {
   const db = useDatabase();
   const { t } = useAppTranslation();
 
+  // AsyncStorage settings (AI, domain)
+  const {
+    aiAnalysisEnabled,
+    showConfidenceScores,
+    collectionDomain,
+    setAIAnalysisEnabled,
+    setShowConfidenceScores,
+    setCollectionDomain,
+  } = useSettings();
+
+  // SQLite-backed settings (institution, language, privacy, objectType)
   const [institutionName, setInstitutionName] = useState('');
-  const [institutionType, setInstitutionType] = useState<InstitutionType | ''>('');
+  const [institutionType, setInstitutionType] = useState<InstitutionType | ''>(
+    '',
+  );
   const [defaultPrivacy, setDefaultPrivacy] = useState<PrivacyTier>('public');
-  const [defaultObjectType, setDefaultObjectType] = useState<ObjectType>('museum_object');
+  const [defaultObjectType, setDefaultObjectType] =
+    useState<ObjectType>('museum_object');
   const [language, setLanguage] = useState(i18n.language);
   const [stats, setStats] = useState<StorageStats | null>(null);
 
-  // Auth state
+  // Auth
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [syncEnabled, setSyncEnabledState] = useState(false);
+  const [syncEnabled, setSyncEnabled] = useState(false);
 
-  // Expand/collapse pickers
+  // Pickers open state
   const [showInstitutionType, setShowInstitutionType] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showObjectType, setShowObjectType] = useState(false);
 
-  const appVersion = '0.1.0';
+  // ── Load ────────────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
     const [name, instType, privacy, objType, lang, storageStats, syncEn] =
@@ -81,9 +155,8 @@ export function SettingsScreen() {
     setDefaultObjectType((objType as ObjectType) ?? 'museum_object');
     if (lang) setLanguage(lang);
     setStats(storageStats);
-    setSyncEnabledState(syncEn === 'true');
+    setSyncEnabled(syncEn === 'true');
 
-    // Check auth
     const session = await getSession();
     setUserEmail(session?.user?.email ?? null);
   }, [db]);
@@ -92,9 +165,15 @@ export function SettingsScreen() {
     load();
   }, [load]);
 
-  const handleNameBlur = useCallback(async () => {
-    await setSetting(db, SETTING_KEYS.INSTITUTION_NAME, institutionName.trim());
-  }, [db, institutionName]);
+  // ── Institution handlers ────────────────────────────────────────────────────
+
+  const handleNameChange = useCallback(
+    async (text: string) => {
+      setInstitutionName(text);
+      await setSetting(db, SETTING_KEYS.INSTITUTION_NAME, text.trim());
+    },
+    [db],
+  );
 
   const handleInstitutionTypeSelect = useCallback(
     async (type: InstitutionType) => {
@@ -132,6 +211,8 @@ export function SettingsScreen() {
     [db],
   );
 
+  // ── Auth handlers ───────────────────────────────────────────────────────────
+
   const handleSignOut = useCallback(() => {
     Alert.alert(t('auth.sign_out'), t('auth.sign_out_confirm'), [
       { text: t('common.cancel'), style: 'cancel' },
@@ -140,20 +221,44 @@ export function SettingsScreen() {
         style: 'destructive',
         onPress: async () => {
           await signOut(db);
-          setSyncEnabledState(false);
+          setSyncEnabled(false);
           setUserEmail(null);
         },
       },
     ]);
   }, [db, t]);
 
-  const handleSyncNow = useCallback(() => {
-    const engine = new SyncEngine(db);
-    engine.triggerSync();
-  }, [db]);
+  // ── Data handlers ───────────────────────────────────────────────────────────
+
+  const handleClearData = useCallback(() => {
+    Alert.alert(
+      t('settings.clearDataTitle'),
+      t('settings.clearDataConfirm'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('settings.clearData'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await db.execAsync('DELETE FROM objects');
+              await db.execAsync('DELETE FROM sync_queue');
+              await db.execAsync('DELETE FROM audit_trail');
+              await load();
+            } catch {
+              Alert.alert(t('common.error'));
+            }
+          },
+        },
+      ],
+    );
+  }, [db, load, t]);
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safe}>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('settings.title')}</Text>
       </View>
@@ -161,381 +266,491 @@ export function SettingsScreen() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
-        {/* ── Account ──────────────────────────────────────── */}
-        {userEmail && (
-          <>
-            <Text style={styles.sectionHeader}>{t('settings.account')}</Text>
-            <View style={styles.row}>
-              <Text style={styles.label}>{t('settings.signed_in_as')}</Text>
-              <Text style={styles.valueText} numberOfLines={1}>
-                {userEmail}
-              </Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>{t('settings.sync_status')}</Text>
-              <Text style={styles.valueText}>
-                {syncEnabled ? t('sync.enabled') : t('sync.disabled')}
-              </Text>
-            </View>
-            {syncEnabled && (
-              <Pressable style={styles.syncNowBtn} onPress={handleSyncNow}>
-                <Text style={styles.syncNowText}>{t('sync.sync_now')}</Text>
-              </Pressable>
-            )}
-            <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
-              <Text style={styles.signOutText}>{t('auth.sign_out')}</Text>
-            </Pressable>
-          </>
-        )}
-
-        {/* ── Institution ────────────────────────────────────── */}
-        <Text style={styles.sectionHeader}>{t('settings.institution')}</Text>
-
-        {/* Institution Name */}
-        <View style={styles.row}>
-          <Text style={styles.label}>{t('settings.institution_name')}</Text>
-          <TextInput
-            style={styles.textInput}
-            value={institutionName}
-            onChangeText={setInstitutionName}
-            onBlur={handleNameBlur}
-            placeholder={t('settings.institution_name_placeholder')}
-            placeholderTextColor={colors.textSecondary}
+        {/* ── Account ────────────────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.account')} />
+        <Card>
+          <MetadataRow
+            label={t('settings.signed_in_as')}
+            value={userEmail ?? t('auth.continue_without')}
           />
-        </View>
-
-        {/* Institution Type */}
-        <Pressable
-          style={styles.row}
-          onPress={() => setShowInstitutionType(!showInstitutionType)}
-        >
-          <Text style={styles.label}>{t('settings.institution_type_label')}</Text>
-          <Text style={styles.valueText}>
-            {institutionType
-              ? t(`settings.institution_type.${institutionType}`)
-              : '\u2014'}
-          </Text>
-        </Pressable>
-        {showInstitutionType && (
-          <View style={styles.pickerContainer}>
-            {INSTITUTION_TYPES.map((type) => (
-              <Pressable
-                key={type}
-                style={[
-                  styles.pickerOption,
-                  institutionType === type && styles.pickerOptionActive,
-                ]}
-                onPress={() => handleInstitutionTypeSelect(type)}
-              >
-                <Text
-                  style={[
-                    styles.pickerOptionText,
-                    institutionType === type && styles.pickerOptionTextActive,
-                  ]}
-                >
-                  {t(`settings.institution_type.${type}`)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* Default Privacy Tier */}
-        <Pressable
-          style={styles.row}
-          onPress={() => setShowPrivacy(!showPrivacy)}
-        >
-          <Text style={styles.label}>{t('settings.default_privacy')}</Text>
-          <Text style={styles.valueText}>
-            {t(`settings.privacy.${defaultPrivacy}`)}
-          </Text>
-        </Pressable>
-        <Text style={styles.descriptionText}>
-          {t('settings.default_privacy_description')}
-        </Text>
-        {showPrivacy && (
-          <View style={styles.pickerContainer}>
-            {PRIVACY_TIERS.map((tier) => (
-              <Pressable
-                key={tier}
-                style={[
-                  styles.pickerOption,
-                  defaultPrivacy === tier && styles.pickerOptionActive,
-                ]}
-                onPress={() => handlePrivacySelect(tier)}
-              >
-                <Text
-                  style={[
-                    styles.pickerOptionText,
-                    defaultPrivacy === tier && styles.pickerOptionTextActive,
-                  ]}
-                >
-                  {t(`settings.privacy.${tier}`)}
-                </Text>
-                <Text style={styles.pickerDescText}>
-                  {t(`settings.privacy.${tier}_desc`)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* Default Object Type */}
-        <Pressable
-          style={styles.row}
-          onPress={() => setShowObjectType(!showObjectType)}
-        >
-          <Text style={styles.label}>{t('settings.default_object_type')}</Text>
-          <Text style={styles.valueText}>
-            {t(`object_types.${defaultObjectType}`)}
-          </Text>
-        </Pressable>
-        {showObjectType && (
-          <View style={styles.pickerContainer}>
-            {OBJECT_TYPES.map((type) => (
-              <Pressable
-                key={type}
-                style={[
-                  styles.pickerOption,
-                  defaultObjectType === type && styles.pickerOptionActive,
-                ]}
-                onPress={() => handleObjectTypeSelect(type)}
-              >
-                <Text
-                  style={[
-                    styles.pickerOptionText,
-                    defaultObjectType === type && styles.pickerOptionTextActive,
-                  ]}
-                >
-                  {t(`object_types.${type}`)}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-
-        {/* ── Language ───────────────────────────────────────── */}
-        <Text style={styles.sectionHeader}>{t('settings.language')}</Text>
-        {LANGUAGES.map((lang) => (
+          <MetadataRow
+            label={t('settings.organisation')}
+            value={institutionName || t('settings.personal')}
+          />
+          {syncEnabled && (
+            <MetadataRow
+              label={t('settings.sync_status')}
+              value={t('sync.enabled')}
+            />
+          )}
+          <Divider />
           <Pressable
-            key={lang.code}
-            style={styles.row}
-            onPress={() => handleLanguageSelect(lang.code)}
+            onPress={handleSignOut}
+            hitSlop={touch.hitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={t('auth.sign_out')}
+            style={({ pressed }) => [
+              styles.actionRow,
+              pressed && styles.pressed,
+            ]}
           >
-            <Text style={styles.label}>
-              {lang.flag} {lang.label}
-            </Text>
-            {language === lang.code && (
-              <Text style={styles.checkmark}>{'\u2713'}</Text>
-            )}
+            <SignOutIcon size={20} color={colors.error} />
+            <Text style={styles.dangerText}>{t('auth.sign_out')}</Text>
           </Pressable>
-        ))}
+        </Card>
 
-        {/* ── Storage ────────────────────────────────────────── */}
-        <Text style={styles.sectionHeader}>{t('settings.storage')}</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>{t('settings.object_count')}</Text>
-            <Text style={styles.statValue}>{stats?.objectCount ?? 0}</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>{t('settings.media_count')}</Text>
-            <Text style={styles.statValue}>{stats?.mediaCount ?? 0}</Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>
-              {t('settings.collection_count')}
-            </Text>
-            <Text style={styles.statValue}>
-              {stats?.collectionCount ?? 0}
-            </Text>
-          </View>
-          <View style={styles.statRow}>
-            <Text style={styles.statLabel}>{t('settings.pending_sync')}</Text>
-            <Text style={styles.statValue}>
-              {stats?.pendingSyncCount ?? 0}
-            </Text>
-          </View>
-        </View>
+        {/* ── Institution ──────────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.institution')} />
+        <Card>
+          <TextInput
+            label={t('settings.institution_name')}
+            value={institutionName}
+            onChangeText={handleNameChange}
+            placeholder={t('settings.institution_name_placeholder')}
+            autoCapitalize="words"
+          />
+          <View style={styles.cardGap} />
 
-        {/* ── About ──────────────────────────────────────────── */}
-        <Text style={styles.sectionHeader}>{t('settings.about')}</Text>
-        <View style={styles.aboutBlock}>
-          <Text style={styles.appName}>aha! Register</Text>
-          <Text style={styles.aboutDetail}>
-            {t('settings.version')} {appVersion}
+          {/* Institution Type picker */}
+          <MetadataRow
+            label={t('settings.institution_type_label')}
+            value={
+              institutionType
+                ? t(`settings.institution_type.${institutionType}`)
+                : undefined
+            }
+            onPress={() => setShowInstitutionType(!showInstitutionType)}
+          />
+          {showInstitutionType && (
+            <View style={styles.pickerList}>
+              {INSTITUTION_TYPES.map((type) => (
+                <Pressable
+                  key={type}
+                  onPress={() => handleInstitutionTypeSelect(type)}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={t(`settings.institution_type.${type}`)}
+                  style={({ pressed }) => [
+                    styles.pickerRow,
+                    institutionType === type && styles.pickerRowActive,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pickerText,
+                      institutionType === type && styles.pickerTextActive,
+                    ]}
+                  >
+                    {t(`settings.institution_type.${type}`)}
+                  </Text>
+                  {institutionType === type && (
+                    <CheckIcon size={16} color={colors.primary} />
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {/* Default Privacy picker */}
+          <MetadataRow
+            label={t('settings.default_privacy')}
+            value={t(`settings.privacy.${defaultPrivacy}`)}
+            onPress={() => setShowPrivacy(!showPrivacy)}
+          />
+          {showPrivacy && (
+            <View style={styles.pickerList}>
+              {PRIVACY_TIERS.map((tier) => (
+                <Pressable
+                  key={tier}
+                  onPress={() => handlePrivacySelect(tier)}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={t(`settings.privacy.${tier}`)}
+                  style={({ pressed }) => [
+                    styles.pickerRow,
+                    defaultPrivacy === tier && styles.pickerRowActive,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.pickerContent}>
+                    <Text
+                      style={[
+                        styles.pickerText,
+                        defaultPrivacy === tier && styles.pickerTextActive,
+                      ]}
+                    >
+                      {t(`settings.privacy.${tier}`)}
+                    </Text>
+                    <Text style={styles.pickerSubtext}>
+                      {t(`settings.privacy.${tier}_desc`)}
+                    </Text>
+                  </View>
+                  {defaultPrivacy === tier && (
+                    <CheckIcon size={16} color={colors.primary} />
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {/* Default Object Type picker */}
+          <MetadataRow
+            label={t('settings.default_object_type')}
+            value={t(`object_types.${defaultObjectType}`)}
+            onPress={() => setShowObjectType(!showObjectType)}
+          />
+          {showObjectType && (
+            <View style={styles.pickerList}>
+              {OBJECT_TYPES.map((type) => (
+                <Pressable
+                  key={type}
+                  onPress={() => handleObjectTypeSelect(type)}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={t(`object_types.${type}`)}
+                  style={({ pressed }) => [
+                    styles.pickerRow,
+                    defaultObjectType === type && styles.pickerRowActive,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pickerText,
+                      defaultObjectType === type && styles.pickerTextActive,
+                    ]}
+                  >
+                    {t(`object_types.${type}`)}
+                  </Text>
+                  {defaultObjectType === type && (
+                    <CheckIcon size={16} color={colors.primary} />
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </Card>
+
+        {/* ── AI Features ──────────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.aiFeatures')} />
+        <Card>
+          {/* AI Analysis toggle */}
+          <View
+            style={styles.toggleRow}
+            accessibilityRole="none"
+          >
+            <View style={styles.toggleText}>
+              <Text style={styles.toggleTitle}>{t('settings.aiAnalysis')}</Text>
+              <Text style={styles.toggleSubtitle}>
+                {t('settings.aiAnalysisDescription')}
+              </Text>
+            </View>
+            <Switch
+              value={aiAnalysisEnabled}
+              onValueChange={setAIAnalysisEnabled}
+              trackColor={{
+                false: colors.border,
+                true: colors.primaryLight,
+              }}
+              thumbColor={
+                aiAnalysisEnabled ? colors.primary : colors.textTertiary
+              }
+              accessibilityLabel={t('settings.aiAnalysis')}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: aiAnalysisEnabled }}
+            />
+          </View>
+
+          <Divider />
+
+          {/* Confidence Scores toggle */}
+          <View
+            style={styles.toggleRow}
+            accessibilityRole="none"
+          >
+            <View style={styles.toggleText}>
+              <Text style={styles.toggleTitle}>
+                {t('settings.confidenceScores')}
+              </Text>
+              <Text style={styles.toggleSubtitle}>
+                {t('settings.confidenceScoresDescription')}
+              </Text>
+            </View>
+            <Switch
+              value={showConfidenceScores}
+              onValueChange={setShowConfidenceScores}
+              trackColor={{
+                false: colors.border,
+                true: colors.primaryLight,
+              }}
+              thumbColor={
+                showConfidenceScores ? colors.primary : colors.textTertiary
+              }
+              accessibilityLabel={t('settings.confidenceScores')}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: showConfidenceScores }}
+            />
+          </View>
+        </Card>
+
+        {/* ── Collection Type ───────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.collectionType')} />
+        <Card>
+          <Text style={styles.sectionDescription}>
+            {t('settings.collectionTypeDescription')}
           </Text>
-          <Text style={styles.aboutDetail}>{t('settings.powered_by')}</Text>
-        </View>
+          <View style={styles.domainList}>
+            {DOMAIN_OPTIONS.map((option) => {
+              const isSelected = collectionDomain === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setCollectionDomain(option.value)}
+                  accessibilityRole="radio"
+                  accessibilityLabel={t(
+                    `settings.domain.${option.value}`,
+                  )}
+                  accessibilityState={{ checked: isSelected }}
+                  style={({ pressed }) => [
+                    styles.domainRow,
+                    isSelected && styles.domainRowSelected,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.domainIcon}>{option.icon}</View>
+                  <View style={styles.domainContent}>
+                    <Text
+                      style={[
+                        styles.domainLabel,
+                        isSelected && styles.domainLabelSelected,
+                      ]}
+                    >
+                      {t(`settings.domain.${option.value}`)}
+                    </Text>
+                    <Text style={styles.domainDescription}>
+                      {t(`settings.domain.${option.value}_desc`)}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <CheckIcon size={18} color={colors.primary} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+
+        {/* ── Language ─────────────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.language')} />
+        <Card>
+          {LANGUAGES.map((lang, idx) => (
+            <View key={lang.code}>
+              <MetadataRow
+                label={`${lang.flag}\u2002${lang.label}`}
+                value={language === lang.code ? '\u2713' : undefined}
+                onPress={() => handleLanguageSelect(lang.code)}
+              />
+              {idx < LANGUAGES.length - 1 && <Divider />}
+            </View>
+          ))}
+        </Card>
+
+        {/* ── Data & Storage ────────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.dataStorage')} />
+        <Card>
+          <MetadataRow
+            label={t('settings.localObjects')}
+            value={String(stats?.objectCount ?? 0)}
+          />
+          <MetadataRow
+            label={t('settings.pending_sync')}
+            value={String(stats?.pendingSyncCount ?? 0)}
+          />
+          <MetadataRow
+            label={t('settings.storageUsed')}
+            value={t('settings.storageCalculating')}
+          />
+          <Divider />
+          <ListItem
+            title={t('settings.exportAllData')}
+            rightElement={<ExportIcon size={18} color={colors.textTertiary} />}
+            onPress={() => console.log('Export all: not yet implemented')}
+          />
+          <Pressable
+            onPress={handleClearData}
+            hitSlop={touch.hitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.clearData')}
+            style={({ pressed }) => [
+              styles.actionRow,
+              pressed && styles.pressed,
+            ]}
+          >
+            <DeleteIcon size={20} color={colors.error} />
+            <Text style={styles.dangerText}>{t('settings.clearData')}</Text>
+          </Pressable>
+        </Card>
+
+        {/* ── About ────────────────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.about')} />
+        <Card>
+          <MetadataRow
+            label={t('settings.version')}
+            value={APP_VERSION}
+          />
+          <MetadataRow
+            label={t('settings.build')}
+            value={APP_VERSION}
+          />
+          <Divider />
+          <ListItem
+            title={t('settings.licenses')}
+            onPress={() => console.log('Licenses: not yet implemented')}
+          />
+        </Card>
+
+        <View style={{ height: spacing['2xl'] }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 56,
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.sm,
   },
   headerTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.size.xxl,
-    fontWeight: typography.weight.bold,
+    ...typography.h2,
+    color: colors.text,
   },
-  scroll: {
-    flex: 1,
-  },
+  scroll: { flex: 1 },
   scrollContent: {
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: 60,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing['3xl'],
   },
-  sectionHeader: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 28,
-    marginBottom: spacing.sm,
+  // Card gap for TextInput spacing
+  cardGap: {
+    height: spacing.sm,
   },
-  row: {
+  // Picker
+  pickerList: {
+    marginTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
+    minHeight: touch.minTarget,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  label: {
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
+  pickerRowActive: {
+    backgroundColor: colors.primarySurface,
   },
-  valueText: {
-    color: colors.accent,
-    fontSize: typography.size.base,
-    flexShrink: 1,
-    marginLeft: spacing.sm,
-  },
-  textInput: {
+  pickerText: {
+    ...typography.bodySmall,
+    color: colors.text,
     flex: 1,
-    color: colors.textPrimary,
-    fontSize: typography.size.base,
-    textAlign: 'right',
-    marginLeft: spacing.md,
-    padding: 0,
   },
-  descriptionText: {
+  pickerTextActive: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  pickerContent: {
+    flex: 1,
+  },
+  pickerSubtext: {
+    ...typography.caption,
     color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    marginTop: -4,
-    marginBottom: spacing.xs,
-  },
-  pickerContainer: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.sm,
-    overflow: 'hidden',
-  },
-  pickerOption: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
-  },
-  pickerOptionActive: {
-    backgroundColor: colors.borderLight,
-  },
-  pickerOptionText: {
-    color: colors.textPrimary,
-    fontSize: typography.size.base,
-  },
-  pickerOptionTextActive: {
-    color: colors.accent,
-    fontWeight: typography.weight.semibold,
-  },
-  pickerDescText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.xs,
     marginTop: 2,
   },
-  checkmark: {
-    color: colors.accent,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.bold,
-  },
-  statsGrid: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-    overflow: 'hidden',
-  },
-  statRow: {
+  // Toggle rows
+  toggleRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
-  },
-  statLabel: {
-    color: colors.textPrimary,
-    fontSize: typography.size.base,
-  },
-  statValue: {
-    color: colors.accent,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-  },
-  aboutBlock: {
     alignItems: 'center',
-    paddingVertical: spacing.xxl,
+    minHeight: touch.minTarget,
+    paddingVertical: spacing.sm,
+    gap: spacing.md,
   },
-  appName: {
-    color: colors.textPrimary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginBottom: spacing.sm,
+  toggleText: {
+    flex: 1,
   },
-  aboutDetail: {
+  toggleTitle: {
+    ...typography.bodyMedium,
+    color: colors.text,
+  },
+  toggleSubtitle: {
+    ...typography.caption,
     color: colors.textSecondary,
-    fontSize: typography.size.sm,
     marginTop: spacing.xs,
   },
-  syncNowBtn: {
-    backgroundColor: colors.borderLight,
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
+  // Domain selector
+  sectionDescription: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  domainList: {
+    gap: spacing.xs,
+  },
+  domainRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
+    minHeight: touch.minTarget,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: spacing.sm,
+    gap: spacing.md,
   },
-  syncNowText: {
-    color: colors.accent,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
+  domainRowSelected: {
+    backgroundColor: colors.primarySurface,
   },
-  signOutBtn: {
-    backgroundColor: colors.dangerLight,
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
+  domainIcon: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: spacing.sm,
-    borderWidth: 1,
-    borderColor: colors.dangerLight,
   },
-  signOutText: {
-    color: colors.danger,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
+  domainContent: {
+    flex: 1,
+  },
+  domainLabel: {
+    ...typography.bodyMedium,
+    color: colors.text,
+  },
+  domainLabelSelected: {
+    color: colors.primary,
+  },
+  domainDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  // Danger action rows
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: touch.minTarget,
+    paddingVertical: spacing.sm,
+  },
+  dangerText: {
+    ...typography.bodyMedium,
+    color: colors.error,
+  },
+  pressed: {
+    opacity: 0.7,
   },
 });
