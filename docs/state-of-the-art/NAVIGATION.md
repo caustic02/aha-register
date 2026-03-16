@@ -145,3 +145,27 @@ navigation.getParent()?.navigate('Objects');
 | `ExportModal` | `src/components/ExportModal.tsx` | ObjectDetail Export button |
 
 `ExportModal` is a bottom-sheet-style `Modal` with three format options (PDF, JSON, CSV). It generates the export file and opens the native share sheet via `expo-sharing`.
+
+---
+
+## Standalone Screens (not yet wired into navigation)
+
+### TrustScreen — `src/screens/TrustScreen.tsx`
+
+A brand + trust statement shown once during onboarding, after the intro slides and before sign-in.
+
+**Prop contract:**
+```ts
+interface Props {
+  onContinue?: () => void;  // advance to next onboarding step
+  onSkip?: () => void;      // same action — defaults to onContinue if omitted
+}
+export default function TrustScreen(props: Props)
+```
+
+**Planned position in onboarding flow:**
+```
+OnboardingSlides → TrustScreen → AuthScreen (sign-in / sign-up)
+```
+
+**Content:** Five commitment cards (On-Device, EU Infrastructure, Tamper Evidence, AI Transparency, Privacy by Design) with icons from `src/theme/icons.ts`, i18n via the `trust` namespace. No navigation dependency — pure callback props.
