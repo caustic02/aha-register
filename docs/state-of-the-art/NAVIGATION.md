@@ -1,6 +1,6 @@
 # aha! Register — Navigation Architecture
 
-> Last updated: 2026-03-16
+> Last updated: 2026-03-17
 > Status: ACTIVE
 
 React Navigation v6 with a bottom-tab root and per-tab native stacks.
@@ -12,8 +12,8 @@ React Navigation v6 with a bottom-tab root and per-tab native stacks.
 ```
 RootStack (NativeStack)          — auth gate, onboarding
 └── MainTabs (BottomTab)
-    ├── ObjectStack (NativeStack)
-    │   ├── ObjectList
+    ├── HomeStack (NativeStack)
+    │   ├── Home
     │   └── ObjectDetail
     ├── CaptureStack (NativeStack)
     │   ├── CaptureCamera
@@ -29,12 +29,33 @@ RootStack (NativeStack)          — auth gate, onboarding
 
 ## Screen Inventory
 
+### HomeStack — `src/navigation/HomeStack.tsx`
+
+| Screen | File | Purpose |
+|--------|------|---------|
+| `Home` | `src/screens/HomeScreen.tsx` | Dashboard: collection stats, recent captures, type breakdown, sync status |
+| `ObjectDetail` | `src/screens/ObjectDetailScreen.tsx` | Read-only detail view: image gallery, metadata, persons, capture data, export, delete |
+
+**Param list:**
+```ts
+type HomeStackParamList = {
+  Home: undefined;
+  ObjectDetail: { objectId: string };
+};
+```
+
+> Note: `ObjectDetailScreen` is registered with `React.ComponentType<any>` to avoid TypeScript conflict with its native `ObjectStackParamList` type. The runtime params are identical.
+
+---
+
 ### ObjectStack — `src/navigation/ObjectStack.tsx`
+
+Still exists and shares `ObjectDetail` registration. Used only if a direct `ObjectList` entry point is needed in future.
 
 | Screen | File | Purpose |
 |--------|------|---------|
 | `ObjectList` | `src/screens/ObjectListScreen.tsx` | Searchable list of all registered objects with batch actions |
-| `ObjectDetail` | `src/screens/ObjectDetailScreen.tsx` | Read-only detail view: image gallery, metadata, persons, capture data, delete action |
+| `ObjectDetail` | `src/screens/ObjectDetailScreen.tsx` | Read-only detail view (same screen as HomeStack) |
 
 **Param list:**
 ```ts

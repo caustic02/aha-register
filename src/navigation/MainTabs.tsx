@@ -3,8 +3,8 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
-import { ObjectStack } from './ObjectStack';
-import type { ObjectStackParamList } from './ObjectStack';
+import { HomeStack } from './HomeStack';
+import type { HomeStackParamList } from './HomeStack';
 import { CaptureStack } from './CaptureStack';
 import type { CaptureStackParamList } from './CaptureStack';
 import { CollectionStack } from './CollectionStack';
@@ -12,7 +12,7 @@ import type { CollectionStackParamList } from './CollectionStack';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
 export type MainTabParamList = {
-  Objects: NavigatorScreenParams<ObjectStackParamList> | undefined;
+  Objects: NavigatorScreenParams<HomeStackParamList> | undefined;
   Capture: NavigatorScreenParams<CaptureStackParamList> | undefined;
   Collections: NavigatorScreenParams<CollectionStackParamList> | undefined;
   Settings: undefined;
@@ -54,7 +54,7 @@ export function MainTabs() {
         },
       })}
     >
-      <Tab.Screen name="Objects" component={ObjectStack} />
+      <Tab.Screen name="Objects" component={HomeStack} />
       <Tab.Screen name="Capture" component={CaptureStack} />
       <Tab.Screen name="Collections" component={CollectionStack} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
