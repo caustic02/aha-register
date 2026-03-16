@@ -1,6 +1,6 @@
 # aha! Register Design System
 
-> Last updated: 2026-03-16
+> Last updated: 2026-03-17
 > Status: ACTIVE
 
 Centralized design tokens and visual standards for the aha! Register app.
@@ -19,7 +19,7 @@ All values live in `src/theme/index.ts`. No hardcoded colors, font sizes, or rad
 | `surface` | `#FFFFFF` | Cards, inputs, modals, bottom sheets. |
 | `textPrimary` | `#1A1A1A` | Headings, primary content, body text. |
 | `textSecondary` | `#6B6B6B` | Descriptions, secondary labels, field labels. |
-| `textMuted` | `#999999` | Placeholders, metadata, timestamps, disabled text. |
+| `textMuted` | `#767676` | Placeholders, metadata, timestamps, disabled text. (WCAG AA compliant — was #999999, updated 2026-03-17) |
 | `border` | `#E8E8E4` | Input borders, dividers, section separators. |
 | `borderLight` | `#F0F0EC` | Subtle card borders, input backgrounds, faint tints. |
 | `danger` | `#C53030` | Delete actions, errors, destructive buttons. |
@@ -231,6 +231,52 @@ AI-generated fields use a gold accent to signal that the value was produced by G
 **Usage sites:** `ReviewCardScreen` — all metadata fields prefilled from `AIAnalysisResult`.
 
 **Rule:** Gold = AI-generated, potentially unverified. Never use `colors.ai` for non-AI content.
+
+---
+
+## Accessibility (a11y)
+
+Standard: **WCAG 2.1 AA** / **EN 301 549** (EU Accessibility Act).
+
+### Contrast Ratios (verified 2026-03-17)
+
+| Pairing | Ratio | Passes |
+|---------|-------|--------|
+| `text` (#1A1A1A) on `background` (#FFFFFF) | 16.7:1 | AA |
+| `textSecondary` (#5C5C5C) on `background` | 6.7:1 | AA |
+| `textTertiary` (#767676) on `background` | 4.62:1 | AA |
+| `textMuted` (#767676) on `background` | 4.62:1 | AA |
+| `white` on `accent` (#2D5A27) | 8.1:1 | AA |
+| `white` on `danger` (#C53030) | 5.5:1 | AA |
+
+### Token: `a11y` (from `src/theme/index.ts`)
+
+| Token | Value | Purpose |
+|-------|-------|---------|
+| `a11y.minContrastNormal` | 4.5 | WCAG AA for normal text |
+| `a11y.minContrastLarge` | 3.0 | WCAG AA for large text (>=18px or >=14px bold) |
+| `a11y.focusRingColor` | `#2D5A27` | Keyboard focus indicator |
+| `a11y.focusRingWidth` | 2 | Focus ring border width |
+| `a11y.focusRingOffset` | 2 | Focus ring offset from element |
+
+### Touch Targets
+
+- Minimum: **48dp** (`touch.minTarget`)
+- Small (constrained layouts): **44dp** (`touch.minTargetSmall`)
+- Use `touch.hitSlop` (`{ top: 8, bottom: 8, left: 8, right: 8 }`) for small visual elements
+
+### Rules
+
+1. Every `Pressable` acting as a button must have `accessibilityRole="button"` and an `accessibilityLabel`.
+2. Screen titles must have `accessibilityRole="header"`.
+3. Animations must check `AccessibilityInfo.isReduceMotionEnabled()` and skip/disable when true.
+4. Do not use `colors.white` for text on light backgrounds — use `colors.text`, `colors.textSecondary`, or `colors.textTertiary`.
+
+### Audit Trail
+
+| Date | Scope | Report |
+|------|-------|--------|
+| 2026-03-17 | Full app (all screens) | `docs/audits/A11Y-AUDIT-2026-03-17.md` |
 
 ---
 

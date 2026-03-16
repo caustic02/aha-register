@@ -40,6 +40,8 @@ export function TypeSelector({ defaultType, onSelect, onSkip, t }: TypeSelectorP
               key={type}
               style={[styles.card, isDefault && styles.cardHighlighted]}
               onPress={() => onSelect(type)}
+              accessibilityRole="button"
+              accessibilityLabel={t(`object_types.${type}`)}
             >
               <View style={styles.cardHeader}>
                 <Text style={styles.cardLabel}>
@@ -61,7 +63,7 @@ export function TypeSelector({ defaultType, onSelect, onSkip, t }: TypeSelectorP
         })}
       </ScrollView>
 
-      <Pressable style={styles.skipBtn} onPress={onSkip}>
+      <Pressable style={styles.skipBtn} onPress={onSkip} accessibilityRole="button" accessibilityLabel={t('capture.skip_use_default')}>
         <Text style={styles.skipBtnText}>{t('capture.skip_use_default')}</Text>
       </Pressable>
     </View>

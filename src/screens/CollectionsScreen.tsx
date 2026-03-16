@@ -63,6 +63,8 @@ export function CollectionsScreen({ navigation }: Props) {
         onPress={() =>
           navigation.navigate('CollectionDetail', { collectionId: item.id })
         }
+        accessibilityRole="button"
+        accessibilityLabel={item.name}
       >
         <View style={styles.cardHeader}>
           <Text style={styles.cardName} numberOfLines={1}>
@@ -88,10 +90,12 @@ export function CollectionsScreen({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('collections.title')}</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('collections.title')}</Text>
         <Pressable
           style={styles.addBtn}
           onPress={() => navigation.navigate('CreateCollection')}
+          accessibilityRole="button"
+          accessibilityLabel={t('collections.create')}
         >
           <Text style={styles.addBtnText}>{'\u002B'}</Text>
         </Pressable>
@@ -114,6 +118,8 @@ export function CollectionsScreen({ navigation }: Props) {
             <Pressable
               style={styles.emptyBtn}
               onPress={() => navigation.navigate('CreateCollection')}
+              accessibilityRole="button"
+              accessibilityLabel={t('collections.create')}
             >
               <Text style={styles.emptyBtnText}>{t('collections.create')}</Text>
             </Pressable>
@@ -145,13 +151,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.xxl,
     fontWeight: typography.weight.bold,
   },
   addBtn: {
-    width: 36,
-    height: 36,
+    width: 48,
+    height: 48,
     borderRadius: radii.xl,
     backgroundColor: colors.accent,
     alignItems: 'center',
@@ -182,7 +188,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardName: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold,
     flex: 1,
@@ -224,7 +230,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   emptyTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold,
     marginBottom: spacing.sm,

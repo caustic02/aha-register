@@ -29,7 +29,7 @@ import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBa
 import { CollectionPickerModal } from '../components/CollectionPickerModal';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
 import type { MainTabParamList } from '../navigation/MainTabs';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import { colors, typography, spacing, radii, layout, touch } from '../theme';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionDetail'>;
 
@@ -254,6 +254,8 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         onLongPress={() => {
           if (!selectionMode) enterSelectionMode(item.id);
         }}
+        accessibilityRole="button"
+        accessibilityLabel={item.title}
       >
         {selectionMode && (
           <View
@@ -307,13 +309,20 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         />
       ) : (
         <View style={styles.header}>
-          <Pressable onPress={() => navigation.goBack()}>
+          <Pressable
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.back')}
+            style={styles.backBtn}
+          >
             <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
           </Pressable>
           <Pressable
             style={styles.exportBtn}
             onPress={handleExportCollection}
             disabled={exporting}
+            accessibilityRole="button"
+            accessibilityLabel={t('export.export_pdf')}
           >
             {exporting ? (
               <ActivityIndicator size="small" color={colors.accent} />
@@ -370,6 +379,8 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                 onPress={() =>
                   navigation.navigate('AddObjects', { collectionId })
                 }
+                accessibilityRole="button"
+                accessibilityLabel={t('collections.detail.add_objects')}
               >
                 <Text style={styles.addObjectsHeaderBtnText}>
                   + {t('collections.detail.add_objects')}
@@ -392,6 +403,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                   placeholderTextColor={colors.textMuted}
                   returnKeyType="search"
                   clearButtonMode="never"
+                  accessibilityLabel={t('collections.detail.search_placeholder')}
                 />
                 {searchText.length > 0 && (
                   <Pressable
@@ -400,6 +412,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                       setDebouncedQuery('');
                     }}
                     hitSlop={8}
+                    accessibilityLabel={t('common.cancel')}
                   >
                     <Text style={styles.clearBtn}>{'\u2715'}</Text>
                   </Pressable>
@@ -429,6 +442,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                       selectedType === null && styles.filterChipActive,
                     ]}
                     onPress={() => setSelectedType(null)}
+                    accessibilityRole="button"
                   >
                     <Text
                       style={[
@@ -449,6 +463,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                       onPress={() =>
                         setSelectedType(selectedType === type ? null : type)
                       }
+                      accessibilityRole="button"
                     >
                       <Text
                         style={[
@@ -480,6 +495,8 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                 onPress={() =>
                   navigation.navigate('AddObjects', { collectionId })
                 }
+                accessibilityRole="button"
+                accessibilityLabel={t('collections.detail.add_objects')}
               >
                 <Text style={styles.addObjectsBtnText}>
                   {t('collections.detail.add_objects')}
@@ -524,6 +541,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.sm,
   },
+  backBtn: {
+    minHeight: touch.minTarget,
+    justifyContent: 'center',
+  },
   backText: {
     color: colors.accent,
     fontSize: typography.size.md,
@@ -533,6 +554,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: spacing.sm,
     borderRadius: radii.md,
+    minHeight: touch.minTarget,
+    justifyContent: 'center',
   },
   exportBtnText: {
     color: colors.accent,
@@ -578,7 +601,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.medium,
   },
   sectionTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold,
     marginTop: spacing.xxl,
@@ -691,7 +714,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   objectTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.md,
     fontWeight: typography.weight.medium,
   },

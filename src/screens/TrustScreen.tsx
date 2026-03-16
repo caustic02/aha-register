@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
   skipWrapper: {
     paddingVertical: spacing.sm,
     borderRadius: radii.sm,
+    minHeight: touch.minTarget,
   },
   skipPressed: {
     opacity: 0.6,

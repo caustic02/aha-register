@@ -23,7 +23,7 @@ export const colors = {
   // Text hierarchy (on white/off-white backgrounds)
   text: '#1A1A1A',
   textSecondary: '#5C5C5C',
-  textTertiary: '#8A8A8A',
+  textTertiary: '#767676',
   textInverse: '#FFFFFF',
 
   // Surfaces
@@ -66,7 +66,7 @@ export const colors = {
   accentLight: '#E8F0E6',
   accentDark: '#1A3A16',
   textPrimary: '#1A1A1A',
-  textMuted: '#999999',
+  textMuted: '#767676',
   borderLight: '#F0F0EC',
   danger: '#C53030',
   dangerLight: '#FEE2E2',

@@ -256,7 +256,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           onPress={() => navigation.goBack()}
           accessibilityLabel={t('common.back')}
         />
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={styles.headerTitle} numberOfLines={1} accessibilityRole="header">
           {object.title}
         </Text>
         <Badge variant="neutral" label={typeLabel} size="sm" />
