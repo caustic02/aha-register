@@ -109,7 +109,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
           </View>
 
           {/* Primary action: Start Documenting */}
-          <Pressable style={styles.startBtn} onPress={onSkip}>
+          <Pressable style={styles.startBtn} onPress={onSkip} accessibilityRole="button" accessibilityLabel={t('auth.start_documenting')}>
             <Text style={styles.startBtnText}>
               {t('auth.start_documenting')}
             </Text>
@@ -135,6 +135,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="next"
+              accessibilityLabel={t('auth.email')}
             />
 
             <Text style={styles.fieldLabel}>{t('auth.password')}</Text>
@@ -147,11 +148,14 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
                 placeholderTextColor={colors.textMuted}
                 secureTextEntry={!showPassword}
                 returnKeyType={mode === 'signup' ? 'next' : 'done'}
+                accessibilityLabel={t('auth.password')}
               />
               <Pressable
                 onPress={() => setShowPassword((v) => !v)}
                 style={styles.eyeBtn}
                 hitSlop={8}
+                accessibilityLabel="Toggle password visibility"
+                accessibilityRole="button"
               >
                 {showPassword ? (
                   <EyeOff size={20} color={colors.textSecondary} />
@@ -173,11 +177,14 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry={!showConfirmPassword}
                     returnKeyType="done"
+                    accessibilityLabel={t('auth.confirm_password')}
                   />
                   <Pressable
                     onPress={() => setShowConfirmPassword((v) => !v)}
                     style={styles.eyeBtn}
                     hitSlop={8}
+                    accessibilityLabel="Toggle password visibility"
+                    accessibilityRole="button"
                   >
                     {showConfirmPassword ? (
                       <EyeOff size={20} color={colors.textSecondary} />
@@ -195,6 +202,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
               style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
               onPress={handleSubmit}
               disabled={loading}
+              accessibilityRole="button"
             >
               {loading ? (
                 <ActivityIndicator color={colors.white} size="small" />
@@ -209,7 +217,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
           </View>
 
           {/* Toggle sign-in / sign-up */}
-          <Pressable style={styles.toggleBtn} onPress={toggleMode} hitSlop={12}>
+          <Pressable style={styles.toggleBtn} onPress={toggleMode} hitSlop={12} accessibilityRole="button">
             <Text style={styles.toggleText}>
               {mode === 'signin'
                 ? t('auth.no_account')

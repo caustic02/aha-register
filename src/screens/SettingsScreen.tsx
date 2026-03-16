@@ -260,7 +260,7 @@ export function SettingsScreen() {
     <SafeAreaView style={styles.safe}>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t('settings.title')}</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('settings.title')}</Text>
       </View>
 
       <ScrollView

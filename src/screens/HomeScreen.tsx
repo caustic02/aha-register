@@ -170,7 +170,7 @@ export function HomeScreen({ navigation }: Props) {
       >
         {/* ── 1. Header ────────────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('home.title')}</Text>
+          <Text style={styles.headerTitle} accessibilityRole="header">{t('home.title')}</Text>
           {!loading && (
             <Text style={styles.headerSubtitle}>
               {t('home.objectCount', { count: stats.totalObjects })}

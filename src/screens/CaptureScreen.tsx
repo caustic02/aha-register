@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   ActivityIndicator,
   Animated,
   Image,
@@ -97,8 +98,15 @@ export function CaptureScreen() {
   // Session photo count (increments on each successful save)
   const [sessionPhotoCount, setSessionPhotoCount] = useState(0);
 
+  // Reduced motion preference
+  const [reduceMotion, setReduceMotion] = useState(false);
+
   // Intro overlay (first-time guidance)
   const [showIntro, setShowIntro] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem('capture_intro_dismissed').then((val) => {
@@ -121,15 +129,19 @@ export function CaptureScreen() {
       const deg = Math.asin(Math.max(-1, Math.min(1, x))) * (180 / Math.PI);
       const clamped = Math.max(-15, Math.min(15, deg));
       setIsLevel(Math.abs(deg) <= 2);
-      Animated.spring(tiltAnim, {
-        toValue: clamped,
-        useNativeDriver: true,
-        friction: 8,
-        tension: 80,
-      }).start();
+      if (reduceMotion) {
+        tiltAnim.setValue(clamped);
+      } else {
+        Animated.spring(tiltAnim, {
+          toValue: clamped,
+          useNativeDriver: true,
+          friction: 8,
+          tension: 80,
+        }).start();
+      }
     });
     return () => subscription.remove();
-  }, [tiltAnim]);
+  }, [tiltAnim, reduceMotion]);
 
   // Load persisted flash preference
   useEffect(() => {
@@ -315,10 +327,10 @@ export function CaptureScreen() {
         <Text style={styles.checkmark}>{'\u2713'}</Text>
         <Text style={styles.doneTitle}>{t('common.success')}</Text>
         <Text style={styles.doneId}>ID: {savedId?.slice(0, 8)}...</Text>
-        <Pressable style={styles.primaryBtn} onPress={handleViewObjects}>
+        <Pressable style={styles.primaryBtn} onPress={handleViewObjects} accessibilityRole="button">
           <Text style={styles.primaryBtnText}>{t('capture.view_objects')}</Text>
         </Pressable>
-        <Pressable style={styles.secondaryBtn} onPress={handleRetake}>
+        <Pressable style={styles.secondaryBtn} onPress={handleRetake} accessibilityRole="button">
           <Text style={styles.secondaryBtnText}>{t('capture.capture_another')}</Text>
         </Pressable>
       </View>
@@ -331,7 +343,7 @@ export function CaptureScreen() {
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
       >
-        <Image source={{ uri: capture.uri }} style={styles.preview} />
+        <Image source={{ uri: capture.uri }} style={styles.preview} accessibilityLabel="Captured photograph preview" />
 
         <View style={styles.metaSection}>
           <Text style={styles.metaLabel}>{t('capture.coordinates')}</Text>
@@ -358,11 +370,11 @@ export function CaptureScreen() {
           )}
         </View>
 
-        <Pressable style={styles.primaryBtn} onPress={handleAnalyzeWithAI}>
+        <Pressable style={styles.primaryBtn} onPress={handleAnalyzeWithAI} accessibilityRole="button">
           <Text style={styles.primaryBtnText}>{t('common.next')}</Text>
         </Pressable>
 
-        <Pressable style={styles.secondaryBtn} onPress={handleRetake}>
+        <Pressable style={styles.secondaryBtn} onPress={handleRetake} accessibilityRole="button">
           <Text style={styles.secondaryBtnText}>{t('capture.retake')}</Text>
         </Pressable>
       </ScrollView>
@@ -394,13 +406,13 @@ export function CaptureScreen() {
         <Text style={styles.permissionTitle}>{t('capture.permission_title')}</Text>
         <Text style={styles.permissionBody}>{t('capture.permission_body')}</Text>
         {permission.canAskAgain ? (
-          <Pressable style={styles.primaryBtn} onPress={requestPermission}>
+          <Pressable style={styles.primaryBtn} onPress={requestPermission} accessibilityRole="button">
             <Text style={styles.primaryBtnText}>{t('capture.permission_grant')}</Text>
           </Pressable>
         ) : (
           <Text style={styles.permissionHint}>{t('capture.permission_settings')}</Text>
         )}
-        <Pressable style={[styles.secondaryBtn, { marginTop: spacing.md }]} onPress={handleLibrary}>
+        <Pressable style={[styles.secondaryBtn, { marginTop: spacing.md }]} onPress={handleLibrary} accessibilityRole="button">
           <Text style={styles.secondaryBtnText}>{t('capture.choose_from_library')}</Text>
         </Pressable>
       </View>
@@ -533,7 +545,7 @@ export function CaptureScreen() {
         <View style={styles.introOverlay}>
           <View style={styles.introCard}>
             <Text style={styles.introText}>{t('capture.intro_text')}</Text>
-            <Pressable style={styles.introBtn} onPress={handleDismissIntro}>
+            <Pressable style={styles.introBtn} onPress={handleDismissIntro} accessibilityRole="button">
               <Text style={styles.introBtnText}>{t('capture.intro_dismiss')}</Text>
             </Pressable>
           </View>
@@ -809,7 +821,7 @@ const styles = StyleSheet.create({
 
   // ── Permission screen ────────────────────────────────────────────────────────
   permissionTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.xl,
     fontWeight: typography.weight.semibold,
     textAlign: 'center',
@@ -848,7 +860,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   metaValue: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.md,
     marginTop: 2,
   },
@@ -894,7 +906,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   doneTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.xxl,
     fontWeight: typography.weight.semibold,
   },

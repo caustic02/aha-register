@@ -210,7 +210,7 @@ export function ObjectListScreen({ navigation }: Props) {
           onPress={() => navigation.goBack()}
           accessibilityLabel={t('common.back')}
         />
-        <Text style={styles.headerTitle}>{t('objectList.title')}</Text>
+        <Text style={styles.headerTitle} accessibilityRole="header">{t('objectList.title')}</Text>
         <Badge label={String(objects.length)} variant="neutral" size="sm" />
       </View>
 

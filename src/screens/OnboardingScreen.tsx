@@ -1,5 +1,6 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -34,6 +35,11 @@ export function OnboardingScreen({ onFinish, onSkip }: Props) {
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(false);
+
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
+  }, []);
 
   const slides = [
     {
@@ -68,12 +74,12 @@ export function OnboardingScreen({ onFinish, onSkip }: Props) {
   const handleNext = useCallback(() => {
     if (activeSlide < SLIDE_COUNT - 1) {
       const nextIndex = activeSlide + 1;
-      scrollRef.current?.scrollTo({ x: width * nextIndex, animated: true });
+      scrollRef.current?.scrollTo({ x: width * nextIndex, animated: !reduceMotion });
       setActiveSlide(nextIndex);
     } else {
       onFinish();
     }
-  }, [activeSlide, width, onFinish]);
+  }, [activeSlide, width, onFinish, reduceMotion]);
 
   const isLastSlide = activeSlide === SLIDE_COUNT - 1;
 
