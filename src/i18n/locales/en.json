@@ -559,8 +559,18 @@
     "skip": "Skip",
     "skipA11y": "Skip trust and privacy information"
   },
+  "objectList": {
+    "title": "All Objects",
+    "searchPlaceholder": "Search objects\u2026",
+    "allTypes": "All",
+    "emptySearch": "No objects match your search",
+    "emptyMessage": "Try adjusting your search terms or type filter.",
+    "clearFilters": "Clear Filters",
+    "viewAll": "View all"
+  },
   "home": {
     "title": "Collection",
+    "viewAll": "View all",
     "objectCount": "{{count}} objects",
     "objectCount_one": "1 object",
     "objectCount_zero": "No objects yet",

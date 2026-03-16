@@ -559,8 +559,18 @@
     "skip": "\u00dcberspringen",
     "skipA11y": "Datenschutzinformationen \u00fcberspringen"
   },
+  "objectList": {
+    "title": "Alle Objekte",
+    "searchPlaceholder": "Objekte suchen\u2026",
+    "allTypes": "Alle",
+    "emptySearch": "Keine Objekte gefunden",
+    "emptyMessage": "Versuche andere Suchbegriffe oder einen anderen Typ-Filter.",
+    "clearFilters": "Filter zur\u00fccksetzen",
+    "viewAll": "Alle anzeigen"
+  },
   "home": {
     "title": "Sammlung",
+    "viewAll": "Alle anzeigen",
     "objectCount": "{{count}} Objekte",
     "objectCount_one": "1 Objekt",
     "objectCount_zero": "Noch keine Objekte",
