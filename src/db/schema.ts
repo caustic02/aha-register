@@ -1,7 +1,7 @@
 /**
- * aha! Register — SQLite schema v1.2
+ * aha! Register — SQLite schema v1.3
  *
- * 14 tables supporting universal heritage documentation.
+ * 16 tables supporting universal heritage documentation.
  * All primary keys are TEXT (UUID v4, generated client-side).
  * JSONB columns stored as TEXT in SQLite.
  */
@@ -196,4 +196,74 @@ CREATE TABLE IF NOT EXISTS sync_queue (
   created_at  TEXT NOT NULL,
   updated_at  TEXT NOT NULL
 );
+
+-- 15. persons (artists, conservators, donors, etc.)
+CREATE TABLE IF NOT EXISTS persons (
+  id              TEXT PRIMARY KEY NOT NULL,
+  institution_id  TEXT REFERENCES institutions(id),
+  name            TEXT NOT NULL,
+  sort_name       TEXT,
+  birth_year      INTEGER,
+  death_year      INTEGER,
+  nationality     TEXT,
+  ulan_uri        TEXT,
+  gnd_uri         TEXT,
+  biography       TEXT,
+  person_type     TEXT NOT NULL DEFAULT 'individual' CHECK(person_type IN ('individual', 'collective', 'unknown')),
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  sync_status     TEXT NOT NULL DEFAULT 'pending' CHECK(sync_status IN ('pending', 'synced', 'error', 'conflict'))
+);
+CREATE INDEX IF NOT EXISTS idx_persons_institution ON persons(institution_id);
+CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name);
+CREATE INDEX IF NOT EXISTS idx_persons_sort_name ON persons(sort_name);
+CREATE INDEX IF NOT EXISTS idx_persons_sync ON persons(sync_status);
+
+-- 16. object_persons (junction: objects <-> persons with roles)
+CREATE TABLE IF NOT EXISTS object_persons (
+  id            TEXT PRIMARY KEY NOT NULL,
+  object_id     TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+  person_id     TEXT NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+  role          TEXT NOT NULL DEFAULT 'artist' CHECK(role IN ('artist', 'collaborator', 'fabricator', 'programmer', 'curator', 'donor', 'restorer', 'photographer', 'publisher', 'commissioner', 'unknown')),
+  display_order INTEGER NOT NULL DEFAULT 0,
+  notes         TEXT,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_object_persons_object ON object_persons(object_id);
+CREATE INDEX IF NOT EXISTS idx_object_persons_person ON object_persons(person_id);
+CREATE INDEX IF NOT EXISTS idx_object_persons_role ON object_persons(role);
 `;
+
+/**
+ * Additive ALTER TABLE migrations.
+ *
+ * Each statement is run individually with try/catch because SQLite
+ * throws "duplicate column name" on re-launch when the column
+ * already exists. There is no ALTER TABLE ADD COLUMN IF NOT EXISTS.
+ */
+const MIGRATION_STATEMENTS = [
+  // media: copyright / licensing fields
+  `ALTER TABLE media ADD COLUMN rights_holder TEXT`,
+  `ALTER TABLE media ADD COLUMN license_type TEXT CHECK(license_type IN ('CC-BY', 'CC-BY-NC', 'CC-BY-SA', 'CC0', 'all-rights-reserved', 'institution-specific', 'TK-label'))`,
+  `ALTER TABLE media ADD COLUMN license_uri TEXT`,
+  `ALTER TABLE media ADD COLUMN usage_restrictions TEXT`,
+  // documents: transcription fields
+  `ALTER TABLE documents ADD COLUMN transcription TEXT`,
+  `ALTER TABLE documents ADD COLUMN transcription_status TEXT NOT NULL DEFAULT 'none' CHECK(transcription_status IN ('none', 'draft', 'ai_generated', 'verified'))`,
+];
+
+/**
+ * Run all additive migrations. Safe to call on every launch —
+ * already-existing columns are silently skipped.
+ */
+export async function runMigrations(
+  db: { execAsync: (sql: string) => Promise<void> },
+): Promise<void> {
+  for (const sql of MIGRATION_STATEMENTS) {
+    try {
+      await db.execAsync(sql);
+    } catch {
+      // Column already exists — expected on re-launch, safe to ignore
+    }
+  }
+}
