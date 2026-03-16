@@ -572,7 +572,14 @@
     "institution_type": "Typ der Institution",
     "default_object_type": "Standard-Objekttyp",
     "language": "Sprache",
-    "select_placeholder": "Ausw\u00e4hlen\u2026"
+    "select_placeholder": "Ausw\u00e4hlen\u2026",
+    "slide1Title": "Mit Sicherheit dokumentieren",
+    "slide1Body": "Erfassen Sie Objekte, Fundstellen und Proben mit kryptografischen Manipulationsnachweisen ab dem Moment der Aufnahme.",
+    "slide2Title": "KI-gest\u00fctzte Metadaten",
+    "slide2Body": "Fotografieren Sie ein Objekt und lassen Sie die KI Titel, Datierungen, Materialien und Beschreibungen vorschlagen. Jeder KI-Vorschlag wird klar gekennzeichnet.",
+    "slide3Title": "Ihre Sammlung, \u00fcberall",
+    "slide3Body": "Funktioniert offline im Feld, synchronisiert wenn verbunden. Ihre Daten werden zuerst auf dem Ger\u00e4t gespeichert \u2013 immer.",
+    "pageIndicator": "Seite {{current}} von {{total}}"
   },
   "trust": {
     "title": "Deine Daten bleiben deine Daten",

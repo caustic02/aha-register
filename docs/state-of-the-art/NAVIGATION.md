@@ -10,22 +10,38 @@ React Navigation v6 with a bottom-tab root and per-tab native stacks.
 ## Navigator Tree
 
 ```
-RootStack (NativeStack)          — auth gate, onboarding
-└── MainTabs (BottomTab)
-    ├── HomeStack (NativeStack)
-    │   ├── Home
-    │   ├── ObjectList
-    │   └── ObjectDetail
-    ├── CaptureStack (NativeStack)
-    │   ├── CaptureCamera
-    │   ├── AIProcessing
-    │   └── ReviewCard
-    ├── CollectionStack (NativeStack)
-    │   ├── CollectionList
-    │   └── CollectionDetail
-    └── SettingsStack (screen, no sub-stack)
-        └── Settings
+AppShell (state-based gate, no React Navigation)
+├── OnboardingScreen          — 3 intro slides (not yet completed)
+├── TrustScreen               — privacy commitments (slides done, not yet auth)
+├── AuthScreen                — sign in / sign up (onboarding complete, not authenticated)
+└── NavigationContainer
+    └── MainTabs (BottomTab)
+        ├── HomeStack (NativeStack)
+        │   ├── Home
+        │   ├── ObjectList
+        │   └── ObjectDetail
+        ├── CaptureStack (NativeStack)
+        │   ├── CaptureCamera
+        │   ├── AIProcessing
+        │   └── ReviewCard
+        ├── CollectionStack (NativeStack)
+        │   ├── CollectionList
+        │   └── CollectionDetail
+        └── SettingsStack (screen, no sub-stack)
+            └── Settings
 ```
+
+**AppShell gate logic:**
+```
+onboardingComplete=false, showTrust=false  → OnboardingScreen
+onboardingComplete=false, showTrust=true   → TrustScreen
+onboardingComplete=true,  authenticated=false → AuthScreen
+onboardingComplete=true,  authenticated=true  → NavigationContainer (MainTabs)
+```
+
+**Onboarding completion flag:** Stored in SQLite via `settingsService` key `SETTING_KEYS.ONBOARDING_COMPLETE` (`'onboarding_complete'`). Written to `'true'` in two paths:
+1. User taps Skip on any slide → `AppShell.handleSkipToSignIn` (bypasses TrustScreen)
+2. User taps Continue or Skip on TrustScreen → `AppShell.handleTrustAdvance`
 
 ---
 
@@ -172,7 +188,36 @@ Registered directly in `MainTabs` (no sub-stack). Renders a scrollable form divi
 
 ---
 
-## Standalone Screens (not yet wired into navigation)
+## Pre-Auth Screens
+
+### OnboardingScreen — `src/screens/OnboardingScreen.tsx`
+
+Shown on first launch when `SETTING_KEYS.ONBOARDING_COMPLETE` is not `'true'`. Horizontal paging ScrollView with 3 slides.
+
+**Prop contract:**
+```ts
+interface Props {
+  onFinish: () => void;  // slide 3 Next → AppShell shows TrustScreen
+  onSkip:   () => void;  // Skip link   → AppShell goes directly to AuthScreen
+}
+export function OnboardingScreen(props: Props)
+```
+
+**Slides:**
+| # | Icon | Title i18n key |
+|---|------|----------------|
+| 1 | `CaptureTabIcon` (Camera, 64px) | `onboarding.slide1Title` |
+| 2 | `ViewIcon` (Eye, 64px) | `onboarding.slide2Title` |
+| 3 | `OfflineIcon` (WifiOff, 64px) | `onboarding.slide3Title` |
+
+**Controls:**
+- Swipe gesture via `ScrollView pagingEnabled`
+- "Next" / "Get Started" `Button` (primary, lg, fullWidth) — tapping advances or calls `onFinish` on slide 3
+- "Skip" `Pressable` text link — calls `onSkip` from any slide
+- 3 pill-shaped page indicator dots (active: `colors.primary`, 24×8dp; inactive: `colors.border`, 8×8dp)
+- Each dot has `accessibilityLabel` = `t('onboarding.pageIndicator', { current, total })`
+
+---
 
 ### TrustScreen — `src/screens/TrustScreen.tsx`
 
