@@ -1,578 +1,346 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   FlatList,
   Pressable,
-  RefreshControl,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
+  TextInput as RNTextInput,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import type { MainTabParamList } from '../navigation/MainTabs';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
-import { deleteObject } from '../services/objectService';
-import { addObjectToCollection } from '../services/collectionService';
-import { exportBatchToPDF, sharePDF } from '../services/exportService';
-import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBar';
-import { CollectionPickerModal } from '../components/CollectionPickerModal';
-import type { ObjectStackParamList } from '../navigation/ObjectStack';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import {
+  Badge,
+  ChipGroup,
+  EmptyState,
+  IconButton,
+  ListItem,
+} from '../components/ui';
+import {
+  BackIcon,
+  CloseIcon,
+  ObjectsTabIcon,
+  SearchIcon,
+} from '../theme/icons';
+import { colors, radii, spacing, touch, typography } from '../theme';
+import { formatRelativeDate } from '../utils/format-date';
+import type { HomeStackParamList } from '../navigation/HomeStack';
+import type { ObjectType } from '../db/types';
 
-type Props = NativeStackScreenProps<ObjectStackParamList, 'ObjectList'>;
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type Props = NativeStackScreenProps<HomeStackParamList, 'ObjectList'>;
 
 interface ObjectRow {
   id: string;
   title: string;
-  object_type: string;
-  description: string | null;
+  object_type: ObjectType;
   created_at: string;
-  file_path: string | null;
+  thumbnail: string | null;
 }
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const ITEM_HEIGHT = 72;
+const ALL_TYPES = 'all';
+const DEBOUNCE_MS = 300;
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export function ObjectListScreen({ navigation }: Props) {
   const db = useDatabase();
   const { t } = useAppTranslation();
-  const [objects, setObjects] = useState<ObjectRow[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Selection mode
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [showCollectionPicker, setShowCollectionPicker] = useState(false);
-  const [batchExporting, setBatchExporting] = useState(false);
+  const [objects, setObjects] = useState<ObjectRow[]>([]);
+  const [availableTypes, setAvailableTypes] = useState<ObjectType[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [activeType, setActiveType] = useState<string>(ALL_TYPES);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ── Debounce search input ─────────────────────────────────────────────────
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setDebouncedSearch(searchText);
+    }, DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchText]);
+
+  // ── Data loading ──────────────────────────────────────────────────────────
+
+  const loadTypes = useCallback(async () => {
+    try {
+      const rows = await db.getAllAsync<{ object_type: ObjectType }>(
+        'SELECT DISTINCT object_type FROM objects ORDER BY object_type',
+      );
+      setAvailableTypes(rows.map((r) => r.object_type));
+    } catch {
+      setAvailableTypes([]);
+    }
+  }, [db]);
 
   const loadObjects = useCallback(async () => {
-    const rows = await db.getAllAsync<ObjectRow>(
-      `SELECT o.id, o.title, o.object_type, o.description, o.created_at, m.file_path
-       FROM objects o
-       LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
-       ORDER BY o.created_at DESC`,
-    );
-    setObjects(rows);
-  }, [db]);
+    try {
+      const conditions: string[] = [];
+      const params: (string | number | null)[] = [];
+
+      if (debouncedSearch.trim().length > 0) {
+        const like = `%${debouncedSearch.trim()}%`;
+        conditions.push(
+          '(o.title LIKE ? OR o.inventory_number LIKE ? OR o.description LIKE ?)',
+        );
+        params.push(like, like, like);
+      }
+
+      if (activeType !== ALL_TYPES) {
+        conditions.push('o.object_type = ?');
+        params.push(activeType);
+      }
+
+      const where =
+        conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+      const rows = await db.getAllAsync<ObjectRow>(
+        `SELECT o.id, o.title, o.object_type, o.created_at,
+                m.file_path AS thumbnail
+         FROM objects o
+         LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
+         ${where}
+         ORDER BY o.created_at DESC`,
+        params,
+      );
+      setObjects(rows);
+    } catch {
+      setObjects([]);
+    }
+  }, [db, debouncedSearch, activeType]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadTypes();
+    }, [loadTypes]),
+  );
 
   useEffect(() => {
     loadObjects();
   }, [loadObjects]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadObjects();
-    });
-    return unsubscribe;
-  }, [navigation, loadObjects]);
+  // ── Chip options ──────────────────────────────────────────────────────────
 
-  // Debounce search input
-  useEffect(() => {
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => {
-      setDebouncedQuery(searchText);
-    }, 300);
-    return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    };
-  }, [searchText]);
+  const chipOptions = [
+    { label: t('objectList.allTypes'), value: ALL_TYPES },
+    ...availableTypes.map((type) => ({
+      label: t(`object_types.${type}`),
+      value: type,
+    })),
+  ];
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await loadObjects();
-    setRefreshing(false);
-  }, [loadObjects]);
+  // ── Handlers ─────────────────────────────────────────────────────────────
 
-  // Unique types present in the loaded data
-  const availableTypes = useMemo(() => {
-    const seen = new Set<string>();
-    for (const o of objects) seen.add(o.object_type);
-    return Array.from(seen);
-  }, [objects]);
-
-  // Apply text + type filters
-  const filteredObjects = useMemo(() => {
-    let result = objects;
-    if (selectedType) {
-      result = result.filter((o) => o.object_type === selectedType);
-    }
-    if (debouncedQuery.trim()) {
-      const q = debouncedQuery.trim().toLowerCase();
-      result = result.filter(
-        (o) =>
-          o.title.toLowerCase().includes(q) ||
-          o.object_type.toLowerCase().includes(q) ||
-          (o.description ?? '').toLowerCase().includes(q),
-      );
-    }
-    return result;
-  }, [objects, selectedType, debouncedQuery]);
-
-  const isFiltering = debouncedQuery.trim().length > 0 || selectedType !== null;
-
-  // ── Selection mode handlers ──────────────────────────────────────────────
-
-  const enterSelectionMode = useCallback((itemId: string) => {
-    setSelectionMode(true);
-    setSelectedIds(new Set([itemId]));
+  const handleSelectType = useCallback((value: string | string[]) => {
+    setActiveType(Array.isArray(value) ? (value[0] ?? ALL_TYPES) : value);
   }, []);
 
-  const toggleSelection = useCallback((itemId: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(itemId)) next.delete(itemId);
-      else next.add(itemId);
-      return next;
-    });
+  const handleClearFilters = useCallback(() => {
+    setSearchText('');
+    setDebouncedSearch('');
+    setActiveType(ALL_TYPES);
   }, []);
 
-  const cancelSelection = useCallback(() => {
-    setSelectionMode(false);
-    setSelectedIds(new Set());
-  }, []);
+  // ── FlatList helpers ──────────────────────────────────────────────────────
 
-  const allSelected = useMemo(
-    () =>
-      filteredObjects.length > 0 &&
-      filteredObjects.every((o) => selectedIds.has(o.id)),
-    [filteredObjects, selectedIds],
+  const keyExtractor = useCallback((item: ObjectRow) => item.id, []);
+
+  const getItemLayout = useCallback(
+    (_: ArrayLike<ObjectRow> | null | undefined, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
+    }),
+    [],
   );
-
-  const toggleSelectAll = useCallback(() => {
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredObjects.map((o) => o.id)));
-    }
-  }, [allSelected, filteredObjects]);
-
-  // Batch delete
-  const handleBatchDelete = useCallback(() => {
-    const count = selectedIds.size;
-    Alert.alert(
-      t('batch.delete_title'),
-      t('batch.delete_confirm', { count }),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('common.delete'),
-          style: 'destructive',
-          onPress: async () => {
-            for (const id of selectedIds) {
-              await deleteObject(db, id);
-            }
-            cancelSelection();
-            await loadObjects();
-          },
-        },
-      ],
-    );
-  }, [selectedIds, db, t, cancelSelection, loadObjects]);
-
-  // Batch export
-  const handleBatchExport = useCallback(async () => {
-    setBatchExporting(true);
-    try {
-      const ids = Array.from(selectedIds);
-      const uri = await exportBatchToPDF(db, ids, t('batch.export_title'));
-      await sharePDF(uri);
-      cancelSelection();
-    } catch {
-      Alert.alert(t('export.error_title'), t('export.error_message'));
-    } finally {
-      setBatchExporting(false);
-    }
-  }, [selectedIds, db, t, cancelSelection]);
-
-  // Batch add to collection
-  const handleCollectionSelected = useCallback(
-    async (collection: { id: string; name: string }) => {
-      setShowCollectionPicker(false);
-      const ids = Array.from(selectedIds);
-      for (const objId of ids) {
-        await addObjectToCollection(db, objId, collection.id);
-      }
-      Alert.alert(
-        t('common.success'),
-        t('batch.added_to_collection', { count: ids.length, name: collection.name }),
-      );
-      cancelSelection();
-    },
-    [selectedIds, db, t, cancelSelection],
-  );
-
-  // ── Render ───────────────────────────────────────────────────────────────
-
-  const typeKey = (type: string) => `object_types.${type}` as const;
 
   const renderItem = useCallback(
     ({ item }: { item: ObjectRow }) => (
-      <Pressable
-        style={[styles.row, selectionMode && styles.rowSelection]}
-        onPress={() =>
-          selectionMode
-            ? toggleSelection(item.id)
-            : navigation.navigate('ObjectDetail', { objectId: item.id })
-        }
-        onLongPress={() => {
-          if (!selectionMode) enterSelectionMode(item.id);
+      <ListItem
+        title={item.title}
+        subtitle={formatRelativeDate(item.created_at)}
+        thumbnail={item.thumbnail ? { uri: item.thumbnail } : undefined}
+        badge={{
+          label: t(`object_types.${item.object_type}`),
+          variant: 'neutral',
         }}
-      >
-        {selectionMode && (
-          <View
-            style={[
-              styles.checkbox,
-              selectedIds.has(item.id) && styles.checkboxChecked,
-            ]}
-          >
-            {selectedIds.has(item.id) && (
-              <Text style={styles.checkMark}>{'\u2713'}</Text>
-            )}
-          </View>
-        )}
-        <View style={[styles.rowContent, selectionMode && styles.rowContentFlex]}>
-          <Text style={styles.rowTitle} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <View style={styles.rowMeta}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {t(typeKey(item.object_type))}
-              </Text>
-            </View>
-            <Text style={styles.rowDate}>
-              {item.created_at.slice(0, 10)}
-            </Text>
-          </View>
-        </View>
-      </Pressable>
+        onPress={() =>
+          navigation.navigate('ObjectDetail', { objectId: item.id })
+        }
+      />
     ),
-    [t, navigation, selectionMode, selectedIds, toggleSelection, enterSelectionMode],
+    [navigation, t],
   );
 
-  const handleGoToCapture = useCallback(() => {
-    navigation.getParent<BottomTabNavigationProp<MainTabParamList>>()?.navigate('Capture');
-  }, [navigation]);
+  const hasActiveFilters =
+    searchText.trim().length > 0 || activeType !== ALL_TYPES;
 
-  const emptyText =
-    isFiltering ? t('objects.search_empty') : t('objects.empty');
+  const ListEmpty = (
+    <EmptyState
+      icon={<ObjectsTabIcon size={32} color={colors.textTertiary} />}
+      title={t('objectList.emptySearch')}
+      message={hasActiveFilters ? t('objectList.emptyMessage') : ''}
+      actionLabel={hasActiveFilters ? t('objectList.clearFilters') : undefined}
+      onAction={hasActiveFilters ? handleClearFilters : undefined}
+    />
+  );
 
-  const countLabel = isFiltering
-    ? t('objects.search_results', { count: filteredObjects.length, total: objects.length })
-    : t('objects.header_count', { count: objects.length });
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <View style={styles.container}>
-      {selectionMode ? (
-        <SelectionHeader
-          selectedCount={selectedIds.size}
-          allSelected={allSelected}
-          onToggleAll={toggleSelectAll}
-          onCancel={cancelSelection}
-          t={t}
+    <SafeAreaView style={styles.safe}>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <View style={styles.headerRow}>
+        <IconButton
+          icon={<BackIcon size={24} color={colors.text} />}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel={t('common.back')}
         />
-      ) : (
-        <View style={styles.header}>
-          {/* Search bar */}
-          <View style={styles.searchRow}>
-            <Text style={styles.searchIcon}>{'\uD83D\uDD0D'}</Text>
-            <TextInput
-              style={styles.searchInput}
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholder={t('objects.search_placeholder')}
-              placeholderTextColor={colors.textMuted}
-              returnKeyType="search"
-              clearButtonMode="never"
-            />
-            {searchText.length > 0 && (
-              <Pressable
-                onPress={() => {
-                  setSearchText('');
-                  setDebouncedQuery('');
-                }}
-                hitSlop={8}
-              >
-                <Text style={styles.clearBtn}>{'\u2715'}</Text>
-              </Pressable>
-            )}
+        <Text style={styles.headerTitle}>{t('objectList.title')}</Text>
+        <Badge label={String(objects.length)} variant="neutral" size="sm" />
+      </View>
+
+      {/* ── Search bar ────────────────────────────────────────────────────── */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <View style={styles.searchIconWrapper}>
+            <SearchIcon size={18} color={colors.textTertiary} />
           </View>
-
-          {/* Count */}
-          <Text style={styles.headerCount}>{countLabel}</Text>
-
-          {/* Type filter chips */}
-          {availableTypes.length > 1 && (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterRow}
+          <RNTextInput
+            value={searchText}
+            onChangeText={setSearchText}
+            placeholder={t('objectList.searchPlaceholder')}
+            placeholderTextColor={colors.textTertiary}
+            style={styles.searchInput}
+            autoCapitalize="none"
+            returnKeyType="search"
+            accessibilityLabel={t('objectList.searchPlaceholder')}
+          />
+          {searchText.length > 0 && (
+            <Pressable
+              onPress={() => setSearchText('')}
+              hitSlop={touch.hitSlop}
+              accessibilityRole="button"
+              accessibilityLabel={t('common.cancel')}
+              style={styles.clearButton}
             >
-              <Pressable
-                style={[
-                  styles.filterChip,
-                  selectedType === null && styles.filterChipActive,
-                ]}
-                onPress={() => setSelectedType(null)}
-              >
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    selectedType === null && styles.filterChipTextActive,
-                  ]}
-                >
-                  {t('objects.filter_all')}
-                </Text>
-              </Pressable>
-              {availableTypes.map((type) => (
-                <Pressable
-                  key={type}
-                  style={[
-                    styles.filterChip,
-                    selectedType === type && styles.filterChipActive,
-                  ]}
-                  onPress={() =>
-                    setSelectedType(selectedType === type ? null : type)
-                  }
-                >
-                  <Text
-                    style={[
-                      styles.filterChipText,
-                      selectedType === type && styles.filterChipTextActive,
-                    ]}
-                  >
-                    {t(typeKey(type))}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
+              <CloseIcon size={16} color={colors.textTertiary} />
+            </Pressable>
           )}
         </View>
-      )}
+      </View>
 
-      <FlatList
-        data={filteredObjects}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        extraData={selectedIds}
-        contentContainerStyle={
-          filteredObjects.length === 0 ? styles.emptyList : undefined
-        }
-        ListEmptyComponent={
-          isFiltering ? (
-            <Text style={styles.emptyText}>{emptyText}</Text>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>{'\u25CE'}</Text>
-              <Text style={styles.emptyTitle}>{t('objects.empty_title')}</Text>
-              <Text style={styles.emptySubtitle}>{t('objects.empty_subtitle')}</Text>
-              <Pressable style={styles.emptyBtn} onPress={handleGoToCapture}>
-                <Text style={styles.emptyBtnText}>{t('objects.go_to_capture')}</Text>
-              </Pressable>
-            </View>
-          )
-        }
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-          />
-        }
-      />
-
-      {selectionMode && (
-        <BatchActionButtons
-          onAddToCollection={() => setShowCollectionPicker(true)}
-          onExportPDF={handleBatchExport}
-          onDelete={handleBatchDelete}
-          disabled={selectedIds.size === 0}
-          exporting={batchExporting}
-          t={t}
+      {/* ── Type filter chips ─────────────────────────────────────────────── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipScrollContent}
+        style={styles.chipScroll}
+      >
+        <ChipGroup
+          options={chipOptions}
+          selected={activeType}
+          onSelect={handleSelectType}
         />
-      )}
+      </ScrollView>
 
-      <CollectionPickerModal
-        visible={showCollectionPicker}
-        onClose={() => setShowCollectionPicker(false)}
-        onSelect={handleCollectionSelected}
-        t={t}
+      {/* ── Results list ──────────────────────────────────────────────────── */}
+      <FlatList
+        data={objects}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        getItemLayout={getItemLayout}
+        ListEmptyComponent={ListEmpty}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={5}
+        contentContainerStyle={
+          objects.length === 0 ? styles.flatListEmpty : undefined
+        }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    paddingTop: 60,
-    paddingBottom: spacing.sm,
-  },
-  searchRow: {
+  // Header
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: layout.screenPadding,
-    backgroundColor: colors.borderLight,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  headerTitle: {
+    ...typography.h4,
+    color: colors.text,
+    flex: 1,
+    marginHorizontal: spacing.sm,
+  },
+  // Search bar (custom — ui TextInput requires label + doesn't support icons)
+  searchContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
+    minHeight: touch.minTarget,
   },
-  searchIcon: {
-    fontSize: typography.size.base,
+  searchIconWrapper: {
     marginRight: spacing.sm,
   },
   searchInput: {
     flex: 1,
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-    padding: 0,
+    ...typography.body,
+    color: colors.text,
+    paddingVertical: spacing.sm,
   },
-  clearBtn: {
-    color: colors.textSecondary,
-    fontSize: typography.size.base,
-    paddingLeft: spacing.sm,
+  clearButton: {
+    padding: spacing.xs,
+    marginLeft: spacing.xs,
   },
-  headerCount: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    marginHorizontal: layout.screenPadding,
-    marginBottom: spacing.sm,
+  // Type chips
+  chipScroll: {
+    flexGrow: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  filterRow: {
-    paddingHorizontal: layout.screenPadding,
-    gap: spacing.sm,
-    paddingBottom: spacing.sm,
+  chipScrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  filterChipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  filterChipText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.medium,
-  },
-  filterChipTextActive: {
-    color: colors.white,
-    fontWeight: typography.weight.bold,
-  },
-  row: {
-    paddingHorizontal: layout.screenPadding,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
-  },
-  rowSelection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  rowContent: {
-    gap: spacing.sm,
-  },
-  rowContentFlex: {
-    flex: 1,
-  },
-  rowTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.medium,
-  },
-  rowMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  badge: {
-    backgroundColor: colors.borderLight,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
-  },
-  badgeText: {
-    color: colors.accent,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
-  },
-  rowDate: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  checkMark: {
-    color: colors.white,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.bold,
-  },
-  emptyList: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.md,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.xxxl,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    color: colors.border,
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.semibold,
-    marginBottom: spacing.sm,
-  },
-  emptySubtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.size.base,
-    textAlign: 'center',
-    marginBottom: spacing.xxl,
-  },
-  emptyBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.md,
-  },
-  emptyBtnText: {
-    color: colors.white,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
+  // FlatList empty state
+  flatListEmpty: {
+    flexGrow: 1,
   },
 });

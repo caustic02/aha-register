@@ -1,6 +1,6 @@
 # aha! Register — Navigation Architecture
 
-> Last updated: 2026-03-17
+> Last updated: 2026-03-18
 > Status: ACTIVE
 
 React Navigation v6 with a bottom-tab root and per-tab native stacks.
@@ -14,6 +14,7 @@ RootStack (NativeStack)          — auth gate, onboarding
 └── MainTabs (BottomTab)
     ├── HomeStack (NativeStack)
     │   ├── Home
+    │   ├── ObjectList
     │   └── ObjectDetail
     ├── CaptureStack (NativeStack)
     │   ├── CaptureCamera
@@ -33,16 +34,20 @@ RootStack (NativeStack)          — auth gate, onboarding
 
 | Screen | File | Purpose |
 |--------|------|---------|
-| `Home` | `src/screens/HomeScreen.tsx` | Dashboard: collection stats, recent captures, type breakdown, sync status |
+| `Home` | `src/screens/HomeScreen.tsx` | Dashboard: collection stats, recent captures (with View all link), type breakdown, sync status |
+| `ObjectList` | `src/screens/ObjectListScreen.tsx` | Full collection browser: search, type filter chips, FlatList with thumbnails and badges |
 | `ObjectDetail` | `src/screens/ObjectDetailScreen.tsx` | Read-only detail view: image gallery, metadata, persons, capture data, export, delete |
 
 **Param list:**
 ```ts
 type HomeStackParamList = {
   Home: undefined;
+  ObjectList: undefined;
   ObjectDetail: { objectId: string };
 };
 ```
+
+**Navigation flow:** `Home` → `ObjectList` (View all link in Recent Captures header) → `ObjectDetail`.
 
 > Note: `ObjectDetailScreen` is registered with `React.ComponentType<any>` to avoid TypeScript conflict with its native `ObjectStackParamList` type. The runtime params are identical.
 

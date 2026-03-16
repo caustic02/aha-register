@@ -208,7 +208,11 @@ export function HomeScreen({ navigation }: Props) {
 
         {/* ── 3. Recent captures ───────────────────────────────────────────── */}
         <View style={styles.sectionHeader}>
-          <SectionHeader title={t('home.recentCaptures')} />
+          <SectionHeader
+            title={t('home.recentCaptures')}
+            action={t('home.viewAll')}
+            onAction={() => navigation.navigate('ObjectList')}
+          />
         </View>
         {!loading && recent.length === 0 ? (
           <View style={styles.emptyState}>
