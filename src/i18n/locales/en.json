@@ -572,7 +572,14 @@
     "institution_type": "Institution Type",
     "default_object_type": "Default Object Type",
     "language": "Language",
-    "select_placeholder": "Select\u2026"
+    "select_placeholder": "Select\u2026",
+    "slide1Title": "Document with confidence",
+    "slide1Body": "Capture objects, sites, and specimens with cryptographic tamper evidence from the moment of capture.",
+    "slide2Title": "AI-assisted metadata",
+    "slide2Body": "Photograph an object and let AI suggest titles, dates, materials, and descriptions. Every AI suggestion is clearly marked.",
+    "slide3Title": "Your collection, anywhere",
+    "slide3Body": "Works offline in the field, syncs when connected. Your data is stored on-device first, always.",
+    "pageIndicator": "Page {{current}} of {{total}}"
   },
   "trust": {
     "title": "Your data stays yours",

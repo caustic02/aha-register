@@ -8,17 +8,19 @@ import i18n from 'i18next';
 import { initDatabase } from '../db/database';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
 import { MainTabs } from '../navigation/MainTabs';
-import { getSetting, SETTING_KEYS } from '../services/settingsService';
+import { getSetting, setSetting, SETTING_KEYS } from '../services/settingsService';
 import { getSession, onAuthStateChange } from '../services/auth';
 import { ensureMigrated } from '../services/supabase';
 import { SyncEngine } from '../sync/engine';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { AuthScreen } from '../screens/AuthScreen';
+import TrustScreen from '../screens/TrustScreen';
 
 export default function AppShell() {
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [showTrust, setShowTrust] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const syncEngineRef = useRef<SyncEngine | null>(null);
@@ -80,9 +82,22 @@ export default function AppShell() {
     };
   }, [db]);
 
-  const handleOnboardingFinish = useCallback(() => {
-    setOnboardingComplete(true);
+  /** Slides done → advance to TrustScreen */
+  const handleSlidesComplete = useCallback(() => {
+    setShowTrust(true);
   }, []);
+
+  /** Skip from slides → bypass TrustScreen, go directly to SignIn */
+  const handleSkipToSignIn = useCallback(async () => {
+    if (db) await setSetting(db, SETTING_KEYS.ONBOARDING_COMPLETE, 'true');
+    setOnboardingComplete(true);
+  }, [db]);
+
+  /** TrustScreen Continue or Skip → advance to SignIn */
+  const handleTrustAdvance = useCallback(async () => {
+    if (db) await setSetting(db, SETTING_KEYS.ONBOARDING_COMPLETE, 'true');
+    setOnboardingComplete(true);
+  }, [db]);
 
   const handleAuthenticated = useCallback(() => {
     setAuthenticated(true);
@@ -112,8 +127,16 @@ export default function AppShell() {
 
   return (
     <DatabaseProvider db={db}>
-      {!onboardingComplete ? (
-        <OnboardingScreen onFinish={handleOnboardingFinish} />
+      {!onboardingComplete && !showTrust ? (
+        <OnboardingScreen
+          onFinish={handleSlidesComplete}
+          onSkip={handleSkipToSignIn}
+        />
+      ) : !onboardingComplete && showTrust ? (
+        <TrustScreen
+          onContinue={handleTrustAdvance}
+          onSkip={handleTrustAdvance}
+        />
       ) : !authenticated ? (
         <AuthScreen
           onAuthenticated={handleAuthenticated}
