@@ -1,5 +1,5 @@
 import * as SQLite from 'expo-sqlite';
-import { SCHEMA_SQL } from './schema';
+import { SCHEMA_SQL, runMigrations } from './schema';
 import { INDEXES_SQL } from './indexes';
 import { getOrCreateDatabaseKey } from '../utils/db-encryption';
 import { migrateToEncryptedDatabase } from '../utils/db-migration-encrypt';
@@ -77,6 +77,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
       await configureEncryption(db, encryptionKey);
       await db.execAsync(SCHEMA_SQL);
       await db.execAsync(INDEXES_SQL);
+      await runMigrations(db);
     }
 
     await SecureStorage.setItem(DB_ENCRYPTED_FLAG, 'true');
@@ -86,6 +87,7 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     await configureEncryption(db, encryptionKey);
     await db.execAsync(SCHEMA_SQL);
     await db.execAsync(INDEXES_SQL);
+    await runMigrations(db);
   }
 
   return db;

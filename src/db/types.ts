@@ -17,6 +17,32 @@ export type SyncAction = 'insert' | 'update' | 'delete';
 
 export type SyncStatus = 'pending' | 'syncing' | 'failed';
 
+export type PersonType = 'individual' | 'collective' | 'unknown';
+
+export type PersonRole =
+  | 'artist'
+  | 'collaborator'
+  | 'fabricator'
+  | 'programmer'
+  | 'curator'
+  | 'donor'
+  | 'restorer'
+  | 'photographer'
+  | 'publisher'
+  | 'commissioner'
+  | 'unknown';
+
+export type LicenseType =
+  | 'CC-BY'
+  | 'CC-BY-NC'
+  | 'CC-BY-SA'
+  | 'CC0'
+  | 'all-rights-reserved'
+  | 'institution-specific'
+  | 'TK-label';
+
+export type TranscriptionStatus = 'none' | 'draft' | 'ai_generated' | 'verified';
+
 // ── JSONB type-specific data templates ───────────────────────────────────────
 
 export interface MuseumObjectData {
@@ -175,6 +201,11 @@ export interface Media {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  // Copyright / licensing (added v1.3)
+  rights_holder?: string | null;
+  license_type?: LicenseType | null;
+  license_uri?: string | null;
+  usage_restrictions?: string | null;
 }
 
 export interface Annotation {
@@ -247,6 +278,9 @@ export interface RegisterDocument {
   description: string | null;
   created_at: string;
   updated_at: string;
+  // Transcription (added v1.3)
+  transcription?: string | null;
+  transcription_status?: TranscriptionStatus;
 }
 
 export interface User {
@@ -257,6 +291,33 @@ export interface User {
   institution_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface Person {
+  id: string;
+  institution_id: string | null;
+  name: string;
+  sort_name: string | null;
+  birth_year: number | null;
+  death_year: number | null;
+  nationality: string | null;
+  ulan_uri: string | null;
+  gnd_uri: string | null;
+  biography: string | null;
+  person_type: PersonType;
+  created_at: string;
+  updated_at: string;
+  sync_status: 'pending' | 'synced' | 'error' | 'conflict';
+}
+
+export interface ObjectPerson {
+  id: string;
+  object_id: string;
+  person_id: string;
+  role: PersonRole;
+  display_order: number;
+  notes: string | null;
+  created_at: string;
 }
 
 export interface AuditTrailEntry {
