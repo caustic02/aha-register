@@ -5,14 +5,15 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 
 import { ObjectStack } from './ObjectStack';
 import type { ObjectStackParamList } from './ObjectStack';
-import { CaptureScreen } from '../screens/CaptureScreen';
+import { CaptureStack } from './CaptureStack';
+import type { CaptureStackParamList } from './CaptureStack';
 import { CollectionStack } from './CollectionStack';
 import type { CollectionStackParamList } from './CollectionStack';
 import { SettingsScreen } from '../screens/SettingsScreen';
 
 export type MainTabParamList = {
   Objects: NavigatorScreenParams<ObjectStackParamList> | undefined;
-  Capture: undefined;
+  Capture: NavigatorScreenParams<CaptureStackParamList> | undefined;
   Collections: NavigatorScreenParams<CollectionStackParamList> | undefined;
   Settings: undefined;
 };
@@ -54,7 +55,7 @@ export function MainTabs() {
       })}
     >
       <Tab.Screen name="Objects" component={ObjectStack} />
-      <Tab.Screen name="Capture" component={CaptureScreen} />
+      <Tab.Screen name="Capture" component={CaptureStack} />
       <Tab.Screen name="Collections" component={CollectionStack} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>

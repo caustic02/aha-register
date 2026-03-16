@@ -28,6 +28,8 @@ export interface ReviewCardScreenProps {
   analysisResult: AIAnalysisResult;
   captureMetadata: CaptureMetadata;
   sha256Hash?: string;
+  onSave?: () => void;
+  onDiscard?: () => void;
 }
 
 // ── Object type options for ChipGroup ────────────────────────────────────────
@@ -78,6 +80,8 @@ export function ReviewCardScreen({
   analysisResult,
   captureMetadata,
   sha256Hash,
+  onSave,
+  onDiscard,
 }: ReviewCardScreenProps) {
   // ── Editable field state ──────────────────────────────────────────────────
 
@@ -110,6 +114,10 @@ export function ReviewCardScreen({
   });
 
   // ── Derived values ────────────────────────────────────────────────────────
+
+  const hasAIData = analysisResult.title.confidence > 0 ||
+    analysisResult.object_type.confidence > 0 ||
+    analysisResult.medium.confidence > 0;
 
   const avgConfidence = useMemo(() => {
     const scores = [
@@ -156,11 +164,13 @@ export function ReviewCardScreen({
       imageUri,
       artists,
     });
+    onSave?.();
   };
 
   const handleDiscard = () => {
-    // TODO: Navigate back to capture screen, optionally confirm discard
+    // TODO: Add confirmation dialog before discarding
     console.log('Discard pressed');
+    onDiscard?.();
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -195,41 +205,45 @@ export function ReviewCardScreen({
           </View>
         </Card>
 
-        {/* 2. AI CONFIDENCE SUMMARY */}
-        <View style={styles.section}>
-          <SectionHeader title="AI Analysis" />
-          <View style={styles.confidenceRow}>
-            <View style={styles.confidenceItem}>
-              <ConfidenceBar
-                confidence={analysisResult.title.confidence}
-                label="Title"
-              />
+        {/* 2. AI CONFIDENCE SUMMARY (hidden when no AI data) */}
+        {hasAIData && (
+          <>
+            <View style={styles.section}>
+              <SectionHeader title="AI Analysis" />
+              <View style={styles.confidenceRow}>
+                <View style={styles.confidenceItem}>
+                  <ConfidenceBar
+                    confidence={analysisResult.title.confidence}
+                    label="Title"
+                  />
+                </View>
+                <View style={styles.confidenceItem}>
+                  <ConfidenceBar
+                    confidence={analysisResult.object_type.confidence}
+                    label="Object type"
+                  />
+                </View>
+                <View style={styles.confidenceItem}>
+                  <ConfidenceBar
+                    confidence={analysisResult.medium.confidence}
+                    label="Medium"
+                  />
+                </View>
+              </View>
+              <View style={styles.badgeRow}>
+                <Badge variant="ai" label="Gemini 2.5 Pro" size="sm" />
+                <View style={styles.badgeSpacer} />
+                <Badge
+                  variant={confidenceBadge.variant}
+                  label={confidenceBadge.label}
+                  size="sm"
+                />
+              </View>
             </View>
-            <View style={styles.confidenceItem}>
-              <ConfidenceBar
-                confidence={analysisResult.object_type.confidence}
-                label="Object type"
-              />
-            </View>
-            <View style={styles.confidenceItem}>
-              <ConfidenceBar
-                confidence={analysisResult.medium.confidence}
-                label="Medium"
-              />
-            </View>
-          </View>
-          <View style={styles.badgeRow}>
-            <Badge variant="ai" label="Gemini 2.5 Pro" size="sm" />
-            <View style={styles.badgeSpacer} />
-            <Badge
-              variant={confidenceBadge.variant}
-              label={confidenceBadge.label}
-              size="sm"
-            />
-          </View>
-        </View>
 
-        <Divider />
+            <Divider />
+          </>
+        )}
 
         {/* 3. CORE METADATA (editable) */}
         <View style={styles.section}>
@@ -332,12 +346,14 @@ export function ReviewCardScreen({
             placeholder="Object description"
             multiline
           />
-          <View style={styles.confidenceBarWrap}>
-            <ConfidenceBar
-              confidence={analysisResult.description.confidence}
-              label="Description confidence"
-            />
-          </View>
+          {hasAIData && (
+            <View style={styles.confidenceBarWrap}>
+              <ConfidenceBar
+                confidence={analysisResult.description.confidence}
+                label="Description confidence"
+              />
+            </View>
+          )}
         </View>
 
         <Divider />
@@ -440,12 +456,15 @@ function AIField({
   confidence: number;
   children: React.ReactNode;
 }) {
+  const hasAI = confidence > 0;
   return (
     <View style={styles.aiField}>
-      <View style={styles.aiFieldHeader}>
-        <Badge variant="ai" label="AI" size="sm" />
-        <Text style={styles.aiConfidenceText}>{confidence}%</Text>
-      </View>
+      {hasAI && (
+        <View style={styles.aiFieldHeader}>
+          <Badge variant="ai" label="AI" size="sm" />
+          <Text style={styles.aiConfidenceText}>{confidence}%</Text>
+        </View>
+      )}
       {children}
     </View>
   );
