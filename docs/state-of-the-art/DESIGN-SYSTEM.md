@@ -1,6 +1,6 @@
 # aha! Register Design System
 
-> Last updated: 2026-03-15
+> Last updated: 2026-03-16
 > Status: ACTIVE
 
 Centralized design tokens and visual standards for the aha! Register app.
@@ -34,6 +34,7 @@ All values live in `src/theme/index.ts`. No hardcoded colors, font sizes, or rad
 | `overlay` | `rgba(0,0,0,0.5)` | Modal overlays, bottom sheet scrims. |
 | `overlayLight` | `rgba(0,0,0,0.3)` | Lighter overlays (camera controls). |
 | `overlayDark` | `rgba(0,0,0,0.7)` | Dark overlays (fullscreen gallery). |
+| `transparent` | `'transparent'` | Invisible overlays, cleared backgrounds. |
 
 ### Color Rules
 
@@ -93,9 +94,10 @@ System fonts only. San Francisco on iOS, Roboto on Android. No custom font famil
 |-------|----|-------|
 | `sm` | 6 | Small badges, tags |
 | `md` | 10 | Inputs, cards, buttons |
-| `lg` | 14 | Larger cards, image containers |
+| `lg` | 16 | Larger cards, image containers |
 | `xl` | 20 | Chips, pills, rounded buttons |
-| `pill` | 9999 | Fully rounded elements (FABs, dots) |
+| `full` | 999 | Fully rounded elements — pills, dots, badges. **Canonical token.** |
+| `pill` | 9999 | Legacy alias for `full`. Prefer `radii.full` in new code. |
 
 ---
 
@@ -105,11 +107,11 @@ System fonts only. San Francisco on iOS, Roboto on Android. No custom font famil
 |-------|----|-------|
 | `screenPadding` | 20 | Horizontal padding for all screens |
 | `cardPadding` | 16 | Internal card/section padding |
-| `minTouchTarget` | 44 | Minimum tap target (Apple HIG) |
+| `minTouchTarget` | 48 | Minimum tap target (deprecated — use `touch.minTarget`) |
 
 ### Touch Target Rule
 
-All interactive elements (buttons, chips, list rows, icons) must have a minimum touch target of **44pt**. Use `hitSlop` for small visual elements that need a larger tap area.
+All interactive elements (buttons, chips, list rows, icons) must have a minimum touch target of **48dp** (`touch.minTarget`). Use `touch.hitSlop` (`{ top: 8, bottom: 8, left: 8, right: 8 }`) for small visual elements that need a larger tap area. `touch.minTargetSmall` (44dp) is available for constrained layouts.
 
 ---
 
@@ -218,7 +220,8 @@ AI-generated fields use a gold accent to signal that the value was produced by G
 | Token | Value | Usage |
 |-------|-------|-------|
 | `colors.ai` | `#A16207` (amber-700) | AI badge text, confidence percentage |
-| `colors.aiLight` | `#FEF3C7` (amber-50) | AI badge background |
+| `colors.aiLight` | `#FEF9C3` (amber-100) | AI badge background, highlighted field |
+| `colors.aiSurface` | `#FFFBEB` (amber-50) | AI section card background |
 
 **Implementation:**
 1. Wrap the field in `<AIField label="..." confidence={n}>` — shows a gold `Badge variant="ai" label="AI"` + confidence `%` when `confidence > 0`.

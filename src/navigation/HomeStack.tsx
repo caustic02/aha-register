@@ -17,12 +17,7 @@ export function HomeStack() {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Home" component={HomeScreen} />
       <Stack.Screen name="ObjectList" component={ObjectListScreen} />
-      <Stack.Screen
-        name="ObjectDetail"
-        // ObjectDetailScreen is typed to ObjectStackParamList but params are identical
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        component={ObjectDetailScreen as React.ComponentType<any>}
-      />
+      <Stack.Screen name="ObjectDetail" component={ObjectDetailScreen} />
     </Stack.Navigator>
   );
 }

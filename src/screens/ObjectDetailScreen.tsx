@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { ObjectStackParamList } from '../navigation/ObjectStack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { deleteObject } from '../services/objectService';
@@ -34,7 +33,9 @@ import type { ExportableObject } from '../services/export-service';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Props = NativeStackScreenProps<ObjectStackParamList, 'ObjectDetail'>;
+// Minimal param list — any stack with ObjectDetail: { objectId: string } satisfies this.
+type ObjectDetailParamList = { ObjectDetail: { objectId: string } };
+type Props = NativeStackScreenProps<ObjectDetailParamList, 'ObjectDetail'>;
 
 interface PersonRow extends ObjectPerson {
   name: string;
