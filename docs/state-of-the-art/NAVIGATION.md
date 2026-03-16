@@ -114,3 +114,13 @@ navigation.getParent()?.navigate('Objects');
 - **CommonActions.reset** — used when "Save" or "Discard" on ReviewCard should return the user cleanly to `CaptureCamera`.
 - **goBack()** — used on `ObjectDetail` back button and after successful delete.
 - **headerShown: false** — all navigators; every screen renders its own header bar using `IconButton` + `BackIcon`.
+
+---
+
+## Modal Components
+
+| Component | File | Trigger |
+|-----------|------|---------|
+| `ExportModal` | `src/components/ExportModal.tsx` | ObjectDetail Export button |
+
+`ExportModal` is a bottom-sheet-style `Modal` with three format options (PDF, JSON, CSV). It generates the export file and opens the native share sheet via `expo-sharing`.

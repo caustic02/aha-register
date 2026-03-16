@@ -1,0 +1,104 @@
+# aha! Register — Export Module
+
+> Last updated: 2026-03-16
+> Status: ACTIVE
+
+Offline-first export of object records as PDF, CSV, or JSON. No network calls — all data from local SQLite, all files generated and shared locally.
+
+---
+
+## Architecture
+
+### Export Service — `src/services/export-service.ts`
+
+Pure functions. Each takes an `ExportableObject` and returns either a string (JSON/CSV) or a file URI (PDF).
+
+```ts
+interface ExportableObject {
+  object: RegisterObject;
+  media: Media[];
+  persons: ExportPerson[];
+}
+```
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `exportAsJSON(data)` | `string` | Pretty-printed JSON with export metadata block, SHA-256 hashes. Strips internal IDs. |
+| `exportAsCSV(data)` | `string` | Single-row CSV with headers. Persons concatenated as `role: name; ...`. Media count + primary filename. |
+| `exportAsPDF(data)` | `Promise<string>` | HTML-to-PDF via `expo-print`. Returns local file URI. A4, self-contained HTML with inline CSS and base64-embedded primary image. |
+
+### Share Utility — `src/services/export-share.ts`
+
+| Function | Description |
+|----------|-------------|
+| `buildExportFilename(title, ext)` | `aha-register-{sanitized-title}-{YYYY-MM-DD}.{ext}` |
+| `shareExport(content, filename, mimeType, isPdfUri?)` | Writes content to cache file, opens native share sheet via `expo-sharing`. For PDF, shares the URI directly. |
+
+### Export Modal — `src/components/ExportModal.tsx`
+
+Bottom-sheet modal with three `ListItem` rows (PDF, JSON, CSV). Shows per-option loading spinner during generation. Triggered from `ObjectDetailScreen`'s Export icon button.
+
+---
+
+## Supported Formats
+
+### PDF Report
+- **Engine:** `expo-print` (`Print.printToFileAsync`)
+- **Layout:** A4, header (brand + title + date), primary image (base64 data URI), basic info table, description, persons table, capture metadata table, footer
+- **CSS:** Inline, uses theme color palette (`colors.primary` for headings/borders, `colors.text` for body, `colors.textSecondary` for labels, `colors.border` for table lines)
+- **Image:** Primary media file read via `new File(path).base64()` (SDK 55 new API)
+
+### JSON Data
+- **Structure:** Flat object with nested `media[]`, `persons[]`, and `_export` metadata block
+- **Export metadata:** `{ exportDate, exportFormat, appVersion, platform }`
+- **Excluded:** Internal SQLite rowids, sync_queue references, file system paths, raw image data
+
+### CSV Spreadsheet
+- **Layout:** Header row + single data row (one row per object)
+- **Persons:** Concatenated as `role: name; role: name` in single column
+- **Media:** `mediaCount` (integer) + `primaryImageFilename` + `sha256Hash` columns
+- **Escaping:** Fields containing commas, newlines, or double quotes are quoted per RFC 4180
+
+---
+
+## Privacy & Evidence Handling
+
+| Condition | Behaviour |
+|-----------|-----------|
+| `privacy_tier = 'anonymous'` | GPS coordinates, persons, and device info are stripped from all export formats |
+| `legal_hold = 1` | `Alert.alert` shown before export: "This record is under legal hold. Export for authorized purposes only." User must confirm to proceed |
+| All formats | `privacy_tier` and `evidence_class` included as metadata fields |
+
+---
+
+## File Naming Convention
+
+```
+aha-register-{title}-{YYYY-MM-DD}.{ext}
+```
+
+- `title`: lowercased, spaces → hyphens, special characters removed, max 60 chars
+- Example: `aha-register-marble-bust-of-apollo-2026-03-16.pdf`
+
+---
+
+## Dependencies
+
+All pre-existing in `package.json`. No new dependencies added.
+
+| Package | Version | Role |
+|---------|---------|------|
+| `expo-print` | ~55.0.8 | HTML-to-PDF generation |
+| `expo-sharing` | ~55.0.11 | Native share sheet |
+| `expo-file-system` | ~55.0.10 | Read media files (base64), write temp export files |
+
+---
+
+## Existing Export Infrastructure
+
+The new export module (`export-service.ts`, `export-share.ts`) coexists with the existing `exportService.ts` / `exportTemplate.ts` which handle:
+- Full PDF reports with QR codes, audit trails, and collection reports
+- Batch PDF export for multiple objects
+- Collection-level PDF reports
+
+The new module provides a simpler, format-flexible export path for single objects (PDF/CSV/JSON) triggered from the Object Detail screen.

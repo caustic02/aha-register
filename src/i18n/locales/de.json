@@ -350,7 +350,17 @@
     "section_images": "Dokumentationsbilder",
     "section_collections": "Sammlungen",
     "footer_verify": "Integrit\u00e4t pr\u00fcfen durch Abgleich der SHA-256-Hashwerte mit den Originaldaten.",
-    "footer_generated": "Erstellt mit aha! Register | aharegister.com"
+    "footer_generated": "Erstellt mit aha! Register | aharegister.com",
+    "modalTitle": "Objekt exportieren",
+    "pdfOption": "PDF-Bericht",
+    "pdfDescription": "Professioneller Bericht mit Bildern",
+    "jsonOption": "JSON-Daten",
+    "jsonDescription": "Maschinenlesbarer Gesamtdatensatz",
+    "csvOption": "CSV-Tabelle",
+    "csvDescription": "Einzeiliges Tabellenformat",
+    "legalHoldTitle": "Rechtliche Sperrung",
+    "legalHoldWarning": "Dieser Datensatz steht unter rechtlicher Sperrung. Export nur f\u00fcr autorisierte Zwecke.",
+    "legalHoldConfirm": "Export fortsetzen"
   },
   "settings": {
     "title": "Einstellungen",

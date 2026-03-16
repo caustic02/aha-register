@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -29,6 +29,8 @@ import {
 } from '../theme/icons';
 import { colors, radii, spacing, typography } from '../theme';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
+import { ExportModal } from '../components/ExportModal';
+import type { ExportableObject } from '../services/export-service';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -85,6 +87,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [persons, setPersons] = useState<PersonRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -134,9 +137,24 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     console.log('Edit not yet implemented');
   };
 
-  const handleExport = () => {
-    console.log('Export not yet implemented');
-  };
+  const handleExport = useCallback(() => {
+    if (!object) return;
+    if (object.legal_hold === 1) {
+      Alert.alert(
+        t('export.legalHoldTitle'),
+        t('export.legalHoldWarning'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          {
+            text: t('export.legalHoldConfirm'),
+            onPress: () => setShowExportModal(true),
+          },
+        ],
+      );
+      return;
+    }
+    setShowExportModal(true);
+  }, [object, t]);
 
   const handleDelete = useCallback(() => {
     if (!object) return;
@@ -160,6 +178,22 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       ],
     );
   }, [db, navigation, object, objectId, t]);
+
+  // ── Derived data for export (must be before early returns) ──────────────────
+
+  const exportData: ExportableObject | null = useMemo(() => {
+    if (!object) return null;
+    return {
+      object,
+      media,
+      persons: persons.map((p) => ({
+        name: p.name,
+        role: p.role,
+        birth_year: p.birth_year,
+        death_year: p.death_year,
+      })),
+    };
+  }, [object, media, persons]);
 
   // ── Loading / error guards ───────────────────────────────────────────────────
 
@@ -362,10 +396,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           disabled
         />
         <IconButton
-          icon={<ExportIcon size={22} color={colors.textTertiary} />}
+          icon={<ExportIcon size={22} color={colors.text} />}
           onPress={handleExport}
-          accessibilityLabel={t('objectDetail.exportDisabled')}
-          disabled
+          accessibilityLabel={t('export.share')}
         />
         <View style={styles.actionSpacer} />
         <IconButton
@@ -374,6 +407,13 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           accessibilityLabel={t('common.delete')}
         />
       </View>
+
+      {/* ── EXPORT MODAL ──────────────────────────────────────────────────── */}
+      <ExportModal
+        visible={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        data={exportData}
+      />
     </SafeAreaView>
   );
 }
