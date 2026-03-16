@@ -11,10 +11,11 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import type { CameraType, FlashMode, CameraRatio } from 'expo-camera';
-import type { MainTabParamList } from '../navigation/MainTabs';
+import { File } from 'expo-file-system';
+import type { CaptureStackParamList } from '../navigation/CaptureStack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { pickFromLibrary, type CaptureResult } from '../services/capture';
@@ -54,7 +55,7 @@ function flashLabel(mode: FlashMode, t: (k: string) => string): string {
 export function CaptureScreen() {
   const db = useDatabase();
   const { t } = useAppTranslation();
-  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<CaptureStackParamList>>();
 
   // Camera permissions
   const [permission, requestPermission] = useCameraPermissions();
@@ -208,8 +209,30 @@ export function CaptureScreen() {
 
   const handleViewObjects = useCallback(() => {
     handleRetake();
-    navigation.navigate('Objects');
+    // Navigate to Objects tab via parent tab navigator
+    navigation.getParent()?.navigate('Objects');
   }, [navigation, handleRetake]);
+
+  const handleAnalyzeWithAI = useCallback(async () => {
+    if (!capture || !metadata) return;
+    setPhase('saving'); // reuse spinner phase to show loading
+    try {
+      const file = new File(capture.uri);
+      const imageBase64 = await file.base64();
+      navigation.navigate('AIProcessing', {
+        imageUri: capture.uri,
+        imageBase64,
+        mimeType: capture.mimeType,
+        captureMetadata: metadata,
+        sha256Hash: hash ?? undefined,
+      });
+      // Reset capture state so returning here shows the camera
+      handleRetake();
+    } catch {
+      // Base64 read failed — fall back to type select
+      setPhase('type_select');
+    }
+  }, [capture, metadata, hash, navigation, handleRetake]);
 
   // ── Non-idle phases ───────────────────────────────────────────────────────
 
@@ -280,7 +303,7 @@ export function CaptureScreen() {
           )}
         </View>
 
-        <Pressable style={styles.primaryBtn} onPress={() => setPhase('type_select')}>
+        <Pressable style={styles.primaryBtn} onPress={handleAnalyzeWithAI}>
           <Text style={styles.primaryBtnText}>{t('common.next')}</Text>
         </Pressable>
 
