@@ -622,6 +622,14 @@
     "emptyMessage": "Capture your first object using the camera tab.",
     "pendingSyncBanner": "{{count}} changes pending sync"
   },
+  "camera": {
+    "gridToggle": "Toggle grid overlay",
+    "flashAuto": "Flash: Auto",
+    "flashOn": "Flash: On",
+    "flashOff": "Flash: Off",
+    "photoCount": "{{count}} captured",
+    "levelIndicator": "Level indicator"
+  },
   "objectDetail": {
     "basicInfo": "Basic Information",
     "captureData": "Capture Data",

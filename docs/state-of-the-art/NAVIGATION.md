@@ -93,7 +93,7 @@ type ObjectStackParamList = {
 
 | Screen | File | Purpose |
 |--------|------|---------|
-| `CaptureCamera` | `src/screens/CaptureScreen.tsx` | Full-screen camera with flash, flip, aspect ratio, type selector |
+| `CaptureCamera` | `src/screens/CaptureScreen.tsx` | Full-screen camera with flash, flip, aspect ratio, rule-of-thirds grid, level indicator, session photo count |
 | `AIProcessing` | `src/screens/AIProcessingScreen.tsx` | Animated 5-step progress while Gemini analyses the capture |
 | `ReviewCard` | `src/screens/ReviewCardScreen.tsx` | Editable AI-prefilled metadata form before saving |
 

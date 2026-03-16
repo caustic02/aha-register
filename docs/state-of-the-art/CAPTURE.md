@@ -93,6 +93,36 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 | 2026-03-09 | Type selector shown post-preview, not pre-capture | Capture flow UX commit |
 | 2026-03-15 | Audit trail userId: param > auth session > 'local' fallback | Gap fix |
 
+## Camera Enhancements
+
+### Rule-of-Thirds Grid Overlay
+
+Toggle-able grid on the live camera viewfinder. Divides the frame into 9 equal sections using two horizontal and two vertical lines (`rgba(255,255,255,0.3)`, `StyleSheet.hairlineWidth`). When grid is ON, a 32×32dp center crosshair is also rendered. Default: OFF.
+
+- **Persistence:** `AsyncStorage` key `camera.gridEnabled` (`'true'`/`'false'`)
+- **Toggle:** Grid button in top controls row (`GridIcon` / `Grid3x3` from lucide-react-native)
+- **Overlay layer:** `zIndex: 5`, `pointerEvents="none"` — touches pass through
+
+### Level Indicator
+
+A 40×2dp animated horizontal bar at the bottom of the viewfinder (above bottom controls). Reads device tilt from `expo-sensors` `Accelerometer` (update interval: 150ms).
+
+- **Level (±2°):** Bar color = `rgba(45,90,39,0.85)` (brand green with 85% opacity)
+- **Tilted:** Bar color = `rgba(255,255,255,0.5)`, rotates up to ±15° (clamped) via `Animated.spring` with native driver
+- **Implementation:** `tiltAnim` (`Animated.Value`) drives a `rotate` transform. A separate `isLevel` boolean state drives the color (native driver can't animate colors).
+
+### Session Photo Count Badge
+
+A small pill-shaped badge (top-left of camera view, below top controls) showing how many objects have been successfully saved in the current camera session. Hidden when count = 0.
+
+- Background: `rgba(0,0,0,0.55)` / white text / `radii.full` border radius
+- Incremented in `handleSave` after `setSavedId` (on successful `createDraftObject`)
+- Resets to 0 only when the component unmounts (navigating away from Capture tab)
+
+### Flash Control
+
+Existing text/emoji-based flash toggle (`⚡`). Cycles `off → on → auto → off`. Flash mode persisted in `SETTING_KEYS.CAMERA_FLASH_MODE` (SQLite). i18n keys: `capture.flash_off`, `capture.flash_on`, `capture.flash_auto`.
+
 ## Known Gaps
 
 - No batch capture mode
