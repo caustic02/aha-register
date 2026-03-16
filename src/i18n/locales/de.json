@@ -622,6 +622,14 @@
     "emptyMessage": "Erfasse dein erstes Objekt mit der Kamera-Registerkarte.",
     "pendingSyncBanner": "{{count}} \u00c4nderungen ausstehend"
   },
+  "camera": {
+    "gridToggle": "Raster umschalten",
+    "flashAuto": "Blitz: Automatisch",
+    "flashOn": "Blitz: Ein",
+    "flashOff": "Blitz: Aus",
+    "photoCount": "{{count}} aufgenommen",
+    "levelIndicator": "Wasserwaage"
+  },
   "objectDetail": {
     "basicInfo": "Grundinformationen",
     "captureData": "Aufnahmedaten",

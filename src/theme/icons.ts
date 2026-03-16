@@ -44,6 +44,7 @@ export { Zap as FlashIcon } from 'lucide-react-native';
 export { SwitchCamera as FlipCameraIcon } from 'lucide-react-native';
 export { Circle as ShutterIcon } from 'lucide-react-native';
 export { Maximize as AspectRatioIcon } from 'lucide-react-native';
+export { Grid3x3 as GridIcon } from 'lucide-react-native';
 
 // ── Status icons ──────────────────────────────────────────────────────────────
 export { RefreshCw as SyncIcon } from 'lucide-react-native';

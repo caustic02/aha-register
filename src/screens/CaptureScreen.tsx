@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Image,
   Platform,
   Pressable,
@@ -9,6 +10,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { Accelerometer } from 'expo-sensors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,8 +30,17 @@ import {
   SETTING_KEYS,
 } from '../services/settingsService';
 import { TypeSelector } from '../components/TypeSelector';
+import { GridIcon } from '../theme/icons';
 import type { ObjectType } from '../db/types';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import { colors, typography, spacing, radii, layout, touch } from '../theme';
+
+// Camera-specific overlay colours — rgba values intentionally outside the design
+// system token set because they are camera-viewfinder-only and must meet contrast
+// requirements against arbitrary scene content.
+const OVERLAY_GRID = 'rgba(255,255,255,0.3)';
+const OVERLAY_LEVEL_TILTED = 'rgba(255,255,255,0.5)';
+const OVERLAY_LEVEL_FLAT = 'rgba(45,90,39,0.85)';
+const OVERLAY_COUNT_BG = 'rgba(0,0,0,0.55)';
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
 type AspectRatio = '4:3' | '1:1';
@@ -76,6 +87,16 @@ export function CaptureScreen() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [defaultObjectType, setDefaultObjectType] = useState<ObjectType | null>(null);
 
+  // Grid overlay
+  const [gridEnabled, setGridEnabled] = useState(false);
+
+  // Level indicator
+  const [isLevel, setIsLevel] = useState(false);
+  const [tiltAnim] = useState(() => new Animated.Value(0));
+
+  // Session photo count (increments on each successful save)
+  const [sessionPhotoCount, setSessionPhotoCount] = useState(0);
+
   // Intro overlay (first-time guidance)
   const [showIntro, setShowIntro] = useState(false);
 
@@ -84,6 +105,31 @@ export function CaptureScreen() {
       if (val !== 'true') setShowIntro(true);
     });
   }, []);
+
+  // Load persisted grid preference
+  useEffect(() => {
+    AsyncStorage.getItem('camera.gridEnabled').then((val) => {
+      if (val === 'true') setGridEnabled(true);
+    });
+  }, []);
+
+  // Accelerometer subscription for level indicator
+  useEffect(() => {
+    Accelerometer.setUpdateInterval(150);
+    const subscription = Accelerometer.addListener(({ x }) => {
+      // x-axis = left/right tilt in portrait mode
+      const deg = Math.asin(Math.max(-1, Math.min(1, x))) * (180 / Math.PI);
+      const clamped = Math.max(-15, Math.min(15, deg));
+      setIsLevel(Math.abs(deg) <= 2);
+      Animated.spring(tiltAnim, {
+        toValue: clamped,
+        useNativeDriver: true,
+        friction: 8,
+        tension: 80,
+      }).start();
+    });
+    return () => subscription.remove();
+  }, [tiltAnim]);
 
   // Load persisted flash preference
   useEffect(() => {
@@ -112,6 +158,14 @@ export function CaptureScreen() {
   );
 
   // ── Camera controls ──────────────────────────────────────────────────────────
+
+  const handleGridToggle = useCallback(() => {
+    setGridEnabled((prev) => {
+      const next = !prev;
+      AsyncStorage.setItem('camera.gridEnabled', String(next));
+      return next;
+    });
+  }, []);
 
   const handleFlashToggle = useCallback(() => {
     setFlashMode((prev) => {
@@ -173,6 +227,7 @@ export function CaptureScreen() {
           objectType,
         });
         setSavedId(objectId);
+        setSessionPhotoCount((prev) => prev + 1);
         setPhase('done');
       } catch {
         setPhase('type_select');
@@ -380,7 +435,51 @@ export function CaptureScreen() {
         </>
       )}
 
-      {/* Top controls: Flash | Ratio | Flip */}
+      {/* ── Grid overlay + crosshair (pointerEvents="none" so touches pass through) */}
+      {gridEnabled && (
+        <View style={styles.gridOverlay} pointerEvents="none">
+          {/* Horizontal thirds */}
+          <View style={styles.gridH1} />
+          <View style={styles.gridH2} />
+          {/* Vertical thirds */}
+          <View style={styles.gridV1} />
+          <View style={styles.gridV2} />
+          {/* Center crosshair */}
+          <View style={styles.crosshairWrap}>
+            <View style={styles.crosshairH} />
+            <View style={styles.crosshairV} />
+          </View>
+        </View>
+      )}
+
+      {/* ── Level indicator — always visible in camera view */}
+      <View style={styles.levelWrap} pointerEvents="none">
+        <Animated.View
+          style={[
+            styles.levelBar,
+            {
+              backgroundColor: isLevel ? OVERLAY_LEVEL_FLAT : OVERLAY_LEVEL_TILTED,
+              transform: [
+                {
+                  rotate: tiltAnim.interpolate({
+                    inputRange: [-15, 15],
+                    outputRange: ['-15deg', '15deg'],
+                  }),
+                },
+              ],
+            },
+          ]}
+        />
+      </View>
+
+      {/* ── Session photo count badge */}
+      {sessionPhotoCount > 0 && (
+        <View style={styles.photoCountBadge} pointerEvents="none">
+          <Text style={styles.photoCountText}>{sessionPhotoCount}</Text>
+        </View>
+      )}
+
+      {/* Top controls: Flash | Ratio | Flip | Grid */}
       <View style={styles.topControls}>
         {/* Flash toggle */}
         <Pressable
@@ -412,6 +511,20 @@ export function CaptureScreen() {
           accessibilityLabel={t('capture.flip_camera')}
         >
           <Text style={styles.controlIcon}>{'\u21BA'}</Text>
+        </Pressable>
+
+        {/* Grid toggle */}
+        <Pressable
+          style={[styles.controlBtn, gridEnabled && styles.controlBtnActive]}
+          onPress={handleGridToggle}
+          accessibilityRole="button"
+          accessibilityLabel={t('camera.gridToggle')}
+          accessibilityState={{ checked: gridEnabled }}
+        >
+          <GridIcon
+            size={20}
+            color={gridEnabled ? colors.primary : colors.white}
+          />
         </Pressable>
       </View>
 
@@ -496,6 +609,103 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
 
+  // ── Grid overlay ────────────────────────────────────────────────────────────
+  gridOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
+  },
+  gridH1: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '33.33%',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: OVERLAY_GRID,
+  },
+  gridH2: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: '66.66%',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: OVERLAY_GRID,
+  },
+  gridV1: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '33.33%',
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: OVERLAY_GRID,
+  },
+  gridV2: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: '66.66%',
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: OVERLAY_GRID,
+  },
+  // Crosshair
+  crosshairWrap: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    width: 32,
+    height: 32,
+    marginTop: -16,
+    marginLeft: -16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crosshairH: {
+    position: 'absolute',
+    width: 32,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: OVERLAY_GRID,
+  },
+  crosshairV: {
+    position: 'absolute',
+    width: StyleSheet.hairlineWidth,
+    height: 32,
+    backgroundColor: OVERLAY_GRID,
+  },
+
+  // ── Level indicator ─────────────────────────────────────────────────────────
+  levelWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 164,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 6,
+  },
+  levelBar: {
+    width: 40,
+    height: 2,
+    borderRadius: 1,
+  },
+
+  // ── Session photo count badge ────────────────────────────────────────────────
+  photoCountBadge: {
+    position: 'absolute',
+    top: 130,
+    left: layout.screenPadding,
+    backgroundColor: OVERLAY_COUNT_BG,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    minWidth: 28,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  photoCountText: {
+    color: colors.white,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+  },
+
   // ── Top controls ────────────────────────────────────────────────────────────
   topControls: {
     position: 'absolute',
@@ -521,7 +731,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: spacing.sm,
     minWidth: 56,
+    minHeight: touch.minTarget,
+    justifyContent: 'center',
     gap: 2,
+  },
+  controlBtnActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySurface,
   },
   controlIcon: {
     fontSize: typography.size.xl,
