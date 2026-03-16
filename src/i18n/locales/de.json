@@ -502,6 +502,11 @@
     "html_lang": "de",
     "date_locale": "de-DE"
   },
+  "errors": {
+    "crash_title": "Etwas ist schiefgelaufen",
+    "crash_message": "Der Fehler wurde gemeldet. Bitte starte die App neu.",
+    "crash_restart": "Neu starten"
+  },
   "onboarding": {
     "skip": "\u00dcberspringen",
     "next": "Weiter",

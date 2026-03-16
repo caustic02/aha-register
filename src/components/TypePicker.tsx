@@ -52,6 +52,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 4,
   },
+  // eslint-disable-next-line react-native/no-color-literals
   badge: {
     paddingHorizontal: 14,
     paddingVertical: 8,

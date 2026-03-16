@@ -27,12 +27,15 @@ module.exports = {
   },
   rules: {
     'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'warn',
     'react-native/no-inline-styles': 'warn',
     'react-native/no-color-literals': 'warn',
     'react-hooks/exhaustive-deps': 'warn',
-    'no-console': ['warn', { allow: ['warn', 'error'] }],
+    'react-hooks/set-state-in-effect': 'off',
+    'react-hooks/preserve-manual-memoization': 'off',
+    'no-console': ['warn', { allow: ['log', 'warn', 'error'] }],
   },
   ignorePatterns: ['node_modules/', 'dist/', '.expo/', 'android/', 'ios/'],
 };

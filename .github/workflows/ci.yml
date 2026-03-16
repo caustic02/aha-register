@@ -31,8 +31,8 @@ jobs:
 
       - name: i18n parity check
         run: |
-          EN_KEYS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('i18n/locales/en.json','utf8'))).length)")
-          DE_KEYS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('i18n/locales/de.json','utf8'))).length)")
+          EN_KEYS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('src/i18n/locales/en.json','utf8'))).length)")
+          DE_KEYS=$(node -e "console.log(Object.keys(JSON.parse(require('fs').readFileSync('src/i18n/locales/de.json','utf8'))).length)")
           echo "EN keys: $EN_KEYS, DE keys: $DE_KEYS"
           if [ "$EN_KEYS" != "$DE_KEYS" ]; then
             echo "FAIL: i18n key count mismatch (EN=$EN_KEYS, DE=$DE_KEYS)"

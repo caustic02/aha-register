@@ -31,9 +31,11 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite",
+      ["expo-sqlite", { "useSQLCipher": true }],
       "expo-sharing",
-      "expo-updates"
+      "expo-updates",
+      "@sentry/react-native/expo",
+      "expo-secure-store"
     ],
     "runtimeVersion": {
       "policy": "appVersion"

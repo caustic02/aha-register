@@ -6,6 +6,15 @@ This project uses [Semantic Versioning](https://semver.org/).
 
 ## [0.2.0] - 2026-03-15
 
+### Security
+- SQLCipher AES-256 full-database encryption (expo-sqlite useSQLCipher plugin)
+- Encryption key generated via expo-crypto (32 random bytes) and stored in
+  hardware-backed secure storage (iOS Keychain / Android Keystore)
+- PRAGMA key set as first operation after every database open
+- Automatic one-time migration from plaintext to encrypted database
+- Sentry crash reporting with ErrorBoundary and helper utilities
+- Auth credentials migrated from AsyncStorage to expo-secure-store
+
 ### Added
 - State of the Art documentation system (9 living docs)
 - ESLint + Prettier with React Native rules

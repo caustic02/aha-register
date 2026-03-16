@@ -6,7 +6,7 @@ interface SelectionHeaderProps {
   allSelected: boolean;
   onToggleAll: () => void;
   onCancel: () => void;
-  t: (key: string, opts?: any) => string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
 }
 
 export function SelectionHeader({
@@ -68,7 +68,7 @@ interface ActionBarProps {
   onDelete: () => void;
   disabled?: boolean;
   exporting?: boolean;
-  t: (key: string, opts?: any) => string;
+  t: (key: string, opts?: Record<string, unknown>) => string;
 }
 
 export function BatchActionButtons({

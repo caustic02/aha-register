@@ -92,6 +92,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [title, setTitle] = useState('');
   const [objectType, setObjectType] = useState<ObjectType>('museum_object');
   const [description, setDescription] = useState('');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [typeSpecificData, setTypeSpecificData] = useState<Record<string, any>>({});
   const [typeFormExpanded, setTypeFormExpanded] = useState(true);
   const [privacyTier, setPrivacyTier] = useState<PrivacyTier>('public');
@@ -170,7 +171,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       const now = new Date().toISOString();
       await db.runAsync(
         `UPDATE objects SET ${column} = ?, updated_at = ? WHERE id = ?`,
-        [value as any, now, objectId],
+        [value as string | number | null, now, objectId],
       );
       await logAuditEntry(db, {
         tableName: 'objects',
@@ -188,6 +189,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   );
 
   const handleTypeSpecificChange = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async (data: Record<string, any>) => {
       setTypeSpecificData(data);
       const tsd = JSON.stringify(data);

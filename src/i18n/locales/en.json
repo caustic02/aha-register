@@ -502,6 +502,11 @@
     "html_lang": "en",
     "date_locale": "en-GB"
   },
+  "errors": {
+    "crash_title": "Something went wrong",
+    "crash_message": "The error has been reported. Please restart the app.",
+    "crash_restart": "Restart"
+  },
   "onboarding": {
     "skip": "Skip",
     "next": "Next",

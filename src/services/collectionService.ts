@@ -155,7 +155,7 @@ export async function updateCollection(
   await db.withTransactionAsync(async () => {
     await db.runAsync(
       `UPDATE collections SET ${sets.join(', ')} WHERE id = ?`,
-      values as any[],
+      values as (string | number | null)[],
     );
 
     await logAuditEntry(db, {

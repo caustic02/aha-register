@@ -9,7 +9,9 @@ import EnvironmentalSampleForm from './EnvironmentalSampleForm';
 import ConservationRecordForm from './ConservationRecordForm';
 
 export interface TypeFormProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: Record<string, any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onChange: (data: Record<string, any>) => void;
   t: (key: string) => string;
 }
