@@ -542,6 +542,20 @@
     "language": "Sprache",
     "select_placeholder": "Ausw\u00e4hlen\u2026"
   },
+  "home": {
+    "title": "Sammlung",
+    "objectCount": "{{count}} Objekte",
+    "objectCount_one": "1 Objekt",
+    "objectCount_zero": "Noch keine Objekte",
+    "statObjects": "Objekte",
+    "statPending": "Ausstehend",
+    "statPhotos": "Fotos",
+    "recentCaptures": "Letzte Aufnahmen",
+    "byType": "Nach Typ",
+    "emptyTitle": "Noch keine Objekte",
+    "emptyMessage": "Erfasse dein erstes Objekt mit der Kamera-Registerkarte.",
+    "pendingSyncBanner": "{{count}} \u00c4nderungen ausstehend"
+  },
   "objectDetail": {
     "basicInfo": "Grundinformationen",
     "captureData": "Aufnahmedaten",

@@ -542,6 +542,20 @@
     "language": "Language",
     "select_placeholder": "Select\u2026"
   },
+  "home": {
+    "title": "Collection",
+    "objectCount": "{{count}} objects",
+    "objectCount_one": "1 object",
+    "objectCount_zero": "No objects yet",
+    "statObjects": "Objects",
+    "statPending": "Pending",
+    "statPhotos": "Photos",
+    "recentCaptures": "Recent Captures",
+    "byType": "By Type",
+    "emptyTitle": "No objects yet",
+    "emptyMessage": "Capture your first object using the camera tab.",
+    "pendingSyncBanner": "{{count}} changes pending sync"
+  },
   "objectDetail": {
     "basicInfo": "Basic Information",
     "captureData": "Capture Data",
