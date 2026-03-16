@@ -21,6 +21,9 @@ interface TextInputProps {
   maxLength?: number;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
   editable?: boolean;
+  onBlur?: () => void;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
 export function TextInput({
@@ -36,6 +39,9 @@ export function TextInput({
   maxLength,
   autoCapitalize,
   editable = true,
+  onBlur,
+  leftIcon,
+  rightIcon,
 }: TextInputProps) {
   const [focused, setFocused] = useState(false);
 
@@ -50,27 +56,44 @@ export function TextInput({
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
-      <RNTextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={colors.textTertiary}
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
-        maxLength={maxLength}
-        autoCapitalize={autoCapitalize}
-        editable={editable}
-        multiline={multiline}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        accessibilityLabel={label}
+      <View
         style={[
-          styles.input,
+          styles.inputRow,
           { borderColor, borderWidth },
-          multiline && styles.multiline,
           !editable && styles.disabled,
         ]}
-      />
+      >
+        {leftIcon != null && (
+          <View style={styles.iconLeft}>{leftIcon}</View>
+        )}
+        <RNTextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textTertiary}
+          secureTextEntry={secureTextEntry}
+          keyboardType={keyboardType}
+          maxLength={maxLength}
+          autoCapitalize={autoCapitalize}
+          editable={editable}
+          multiline={multiline}
+          onFocus={() => setFocused(true)}
+          onBlur={() => {
+            setFocused(false);
+            onBlur?.();
+          }}
+          accessibilityLabel={label}
+          style={[
+            styles.input,
+            leftIcon != null && styles.inputWithLeftIcon,
+            rightIcon != null && styles.inputWithRightIcon,
+            multiline && styles.multiline,
+          ]}
+        />
+        {rightIcon != null && (
+          <View style={styles.iconRight}>{rightIcon}</View>
+        )}
+      </View>
       {error ? (
         <Text style={styles.error}>{error}</Text>
       ) : helperText ? (
@@ -89,14 +112,32 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    overflow: 'hidden',
+  },
   input: {
+    flex: 1,
     minHeight: touch.minTarget,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     fontSize: 16,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
     color: colors.text,
+  },
+  inputWithLeftIcon: {
+    paddingLeft: spacing.xs,
+  },
+  inputWithRightIcon: {
+    paddingRight: spacing.xs,
+  },
+  iconLeft: {
+    paddingLeft: spacing.md,
+  },
+  iconRight: {
+    paddingRight: spacing.md,
   },
   multiline: {
     minHeight: 100,

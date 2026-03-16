@@ -1,26 +1,26 @@
 # State of the Art: Data Model
 
-> Last updated: 2026-03-15
+> Last updated: 2026-03-16
 > Status: ACTIVE
 
 ## What This Is
-The SQLite schema is Register's foundation. 14 tables, 19 indexes. The TypeScript interfaces in `db/types.ts` must always match. They are a contract with partners (Vera, Florian, institutions).
+The SQLite schema is Register's foundation. 16 tables, 19 indexes. The TypeScript interfaces in `db/types.ts` must always match. They are a contract with partners (Vera, Florian, institutions).
 
 ## Architecture
 
 - SQLite with WAL mode, foreign keys ON
-- 14 tables including `object_collections` join table
+- 16 tables including `object_collections` and `object_persons` join tables
 - 19 indexes
 - 7 JSONB object type templates in `type_specific_data` column
-- Schema version: v1.2
+- Schema version: v1.3
 - All primary keys: `TEXT` (UUID v4, generated client-side via `src/utils/uuid.ts`)
 - JSONB columns stored as `TEXT` in SQLite (serialized/deserialized in application layer)
 - Foreign keys use `ON DELETE CASCADE` (for child records) or `ON DELETE SET NULL` (for soft references)
 
 ### TypeScript Contract
 `db/types.ts` exports:
-- 14 row interfaces (one per table)
-- Union types: `ObjectType`, `ObjectStatus`, `MediaFileType`, `PrivacyTier`, `EvidenceClass`, `SyncAction`, `SyncStatus`
+- 16 row interfaces (one per table)
+- Union types: `ObjectType`, `ObjectStatus`, `MediaFileType`, `PrivacyTier`, `EvidenceClass`, `SyncAction`, `SyncStatus`, `PersonType`, `PersonRole`, `LicenseType`, `TranscriptionStatus`
 - 7 JSONB data interfaces: `MuseumObjectData`, `SiteData`, `IncidentData`, `SpecimenData`, `ArchitecturalElementData`, `EnvironmentalSampleData`, `ConservationRecordData`
 - `TypeSpecificData` union of the 7 JSONB interfaces
 
@@ -34,16 +34,18 @@ The SQLite schema is Register's foundation. 14 tables, 19 indexes. The TypeScrip
 | 2 | `sites` | Geographic or archaeological site. Has lat/lng/altitude and address. Referenced by objects and locations. |
 | 3 | `users` | User accounts with role and institution link. Referenced by annotations, audit_trail, object_collections. |
 | 4 | `objects` | Core record. Holds object_type, status (draft/active/archived/under_review), GPS fields, evidence_class, legal_hold, privacy_tier, and `type_specific_data` JSONB. |
-| 5 | `media` | Photos/video/audio/documents. Each has SHA-256 hash, file_path to app storage, is_primary flag. Linked to one object via CASCADE. |
+| 5 | `media` | Photos/video/audio/documents. Each has SHA-256 hash, file_path to app storage, is_primary flag. Linked to one object via CASCADE. Four copyright fields added v1.3: `rights_holder`, `license_type` (LicenseType), `license_uri`, `usage_restrictions`. |
 | 6 | `annotations` | Free-text notes linked to an object and optionally a user. |
 | 7 | `vocabulary_terms` | Authority-backed controlled vocabulary (e.g. AAT, TGN). Self-referencing parent_id for hierarchy. |
 | 8 | `collections` | Named collection with type (general/department/exhibition/project/research/conservation). |
 | 9 | `object_collections` | M:M join table between objects and collections. Has UNIQUE(object_id, collection_id), display_order, added_by. |
 | 10 | `locations` | Physical location within a site. Self-referencing parent_id for nested hierarchy (room → shelf → drawer). |
-| 11 | `documents` | Document files linked to an object (distinct from media — for PDFs, spreadsheets, etc.). Has SHA-256 hash. |
+| 11 | `documents` | Document files linked to an object (distinct from media — for PDFs, spreadsheets, etc.). Has SHA-256 hash. Two transcription fields added v1.3: `transcription` (TEXT), `transcription_status` (TranscriptionStatus: none/draft/ai_generated/verified). |
 | 12 | `app_settings` | Key/value store for device-local settings (no id, `key` is PK). |
 | 13 | `audit_trail` | Immutable change log. Stores old/new values as JSON, device_info and evidence_context as JSONB. No updated_at (append-only). |
 | 14 | `sync_queue` | Offline sync queue. Tracks table_name, record_id, action (insert/update/delete), payload, status (pending/syncing/failed), retry_count. |
+| 15 | `persons` | Authority-linked person/collective record. Columns: id, institution_id, name, sort_name, birth_year, death_year, nationality, ulan_uri (ULAN authority link), gnd_uri (GND authority link), biography, person_type (individual/collective/unknown), sync_status, created_at, updated_at. |
+| 16 | `object_persons` | M:M join table linking objects to persons with a typed role. Columns: id, object_id (CASCADE), person_id (CASCADE), role (PersonRole union), display_order, notes, created_at. UNIQUE(object_id, person_id, role). |
 
 ## Indexes (19 total)
 
@@ -79,6 +81,9 @@ The SQLite schema is Register's foundation. 14 tables, 19 indexes. The TypeScrip
 | 2026-03-09 | `object_collections` join table added (13 → 14 tables) | Collections feature |
 | 2026-03-08 | All PKs are client-side UUID v4 TEXT (not AUTOINCREMENT) | Schema v1.1 design |
 | 2026-03-08 | JSONB stored as TEXT in SQLite | SQLite portability decision |
+| 2026-03-17 | `persons` + `object_persons` tables added (14 → 16 tables) | Persons feature, schema v1.3 |
+| 2026-03-17 | 4 copyright fields added to `media` (rights_holder, license_type, license_uri, usage_restrictions) | Schema v1.3 |
+| 2026-03-17 | 2 transcription fields added to `documents` (transcription, transcription_status) | Schema v1.3 |
 
 ## Known Gaps
 
