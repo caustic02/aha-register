@@ -34,7 +34,7 @@
       ["expo-sqlite", { "useSQLCipher": true }],
       "expo-sharing",
       "expo-updates",
-      "@sentry/react-native/expo",
+      ["@sentry/react-native/expo", { "uploadSourceMaps": false }],
       "expo-secure-store"
     ],
     "runtimeVersion": "0.1.0",
