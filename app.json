@@ -37,9 +37,7 @@
       "@sentry/react-native/expo",
       "expo-secure-store"
     ],
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "0.1.0",
     "updates": {
       "enabled": true,
       "url": "https://u.expo.dev/bec4d444-c862-47d2-b326-37eaa5a4519e",
