@@ -54,6 +54,13 @@ export { CloudOff as CloudOffIcon } from 'lucide-react-native';
 export { Download as DownloadIcon } from 'lucide-react-native';
 export { Filter as FilterIcon } from 'lucide-react-native';
 
+// ── Collection / list icons ──────────────────────────────────────────────────
+export { LayoutGrid as GridViewIcon } from 'lucide-react-native';
+export { LayoutList as ListViewIcon } from 'lucide-react-native';
+export { SlidersHorizontal as FiltersIcon } from 'lucide-react-native';
+export { Square as CheckboxBlankIcon } from 'lucide-react-native';
+export { CheckSquare as CheckboxFilledIcon } from 'lucide-react-native';
+
 // ── Status icons ──────────────────────────────────────────────────────────────
 export { RefreshCw as SyncIcon } from 'lucide-react-native';
 export { WifiOff as OfflineIcon } from 'lucide-react-native';

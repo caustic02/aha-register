@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -25,8 +26,9 @@ import {
   DeleteIcon,
   EditIcon,
   ExportIcon,
+  ForwardIcon,
 } from '../theme/icons';
-import { colors, radii, spacing, typography } from '../theme';
+import { colors, radii, spacing, touch, typography } from '../theme';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportModal } from '../components/ExportModal';
 import type { ExportableObject } from '../services/export-service';
@@ -262,6 +264,29 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         <Badge variant="neutral" label={typeLabel} size="sm" />
       </View>
 
+      {/* ── BREADCRUMB ─────────────────────────────────────────────────────── */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.breadcrumbContent}
+        style={styles.breadcrumbScroll}
+      >
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessibilityRole="link"
+          accessibilityLabel={t('objectList.title')}
+          hitSlop={touch.hitSlop}
+        >
+          <Text style={styles.breadcrumbLink}>{t('objectList.title')}</Text>
+        </Pressable>
+        <ForwardIcon size={12} color={colors.textMuted} style={styles.breadcrumbSep} />
+        <Text style={styles.breadcrumbLink}>{typeLabel}</Text>
+        <ForwardIcon size={12} color={colors.textMuted} style={styles.breadcrumbSep} />
+        <Text style={styles.breadcrumbCurrent} numberOfLines={1}>
+          {object.title}
+        </Text>
+      </ScrollView>
+
       {/* ── SCROLL BODY ────────────────────────────────────────────────────── */}
       <ScrollView
         style={styles.scroll}
@@ -441,6 +466,31 @@ const styles = StyleSheet.create({
     color: colors.text,
     flex: 1,
     marginHorizontal: spacing.sm,
+  },
+  // Breadcrumb
+  breadcrumbScroll: {
+    flexGrow: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  breadcrumbContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  breadcrumbLink: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  breadcrumbSep: {
+    marginHorizontal: spacing.xs,
+  },
+  breadcrumbCurrent: {
+    ...typography.caption,
+    color: colors.text,
+    fontWeight: '600',
+    flexShrink: 1,
   },
   // Scroll
   scroll: {

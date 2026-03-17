@@ -52,8 +52,8 @@ onboardingComplete=true,  authenticated=true  → NavigationContainer (MainTabs)
 | Screen | File | Purpose |
 |--------|------|---------|
 | `Home` | `src/screens/HomeScreen.tsx` | Dashboard: collection stats, recent captures (with View all link), type breakdown, sync status |
-| `ObjectList` | `src/screens/ObjectListScreen.tsx` | Full collection browser: search, type filter chips, FlatList with thumbnails and badges |
-| `ObjectDetail` | `src/screens/ObjectDetailScreen.tsx` | Read-only detail view: image gallery, metadata, persons, capture data, export, delete |
+| `ObjectList` | `src/screens/ObjectListScreen.tsx` | Full collection browser: search, FlashList grid/list toggle, filter bottom sheet, batch selection |
+| `ObjectDetail` | `src/screens/ObjectDetailScreen.tsx` | Read-only detail view: breadcrumb bar, image gallery, metadata, persons, capture data, export, delete |
 
 **Param list:**
 ```ts
@@ -160,11 +160,38 @@ navigation.getParent()?.navigate('Objects');
 
 ---
 
-## Modal Components
+## Breadcrumb Bar
+
+`ObjectDetailScreen` displays a horizontal breadcrumb trail at the top:
+
+```
+Collection > [Object Type] > [Object Title]
+```
+
+- "Collection" navigates back to the object list
+- Object Type segment (informational, future: filter by type)
+- Object Title is the current item (bold, non-tappable)
+- Text: `typography.caption`, links in `colors.textMuted`, current in `colors.text`
+- Separator: `ForwardIcon` (ChevronRight), 12dp
+
+---
+
+## Bottom Sheet Components
 
 | Component | File | Trigger |
 |-----------|------|---------|
+| `FilterSheet` | `src/components/FilterSheet.tsx` | ObjectListScreen filter icon |
 | `ExportModal` | `src/components/ExportModal.tsx` | ObjectDetail Export button |
+
+### FilterSheet
+
+`@gorhom/bottom-sheet` with snap points at 40% and 80%. Sections: Object Type chips, Sort By chips. Batch filtering — changes are not applied until "Apply" is tapped. "Clear All" resets all selections.
+
+**Chip styles:**
+- Inactive: `colors.secondaryContainer` bg, `colors.secondary` text
+- Active: `colors.primaryContainer` bg, `colors.primary` text (weight 600)
+
+### ExportModal
 
 `ExportModal` is a bottom-sheet-style `Modal` with three format options (PDF, JSON, CSV). It generates the export file and opens the native share sheet via `expo-sharing`.
 

@@ -607,6 +607,21 @@
     "clearFilters": "Clear Filters",
     "viewAll": "View all"
   },
+  "collection": {
+    "filterTitle": "Filter",
+    "objectType": "Object Type",
+    "status": "Status",
+    "sortBy": "Sort by",
+    "apply": "Apply",
+    "clearAll": "Clear all",
+    "newest": "Newest",
+    "oldest": "Oldest",
+    "az": "A\u2013Z",
+    "za": "Z\u2013A",
+    "selected": "selected",
+    "gridView": "Grid view",
+    "listView": "List view"
+  },
   "home": {
     "title": "Collection",
     "personalCollection": "Personal Collection",

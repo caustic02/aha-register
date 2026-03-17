@@ -607,6 +607,21 @@
     "clearFilters": "Filter zur\u00fccksetzen",
     "viewAll": "Alle anzeigen"
   },
+  "collection": {
+    "filterTitle": "Filter",
+    "objectType": "Objekttyp",
+    "status": "Status",
+    "sortBy": "Sortieren nach",
+    "apply": "Anwenden",
+    "clearAll": "Alle l\u00f6schen",
+    "newest": "Neueste",
+    "oldest": "\u00c4lteste",
+    "az": "A\u2013Z",
+    "za": "Z\u2013A",
+    "selected": "ausgew\u00e4hlt",
+    "gridView": "Rasteransicht",
+    "listView": "Listenansicht"
+  },
   "home": {
     "title": "Sammlung",
     "personalCollection": "Pers\u00f6nliche Sammlung",
