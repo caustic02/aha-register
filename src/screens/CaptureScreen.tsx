@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
+import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -203,6 +204,7 @@ export function CaptureScreen() {
         quality: 1,
         exif: true,
       });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       const result: CaptureResult = {
         uri: pic.uri,
         width: pic.width,
