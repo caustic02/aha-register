@@ -72,7 +72,7 @@ export async function saveReviewedObject(
       destUri,
       error: err,
     });
-    throw err;
+    throw new Error(`Step 1 failed: file copy — ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // ── 2. Compute SHA-256 on the stored copy (SACRED: hash before insert) ──
@@ -82,7 +82,7 @@ export async function saveReviewedObject(
     console.log('[saveReviewedObject] step 2: SHA-256 computed', sha256.slice(0, 16));
   } catch (err) {
     console.error('[saveReviewedObject] step 2 FAILED: SHA-256', { destUri, error: err });
-    throw err;
+    throw new Error(`Step 2 failed: SHA-256 hash — ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // ── 3. Read default privacy tier ────────────────────────────────────────
@@ -119,74 +119,90 @@ export async function saveReviewedObject(
 
   await db.withTransactionAsync(async () => {
     // 6. INSERT object
-    await db.runAsync(
-      `INSERT INTO objects
-         (id, object_type, status, title, description,
-          latitude, longitude, altitude,
-          coordinate_accuracy, coordinate_source,
-          privacy_tier, legal_hold, type_specific_data,
-          created_at, updated_at)
-       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
-      [
-        objectId,
-        params.objectType || 'museum_object',
-        params.title || 'Untitled',
-        params.description || null,
-        params.captureMetadata.latitude ?? null,
-        params.captureMetadata.longitude ?? null,
-        params.captureMetadata.altitude ?? null,
-        params.captureMetadata.accuracy ?? null,
-        params.captureMetadata.coordinateSource ?? null,
-        privacyTier,
-        typeSpecificData,
-        now,
-        now,
-      ],
-    );
-    console.log('[saveReviewedObject] step 6: object inserted');
+    try {
+      await db.runAsync(
+        `INSERT INTO objects
+           (id, object_type, status, title, description,
+            latitude, longitude, altitude,
+            coordinate_accuracy, coordinate_source,
+            privacy_tier, legal_hold, type_specific_data,
+            created_at, updated_at)
+         VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+        [
+          objectId,
+          params.objectType || 'museum_object',
+          params.title || 'Untitled',
+          params.description || null,
+          params.captureMetadata.latitude ?? null,
+          params.captureMetadata.longitude ?? null,
+          params.captureMetadata.altitude ?? null,
+          params.captureMetadata.accuracy ?? null,
+          params.captureMetadata.coordinateSource ?? null,
+          privacyTier,
+          typeSpecificData,
+          now,
+          now,
+        ],
+      );
+      console.log('[saveReviewedObject] step 6: object inserted');
+    } catch (err) {
+      throw new Error(`Step 6 failed: INSERT objects — ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     // 7. INSERT media
-    await db.runAsync(
-      `INSERT INTO media
-         (id, object_id, file_path, file_name, file_type, mime_type,
-          sha256_hash, privacy_tier, is_primary, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)`,
-      [
-        mediaId,
-        objectId,
-        destUri,
-        storageName,
-        normalizedFileType,
-        params.mimeType,
-        sha256,
-        privacyTier,
-        now,
-        now,
-      ],
-    );
-    console.log('[saveReviewedObject] step 7: media inserted');
+    try {
+      await db.runAsync(
+        `INSERT INTO media
+           (id, object_id, file_path, file_name, file_type, mime_type,
+            sha256_hash, privacy_tier, is_primary, sort_order, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)`,
+        [
+          mediaId,
+          objectId,
+          destUri,
+          storageName,
+          normalizedFileType,
+          params.mimeType,
+          sha256,
+          privacyTier,
+          now,
+          now,
+        ],
+      );
+      console.log('[saveReviewedObject] step 7: media inserted');
+    } catch (err) {
+      throw new Error(`Step 7 failed: INSERT media — ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     // 8. Audit trail
-    await logAuditEntry(db, {
-      tableName: 'objects',
-      recordId: objectId,
-      action: 'insert',
-      newValues: { objectId, mediaId, sha256, title: params.title },
-      deviceInfo: {
-        model: params.captureMetadata.deviceModel,
-        os: params.captureMetadata.osVersion,
-        app: params.captureMetadata.appVersion,
-      },
-    });
-    console.log('[saveReviewedObject] step 8: audit logged');
+    try {
+      await logAuditEntry(db, {
+        tableName: 'objects',
+        recordId: objectId,
+        action: 'insert',
+        newValues: { objectId, mediaId, sha256, title: params.title },
+        deviceInfo: {
+          model: params.captureMetadata.deviceModel,
+          os: params.captureMetadata.osVersion,
+          app: params.captureMetadata.appVersion,
+        },
+      });
+      console.log('[saveReviewedObject] step 8: audit logged');
+    } catch (err) {
+      throw new Error(`Step 8 failed: audit trail — ${err instanceof Error ? err.message : String(err)}`);
+    }
 
     // 9. Queue sync
-    const syncEngine = new SyncEngine(db);
-    await syncEngine.queueChange('objects', objectId, 'insert', {
-      objectId,
-      mediaId,
-    });
-    console.log('[saveReviewedObject] step 9: sync queued');
+    try {
+      const syncEngine = new SyncEngine(db);
+      await syncEngine.queueChange('objects', objectId, 'insert', {
+        objectId,
+        mediaId,
+      });
+      console.log('[saveReviewedObject] step 9: sync queued');
+    } catch (err) {
+      throw new Error(`Step 9 failed: sync queue — ${err instanceof Error ? err.message : String(err)}`);
+    }
   });
 
   console.log('[saveReviewedObject] SUCCESS objectId=', objectId);

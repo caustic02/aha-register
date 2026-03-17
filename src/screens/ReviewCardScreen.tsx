@@ -258,7 +258,12 @@ export function ReviewCardScreen({
         try {
           await addObjectToCollection(db, objectId, selectedCollectionId);
         } catch (err) {
-          if (__DEV__) console.warn('addObjectToCollection failed:', err);
+          const colMsg = err instanceof Error ? err.message : String(err);
+          console.warn('[ReviewCard] addObjectToCollection failed:', colMsg);
+          Alert.alert(
+            t('common.error'),
+            `Object saved, but collection assignment failed:\n\n${colMsg}`,
+          );
         }
       }
 
