@@ -3,12 +3,14 @@ import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
-import { CommonActions } from '@react-navigation/native';
+import { CommonActions, useNavigation } from '@react-navigation/native';
+import type { NavigationProp } from '@react-navigation/native';
 import { CaptureScreen } from '../screens/CaptureScreen';
 import { AIProcessingScreen } from '../screens/AIProcessingScreen';
 import { ReviewCardScreen } from '../screens/ReviewCardScreen';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
+import type { MainTabParamList } from './MainTabs';
 
 // ── Param list ───────────────────────────────────────────────────────────────
 
@@ -100,6 +102,8 @@ function ReviewCardWrapper({
   const { imageUri, analysisResult, captureMetadata, sha256Hash } =
     route.params;
 
+  const tabNav = useNavigation<NavigationProp<MainTabParamList>>();
+
   const resetToCapture = useCallback(() => {
     navigation.dispatch(
       CommonActions.reset({
@@ -109,13 +113,31 @@ function ReviewCardWrapper({
     );
   }, [navigation]);
 
+  const handleSave = useCallback(
+    (objectId: string) => {
+      // Reset the capture stack so back-swipe doesn't return here
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'CaptureCamera' }],
+        }),
+      );
+      // Navigate to the Home tab → ObjectDetail to view the saved object
+      tabNav.navigate('Home', {
+        screen: 'ObjectDetail',
+        params: { objectId },
+      });
+    },
+    [navigation, tabNav],
+  );
+
   return (
     <ReviewCardScreen
       imageUri={imageUri}
       analysisResult={analysisResult}
       captureMetadata={captureMetadata}
       sha256Hash={sha256Hash}
-      onSave={resetToCapture}
+      onSave={handleSave}
       onDiscard={resetToCapture}
     />
   );

@@ -123,9 +123,44 @@ A small pill-shaped badge (top-left of camera view, below top controls) showing 
 
 Existing text/emoji-based flash toggle (`⚡`). Cycles `off → on → auto → off`. Flash mode persisted in `SETTING_KEYS.CAMERA_FLASH_MODE` (SQLite). i18n keys: `capture.flash_off`, `capture.flash_on`, `capture.flash_auto`.
 
+## AI Review & Save Flow (CaptureStack → ReviewCardScreen)
+
+After AI analysis (or skip-AI), the user lands on `ReviewCardScreen` with editable AI-prefilled metadata. The save flow:
+
+### Save Steps (`saveReviewedObject` in `services/objectService.ts`)
+
+1. **Copy image** to `{Paths.document}/media/{mediaId}.{ext}`
+2. **Compute SHA-256** on the stored copy (SACRED: hash precedes all DB writes)
+3. **Read** default privacy tier from `app_settings`
+4. **Build** `type_specific_data` JSON from AI metadata (medium, dimensions, style, culture, condition, keywords)
+5. **Transaction** (all-or-nothing):
+   - INSERT into `objects`: title, description, object_type, GPS fields, type_specific_data, status='draft'
+   - INSERT into `media`: SHA-256 hash, is_primary=1, file_path to stored copy
+   - INSERT into `audit_trail`: action='insert', newValues includes sha256, deviceInfo
+   - INSERT into `sync_queue` via SyncEngine
+6. **(Optional)** `addObjectToCollection` — only if user selected a collection; failure does not block save
+
+### Collection Picker
+
+`ReviewCardScreen` includes a `@gorhom/bottom-sheet` collection picker:
+- Lists all existing collections with type badge and object count
+- Inline "Create new" row: TextInput + Create button → creates collection and selects it
+- Empty state prompts user to type a name
+- Collection is OPTIONAL — objects are always saved even without a collection
+- Selected collection shown as a card with remove (✕) action
+
+### Post-Save Navigation
+
+After successful save, the CaptureStack wrapper:
+1. Resets CaptureStack to `CaptureCamera` (prevents back-swipe to stale ReviewCard)
+2. Navigates to `Home` tab → `ObjectDetail` screen with the new objectId
+
+### Hash Integrity Guarantee
+
+The SHA-256 hash is computed on the **stored copy** of the image file (not the original URI) at step 2, **before** the database transaction begins at step 5. The hash value stored in the `media` table matches `sha256sum` / `openssl dgst` on the stored file.
+
 ## Known Gaps
 
 - No batch capture mode
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
-- No AI vision layer (architecture planned, not built)
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer

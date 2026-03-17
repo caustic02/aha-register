@@ -1,15 +1,20 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Image,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput as RNTextInput,
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, radii, spacing, typography } from '../theme';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
+import { colors, radii, spacing, touch, typography } from '../theme';
 import { useAppTranslation } from '../hooks/useAppTranslation';
+import { useDatabase } from '../contexts/DatabaseContext';
 import {
   Badge,
   Button,
@@ -22,6 +27,13 @@ import {
 } from '../components/ui';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
+import { saveReviewedObject } from '../services/objectService';
+import {
+  addObjectToCollection,
+  createCollection,
+  getAllCollections,
+  type CollectionWithCount,
+} from '../services/collectionService';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -30,7 +42,7 @@ export interface ReviewCardScreenProps {
   analysisResult: AIAnalysisResult;
   captureMetadata: CaptureMetadata;
   sha256Hash?: string;
-  onSave?: () => void;
+  onSave?: (objectId: string) => void;
   onDiscard?: () => void;
 }
 
@@ -64,6 +76,14 @@ function formatCoords(meta: CaptureMetadata, fallback: string): string {
   return `${meta.latitude.toFixed(6)}, ${meta.longitude.toFixed(6)}`;
 }
 
+function guessMimeType(uri: string): string {
+  const lower = uri.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.heic')) return 'image/heic';
+  return 'image/jpeg';
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function ReviewCardScreen({
@@ -75,6 +95,7 @@ export function ReviewCardScreen({
   onDiscard,
 }: ReviewCardScreenProps) {
   const { t } = useAppTranslation();
+  const db = useDatabase();
 
   // ── Editable field state ──────────────────────────────────────────────────
 
@@ -105,6 +126,33 @@ export function ReviewCardScreen({
     const kw = analysisResult.keywords.value;
     return Array.isArray(kw) ? kw : [];
   });
+
+  // ── Save state ────────────────────────────────────────────────────────────
+
+  const [saving, setSaving] = useState(false);
+
+  // ── Collection picker state ───────────────────────────────────────────────
+
+  const [collections, setCollections] = useState<CollectionWithCount[]>([]);
+  const [selectedCollectionId, setSelectedCollectionId] = useState<string | null>(null);
+  const [newCollectionName, setNewCollectionName] = useState('');
+  const [creatingCollection, setCreatingCollection] = useState(false);
+  const collectionSheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ['50%', '80%'], []);
+
+  const selectedCollection = useMemo(
+    () => collections.find((c) => c.id === selectedCollectionId) ?? null,
+    [collections, selectedCollectionId],
+  );
+
+  const loadCollections = useCallback(async () => {
+    const rows = await getAllCollections(db);
+    setCollections(rows);
+  }, [db]);
+
+  useEffect(() => {
+    loadCollections();
+  }, [loadCollections]);
 
   // ── Derived values ────────────────────────────────────────────────────────
 
@@ -142,39 +190,109 @@ export function ReviewCardScreen({
 
   const artists = analysisResult.suggested_artists.value;
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Collection picker handlers ────────────────────────────────────────────
 
-  const handleSave = () => {
-    // TODO: Wire to object creation service — insert into objects table,
-    // create object_persons entries, save media record
-    if (__DEV__) {
-      console.log('Save pressed', {
-        title,
-        objectType,
-        dateCreated,
-        medium,
-        dimensions,
-        stylePeriod,
-        cultureOrigin,
-        description,
-        condition,
-        selectedKeywords,
-        captureMetadata,
-        imageUri,
-        artists,
+  const openCollectionPicker = useCallback(() => {
+    loadCollections();
+    collectionSheetRef.current?.snapToIndex(0);
+  }, [loadCollections]);
+
+  const handleCreateInline = useCallback(async () => {
+    const trimmed = newCollectionName.trim();
+    if (!trimmed) return;
+    setCreatingCollection(true);
+    try {
+      const created = await createCollection(db, {
+        name: trimmed,
+        collection_type: 'general',
       });
+      setSelectedCollectionId(created.id);
+      setNewCollectionName('');
+      await loadCollections();
+      collectionSheetRef.current?.close();
+    } catch (err) {
+      if (__DEV__) console.error('Inline collection creation failed:', err);
+    } finally {
+      setCreatingCollection(false);
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-      () => {},
-    );
-    onSave?.();
-  };
+  }, [newCollectionName, db, loadCollections]);
+
+  const selectCollection = useCallback((id: string) => {
+    setSelectedCollectionId(id);
+    collectionSheetRef.current?.close();
+  }, []);
+
+  const clearCollection = useCallback(() => {
+    setSelectedCollectionId(null);
+  }, []);
+
+  // ── Save handler ──────────────────────────────────────────────────────────
+
+  const handleSave = useCallback(async () => {
+    setSaving(true);
+    try {
+      // Persist the object (copy → hash → transaction)
+      const objectId = await saveReviewedObject(db, {
+        imageUri,
+        mimeType: guessMimeType(imageUri),
+        captureMetadata,
+        title: title.trim() || 'Untitled',
+        objectType: objectType || 'museum_object',
+        description: description.trim() || undefined,
+        condition: condition.trim() || undefined,
+        dateCreated: dateCreated.trim() || undefined,
+        medium: medium.trim() || undefined,
+        dimensions: dimensions.trim() || undefined,
+        stylePeriod: stylePeriod.trim() || undefined,
+        cultureOrigin: cultureOrigin.trim() || undefined,
+        keywords: selectedKeywords.length > 0 ? selectedKeywords : undefined,
+      });
+
+      // Optionally assign to collection (non-blocking for save)
+      if (selectedCollectionId) {
+        try {
+          await addObjectToCollection(db, objectId, selectedCollectionId);
+        } catch (err) {
+          if (__DEV__) console.warn('addObjectToCollection failed:', err);
+        }
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+      onSave?.(objectId);
+    } catch (err) {
+      if (__DEV__) console.error('saveReviewedObject failed:', err);
+      Alert.alert(
+        t('common.error'),
+        t('reviewCard.saveFailed'),
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [
+    db, imageUri, captureMetadata, title, objectType, description, condition,
+    dateCreated, medium, dimensions, stylePeriod, cultureOrigin,
+    selectedKeywords, selectedCollectionId, onSave, t,
+  ]);
 
   const handleDiscard = () => {
-    // TODO: Add confirmation dialog before discarding
-    console.log('Discard pressed');
     onDiscard?.();
   };
+
+  // ── Bottom sheet backdrop ─────────────────────────────────────────────────
+
+  const renderBackdrop = useCallback(
+    (props: React.ComponentProps<typeof BottomSheetBackdrop>) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.4}
+      />
+    ),
+    [],
+  );
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -425,14 +543,58 @@ export function ReviewCardScreen({
 
         <Divider />
 
-        {/* 8. SAVE ACTIONS */}
+        {/* 8. COLLECTION PICKER */}
+        <View style={styles.section}>
+          <SectionHeader title={t('reviewCard.collectionSection')} />
+          {selectedCollection ? (
+            <View style={styles.selectedCollectionRow}>
+              <View style={styles.selectedCollectionInfo}>
+                <Text style={styles.selectedCollectionName} numberOfLines={1}>
+                  {selectedCollection.name}
+                </Text>
+                <Text style={styles.selectedCollectionType}>
+                  {t(`collections.type.${selectedCollection.collection_type}`)}
+                </Text>
+              </View>
+              <Pressable
+                onPress={clearCollection}
+                hitSlop={touch.hitSlop}
+                accessibilityRole="button"
+                accessibilityLabel={t('reviewCard.removeCollection')}
+              >
+                <Text style={styles.removeCollectionText}>✕</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={styles.collectionHint}>
+              {t('reviewCard.collectionOptional')}
+            </Text>
+          )}
+          <Pressable
+            style={styles.chooseCollectionBtn}
+            onPress={openCollectionPicker}
+            accessibilityRole="button"
+            accessibilityLabel={t('reviewCard.chooseCollection')}
+          >
+            <Text style={styles.chooseCollectionText}>
+              {selectedCollection
+                ? t('reviewCard.changeCollection')
+                : t('reviewCard.chooseCollection')}
+            </Text>
+          </Pressable>
+        </View>
+
+        <Divider />
+
+        {/* 9. SAVE ACTIONS */}
         <View style={styles.actions}>
           <Button
-            label={t('reviewCard.saveToCollection')}
+            label={saving ? t('reviewCard.saving') : t('reviewCard.saveObject')}
             variant="primary"
             size="lg"
             onPress={handleSave}
             fullWidth
+            disabled={saving}
           />
           <View style={styles.actionSpacer} />
           <Button
@@ -441,9 +603,101 @@ export function ReviewCardScreen({
             size="md"
             onPress={handleDiscard}
             fullWidth
+            disabled={saving}
           />
         </View>
       </ScrollView>
+
+      {/* ── Collection Picker Bottom Sheet ─────────────────────────────────── */}
+      <BottomSheet
+        ref={collectionSheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+        enablePanDownToClose
+        backdropComponent={renderBackdrop}
+        backgroundStyle={styles.sheetBg}
+        handleIndicatorStyle={styles.sheetHandle}
+      >
+        <BottomSheetView style={styles.sheetContent}>
+          <Text style={styles.sheetTitle}>{t('reviewCard.chooseCollection')}</Text>
+
+          {/* Inline create */}
+          <View style={styles.inlineCreateRow}>
+            <RNTextInput
+              style={styles.inlineCreateInput}
+              value={newCollectionName}
+              onChangeText={setNewCollectionName}
+              placeholder={t('reviewCard.newCollectionPlaceholder')}
+              placeholderTextColor={colors.textTertiary}
+            />
+            <Pressable
+              style={[
+                styles.inlineCreateBtn,
+                (!newCollectionName.trim() || creatingCollection) &&
+                  styles.inlineCreateBtnDisabled,
+              ]}
+              onPress={handleCreateInline}
+              disabled={!newCollectionName.trim() || creatingCollection}
+              accessibilityRole="button"
+              accessibilityLabel={t('reviewCard.createAndSelect')}
+            >
+              <Text style={styles.inlineCreateBtnText}>
+                {t('reviewCard.createAndSelect')}
+              </Text>
+            </Pressable>
+          </View>
+
+          {/* Collection list or empty state */}
+          {collections.length === 0 ? (
+            <View style={styles.sheetEmpty}>
+              <Text style={styles.sheetEmptyTitle}>
+                {t('reviewCard.noCollections')}
+              </Text>
+              <Text style={styles.sheetEmptySubtitle}>
+                {t('reviewCard.createFirstCollection')}
+              </Text>
+            </View>
+          ) : (
+            <ScrollView style={styles.sheetList}>
+              {collections.map((col) => {
+                const isSelected = col.id === selectedCollectionId;
+                return (
+                  <Pressable
+                    key={col.id}
+                    style={[
+                      styles.sheetItem,
+                      isSelected && styles.sheetItemSelected,
+                    ]}
+                    onPress={() => selectCollection(col.id)}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={col.name}
+                  >
+                    <Text
+                      style={[
+                        styles.sheetItemName,
+                        isSelected && styles.sheetItemNameSelected,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {col.name}
+                    </Text>
+                    <Text style={styles.sheetItemMeta}>
+                      {t(`collections.type.${col.collection_type}`)}
+                      {' · '}
+                      {col.objectCount === 1
+                        ? t('collections.object_count_one')
+                        : col.objectCount === 0
+                          ? t('collections.object_count_zero')
+                          : t('collections.object_count', { count: col.objectCount })}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+        </BottomSheetView>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -580,6 +834,55 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     marginTop: spacing.sm,
   },
+  // Collection picker (inline)
+  selectedCollectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  selectedCollectionInfo: {
+    flex: 1,
+  },
+  selectedCollectionName: {
+    ...typography.bodyMedium,
+    color: colors.text,
+  },
+  selectedCollectionType: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  removeCollectionText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    paddingHorizontal: spacing.sm,
+  },
+  collectionHint: {
+    ...typography.bodySmall,
+    color: colors.textTertiary,
+    marginTop: spacing.xs,
+  },
+  chooseCollectionBtn: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    minHeight: touch.minTargetSmall,
+    justifyContent: 'center',
+  },
+  chooseCollectionText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: '600',
+  },
   // Actions
   actions: {
     paddingHorizontal: spacing.lg,
@@ -587,5 +890,97 @@ const styles = StyleSheet.create({
   },
   actionSpacer: {
     height: spacing.md,
+  },
+  // ── Bottom Sheet ──────────────────────────────────────────────────────────
+  sheetBg: {
+    backgroundColor: colors.surface,
+  },
+  sheetHandle: {
+    backgroundColor: colors.border,
+    width: 36,
+  },
+  sheetContent: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+  },
+  sheetTitle: {
+    ...typography.h4,
+    color: colors.text,
+    marginBottom: spacing.lg,
+  },
+  // Inline create row
+  inlineCreateRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  inlineCreateInput: {
+    flex: 1,
+    backgroundColor: colors.surfaceContainer,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    color: colors.text,
+    fontSize: typography.bodySmall.fontSize,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: touch.minTargetSmall,
+  },
+  inlineCreateBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    justifyContent: 'center',
+    minHeight: touch.minTargetSmall,
+  },
+  inlineCreateBtnDisabled: {
+    opacity: 0.4,
+  },
+  inlineCreateBtnText: {
+    ...typography.bodySmall,
+    color: colors.textInverse,
+    fontWeight: '600',
+  },
+  // Collection list
+  sheetList: {
+    flex: 1,
+  },
+  sheetItem: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+    marginBottom: spacing.xs,
+  },
+  sheetItemSelected: {
+    backgroundColor: colors.primaryLight,
+  },
+  sheetItemName: {
+    ...typography.body,
+    color: colors.text,
+  },
+  sheetItemNameSelected: {
+    color: colors.primary,
+    fontWeight: '600',
+  },
+  sheetItemMeta: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  // Empty state in sheet
+  sheetEmpty: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  sheetEmptyTitle: {
+    ...typography.body,
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  sheetEmptySubtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 });
