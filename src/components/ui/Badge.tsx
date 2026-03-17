@@ -63,6 +63,6 @@ const styles = StyleSheet.create({
   // md uses bodySmall metrics but overrides fontSize to 12
   mdText: {
     ...typography.bodySmall,
-    fontSize: 12,
+    fontSize: typography.caption.fontSize,
   },
 });

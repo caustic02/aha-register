@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
   },
   emptyIcon: {
-    fontSize: 48,
+    fontSize: spacing['3xl'],
     color: colors.border,
     marginBottom: spacing.lg,
   },

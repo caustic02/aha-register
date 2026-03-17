@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { Media } from '../db/types';
-import { colors, typography, radii } from '../theme';
+import { colors, typography, radii, spacing } from '../theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_HEIGHT = 280;
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   placeholderIcon: {
-    fontSize: 48,
+    fontSize: spacing['3xl'],
     color: colors.border,
   },
   addText: {
