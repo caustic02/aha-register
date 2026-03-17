@@ -42,22 +42,37 @@ export interface AIAnalysisResponse {
 
 // ── Auth helpers ─────────────────────────────────────────────────────────────
 
-/** Get a valid access token, refreshing if the cached session is expired. */
+/**
+ * Get a valid access token, using a three-tier fallback:
+ *  1. Cached session (if token not expiring within 30 s)
+ *  2. Refresh the existing session
+ *  3. Anonymous sign-in (creates a temporary JWT without user interaction)
+ */
 async function getAccessToken(): Promise<string | null> {
+  // 1. Try cached session
   const { data: { session } } = await supabase.auth.getSession();
-
   if (session?.access_token) {
-    // Check if token expires within the next 30 s (the request timeout).
-    // exp is in seconds; Date.now() is in ms.
     const expiresAt = session.expires_at ?? 0;
     if (expiresAt > Date.now() / 1000 + 30) {
       return session.access_token;
     }
   }
 
-  // Cached token missing or about to expire — force a refresh.
+  // 2. Try refreshing (works when refresh token is still valid)
   const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-  return refreshed?.access_token ?? null;
+  if (refreshed?.access_token) {
+    return refreshed.access_token;
+  }
+
+  // 3. No valid session at all — sign in anonymously so the capture flow
+  //    is never blocked by auth. Anonymous users get a real JWT that the
+  //    Edge Function accepts; RLS limits what they can access.
+  const { data: { session: anonSession }, error } =
+    await supabase.auth.signInAnonymously();
+  if (error || !anonSession?.access_token) {
+    return null;
+  }
+  return anonSession.access_token;
 }
 
 // ── Service ──────────────────────────────────────────────────────────────────
@@ -94,10 +109,9 @@ export async function analyzeObject(
     const payload = JSON.stringify({ image_base64, mime_type });
     let response = await callEdgeFunction(token, payload, controller.signal);
 
-    // On 401, try ONE token refresh and retry.
+    // On 401, get a fresh token (refresh → anonymous fallback) and retry once.
     if (response.status === 401) {
-      const { data: { session: refreshed } } = await supabase.auth.refreshSession();
-      token = refreshed?.access_token ?? null;
+      token = await getAccessToken();
       if (!token) {
         return { success: false, error: 'Authentication required. Please sign in again.' };
       }
