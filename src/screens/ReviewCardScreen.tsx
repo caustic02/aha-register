@@ -146,8 +146,12 @@ export function ReviewCardScreen({
   );
 
   const loadCollections = useCallback(async () => {
-    const rows = await getAllCollections(db);
-    setCollections(rows);
+    try {
+      const rows = await getAllCollections(db);
+      setCollections(rows);
+    } catch (err) {
+      console.error('[ReviewCard] loadCollections failed:', err);
+    }
   }, [db]);
 
   useEffect(() => {
@@ -210,12 +214,13 @@ export function ReviewCardScreen({
       setNewCollectionName('');
       await loadCollections();
       collectionSheetRef.current?.close();
-    } catch (err) {
-      if (__DEV__) console.error('Inline collection creation failed:', err);
+    } catch (err: unknown) {
+      console.error('[ReviewCard] inline collection creation failed:', err);
+      Alert.alert(t('common.error'), String(err instanceof Error ? err.message : err));
     } finally {
       setCreatingCollection(false);
     }
-  }, [newCollectionName, db, loadCollections]);
+  }, [newCollectionName, db, loadCollections, t]);
 
   const selectCollection = useCallback((id: string) => {
     setSelectedCollectionId(id);
@@ -261,11 +266,12 @@ export function ReviewCardScreen({
         () => {},
       );
       onSave?.(objectId);
-    } catch (err) {
-      if (__DEV__) console.error('saveReviewedObject failed:', err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[ReviewCard] saveReviewedObject failed:', msg, err);
       Alert.alert(
         t('common.error'),
-        t('reviewCard.saveFailed'),
+        `${t('reviewCard.saveFailed')}\n\n${msg}`,
       );
     } finally {
       setSaving(false);

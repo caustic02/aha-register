@@ -47,16 +47,43 @@ export async function saveReviewedObject(
   const storageDir = `${Paths.document.uri}media/`;
   const destUri = `${storageDir}${storageName}`;
 
-  const srcFile = new File(params.imageUri);
-  const destFile = new File(destUri);
-  const parentDir = destFile.parentDirectory;
-  if (!parentDir.exists) {
-    parentDir.create({ intermediates: true, idempotent: true });
+  console.log('[saveReviewedObject] step 1: copy image', {
+    src: params.imageUri,
+    dest: destUri,
+  });
+
+  try {
+    const srcFile = new File(params.imageUri);
+    if (!srcFile.exists) {
+      throw new Error(`Source file does not exist: ${params.imageUri}`);
+    }
+    const destFile = new File(destUri);
+    const parentDir = destFile.parentDirectory;
+    if (!parentDir.exists) {
+      parentDir.create({ intermediates: true, idempotent: true });
+    }
+    srcFile.copy(destFile);
+    if (!destFile.exists) {
+      throw new Error(`File copy produced no output at: ${destUri}`);
+    }
+  } catch (err) {
+    console.error('[saveReviewedObject] step 1 FAILED: file copy', {
+      imageUri: params.imageUri,
+      destUri,
+      error: err,
+    });
+    throw err;
   }
-  srcFile.copy(destFile);
 
   // ── 2. Compute SHA-256 on the stored copy (SACRED: hash before insert) ──
-  const sha256 = await computeSHA256(destUri);
+  let sha256: string;
+  try {
+    sha256 = await computeSHA256(destUri);
+    console.log('[saveReviewedObject] step 2: SHA-256 computed', sha256.slice(0, 16));
+  } catch (err) {
+    console.error('[saveReviewedObject] step 2 FAILED: SHA-256', { destUri, error: err });
+    throw err;
+  }
 
   // ── 3. Read default privacy tier ────────────────────────────────────────
   const privacyTier =
@@ -83,6 +110,13 @@ export async function saveReviewedObject(
       : 'document';
 
   // ── 6-9. Single atomic transaction ──────────────────────────────────────
+  console.log('[saveReviewedObject] step 6: starting transaction', {
+    objectId,
+    mediaId,
+    objectType: params.objectType,
+    privacyTier,
+  });
+
   await db.withTransactionAsync(async () => {
     // 6. INSERT object
     await db.runAsync(
@@ -109,6 +143,7 @@ export async function saveReviewedObject(
         now,
       ],
     );
+    console.log('[saveReviewedObject] step 6: object inserted');
 
     // 7. INSERT media
     await db.runAsync(
@@ -129,6 +164,7 @@ export async function saveReviewedObject(
         now,
       ],
     );
+    console.log('[saveReviewedObject] step 7: media inserted');
 
     // 8. Audit trail
     await logAuditEntry(db, {
@@ -142,6 +178,7 @@ export async function saveReviewedObject(
         app: params.captureMetadata.appVersion,
       },
     });
+    console.log('[saveReviewedObject] step 8: audit logged');
 
     // 9. Queue sync
     const syncEngine = new SyncEngine(db);
@@ -149,8 +186,10 @@ export async function saveReviewedObject(
       objectId,
       mediaId,
     });
+    console.log('[saveReviewedObject] step 9: sync queued');
   });
 
+  console.log('[saveReviewedObject] SUCCESS objectId=', objectId);
   return objectId;
 }
 

@@ -36,7 +36,21 @@ export async function logAuditEntry(
 ): Promise<void> {
   const id = generateId();
   const now = new Date().toISOString();
-  const effectiveUserId = await resolveUserId(params.userId);
+  let effectiveUserId: string | null = await resolveUserId(params.userId);
+
+  // Validate user_id against local users table to satisfy FK constraint
+  // (PRAGMA foreign_keys=ON). If the resolved user doesn't exist locally
+  // (e.g. 'local' fallback, or Supabase UUID not yet synced), use NULL
+  // so the audit entry doesn't break the parent transaction.
+  if (effectiveUserId) {
+    const userRow = await db.getFirstAsync<{ id: string }>(
+      'SELECT id FROM users WHERE id = ? LIMIT 1',
+      [effectiveUserId],
+    );
+    if (!userRow) {
+      effectiveUserId = null;
+    }
+  }
 
   await db.runAsync(
     `INSERT INTO audit_trail

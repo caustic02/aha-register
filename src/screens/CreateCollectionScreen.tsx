@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -51,12 +52,16 @@ export function CreateCollectionScreen({ navigation }: Props) {
         description: description.trim() || undefined,
       });
       navigation.goBack();
-    } catch (err) {
-      if (__DEV__) console.error('createCollection failed:', err);
+    } catch (err: unknown) {
+      console.error('createCollection failed:', err);
+      Alert.alert(
+        t('common.error'),
+        String(err instanceof Error ? err.message : err),
+      );
     } finally {
       setSaving(false);
     }
-  }, [name, collectionType, description, db, navigation]);
+  }, [name, collectionType, description, db, navigation, t]);
 
   return (
     <View style={styles.container}>
