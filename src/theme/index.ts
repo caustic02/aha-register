@@ -227,6 +227,24 @@ export const a11y = {
   focusRingOffset: 2,
 } as const;
 
+// ── Tab Bar (Material Design 3 spec) ─────────────────────────────────────────
+
+export const tabBar = {
+  height: 64,
+  iconSize: 24,
+  activeStrokeWidth: 2.5,
+  inactiveStrokeWidth: 1.5,
+  labelSize: 11,
+  indicatorWidth: 64,
+  indicatorHeight: 32,
+  indicatorRadius: 16,
+  activeColor: '#2D5A27',        // colors.primary
+  inactiveColor: '#767676',      // colors.textMuted
+  backgroundColor: '#F7F5F0',    // colors.surface
+  indicatorColor: 'rgba(45, 90, 39, 0.12)', // primary @ 12% opacity
+  borderColor: '#E5E2DB',        // colors.border
+} as const;
+
 // ── Layout Constants ──────────────────────────────────────────────────────────
 
 export const layout = {

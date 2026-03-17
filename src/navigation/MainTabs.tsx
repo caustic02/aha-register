@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
@@ -10,54 +10,123 @@ import type { CaptureStackParamList } from './CaptureStack';
 import { CollectionStack } from './CollectionStack';
 import type { CollectionStackParamList } from './CollectionStack';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { tabBar } from '../theme';
+import {
+  HomeTabIcon,
+  CaptureTabIcon,
+  CollectionTabIcon,
+  SettingsTabIcon,
+} from '../theme/icons';
+import type { LucideIcon } from 'lucide-react-native';
+
+// ── Param list ───────────────────────────────────────────────────────────────
 
 export type MainTabParamList = {
-  Objects: NavigatorScreenParams<HomeStackParamList> | undefined;
+  Home: NavigatorScreenParams<HomeStackParamList> | undefined;
   Capture: NavigatorScreenParams<CaptureStackParamList> | undefined;
-  Collections: NavigatorScreenParams<CollectionStackParamList> | undefined;
+  Collection: NavigatorScreenParams<CollectionStackParamList> | undefined;
   Settings: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const ICONS: Record<string, string> = {
-  Objects: '\u25CE',     // ◎
-  Capture: '\u2295',     // ⊕
-  Collections: '\u25C8', // ◈
-  Settings: '\u2699',    // ⚙
+// ── Icon config ──────────────────────────────────────────────────────────────
+
+const TAB_ICONS: Record<string, LucideIcon> = {
+  Home: HomeTabIcon,
+  Capture: CaptureTabIcon,
+  Collection: CollectionTabIcon,
+  Settings: SettingsTabIcon,
 };
+
+// ── Active indicator pill ────────────────────────────────────────────────────
+
+function TabIcon({
+  route,
+  focused,
+  color,
+}: {
+  route: string;
+  focused: boolean;
+  color: string;
+}) {
+  const Icon = TAB_ICONS[route];
+  return (
+    <View style={styles.iconContainer}>
+      {focused && <View style={styles.indicator} />}
+      <Icon
+        size={tabBar.iconSize}
+        color={color}
+        strokeWidth={focused ? tabBar.activeStrokeWidth : tabBar.inactiveStrokeWidth}
+      />
+    </View>
+  );
+}
+
+// ── Navigator ────────────────────────────────────────────────────────────────
 
 export function MainTabs() {
   return (
     <Tab.Navigator
-      initialRouteName="Objects"
+      initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarShowLabel: false,
-        tabBarIcon: ({ color, size }) => (
-          <Text
-            style={{
-              color,
-              fontSize: route.name === 'Capture' ? size + 8 : size,
-              lineHeight: route.name === 'Capture' ? size + 10 : size + 2,
-            }}
-          >
-            {ICONS[route.name]}
-          </Text>
+        tabBarIcon: ({ focused, color }) => (
+          <TabIcon route={route.name} focused={focused} color={color} />
         ),
-        tabBarActiveTintColor: '#74B9FF',
-        tabBarInactiveTintColor: '#636E72',
-        tabBarStyle: {
-          backgroundColor: '#0A0A14',
-          borderTopColor: 'rgba(116,185,255,0.08)',
-          borderTopWidth: 1,
-        },
+        tabBarActiveTintColor: tabBar.activeColor,
+        tabBarInactiveTintColor: tabBar.inactiveColor,
+        tabBarLabelStyle: styles.label,
+        tabBarStyle: styles.bar,
+        tabBarHideOnKeyboard: true,
       })}
     >
-      <Tab.Screen name="Objects" component={HomeStack} />
-      <Tab.Screen name="Capture" component={CaptureStack} />
-      <Tab.Screen name="Collections" component={CollectionStack} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen
+        name="Home"
+        component={HomeStack}
+        options={{ tabBarAccessibilityLabel: 'Home tab' }}
+      />
+      <Tab.Screen
+        name="Capture"
+        component={CaptureStack}
+        options={{ tabBarAccessibilityLabel: 'Capture tab' }}
+      />
+      <Tab.Screen
+        name="Collection"
+        component={CollectionStack}
+        options={{ tabBarAccessibilityLabel: 'Collection tab' }}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{ tabBarAccessibilityLabel: 'Settings tab' }}
+      />
     </Tab.Navigator>
   );
 }
+
+// ── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  bar: {
+    height: tabBar.height,
+    backgroundColor: tabBar.backgroundColor,
+    borderTopColor: tabBar.borderColor,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  label: {
+    fontSize: tabBar.labelSize,
+    fontWeight: '500',
+  },
+  iconContainer: {
+    width: tabBar.indicatorWidth,
+    height: tabBar.indicatorHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  indicator: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: tabBar.indicatorColor,
+    borderRadius: tabBar.indicatorRadius,
+  },
+});

@@ -124,7 +124,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     (objectId: string) => {
       const tabNav =
         navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
-      tabNav?.navigate('Objects', {
+      tabNav?.navigate('Home', {
         screen: 'ObjectDetail',
         params: { objectId },
       });

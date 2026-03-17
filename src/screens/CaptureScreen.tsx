@@ -279,7 +279,7 @@ export function CaptureScreen() {
   const handleViewObjects = useCallback(() => {
     handleRetake();
     // Navigate to Objects tab via parent tab navigator
-    navigation.getParent()?.navigate('Objects');
+    navigation.getParent()?.navigate('Home');
   }, [navigation, handleRetake]);
 
   const handleAnalyzeWithAI = useCallback(async () => {

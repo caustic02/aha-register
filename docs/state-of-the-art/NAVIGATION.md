@@ -131,22 +131,25 @@ Skip-AI path: `CaptureCamera` → directly `ReviewCard` with `EMPTY_ANALYSIS`.
 
 ---
 
-### Tab icons (unicode emoji fallback)
+### Tab Bar (Lucide icons, Material Design 3)
 
-| Tab | Symbol | Active colour |
-|-----|--------|---------------|
-| Objects | `◎` (`\u25CE`) | `#74B9FF` |
-| Capture | `⊕` (`\u2295`) | `#74B9FF` |
-| Collections | `◈` (`\u25C8`) | `#74B9FF` |
-| Settings | `⚙` (`\u2699`) | `#74B9FF` |
+| Tab | Lucide Icon | Label | Active | Inactive |
+|-----|------------|-------|--------|----------|
+| Home | `House` | Home | Primary, pill indicator, strokeWidth 2.5 | Muted, strokeWidth 1.5 |
+| Capture | `Camera` | Capture | Primary, pill indicator, strokeWidth 2.5 | Muted, strokeWidth 1.5 |
+| Collection | `Archive` | Collection | Primary, pill indicator, strokeWidth 2.5 | Muted, strokeWidth 1.5 |
+| Settings | `Settings` | Settings | Primary, pill indicator, strokeWidth 2.5 | Muted, strokeWidth 1.5 |
+
+Bar height: 64dp. Labels always visible. Active indicator: pill (64x32dp) with primary @ 12% opacity.
+All tokens in `tabBar` export from `src/theme/index.ts`.
 
 ---
 
 ## Cross-tab Navigation
 
-To navigate to the Objects tab from inside CaptureStack:
+To navigate to the Home tab from inside CaptureStack:
 ```ts
-navigation.getParent()?.navigate('Objects');
+navigation.getParent()?.navigate('Home');
 ```
 
 ---

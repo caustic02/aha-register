@@ -154,12 +154,31 @@ All interactive elements (buttons, chips, list rows, icons) must have a minimum 
 
 ### Tab Icons
 
-| Tab | Lucide Icon | Export Name |
-|-----|------------|-------------|
-| Objects | `Archive` | `ObjectsTabIcon` |
-| Collections | `FolderOpen` | `CollectionsTabIcon` |
-| Capture | `Camera` | `CaptureTabIcon` |
-| Settings | `Settings` | `SettingsTabIcon` |
+| Tab | Lucide Icon | Export Name | Active | Inactive |
+|-----|------------|-------------|--------|----------|
+| Home | `House` | `HomeTabIcon` | strokeWidth 2.5 | strokeWidth 1.5 |
+| Capture | `Camera` | `CaptureTabIcon` | strokeWidth 2.5 | strokeWidth 1.5 |
+| Collection | `Archive` | `CollectionTabIcon` | strokeWidth 2.5 | strokeWidth 1.5 |
+| Settings | `Settings` | `SettingsTabIcon` | strokeWidth 2.5 | strokeWidth 1.5 |
+
+### Tab Bar Spec (Material Design 3)
+
+| Token | Value | Description |
+|-------|-------|-------------|
+| `tabBar.height` | 64 | Bar height (icon + label + padding) |
+| `tabBar.iconSize` | 24 | Icon canvas size |
+| `tabBar.labelSize` | 11 | Label font size (M3 spec) |
+| `tabBar.activeColor` | `#2D5A27` | Primary green for active tab |
+| `tabBar.inactiveColor` | `#767676` | Muted gray for inactive tabs |
+| `tabBar.backgroundColor` | `#F7F5F0` | Surface color |
+| `tabBar.indicatorColor` | `rgba(45,90,39,0.12)` | Pill indicator (primary @ 12%) |
+| `tabBar.indicatorWidth` | 64 | Pill width |
+| `tabBar.indicatorHeight` | 32 | Pill height |
+| `tabBar.indicatorRadius` | 16 | Pill corner radius |
+
+Active state: pill-shaped indicator behind icon, heavier stroke weight, primary color.
+Inactive state: no indicator, lighter stroke weight, muted color.
+Labels always visible.
 
 ### Action Icons
 
