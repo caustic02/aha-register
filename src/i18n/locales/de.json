@@ -609,6 +609,7 @@
   },
   "home": {
     "title": "Sammlung",
+    "personalCollection": "Pers\u00f6nliche Sammlung",
     "viewAll": "Alle anzeigen",
     "objectCount": "{{count}} Objekte",
     "objectCount_one": "1 Objekt",
@@ -616,11 +617,17 @@
     "statObjects": "Objekte",
     "statPending": "Ausstehend",
     "statPhotos": "Fotos",
-    "recentCaptures": "Letzte Aufnahmen",
+    "recentCaptures": "Zuletzt",
     "byType": "Nach Typ",
     "emptyTitle": "Noch keine Objekte",
-    "emptyMessage": "Erfasse dein erstes Objekt mit der Kamera-Registerkarte.",
-    "pendingSyncBanner": "{{count}} \u00c4nderungen ausstehend"
+    "emptyMessage": "Tippe auf Erfassen, um dein erstes Objekt zu dokumentieren",
+    "pendingSyncBanner": "{{count}} \u00c4nderungen ausstehend",
+    "offlineBanner": "Offline-Modus",
+    "captureCtaTitle": "Neues Objekt erfassen",
+    "captureCtaSubtitle": "Fotografieren und mit KI dokumentieren",
+    "quickActions": "Schnellaktionen",
+    "exportCollection": "Exportieren",
+    "browseByType": "Nach Typ filtern"
   },
   "camera": {
     "gridToggle": "Raster umschalten",

@@ -609,6 +609,7 @@
   },
   "home": {
     "title": "Collection",
+    "personalCollection": "Personal Collection",
     "viewAll": "View all",
     "objectCount": "{{count}} objects",
     "objectCount_one": "1 object",
@@ -616,11 +617,17 @@
     "statObjects": "Objects",
     "statPending": "Pending",
     "statPhotos": "Photos",
-    "recentCaptures": "Recent Captures",
+    "recentCaptures": "Recent",
     "byType": "By Type",
     "emptyTitle": "No objects yet",
-    "emptyMessage": "Capture your first object using the camera tab.",
-    "pendingSyncBanner": "{{count}} changes pending sync"
+    "emptyMessage": "Tap Capture to document your first object",
+    "pendingSyncBanner": "{{count}} changes pending sync",
+    "offlineBanner": "Working offline",
+    "captureCtaTitle": "Capture New Object",
+    "captureCtaSubtitle": "Photograph and document with AI",
+    "quickActions": "Quick Actions",
+    "exportCollection": "Export",
+    "browseByType": "Browse by Type"
   },
   "camera": {
     "gridToggle": "Toggle grid overlay",
