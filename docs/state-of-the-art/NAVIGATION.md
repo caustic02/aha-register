@@ -117,8 +117,9 @@ type CaptureStackParamList = {
 };
 ```
 
-**Flow:** `CaptureCamera` → `AIProcessing` (replace) → `ReviewCard` (replace) → reset to `CaptureCamera`.
+**Flow:** `CaptureCamera` → `AIProcessing` (replace) → `ReviewCard` (replace) → on save: reset CaptureStack + navigate to `Home` tab → `ObjectDetail`.
 Skip-AI path: `CaptureCamera` → directly `ReviewCard` with `EMPTY_ANALYSIS`.
+Discard path: `ReviewCard` → reset to `CaptureCamera`.
 
 ---
 
@@ -152,12 +153,21 @@ To navigate to the Home tab from inside CaptureStack:
 navigation.getParent()?.navigate('Home');
 ```
 
+**Post-save navigation** (ReviewCard → ObjectDetail):
+```ts
+// 1. Reset capture stack
+navigation.dispatch(CommonActions.reset({ index: 0, routes: [{ name: 'CaptureCamera' }] }));
+// 2. Navigate to Home tab → ObjectDetail
+tabNav.navigate('Home', { screen: 'ObjectDetail', params: { objectId } });
+```
+Uses `useNavigation<NavigationProp<MainTabParamList>>()` to access the tab navigator from within CaptureStack.
+
 ---
 
 ## Navigation Patterns
 
 - **replace** — used between CaptureCamera → AIProcessing → ReviewCard so back-swipe never returns to mid-flow screens.
-- **CommonActions.reset** — used when "Save" or "Discard" on ReviewCard should return the user cleanly to `CaptureCamera`.
+- **CommonActions.reset** — used when "Discard" on ReviewCard returns to `CaptureCamera`, and after "Save" to clear the capture stack before cross-tab navigation.
 - **goBack()** — used on `ObjectDetail` back button and after successful delete.
 - **headerShown: false** — all navigators; every screen renders its own header bar using `IconButton` + `BackIcon`.
 
@@ -185,6 +195,7 @@ Collection > [Object Type] > [Object Title]
 |-----------|------|---------|
 | `FilterSheet` | `src/components/FilterSheet.tsx` | ObjectListScreen filter icon |
 | `ExportModal` | `src/components/ExportModal.tsx` | ObjectDetail Export button |
+| Collection Picker | inline in `src/screens/ReviewCardScreen.tsx` | ReviewCard "Choose Collection" button |
 
 ### FilterSheet
 

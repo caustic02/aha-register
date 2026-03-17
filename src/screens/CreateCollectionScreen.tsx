@@ -44,12 +44,18 @@ export function CreateCollectionScreen({ navigation }: Props) {
       return;
     }
     setSaving(true);
-    await createCollection(db, {
-      name: trimmed,
-      collection_type: collectionType,
-      description: description.trim() || undefined,
-    });
-    navigation.goBack();
+    try {
+      await createCollection(db, {
+        name: trimmed,
+        collection_type: collectionType,
+        description: description.trim() || undefined,
+      });
+      navigation.goBack();
+    } catch (err) {
+      if (__DEV__) console.error('createCollection failed:', err);
+    } finally {
+      setSaving(false);
+    }
   }, [name, collectionType, description, db, navigation]);
 
   return (
@@ -143,7 +149,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    color: colors.white,
+    color: colors.text,
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold,
   },
