@@ -81,7 +81,7 @@ CREATE TABLE IF NOT EXISTS media (
   file_type     TEXT NOT NULL DEFAULT 'image', -- image | video | audio | document | 3d_scan
   mime_type     TEXT NOT NULL,
   file_size     INTEGER,
-  sha256_hash   TEXT,
+  sha256_hash   TEXT NOT NULL,
   caption       TEXT,
   privacy_tier  TEXT NOT NULL DEFAULT 'public',
   is_primary    INTEGER NOT NULL DEFAULT 0, -- 1 = primary display image

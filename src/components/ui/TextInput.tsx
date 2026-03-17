@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     minHeight: touch.minTarget,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    fontSize: 16,
+    fontSize: typography.body.fontSize,
     color: colors.text,
   },
   inputWithLeftIcon: {

@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { colors, radii, spacing, typography } from '../theme';
+import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
   Badge,
   Button,
@@ -32,24 +33,13 @@ export interface ReviewCardScreenProps {
   onDiscard?: () => void;
 }
 
-// ── Object type options for ChipGroup ────────────────────────────────────────
+// ── Object type keys (labels resolved via i18n inside component) ─────────────
 
-const OBJECT_TYPE_OPTIONS = [
-  { value: 'painting', label: 'Painting' },
-  { value: 'sculpture', label: 'Sculpture' },
-  { value: 'drawing', label: 'Drawing' },
-  { value: 'print', label: 'Print' },
-  { value: 'photograph', label: 'Photograph' },
-  { value: 'textile', label: 'Textile' },
-  { value: 'ceramic', label: 'Ceramic' },
-  { value: 'glass', label: 'Glass' },
-  { value: 'metal', label: 'Metal' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'jewelry', label: 'Jewelry' },
-  { value: 'manuscript', label: 'Manuscript' },
-  { value: 'mixed_media', label: 'Mixed Media' },
-  { value: 'other', label: 'Other' },
-];
+const OBJECT_TYPE_KEYS = [
+  'painting', 'sculpture', 'drawing', 'print', 'photograph', 'textile',
+  'ceramic', 'glass', 'metal', 'furniture', 'jewelry', 'manuscript',
+  'mixed_media', 'other',
+] as const;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,8 +58,8 @@ function formatTimestamp(ts?: string): string {
   }
 }
 
-function formatCoords(meta: CaptureMetadata): string {
-  if (meta.latitude == null || meta.longitude == null) return 'Not available';
+function formatCoords(meta: CaptureMetadata, fallback: string): string {
+  if (meta.latitude == null || meta.longitude == null) return fallback;
   return `${meta.latitude.toFixed(6)}, ${meta.longitude.toFixed(6)}`;
 }
 
@@ -83,6 +73,8 @@ export function ReviewCardScreen({
   onSave,
   onDiscard,
 }: ReviewCardScreenProps) {
+  const { t } = useAppTranslation();
+
   // ── Editable field state ──────────────────────────────────────────────────
 
   const [title, setTitle] = useState(fieldString(analysisResult.title.value));
@@ -130,11 +122,16 @@ export function ReviewCardScreen({
 
   const confidenceBadge = useMemo(() => {
     if (avgConfidence >= 75)
-      return { variant: 'success' as const, label: 'High confidence' };
+      return { variant: 'success' as const, label: t('reviewCard.highConfidence') };
     if (avgConfidence >= 50)
-      return { variant: 'warning' as const, label: 'Review suggested' };
-    return { variant: 'error' as const, label: 'Low confidence \u2014 review carefully' };
-  }, [avgConfidence]);
+      return { variant: 'warning' as const, label: t('reviewCard.reviewSuggested') };
+    return { variant: 'error' as const, label: t('reviewCard.lowConfidence') };
+  }, [avgConfidence, t]);
+
+  const objectTypeOptions = useMemo(
+    () => OBJECT_TYPE_KEYS.map((k) => ({ value: k, label: t(`reviewCard.objectTypes.${k}`) })),
+    [t],
+  );
 
   const keywordOptions = useMemo(() => {
     const kw = analysisResult.keywords.value;
@@ -149,21 +146,23 @@ export function ReviewCardScreen({
   const handleSave = () => {
     // TODO: Wire to object creation service — insert into objects table,
     // create object_persons entries, save media record
-    console.log('Save pressed', {
-      title,
-      objectType,
-      dateCreated,
-      medium,
-      dimensions,
-      stylePeriod,
-      cultureOrigin,
-      description,
-      condition,
-      selectedKeywords,
-      captureMetadata,
-      imageUri,
-      artists,
-    });
+    if (__DEV__) {
+      console.log('Save pressed', {
+        title,
+        objectType,
+        dateCreated,
+        medium,
+        dimensions,
+        stylePeriod,
+        cultureOrigin,
+        description,
+        condition,
+        selectedKeywords,
+        captureMetadata,
+        imageUri,
+        artists,
+      });
+    }
     onSave?.();
   };
 
@@ -195,7 +194,7 @@ export function ReviewCardScreen({
               {formatTimestamp(captureMetadata.timestamp)}
             </Text>
             <Text style={styles.captureMeta}>
-              {formatCoords(captureMetadata)}
+              {formatCoords(captureMetadata, t('reviewCard.coordsNotAvailable'))}
             </Text>
             {sha256Hash != null && (
               <Text style={[styles.captureMeta, typography.mono]}>
@@ -209,24 +208,24 @@ export function ReviewCardScreen({
         {hasAIData && (
           <>
             <View style={styles.section}>
-              <SectionHeader title="AI Analysis" />
+              <SectionHeader title={t('reviewCard.aiAnalysis')} />
               <View style={styles.confidenceRow}>
                 <View style={styles.confidenceItem}>
                   <ConfidenceBar
                     confidence={analysisResult.title.confidence}
-                    label="Title"
+                    label={t('reviewCard.confidenceTitle')}
                   />
                 </View>
                 <View style={styles.confidenceItem}>
                   <ConfidenceBar
                     confidence={analysisResult.object_type.confidence}
-                    label="Object type"
+                    label={t('reviewCard.confidenceObjectType')}
                   />
                 </View>
                 <View style={styles.confidenceItem}>
                   <ConfidenceBar
                     confidence={analysisResult.medium.confidence}
-                    label="Medium"
+                    label={t('reviewCard.confidenceMedium')}
                   />
                 </View>
               </View>
@@ -247,89 +246,89 @@ export function ReviewCardScreen({
 
         {/* 3. CORE METADATA (editable) */}
         <View style={styles.section}>
-          <SectionHeader title="Object details" />
+          <SectionHeader title={t('reviewCard.objectDetails')} />
 
           <AIField
-            label="Title"
+            label={t('reviewCard.titleLabel')}
             confidence={analysisResult.title.confidence}
           >
             <TextInput
-              label="Title"
+              label={t('reviewCard.titleLabel')}
               value={title}
               onChangeText={setTitle}
-              placeholder="Object title"
+              placeholder={t('reviewCard.titlePlaceholder')}
             />
           </AIField>
 
           <AIField
-            label="Object type"
+            label={t('reviewCard.objectTypeLabel')}
             confidence={analysisResult.object_type.confidence}
           >
-            <Text style={styles.fieldLabel}>Object type</Text>
+            <Text style={styles.fieldLabel}>{t('reviewCard.objectTypeLabel')}</Text>
             <ChipGroup
-              options={OBJECT_TYPE_OPTIONS}
+              options={objectTypeOptions}
               selected={objectType}
               onSelect={(v) => setObjectType(Array.isArray(v) ? v[0] : v)}
             />
           </AIField>
 
           <AIField
-            label="Date created"
+            label={t('reviewCard.dateCreatedLabel')}
             confidence={analysisResult.date_created.confidence}
           >
             <TextInput
-              label="Date created"
+              label={t('reviewCard.dateCreatedLabel')}
               value={dateCreated}
               onChangeText={setDateCreated}
-              placeholder="e.g. ca. 1650, 1920-1925"
+              placeholder={t('reviewCard.dateCreatedPlaceholder')}
             />
           </AIField>
 
           <AIField
-            label="Medium / Materials"
+            label={t('reviewCard.mediumLabel')}
             confidence={analysisResult.medium.confidence}
           >
             <TextInput
-              label="Medium / Materials"
+              label={t('reviewCard.mediumLabel')}
               value={medium}
               onChangeText={setMedium}
-              placeholder="e.g. Oil on canvas"
+              placeholder={t('reviewCard.mediumPlaceholder')}
             />
           </AIField>
 
           <AIField
-            label="Dimensions"
+            label={t('reviewCard.dimensionsLabel')}
             confidence={analysisResult.dimensions_description.confidence}
           >
             <TextInput
-              label="Dimensions"
+              label={t('reviewCard.dimensionsLabel')}
               value={dimensions}
               onChangeText={setDimensions}
-              placeholder="e.g. 30 × 40 cm"
+              placeholder={t('reviewCard.dimensionsPlaceholder')}
             />
           </AIField>
 
           <AIField
-            label="Style / Period"
+            label={t('reviewCard.stylePeriodLabel')}
             confidence={analysisResult.style_period.confidence}
           >
             <TextInput
-              label="Style / Period"
+              label={t('reviewCard.stylePeriodLabel')}
               value={stylePeriod}
               onChangeText={setStylePeriod}
-              placeholder="e.g. Baroque, Art Nouveau"
+              placeholder={t('reviewCard.stylePeriodPlaceholder')}
             />
           </AIField>
 
           <AIField
-            label="Culture / Origin"
+            label={t('reviewCard.cultureOriginLabel')}
             confidence={analysisResult.culture_origin.confidence}
           >
             <TextInput
-              label="Culture / Origin"
+              label={t('reviewCard.cultureOriginLabel')}
               value={cultureOrigin}
               onChangeText={setCultureOrigin}
-              placeholder="e.g. Dutch, Mesoamerican"
+              placeholder={t('reviewCard.cultureOriginPlaceholder')}
             />
           </AIField>
         </View>
@@ -338,19 +337,19 @@ export function ReviewCardScreen({
 
         {/* 4. DESCRIPTION */}
         <View style={styles.section}>
-          <SectionHeader title="Description" />
+          <SectionHeader title={t('reviewCard.descriptionSection')} />
           <TextInput
-            label="Description"
+            label={t('reviewCard.descriptionLabel')}
             value={description}
             onChangeText={setDescription}
-            placeholder="Object description"
+            placeholder={t('reviewCard.descriptionPlaceholder')}
             multiline
           />
           {hasAIData && (
             <View style={styles.confidenceBarWrap}>
               <ConfidenceBar
                 confidence={analysisResult.description.confidence}
-                label="Description confidence"
+                label={t('reviewCard.descriptionConfidence')}
               />
             </View>
           )}
@@ -360,12 +359,12 @@ export function ReviewCardScreen({
 
         {/* 5. CONDITION */}
         <View style={styles.section}>
-          <SectionHeader title="Condition" />
+          <SectionHeader title={t('reviewCard.conditionSection')} />
           <TextInput
-            label="Condition"
+            label={t('reviewCard.conditionLabel')}
             value={condition}
             onChangeText={setCondition}
-            placeholder="Visible condition notes"
+            placeholder={t('reviewCard.conditionPlaceholder')}
             multiline
           />
         </View>
@@ -375,8 +374,8 @@ export function ReviewCardScreen({
         {/* 6. SUGGESTED ARTISTS */}
         <View style={styles.section}>
           <SectionHeader
-            title="Artists"
-            action="Add"
+            title={t('reviewCard.artistsSection')}
+            action={t('reviewCard.artistsAdd')}
             onAction={() => {
               // TODO: Open artist picker/creation modal
             }}
@@ -386,18 +385,18 @@ export function ReviewCardScreen({
               <Card variant="flat" key={`artist-${idx}`} style={styles.artistCard}>
                 <View style={styles.artistRow}>
                   <Text style={styles.artistName}>
-                    {artist.name ?? 'Unknown artist'}
+                    {artist.name ?? t('reviewCard.unknownArtist')}
                   </Text>
                   <Badge variant="neutral" label={artist.role} size="sm" />
                 </View>
                 <ConfidenceBar
                   confidence={artist.confidence}
-                  label="Confidence"
+                  label={t('reviewCard.artistConfidence')}
                 />
               </Card>
             ))
           ) : (
-            <Text style={styles.emptyText}>No artists identified</Text>
+            <Text style={styles.emptyText}>{t('reviewCard.noArtists')}</Text>
           )}
         </View>
 
@@ -405,7 +404,7 @@ export function ReviewCardScreen({
 
         {/* 7. KEYWORDS */}
         <View style={styles.section}>
-          <SectionHeader title="Keywords" />
+          <SectionHeader title={t('reviewCard.keywordsSection')} />
           {keywordOptions.length > 0 ? (
             <ChipGroup
               options={keywordOptions}
@@ -416,7 +415,7 @@ export function ReviewCardScreen({
               multiSelect
             />
           ) : (
-            <Text style={styles.emptyText}>No keywords suggested</Text>
+            <Text style={styles.emptyText}>{t('reviewCard.noKeywords')}</Text>
           )}
         </View>
 
@@ -425,7 +424,7 @@ export function ReviewCardScreen({
         {/* 8. SAVE ACTIONS */}
         <View style={styles.actions}>
           <Button
-            label="Save to collection"
+            label={t('reviewCard.saveToCollection')}
             variant="primary"
             size="lg"
             onPress={handleSave}
@@ -433,7 +432,7 @@ export function ReviewCardScreen({
           />
           <View style={styles.actionSpacer} />
           <Button
-            label="Discard"
+            label={t('reviewCard.discard')}
             variant="ghost"
             size="md"
             onPress={handleDiscard}

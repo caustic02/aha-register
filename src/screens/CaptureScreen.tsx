@@ -902,7 +902,7 @@ const styles = StyleSheet.create({
   },
   checkmark: {
     color: colors.accent,
-    fontSize: 64,
+    fontSize: spacing['4xl'],
     marginBottom: spacing.lg,
   },
   doneTitle: {

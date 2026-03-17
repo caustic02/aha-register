@@ -19,7 +19,7 @@ import {
   SectionHeader,
   TextInput,
 } from '../components/ui';
-import { colors } from '../theme';
+import { colors, typography } from '../theme';
 
 export function DevShowcase() {
   const [titleValue, setTitleValue] = useState('');
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: typography.h3.fontSize,
     marginTop: 32,
     marginBottom: 12,
     color: colors.text,

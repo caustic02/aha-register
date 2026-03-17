@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { Button } from '../components/ui';
+import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
   analyzeObject,
   type AIAnalysisResult,
@@ -31,17 +32,17 @@ export interface AIProcessingScreenProps {
 
 type StepStatus = 'pending' | 'active' | 'complete';
 
-interface Step {
-  label: string;
-  delayMs: number; // delay before becoming active (relative to mount)
+interface StepDef {
+  i18nKey: string;
+  delayMs: number;
 }
 
-const STEPS: Step[] = [
-  { label: 'Securing capture', delayMs: 0 },
-  { label: 'Analyzing image', delayMs: 0 },
-  { label: 'Identifying object type', delayMs: 1000 },
-  { label: 'Extracting details', delayMs: 2000 },
-  { label: 'Assessing condition', delayMs: 3000 },
+const STEP_DEFS: StepDef[] = [
+  { i18nKey: 'aiProcessing.securingCapture', delayMs: 0 },
+  { i18nKey: 'aiProcessing.analyzingImage', delayMs: 0 },
+  { i18nKey: 'aiProcessing.identifyingType', delayMs: 1000 },
+  { i18nKey: 'aiProcessing.extractingDetails', delayMs: 2000 },
+  { i18nKey: 'aiProcessing.assessingCondition', delayMs: 3000 },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -54,8 +55,15 @@ export function AIProcessingScreen({
   onComplete,
   onSkip,
 }: AIProcessingScreenProps) {
+  const { t } = useAppTranslation();
+
+  const steps = useMemo(
+    () => STEP_DEFS.map((d) => ({ label: t(d.i18nKey), delayMs: d.delayMs })),
+    [t],
+  );
+
   const [stepStatuses, setStepStatuses] = useState<StepStatus[]>(() =>
-    STEPS.map((_, i) => (i === 0 ? 'complete' : 'pending')),
+    STEP_DEFS.map((_, i) => (i === 0 ? 'complete' : 'pending')),
   );
   const [error, setError] = useState<string | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -63,7 +71,7 @@ export function AIProcessingScreen({
   const resultRef = useRef<AIAnalysisResult | null>(null);
 
   // Step row fade-in animations (one per step)
-  const [fadeAnims] = useState(() => STEPS.map(() => new Animated.Value(0)));
+  const [fadeAnims] = useState(() => STEP_DEFS.map(() => new Animated.Value(0)));
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -78,7 +86,7 @@ export function AIProcessingScreen({
     // Step 0 visible immediately
     fadeAnims[0].setValue(1);
     // Steps 1+ fade in on their delay
-    const timers = STEPS.slice(1).map((step, idx) =>
+    const timers = STEP_DEFS.slice(1).map((step, idx) =>
       setTimeout(() => {
         Animated.timing(fadeAnims[idx + 1], {
           toValue: 1,
@@ -99,7 +107,7 @@ export function AIProcessingScreen({
       return next;
     });
 
-    const timers = STEPS.slice(2).map((step, idx) =>
+    const timers = STEP_DEFS.slice(2).map((step, idx) =>
       setTimeout(() => {
         setStepStatuses((prev) => {
           const next = [...prev];
@@ -129,28 +137,28 @@ export function AIProcessingScreen({
       if (response.success && response.metadata) {
         resultRef.current = response.metadata;
         // Mark all steps complete
-        setStepStatuses(STEPS.map(() => 'complete'));
+        setStepStatuses(STEP_DEFS.map(() => 'complete'));
         // Navigate after brief pause
         setTimeout(() => {
           if (!cancelled) onComplete(response.metadata!);
         }, 500);
       } else {
-        setError(response.error ?? 'Analysis failed');
+        setError(response.error ?? t('aiProcessing.analysisFailed'));
         // Mark all steps complete so UI doesn't look stuck
-        setStepStatuses(STEPS.map(() => 'complete'));
+        setStepStatuses(STEP_DEFS.map(() => 'complete'));
       }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [imageBase64, mimeType, onComplete]);
+  }, [imageBase64, mimeType, onComplete, t]);
 
   const handleRetry = useCallback(() => {
     setError(null);
     apiDone.current = false;
     resultRef.current = null;
-    setStepStatuses(STEPS.map((_, i) => (i === 0 ? 'complete' : 'pending')));
+    setStepStatuses(STEP_DEFS.map((_, i) => (i === 0 ? 'complete' : 'pending')));
 
     // Re-trigger step animations
     setStepStatuses((prev) => {
@@ -163,14 +171,14 @@ export function AIProcessingScreen({
       apiDone.current = true;
       if (response.success && response.metadata) {
         resultRef.current = response.metadata;
-        setStepStatuses(STEPS.map(() => 'complete'));
+        setStepStatuses(STEP_DEFS.map(() => 'complete'));
         setTimeout(() => onComplete(response.metadata!), 500);
       } else {
-        setError(response.error ?? 'Analysis failed');
-        setStepStatuses(STEPS.map(() => 'complete'));
+        setError(response.error ?? t('aiProcessing.analysisFailed'));
+        setStepStatuses(STEP_DEFS.map(() => 'complete'));
       }
     });
-  }, [imageBase64, mimeType, onComplete]);
+  }, [imageBase64, mimeType, onComplete, t]);
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -190,11 +198,11 @@ export function AIProcessingScreen({
 
       {/* Bottom: progress steps */}
       <View style={styles.progressSection}>
-        {STEPS.map((step, index) => {
+        {steps.map((step, index) => {
           const status = stepStatuses[index];
           return (
             <Animated.View
-              key={step.label}
+              key={STEP_DEFS[index].i18nKey}
               style={[styles.stepRow, { opacity: fadeAnims[index] }]}
               accessibilityLabel={`${step.label}: ${status}`}
             >
@@ -216,13 +224,13 @@ export function AIProcessingScreen({
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
             <Button
-              label="Try again"
+              label={t('aiProcessing.tryAgain')}
               variant="primary"
               onPress={handleRetry}
             />
             <View style={styles.errorGap} />
             <Button
-              label="Skip AI, enter manually"
+              label={t('aiProcessing.skipAiManual')}
               variant="ghost"
               onPress={onSkip}
             />
@@ -306,14 +314,14 @@ const styles = StyleSheet.create({
     borderRadius: radii.full,
   },
   checkmark: {
-    fontSize: 14,
+    fontSize: typography.bodySmall.fontSize,
     fontWeight: '600',
     color: colors.success,
   },
   dot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
+    borderRadius: radii.sm,
     backgroundColor: colors.textTertiary,
   },
   stepLabel: {
