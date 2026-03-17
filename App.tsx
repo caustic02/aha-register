@@ -1,8 +1,10 @@
+import 'react-native-gesture-handler';
 import './src/i18n';
 import React, { useCallback } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as Updates from 'expo-updates';
 import { useTranslation } from 'react-i18next';
 import AppShell from './src/app/AppShell';
@@ -62,16 +64,21 @@ class AppErrorBoundary extends React.Component<
 
 function App() {
   return (
-    <AppErrorBoundary>
-      <StatusBar style="light" />
-      <AppShell />
-    </AppErrorBoundary>
+    <GestureHandlerRootView style={styles.root}>
+      <AppErrorBoundary>
+        <StatusBar style="light" />
+        <AppShell />
+      </AppErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
 
 export default Sentry.wrap(App);
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   crash: {
     flex: 1,
     backgroundColor: colors.background,

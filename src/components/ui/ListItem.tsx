@@ -12,8 +12,10 @@ interface BadgeProps {
 interface ListItemProps {
   title: string;
   onPress: () => void;
+  onLongPress?: () => void;
   subtitle?: string;
   thumbnail?: ImageSourcePropType;
+  leftElement?: ReactNode;
   rightElement?: ReactNode;
   badge?: BadgeProps;
 }
@@ -21,8 +23,10 @@ interface ListItemProps {
 export function ListItem({
   title,
   onPress,
+  onLongPress,
   subtitle,
   thumbnail,
+  leftElement,
   rightElement,
   badge,
 }: ListItemProps) {
@@ -31,10 +35,12 @@ export function ListItem({
   return (
     <Pressable
       onPress={onPress}
+      onLongPress={onLongPress}
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
       style={({ pressed }) => [styles.base, pressed && styles.pressed]}
     >
+      {leftElement}
       {thumbnail && (
         <Image source={thumbnail} style={styles.thumbnail} />
       )}

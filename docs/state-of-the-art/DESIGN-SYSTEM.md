@@ -224,6 +224,19 @@ Collapsible sections with title + filled-count badge + chevron. Used in type-spe
 ### Chips
 Horizontal row of selectable options. Active: `chipActive` bg + white text. Inactive: `chipInactive` bg + `textSecondary` text + `border` stroke.
 
+### Filter Chips (Bottom Sheet)
+Used in `FilterSheet` for object type and sort selections.
+
+| State | Background | Text | Weight |
+|-------|-----------|------|--------|
+| Inactive | `secondaryContainer` | `secondary` | 400 |
+| Active | `primaryContainer` | `primary` | 600 |
+
+Active filter chips (shown above the list) use `primaryContainer` bg + `primary` text + CloseIcon to remove.
+
+### Bottom Sheets
+Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.
+
 ### Badges
 Small rounded indicators. Use `accent` bg + white text for counts, `accentLight` bg + accent text for labels.
 
