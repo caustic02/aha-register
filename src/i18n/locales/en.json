@@ -730,6 +730,7 @@
     "analysisFailed": "Analysis failed",
     "tryAgain": "Try again",
     "skipAiManual": "Skip AI, enter manually",
-    "capturedPhoto": "Captured photograph"
+    "capturedPhoto": "Captured photograph",
+    "signInRequired": "Sign in to use AI analysis. You can still enter metadata manually."
   }
 }

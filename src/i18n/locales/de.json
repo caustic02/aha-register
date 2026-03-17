@@ -730,6 +730,7 @@
     "analysisFailed": "Analyse fehlgeschlagen",
     "tryAgain": "Nochmal versuchen",
     "skipAiManual": "KI überspringen, manuell eingeben",
-    "capturedPhoto": "Aufgenommenes Foto"
+    "capturedPhoto": "Aufgenommenes Foto",
+    "signInRequired": "Melde dich an, um die KI-Analyse zu nutzen. Du kannst Metadaten auch manuell eingeben."
   }
 }

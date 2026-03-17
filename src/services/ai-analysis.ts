@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, ensureMigrated } from './supabase';
 
 const EDGE_FUNCTION_URL =
   'https://fdwmfijtpknwaesyvzbg.supabase.co/functions/v1/analyze-object';
@@ -49,6 +49,11 @@ export interface AIAnalysisResponse {
  *  3. Anonymous sign-in (creates a temporary JWT without user interaction)
  */
 async function getAccessToken(): Promise<string | null> {
+  // Ensure auth tokens have been migrated from AsyncStorage → SecureStore
+  // before any session read, otherwise getSession() may return null on
+  // fresh installs even when the user signed in.
+  await ensureMigrated();
+
   // 1. Try cached session
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.access_token) {
@@ -103,7 +108,7 @@ export async function analyzeObject(
   try {
     let token = await getAccessToken();
     if (!token) {
-      return { success: false, error: 'Authentication required. Please sign in again.' };
+      return { success: false, error: 'NO_AUTH_SESSION' };
     }
 
     const payload = JSON.stringify({ image_base64, mime_type });
@@ -113,7 +118,7 @@ export async function analyzeObject(
     if (response.status === 401) {
       token = await getAccessToken();
       if (!token) {
-        return { success: false, error: 'Authentication required. Please sign in again.' };
+        return { success: false, error: 'NO_AUTH_SESSION' };
       }
       response = await callEdgeFunction(token, payload, controller.signal);
     }
@@ -121,7 +126,7 @@ export async function analyzeObject(
     const data = await response.json();
 
     if (response.status === 401) {
-      return { success: false, error: 'Authentication required. Please sign in again.' };
+      return { success: false, error: 'NO_AUTH_SESSION' };
     }
 
     if (!response.ok) {

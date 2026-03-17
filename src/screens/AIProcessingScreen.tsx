@@ -189,7 +189,10 @@ export function AIProcessingScreen({
       if (response.success && response.metadata) {
         handleComplete(response.metadata);
       } else {
-        handleError(response.error ?? t('aiProcessing.analysisFailed'));
+        const msg = response.error === 'NO_AUTH_SESSION'
+          ? t('aiProcessing.signInRequired')
+          : (response.error ?? t('aiProcessing.analysisFailed'));
+        handleError(msg);
       }
     });
 
@@ -226,7 +229,10 @@ export function AIProcessingScreen({
       if (response.success && response.metadata) {
         handleComplete(response.metadata);
       } else {
-        handleError(response.error ?? t('aiProcessing.analysisFailed'));
+        const msg = response.error === 'NO_AUTH_SESSION'
+          ? t('aiProcessing.signInRequired')
+          : (response.error ?? t('aiProcessing.analysisFailed'));
+        handleError(msg);
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
