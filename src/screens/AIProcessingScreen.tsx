@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
-  ActivityIndicator,
   Animated,
   Image,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors, radii, shadows, spacing, typography } from '../theme';
 import { Button } from '../components/ui';
 import { useAppTranslation } from '../hooks/useAppTranslation';
@@ -30,19 +30,17 @@ export interface AIProcessingScreenProps {
 
 // ── Step configuration ───────────────────────────────────────────────────────
 
-type StepStatus = 'pending' | 'active' | 'complete';
-
 interface StepDef {
   i18nKey: string;
-  delayMs: number;
+  progressTarget: number; // 0-1 range
 }
 
 const STEP_DEFS: StepDef[] = [
-  { i18nKey: 'aiProcessing.securingCapture', delayMs: 0 },
-  { i18nKey: 'aiProcessing.analyzingImage', delayMs: 0 },
-  { i18nKey: 'aiProcessing.identifyingType', delayMs: 1000 },
-  { i18nKey: 'aiProcessing.extractingDetails', delayMs: 2000 },
-  { i18nKey: 'aiProcessing.assessingCondition', delayMs: 3000 },
+  { i18nKey: 'aiProcessing.securingCapture', progressTarget: 0.1 },
+  { i18nKey: 'aiProcessing.analyzingImage', progressTarget: 0.3 },
+  { i18nKey: 'aiProcessing.identifyingType', progressTarget: 0.55 },
+  { i18nKey: 'aiProcessing.extractingDetails', progressTarget: 0.75 },
+  { i18nKey: 'aiProcessing.assessingCondition', progressTarget: 0.9 },
 ];
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -57,74 +55,128 @@ export function AIProcessingScreen({
 }: AIProcessingScreenProps) {
   const { t } = useAppTranslation();
 
-  const steps = useMemo(
-    () => STEP_DEFS.map((d) => ({ label: t(d.i18nKey), delayMs: d.delayMs })),
-    [t],
-  );
-
-  const [stepStatuses, setStepStatuses] = useState<StepStatus[]>(() =>
-    STEP_DEFS.map((_, i) => (i === 0 ? 'complete' : 'pending')),
-  );
+  const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [reduceMotion, setReduceMotion] = useState(false);
   const apiDone = useRef(false);
-  const resultRef = useRef<AIAnalysisResult | null>(null);
 
-  // Step row fade-in animations (one per step)
-  const [fadeAnims] = useState(() => STEP_DEFS.map(() => new Animated.Value(0)));
+  // Animations
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const skeletonPulse = useRef(new Animated.Value(0.3)).current;
+  const completeFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
   }, []);
 
-  // Animate step rows in
+  // Skeleton pulse animation
   useEffect(() => {
     if (reduceMotion) {
-      fadeAnims.forEach((a) => a.setValue(1));
+      skeletonPulse.setValue(0.5);
       return;
     }
-    // Step 0 visible immediately
-    fadeAnims[0].setValue(1);
-    // Steps 1+ fade in on their delay
-    const timers = STEP_DEFS.slice(1).map((step, idx) =>
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(skeletonPulse, {
+          toValue: 0.7,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(skeletonPulse, {
+          toValue: 0.3,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [reduceMotion, skeletonPulse]);
+
+  // Stagger progress steps on timers
+  useEffect(() => {
+    // Step 0 completes immediately → animate to 10%
+    animateProgress(STEP_DEFS[0].progressTarget, 200);
+    setCurrentStepIndex(0);
+
+    const timers = [
       setTimeout(() => {
-        Animated.timing(fadeAnims[idx + 1], {
+        setCurrentStepIndex(1);
+        animateProgress(STEP_DEFS[1].progressTarget, 400);
+      }, 300),
+      setTimeout(() => {
+        if (!apiDone.current) {
+          setCurrentStepIndex(2);
+          animateProgress(STEP_DEFS[2].progressTarget, 500);
+        }
+      }, 1200),
+      setTimeout(() => {
+        if (!apiDone.current) {
+          setCurrentStepIndex(3);
+          animateProgress(STEP_DEFS[3].progressTarget, 500);
+        }
+      }, 2500),
+      setTimeout(() => {
+        if (!apiDone.current) {
+          setCurrentStepIndex(4);
+          animateProgress(STEP_DEFS[4].progressTarget, 500);
+        }
+      }, 3800),
+    ];
+    return () => timers.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const animateProgress = (target: number, duration: number) => {
+    if (reduceMotion) {
+      progressAnim.setValue(target);
+      return;
+    }
+    Animated.timing(progressAnim, {
+      toValue: target,
+      duration,
+      useNativeDriver: false, // width animation
+    }).start();
+  };
+
+  const handleComplete = useCallback(
+    (result: AIAnalysisResult) => {
+      // Animate progress to 100%
+      animateProgress(1, 200);
+
+      // Haptic success
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+
+      // Fade in completion overlay briefly then navigate
+      if (reduceMotion) {
+        completeFade.setValue(1);
+      } else {
+        Animated.timing(completeFade, {
           toValue: 1,
-          duration: 300,
+          duration: 200,
           useNativeDriver: true,
         }).start();
-      }, step.delayMs),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, [reduceMotion, fadeAnims]);
+      }
 
-  // Stagger step status transitions
-  useEffect(() => {
-    // Step 1 ("Analyzing image") becomes active immediately
-    setStepStatuses((prev) => {
-      const next = [...prev];
-      next[1] = 'active';
-      return next;
-    });
+      setTimeout(() => onComplete(result), 500);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onComplete, reduceMotion],
+  );
 
-    const timers = STEP_DEFS.slice(2).map((step, idx) =>
-      setTimeout(() => {
-        setStepStatuses((prev) => {
-          const next = [...prev];
-          // Complete the previous step
-          next[idx + 1] = 'complete';
-          // Activate this step (unless API is already done)
-          if (!apiDone.current) {
-            next[idx + 2] = 'active';
-          } else {
-            next[idx + 2] = 'complete';
-          }
-          return next;
-        });
-      }, step.delayMs),
-    );
-    return () => timers.forEach(clearTimeout);
-  }, []);
+  const handleError = useCallback(
+    (message: string) => {
+      setError(message);
+      animateProgress(1, 200);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+        () => {},
+      );
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   // Call the Edge Function
   useEffect(() => {
@@ -135,50 +187,58 @@ export function AIProcessingScreen({
       apiDone.current = true;
 
       if (response.success && response.metadata) {
-        resultRef.current = response.metadata;
-        // Mark all steps complete
-        setStepStatuses(STEP_DEFS.map(() => 'complete'));
-        // Navigate after brief pause
-        setTimeout(() => {
-          if (!cancelled) onComplete(response.metadata!);
-        }, 500);
+        handleComplete(response.metadata);
       } else {
-        setError(response.error ?? t('aiProcessing.analysisFailed'));
-        // Mark all steps complete so UI doesn't look stuck
-        setStepStatuses(STEP_DEFS.map(() => 'complete'));
+        handleError(response.error ?? t('aiProcessing.analysisFailed'));
       }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [imageBase64, mimeType, onComplete, t]);
+  }, [imageBase64, mimeType, handleComplete, handleError, t]);
 
   const handleRetry = useCallback(() => {
     setError(null);
     apiDone.current = false;
-    resultRef.current = null;
-    setStepStatuses(STEP_DEFS.map((_, i) => (i === 0 ? 'complete' : 'pending')));
+    setCurrentStepIndex(0);
+    progressAnim.setValue(0);
+    completeFade.setValue(0);
 
-    // Re-trigger step animations
-    setStepStatuses((prev) => {
-      const next = [...prev];
-      next[1] = 'active';
-      return next;
-    });
+    animateProgress(STEP_DEFS[0].progressTarget, 200);
+
+    const timers = [
+      setTimeout(() => {
+        setCurrentStepIndex(1);
+        animateProgress(STEP_DEFS[1].progressTarget, 400);
+      }, 300),
+      setTimeout(() => {
+        if (!apiDone.current) {
+          setCurrentStepIndex(2);
+          animateProgress(STEP_DEFS[2].progressTarget, 500);
+        }
+      }, 1200),
+    ];
 
     analyzeObject(imageBase64, mimeType).then((response) => {
+      timers.forEach(clearTimeout);
       apiDone.current = true;
       if (response.success && response.metadata) {
-        resultRef.current = response.metadata;
-        setStepStatuses(STEP_DEFS.map(() => 'complete'));
-        setTimeout(() => onComplete(response.metadata!), 500);
+        handleComplete(response.metadata);
       } else {
-        setError(response.error ?? t('aiProcessing.analysisFailed'));
-        setStepStatuses(STEP_DEFS.map(() => 'complete'));
+        handleError(response.error ?? t('aiProcessing.analysisFailed'));
       }
     });
-  }, [imageBase64, mimeType, onComplete, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageBase64, mimeType, handleComplete, handleError, t]);
+
+  // Progress bar width interpolation
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
+  const currentStepLabel = t(STEP_DEFS[currentStepIndex].i18nKey);
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -191,36 +251,74 @@ export function AIProcessingScreen({
             source={{ uri: imageUri }}
             style={styles.image}
             resizeMode="cover"
-            accessibilityLabel="Captured photograph"
+            accessibilityLabel={t('aiProcessing.capturedPhoto')}
           />
         </View>
+
+        {/* Progress bar below image */}
+        <View style={styles.progressBarTrack}>
+          <Animated.View
+            style={[styles.progressBarFill, { width: progressWidth }]}
+          />
+        </View>
+        <Text
+          style={styles.stepText}
+          accessibilityLiveRegion="polite"
+        >
+          {error == null ? `${currentStepLabel}...` : ''}
+        </Text>
       </View>
 
-      {/* Bottom: progress steps */}
-      <View style={styles.progressSection}>
-        {steps.map((step, index) => {
-          const status = stepStatuses[index];
-          return (
+      {/* Bottom: skeleton preview of metadata card */}
+      <View style={styles.skeletonSection}>
+        {error == null ? (
+          <>
+            {/* Skeleton: title */}
             <Animated.View
-              key={STEP_DEFS[index].i18nKey}
-              style={[styles.stepRow, { opacity: fadeAnims[index] }]}
-              accessibilityLabel={`${step.label}: ${status}`}
-            >
-              <StepIndicator status={status} />
-              <Text
-                style={[
-                  styles.stepLabel,
-                  status === 'complete' && styles.stepLabelComplete,
-                ]}
-              >
-                {step.label}
-              </Text>
-            </Animated.View>
-          );
-        })}
-
-        {/* Error state */}
-        {error != null && (
+              style={[styles.skeletonBlock, styles.skeletonTitle, { opacity: skeletonPulse }]}
+            />
+            {/* Skeleton: badge row */}
+            <View style={styles.skeletonRow}>
+              <Animated.View
+                style={[styles.skeletonBlock, styles.skeletonBadge, { opacity: skeletonPulse }]}
+              />
+              <Animated.View
+                style={[styles.skeletonBlock, styles.skeletonBadge, { opacity: skeletonPulse }]}
+              />
+              <Animated.View
+                style={[styles.skeletonBlock, styles.skeletonBadgeSmall, { opacity: skeletonPulse }]}
+              />
+            </View>
+            {/* Skeleton: type chips */}
+            <View style={styles.skeletonRow}>
+              <Animated.View
+                style={[styles.skeletonBlock, styles.skeletonChip, { opacity: skeletonPulse }]}
+              />
+              <Animated.View
+                style={[styles.skeletonBlock, styles.skeletonChipWide, { opacity: skeletonPulse }]}
+              />
+              <Animated.View
+                style={[styles.skeletonBlock, styles.skeletonChip, { opacity: skeletonPulse }]}
+              />
+            </View>
+            {/* Skeleton: field lines */}
+            <Animated.View
+              style={[styles.skeletonBlock, styles.skeletonField, { opacity: skeletonPulse }]}
+            />
+            <Animated.View
+              style={[styles.skeletonBlock, styles.skeletonFieldShort, { opacity: skeletonPulse }]}
+            />
+            {/* Skeleton: description block */}
+            <Animated.View
+              style={[styles.skeletonBlock, styles.skeletonTextArea, { opacity: skeletonPulse }]}
+            />
+            {/* Skeleton: condition line */}
+            <Animated.View
+              style={[styles.skeletonBlock, styles.skeletonFieldMedium, { opacity: skeletonPulse }]}
+            />
+          </>
+        ) : (
+          /* Error state */
           <View style={styles.errorContainer}>
             <Text style={styles.errorText}>{error}</Text>
             <Button
@@ -237,30 +335,12 @@ export function AIProcessingScreen({
           </View>
         )}
       </View>
-    </View>
-  );
-}
 
-// ── Step indicator sub-component ─────────────────────────────────────────────
-
-function StepIndicator({ status }: { status: StepStatus }) {
-  if (status === 'complete') {
-    return (
-      <View style={[styles.indicator, styles.indicatorComplete]}>
-        <Text style={styles.checkmark}>{'\u2713'}</Text>
-      </View>
-    );
-  }
-  if (status === 'active') {
-    return (
-      <View style={styles.indicator}>
-        <ActivityIndicator size="small" color={colors.tertiary} />
-      </View>
-    );
-  }
-  return (
-    <View style={styles.indicator}>
-      <View style={styles.dot} />
+      {/* Completion fade overlay */}
+      <Animated.View
+        style={[styles.completeFade, { opacity: completeFade }]}
+        pointerEvents="none"
+      />
     </View>
   );
 }
@@ -272,17 +352,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  // Image section — top 40%
+  // Image section — top portion
   imageSection: {
-    flex: 4,
-    justifyContent: 'center',
-    alignItems: 'center',
     paddingHorizontal: spacing['2xl'],
     paddingTop: spacing['2xl'],
   },
   imageWrapper: {
     width: '100%',
-    flex: 1,
+    aspectRatio: 4 / 3,
     borderRadius: radii.lg,
     overflow: 'hidden',
     ...shadows.sm,
@@ -291,58 +368,105 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  // Progress section — bottom 60%
-  progressSection: {
-    flex: 6,
+  // Progress bar
+  progressBarTrack: {
+    height: 4,
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: 2,
+    marginTop: spacing.lg,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: colors.tertiary,
+    borderRadius: 2,
+  },
+  stepText: {
+    ...typography.bodySmall,
+    color: colors.aiText,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
+  // Skeleton preview section
+  skeletonSection: {
+    flex: 1,
     paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing['2xl'],
+    paddingTop: spacing.xl,
   },
-  stepRow: {
+  skeletonBlock: {
+    backgroundColor: colors.surfaceContainer,
+    borderRadius: radii.sm,
+  },
+  skeletonTitle: {
+    height: 24,
+    width: '70%',
+    marginBottom: spacing.md,
+  },
+  skeletonRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.lg,
+    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
-  indicator: {
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  indicatorComplete: {
-    backgroundColor: colors.successLight,
+  skeletonBadge: {
+    height: 22,
+    width: 64,
     borderRadius: radii.full,
   },
-  checkmark: {
-    fontSize: typography.bodySmall.fontSize,
-    fontWeight: '600',
-    color: colors.success,
+  skeletonBadgeSmall: {
+    height: 22,
+    width: 44,
+    borderRadius: radii.full,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: radii.sm,
-    backgroundColor: colors.textTertiary,
+  skeletonChip: {
+    height: 32,
+    width: 72,
+    borderRadius: radii.full,
   },
-  stepLabel: {
-    ...typography.body,
-    color: colors.text,
-    flex: 1,
+  skeletonChipWide: {
+    height: 32,
+    width: 96,
+    borderRadius: radii.full,
   },
-  stepLabelComplete: {
-    color: colors.textTertiary,
+  skeletonField: {
+    height: 40,
+    width: '100%',
+    marginBottom: spacing.md,
+    borderRadius: radii.md,
+  },
+  skeletonFieldShort: {
+    height: 40,
+    width: '60%',
+    marginBottom: spacing.md,
+    borderRadius: radii.md,
+  },
+  skeletonFieldMedium: {
+    height: 40,
+    width: '80%',
+    marginBottom: spacing.md,
+    borderRadius: radii.md,
+  },
+  skeletonTextArea: {
+    height: 72,
+    width: '100%',
+    marginBottom: spacing.md,
+    borderRadius: radii.md,
   },
   // Error state
   errorContainer: {
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
   },
   errorText: {
     ...typography.bodySmall,
-    color: colors.error,
+    color: colors.statusError,
     marginBottom: spacing.lg,
     textAlign: 'center',
   },
   errorGap: {
     height: spacing.sm,
+  },
+  // Completion flash
+  completeFade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.background,
   },
 });

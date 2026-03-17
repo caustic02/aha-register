@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors, radii, spacing, typography } from '../theme';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
@@ -163,6 +164,9 @@ export function ReviewCardScreen({
         artists,
       });
     }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
     onSave?.();
   };
 

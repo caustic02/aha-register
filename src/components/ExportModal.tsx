@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { Button, Divider, ListItem } from './ui';
 import { ExportIcon } from '../theme/icons';
@@ -53,6 +54,9 @@ export function ExportModal({ visible, onClose, data }: ExportModalProps) {
         await shareExport(content, filename, 'text/csv');
       }
 
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
       onClose();
     } catch {
       Alert.alert(t('export.error_title'), t('export.error_message'));

@@ -729,6 +729,7 @@
     "assessingCondition": "Assessing condition",
     "analysisFailed": "Analysis failed",
     "tryAgain": "Try again",
-    "skipAiManual": "Skip AI, enter manually"
+    "skipAiManual": "Skip AI, enter manually",
+    "capturedPhoto": "Captured photograph"
   }
 }

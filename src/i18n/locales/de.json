@@ -729,6 +729,7 @@
     "assessingCondition": "Zustand wird bewertet",
     "analysisFailed": "Analyse fehlgeschlagen",
     "tryAgain": "Nochmal versuchen",
-    "skipAiManual": "KI überspringen, manuell eingeben"
+    "skipAiManual": "KI überspringen, manuell eingeben",
+    "capturedPhoto": "Aufgenommenes Foto"
   }
 }
