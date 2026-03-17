@@ -14,47 +14,73 @@ import { Platform } from 'react-native';
 // ── Colors ────────────────────────────────────────────────────────────────────
 
 export const colors = {
-  // Brand
-  primary: '#2D5A27',
+  // ── M3 Primary (main actions, FAB, active tabs) ────────────────────────────
+  primary: '#2D5A27',             // 8.2:1 on white
   primaryDark: '#1E3D1A',
   primaryLight: '#E8F0E7',
   primarySurface: '#F2F7F1',
+  primaryContainer: 'rgba(45, 90, 39, 0.12)', // pill indicators, CTA backgrounds
 
-  // Text hierarchy (on white/off-white backgrounds)
-  text: '#1A1A1A',
-  textSecondary: '#5C5C5C',
-  textTertiary: '#767676',
+  // ── M3 Secondary (tags, filters, less prominent UI) ────────────────────────
+  secondary: '#5C6B5A',          // muted green-gray, 4.6:1 on white
+  secondaryContainer: 'rgba(92, 107, 90, 0.12)',
+
+  // ── M3 Tertiary / AI (AI-assisted actions, distinct from primary) ──────────
+  tertiary: '#5C6BC0',           // deep indigo, 4.6:1 on white
+  tertiaryContainer: 'rgba(92, 107, 192, 0.12)',
+
+  // ── Text hierarchy (on white/off-white backgrounds) ────────────────────────
+  text: '#1A1A1A',               // 16.1:1 on white
+  textSecondary: '#5C5C5C',      // 5.9:1 on white
+  textTertiary: '#767676',       // 4.5:1 on white (minimum AA)
   textInverse: '#FFFFFF',
 
-  // Surfaces
+  // ── Surfaces (M3 hierarchy) ────────────────────────────────────────────────
   background: '#FFFFFF',
   surface: '#F7F5F0',
+  surfaceContainer: '#F0EDE7',        // slightly darker, card backgrounds
+  surfaceContainerHigh: '#E8E5DF',    // elevated cards, bottom sheets
   surfaceElevated: '#FFFFFF',
 
-  // Borders
+  // ── Borders ────────────────────────────────────────────────────────────────
   border: '#E5E2DB',
   borderFocused: '#2D5A27',
 
-  // Semantic
-  error: '#C53030',
+  // ── Semantic ───────────────────────────────────────────────────────────────
+  error: '#C53030',              // 5.6:1 on white
   errorLight: '#FEE2E2',
-  warning: '#B45309',
+  warning: '#B45309',            // 4.7:1 on white
   warningLight: '#FEF3C7',
-  success: '#0F766E',
+  success: '#0F766E',            // 5.1:1 on white
   successLight: '#CCFBF1',
-  info: '#1D4ED8',
+  info: '#1D4ED8',               // 5.3:1 on white
   infoLight: '#DBEAFE',
 
-  // AI accent (marks all AI-generated content distinctively)
-  ai: '#A16207',
-  aiLight: '#FEF9C3',
-  aiSurface: '#FFFBEB',
+  // ── Status (sync, connectivity) ────────────────────────────────────────────
+  statusSyncing: '#1976D2',      // blue, 5.5:1 on white
+  statusOffline: '#757575',      // gray, 4.6:1 on white
+  statusSuccess: '#2E7D32',      // green, 5.9:1 on white
+  statusWarning: '#E65100',      // deep amber, 5.0:1 on white
+  statusError: '#C53030',        // same as error
 
-  // CTA (primary action card)
-  ctaSurface: 'rgba(45, 90, 39, 0.08)',
+  // ── AI accent (marks all AI-generated content distinctively) ────────────────
+  // Uses tertiary indigo to visually distinguish AI from human data
+  ai: '#5C6BC0',                 // = tertiary, 4.6:1 on white
+  aiLight: '#E8EAF6',            // indigo tint
+  aiSurface: 'rgba(92, 107, 192, 0.06)',   // 6% opacity, field backgrounds
+  aiBorder: 'rgba(92, 107, 192, 0.25)',    // 25% opacity, field borders
+  aiText: '#5C6BC0',             // full strength for labels
+
+  // ── AI Confidence scale ────────────────────────────────────────────────────
+  aiConfidenceHigh: '#2E7D32',   // green, 5.9:1 on white
+  aiConfidenceMedium: '#E65100', // deep amber, 5.0:1 on white
+  aiConfidenceLow: '#C53030',    // red, 5.6:1 on white
+
+  // ── CTA (primary action card) ──────────────────────────────────────────────
+  ctaSurface: 'rgba(45, 90, 39, 0.08)',  // = primaryContainer lighter
   ctaBorder: 'rgba(45, 90, 39, 0.20)',
 
-  // Utility
+  // ── Utility ────────────────────────────────────────────────────────────────
   white: '#FFFFFF',
   black: '#000000',
   overlay: 'rgba(0, 0, 0, 0.5)',

@@ -254,7 +254,7 @@ function StepIndicator({ status }: { status: StepStatus }) {
   if (status === 'active') {
     return (
       <View style={styles.indicator}>
-        <ActivityIndicator size="small" color={colors.primary} />
+        <ActivityIndicator size="small" color={colors.tertiary} />
       </View>
     );
   }
