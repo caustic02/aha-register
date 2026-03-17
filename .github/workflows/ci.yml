@@ -26,6 +26,9 @@ jobs:
       - name: ESLint
         run: npx eslint src/ --ext .ts,.tsx --max-warnings 0
 
+      - name: Expo Doctor (SDK compatibility)
+        run: npx -y expo-doctor
+
       - name: Expo export (build smoke test)
         run: npx expo export --platform android
 
