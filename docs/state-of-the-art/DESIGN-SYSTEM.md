@@ -8,40 +8,61 @@ All values live in `src/theme/index.ts`. No hardcoded colors, font sizes, or rad
 
 ---
 
-## Color Palette
+## Color System (Material Design 3 Roles)
+
+### Core Roles
+
+| Role | Token | Hex | Contrast (on white) | Usage |
+|------|-------|-----|---------------------|-------|
+| Primary | `primary` | `#2D5A27` | 8.2:1 | Main actions, FAB, active tabs, CTA |
+| Primary Container | `primaryContainer` | `rgba(45,90,39,0.12)` | — | Pill indicators, CTA backgrounds |
+| Secondary | `secondary` | `#5C6B5A` | 4.6:1 | Tags, filters, less prominent UI |
+| Secondary Container | `secondaryContainer` | `rgba(92,107,90,0.12)` | — | Filter chip backgrounds |
+| Tertiary / AI | `tertiary` | `#5C6BC0` | 4.6:1 | AI-assisted actions, processing indicators |
+| Tertiary Container | `tertiaryContainer` | `rgba(92,107,192,0.12)` | — | AI section backgrounds |
+
+### Surface Hierarchy
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `accent` | `#2D5A27` | Forest green. Brand color, tappable elements, primary buttons, links, active chips. |
-| `accentLight` | `#E8F0E6` | Green tint. Badges, highlights, selected-row backgrounds. |
-| `accentDark` | `#1A3A16` | Pressed state for accent elements. |
-| `background` | `#FAFAF8` | Warm off-white. All screen backgrounds. |
-| `surface` | `#FFFFFF` | Cards, inputs, modals, bottom sheets. |
-| `textPrimary` | `#1A1A1A` | Headings, primary content, body text. |
-| `textSecondary` | `#6B6B6B` | Descriptions, secondary labels, field labels. |
-| `textMuted` | `#767676` | Placeholders, metadata, timestamps, disabled text. (WCAG AA compliant — was #999999, updated 2026-03-17) |
-| `border` | `#E8E8E4` | Input borders, dividers, section separators. |
-| `borderLight` | `#F0F0EC` | Subtle card borders, input backgrounds, faint tints. |
-| `danger` | `#C53030` | Delete actions, errors, destructive buttons. |
-| `dangerLight` | `#FEE2E2` | Danger badge backgrounds, error highlights. |
-| `warning` | `#D4A017` | Alerts, flash-on indicator, attention badges. |
-| `warningLight` | `#FFF8E6` | Warning backgrounds. |
-| `camera` | `#111111` | Camera screen background. |
-| `chipActive` | `#2D5A27` | Selected filter chip background (= accent). |
-| `chipInactive` | `#F4F4F0` | Unselected chip background. |
-| `white` | `#FFFFFF` | Text on accent/dark backgrounds, switch thumbs. |
-| `black` | `#000000` | Camera viewfinder background. |
-| `overlay` | `rgba(0,0,0,0.5)` | Modal overlays, bottom sheet scrims. |
-| `overlayLight` | `rgba(0,0,0,0.3)` | Lighter overlays (camera controls). |
-| `overlayDark` | `rgba(0,0,0,0.7)` | Dark overlays (fullscreen gallery). |
-| `transparent` | `'transparent'` | Invisible overlays, cleared backgrounds. |
+| `background` | `#FFFFFF` | Screen backgrounds |
+| `surface` | `#F7F5F0` | Section backgrounds, stat cards |
+| `surfaceContainer` | `#F0EDE7` | Card backgrounds |
+| `surfaceContainerHigh` | `#E8E5DF` | Elevated cards, bottom sheets |
+
+### Status Colors
+
+| Token | Hex | Contrast | Usage |
+|-------|-----|----------|-------|
+| `statusSyncing` | `#1976D2` | 5.5:1 | Active sync indicator |
+| `statusOffline` | `#757575` | 4.6:1 | Offline mode |
+| `statusSuccess` | `#2E7D32` | 5.9:1 | Sync complete, hash verified |
+| `statusWarning` | `#E65100` | 5.0:1 | Attention needed, pending sync |
+| `statusError` | `#C53030` | 5.6:1 | Failures |
+
+### AI Color System
+
+AI-generated metadata is visually distinguished from human-entered data using the tertiary indigo color. This ensures users always know which fields were AI-suggested vs manually entered.
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| `ai` / `aiText` | `#5C6BC0` | AI badge text, "AI-suggested" labels |
+| `aiLight` | `#E8EAF6` | AI badge backgrounds |
+| `aiSurface` | `rgba(92,107,192,0.06)` | Background for AI-filled fields |
+| `aiBorder` | `rgba(92,107,192,0.25)` | Border for AI-filled fields |
+| `aiConfidenceHigh` | `#2E7D32` | 90-100% confidence |
+| `aiConfidenceMedium` | `#E65100` | 40-89% confidence |
+| `aiConfidenceLow` | `#C53030` | Below 40% confidence |
+
+**Rule:** Indigo (`ai*`) = AI-generated, potentially unverified. Green (`primary`) = human action, verified. Never mix these roles.
 
 ### Color Rules
 
-- **Green = tappable.** All interactive elements (buttons, links, chips, switches) use `accent`.
-- **Gray = informational.** Labels, metadata, and disabled states use `textSecondary` or `textMuted`.
-- **Red = destructive.** Delete, error, and warning-destructive actions use `danger`.
-- **Gold = attention.** Non-destructive alerts and indicators use `warning`.
+- **Green = tappable.** All interactive elements use `primary`.
+- **Indigo = AI.** All AI-generated content uses `tertiary` / `ai*` tokens.
+- **Gray = informational.** Labels, metadata use `textSecondary` / `textTertiary`.
+- **Red = destructive.** Delete, error actions use `error`.
+- **Amber = attention.** Pending sync, warnings use `statusWarning`.
 
 ---
 

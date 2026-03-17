@@ -457,7 +457,7 @@ function AIField({
 }) {
   const hasAI = confidence > 0;
   return (
-    <View style={styles.aiField}>
+    <View style={[styles.aiField, hasAI && styles.aiFieldActive]}>
       {hasAI && (
         <View style={styles.aiFieldHeader}>
           <Badge variant="ai" label="AI" size="sm" />
@@ -529,6 +529,13 @@ const styles = StyleSheet.create({
   aiField: {
     marginTop: spacing.md,
   },
+  aiFieldActive: {
+    backgroundColor: colors.aiSurface,
+    borderWidth: 1,
+    borderColor: colors.aiBorder,
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
   aiFieldHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -537,7 +544,7 @@ const styles = StyleSheet.create({
   },
   aiConfidenceText: {
     ...typography.caption,
-    color: colors.ai,
+    color: colors.aiText,
   },
   fieldLabel: {
     ...typography.bodySmall,

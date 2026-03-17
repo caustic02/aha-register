@@ -141,7 +141,7 @@ export function HomeScreen({ navigation }: Props) {
         {/* ── 2. Sync Status Bar (conditional) ───────────────────────────── */}
         {!loading && stats.pendingSync > 0 && (
           <View style={styles.syncBanner}>
-            <SyncIcon size={14} color={colors.warning} />
+            <SyncIcon size={14} color={colors.statusWarning} />
             <Text style={styles.syncBannerText}>
               {t('home.pendingSyncBanner', { count: stats.pendingSync })}
             </Text>
@@ -180,7 +180,7 @@ export function HomeScreen({ navigation }: Props) {
           <View style={styles.statCard}>
             <ClockIcon
               size={20}
-              color={stats.pendingSync > 0 ? colors.warning : colors.textTertiary}
+              color={stats.pendingSync > 0 ? colors.statusWarning : colors.textTertiary}
             />
             <Text style={styles.statValue}>{stats.pendingSync}</Text>
             <Text style={styles.statLabel}>{t('home.statPending')}</Text>
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   },
   syncBannerText: {
     ...typography.caption,
-    color: colors.warning,
+    color: colors.statusWarning,
   },
 
   // Primary CTA
