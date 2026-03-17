@@ -46,6 +46,14 @@ export { Circle as ShutterIcon } from 'lucide-react-native';
 export { Maximize as AspectRatioIcon } from 'lucide-react-native';
 export { Grid3x3 as GridIcon } from 'lucide-react-native';
 
+// ── Dashboard icons ──────────────────────────────────────────────────────────
+export { Clock as ClockIcon } from 'lucide-react-native';
+export { Image as PhotoIcon } from 'lucide-react-native';
+export { Package as PackageIcon } from 'lucide-react-native';
+export { CloudOff as CloudOffIcon } from 'lucide-react-native';
+export { Download as DownloadIcon } from 'lucide-react-native';
+export { Filter as FilterIcon } from 'lucide-react-native';
+
 // ── Status icons ──────────────────────────────────────────────────────────────
 export { RefreshCw as SyncIcon } from 'lucide-react-native';
 export { WifiOff as OfflineIcon } from 'lucide-react-native';

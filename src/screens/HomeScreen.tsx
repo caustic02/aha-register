@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -11,19 +12,23 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
-  Card,
-  Divider,
   EmptyState,
   ListItem,
   SectionHeader,
 } from '../components/ui';
 import {
-  AddPhotoIcon,
+  CaptureTabIcon,
+  ClockIcon,
+  DownloadIcon,
+  FilterIcon,
   ObjectsTabIcon,
+  PackageIcon,
+  PhotoIcon,
   SyncIcon,
 } from '../theme/icons';
-import { colors, spacing, typography } from '../theme';
+import { colors, radii, spacing, touch, typography } from '../theme';
 import { formatRelativeDate } from '../utils/format-date';
+import { getSetting, SETTING_KEYS } from '../services/settingsService';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -44,47 +49,6 @@ interface RecentObject {
   file_path: string | null;
 }
 
-interface TypeCount {
-  object_type: string;
-  count: number;
-}
-
-// ── Stat Card ─────────────────────────────────────────────────────────────────
-
-interface StatCardProps {
-  icon: React.ReactNode;
-  value: number;
-  label: string;
-}
-
-function StatCard({ icon, value, label }: StatCardProps) {
-  return (
-    <Card style={styles.statCard}>
-      <View style={styles.statIcon}>{icon}</View>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </Card>
-  );
-}
-
-// ── Type Card ─────────────────────────────────────────────────────────────────
-
-interface TypeCardProps {
-  label: string;
-  count: number;
-}
-
-function TypeCard({ label, count }: TypeCardProps) {
-  return (
-    <Card style={styles.typeCard}>
-      <Text style={styles.typeCount}>{count}</Text>
-      <Text style={styles.typeLabel} numberOfLines={2}>
-        {label}
-      </Text>
-    </Card>
-  );
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function HomeScreen({ navigation }: Props) {
@@ -97,12 +61,12 @@ export function HomeScreen({ navigation }: Props) {
     totalPhotos: 0,
   });
   const [recent, setRecent] = useState<RecentObject[]>([]);
-  const [byType, setByType] = useState<TypeCount[]>([]);
+  const [institutionName, setInstitutionName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
-      const [totalRow, syncRow, photoRow, recentRows, typeRows] =
+      const [totalRow, syncRow, photoRow, recentRows, instName] =
         await Promise.all([
           db.getFirstAsync<{ count: number }>(
             'SELECT COUNT(*) as count FROM objects',
@@ -122,9 +86,7 @@ export function HomeScreen({ navigation }: Props) {
              ORDER BY o.created_at DESC
              LIMIT 5`,
           ),
-          db.getAllAsync<TypeCount>(
-            'SELECT object_type, COUNT(*) as count FROM objects GROUP BY object_type ORDER BY count DESC',
-          ),
+          getSetting(db, SETTING_KEYS.INSTITUTION_NAME),
         ]);
 
       setStats({
@@ -133,7 +95,7 @@ export function HomeScreen({ navigation }: Props) {
         totalPhotos: photoRow?.count ?? 0,
       });
       setRecent(recentRows);
-      setByType(typeRows);
+      setInstitutionName(instName);
     } catch {
       // Silently ignore; state stays at defaults
     } finally {
@@ -148,76 +110,106 @@ export function HomeScreen({ navigation }: Props) {
     }, [loadData]),
   );
 
+  const navigateToCapture = useCallback(() => {
+    navigation.getParent()?.navigate('Capture');
+  }, [navigation]);
+
+  const navigateToCollection = useCallback(() => {
+    navigation.getParent()?.navigate('Collections');
+  }, [navigation]);
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* ── Sync status banner ──────────────────────────────────────────────── */}
-      {!loading && stats.pendingSync > 0 && (
-        <View style={styles.syncBanner}>
-          <SyncIcon size={14} color={colors.warning} />
-          <Text style={styles.syncBannerText}>
-            {t('home.pendingSyncBanner', { count: stats.pendingSync })}
-          </Text>
-        </View>
-      )}
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ── 1. Header ────────────────────────────────────────────────────── */}
+        {/* ── 1. Header ──────────────────────────────────────────────────── */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle} accessibilityRole="header">{t('home.title')}</Text>
-          {!loading && (
-            <Text style={styles.headerSubtitle}>
-              {t('home.objectCount', { count: stats.totalObjects })}
+          <Text style={styles.headerTitle} accessibilityRole="header">
+            {t('home.title')}
+          </Text>
+          <Text style={styles.headerSubtitle}>
+            {institutionName || t('home.personalCollection')}
+          </Text>
+        </View>
+
+        {/* ── 2. Sync Status Bar (conditional) ───────────────────────────── */}
+        {!loading && stats.pendingSync > 0 && (
+          <View style={styles.syncBanner}>
+            <SyncIcon size={14} color={colors.warning} />
+            <Text style={styles.syncBannerText}>
+              {t('home.pendingSyncBanner', { count: stats.pendingSync })}
             </Text>
-          )}
-        </View>
+          </View>
+        )}
 
-        {/* ── 2. Quick stats ───────────────────────────────────────────────── */}
+        {/* ── 3. Primary CTA Card ────────────────────────────────────────── */}
+        <Pressable
+          style={styles.ctaCard}
+          onPress={navigateToCapture}
+          accessibilityLabel={t('home.captureCtaTitle')}
+          accessibilityRole="button"
+        >
+          <CaptureTabIcon size={spacing['3xl']} color={colors.primary} />
+          <View style={styles.ctaTextWrap}>
+            <Text style={styles.ctaTitle}>{t('home.captureCtaTitle')}</Text>
+            <Text style={styles.ctaSubtitle}>
+              {t('home.captureCtaSubtitle')}
+            </Text>
+          </View>
+        </Pressable>
+
+        {/* ── 4. Quick Stats Row ──────────────────────────────────────────── */}
         <View style={styles.statsRow}>
-          <StatCard
-            icon={<ObjectsTabIcon size={20} color={colors.primary} />}
-            value={stats.totalObjects}
-            label={t('home.statObjects')}
-          />
-          <StatCard
-            icon={
-              <SyncIcon
-                size={20}
-                color={
-                  stats.pendingSync > 0 ? colors.warning : colors.textTertiary
-                }
-              />
-            }
-            value={stats.pendingSync}
-            label={t('home.statPending')}
-          />
-          <StatCard
-            icon={<AddPhotoIcon size={20} color={colors.textTertiary} />}
-            value={stats.totalPhotos}
-            label={t('home.statPhotos')}
-          />
+          <Pressable
+            style={styles.statCard}
+            onPress={navigateToCollection}
+            accessibilityLabel={`${stats.totalObjects} ${t('home.statObjects')}`}
+            accessibilityRole="button"
+          >
+            <ObjectsTabIcon size={20} color={colors.primary} />
+            <Text style={styles.statValue}>{stats.totalObjects}</Text>
+            <Text style={styles.statLabel}>{t('home.statObjects')}</Text>
+          </Pressable>
+
+          <View style={styles.statCard}>
+            <ClockIcon
+              size={20}
+              color={stats.pendingSync > 0 ? colors.warning : colors.textTertiary}
+            />
+            <Text style={styles.statValue}>{stats.pendingSync}</Text>
+            <Text style={styles.statLabel}>{t('home.statPending')}</Text>
+          </View>
+
+          <View style={styles.statCard}>
+            <PhotoIcon size={20} color={colors.textTertiary} />
+            <Text style={styles.statValue}>{stats.totalPhotos}</Text>
+            <Text style={styles.statLabel}>{t('home.statPhotos')}</Text>
+          </View>
         </View>
 
-        <Divider />
-
-        {/* ── 3. Recent captures ───────────────────────────────────────────── */}
-        <View style={styles.sectionHeader}>
+        {/* ── 5. Recent Objects ───────────────────────────────────────────── */}
+        <View style={styles.sectionWrap}>
           <SectionHeader
             title={t('home.recentCaptures')}
-            action={t('home.viewAll')}
-            onAction={() => navigation.navigate('ObjectList')}
+            action={recent.length > 0 ? t('home.viewAll') : undefined}
+            onAction={
+              recent.length > 0
+                ? () => navigation.navigate('ObjectList')
+                : undefined
+            }
           />
         </View>
+
         {!loading && recent.length === 0 ? (
-          <View style={styles.emptyState}>
+          <View style={styles.emptyWrap}>
             <EmptyState
-              icon={<ObjectsTabIcon size={32} color={colors.textTertiary} />}
+              icon={<PackageIcon size={spacing['3xl']} color={colors.textTertiary} />}
               title={t('home.emptyTitle')}
               message={t('home.emptyMessage')}
             />
@@ -226,7 +218,7 @@ export function HomeScreen({ navigation }: Props) {
           recent.map((item) => (
             <ListItem
               key={item.id}
-              title={item.title}
+              title={item.title || t('objects.placeholder_title')}
               subtitle={formatRelativeDate(item.created_at)}
               thumbnail={item.file_path ? { uri: item.file_path } : undefined}
               badge={{
@@ -240,30 +232,40 @@ export function HomeScreen({ navigation }: Props) {
           ))
         )}
 
-        {/* ── 4. By type ───────────────────────────────────────────────────── */}
-        {byType.length > 0 && (
+        {/* ── 6. Quick Actions ───────────────────────────────────────────── */}
+        {!loading && stats.totalObjects > 0 && (
           <>
-            <Divider />
-            <View style={styles.sectionHeader}>
-              <SectionHeader title={t('home.byType')} />
+            <View style={styles.sectionWrap}>
+              <SectionHeader title={t('home.quickActions')} />
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.typeScrollContent}
-            >
-              {byType.map((tc) => (
-                <TypeCard
-                  key={tc.object_type}
-                  label={t(`object_types.${tc.object_type}`)}
-                  count={tc.count}
-                />
-              ))}
-            </ScrollView>
+            <View style={styles.actionsRow}>
+              <Pressable
+                style={styles.actionCard}
+                onPress={navigateToCollection}
+                accessibilityLabel={t('home.exportCollection')}
+                accessibilityRole="button"
+              >
+                <DownloadIcon size={20} color={colors.primary} />
+                <Text style={styles.actionLabel}>
+                  {t('home.exportCollection')}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={styles.actionCard}
+                onPress={navigateToCollection}
+                accessibilityLabel={t('home.browseByType')}
+                accessibilityRole="button"
+              >
+                <FilterIcon size={20} color={colors.primary} />
+                <Text style={styles.actionLabel}>
+                  {t('home.browseByType')}
+                </Text>
+              </Pressable>
+            </View>
           </>
         )}
 
-        <View style={{ height: spacing.xl }} />
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -276,31 +278,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  // Sync banner
-  syncBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
-    backgroundColor: colors.warningLight,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  syncBannerText: {
-    ...typography.caption,
-    color: colors.warning,
-  },
-  // Scroll
   scroll: { flex: 1 },
-  scrollContent: { paddingTop: spacing.sm },
+  scrollContent: { paddingTop: spacing.lg },
+  bottomSpacer: { height: spacing.xl },
+
   // Header
   header: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
   },
   headerTitle: {
-    ...typography.h2,
+    ...typography.h1,
     color: colors.text,
   },
   headerSubtitle: {
@@ -308,59 +296,107 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.xs,
   },
+
+  // Sync banner
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.warningLight,
+    borderRadius: radii.sm,
+  },
+  syncBannerText: {
+    ...typography.caption,
+    color: colors.warning,
+  },
+
+  // Primary CTA
+  ctaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    backgroundColor: colors.ctaSurface,
+    borderWidth: 1,
+    borderColor: colors.ctaBorder,
+    borderRadius: radii.lg,
+    minHeight: touch.minTarget,
+  },
+  ctaTextWrap: {
+    marginLeft: spacing.lg,
+    flex: 1,
+  },
+  ctaTitle: {
+    ...typography.bodyMedium,
+    color: colors.primary,
+  },
+  ctaSubtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+
   // Stats row
   statsRow: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   statCard: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
-  },
-  statIcon: {
-    marginBottom: 2,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    minHeight: touch.minTarget,
   },
   statValue: {
     ...typography.h3,
     color: colors.text,
+    marginTop: spacing.xs,
   },
   statLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    textAlign: 'center',
   },
-  // Section header wrapper
-  sectionHeader: {
+
+  // Section wrapper
+  sectionWrap: {
     paddingHorizontal: spacing.lg,
   },
+
   // Empty state
-  emptyState: {
+  emptyWrap: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
-  // Type scroll
-  typeScrollContent: {
+
+  // Quick actions
+  actionsRow: {
+    flexDirection: 'row',
     paddingHorizontal: spacing.lg,
     gap: spacing.sm,
-    paddingBottom: spacing.md,
   },
-  typeCard: {
-    width: 96,
+  actionCard: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xs,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    minHeight: touch.minTarget,
   },
-  typeCount: {
-    ...typography.h3,
-    color: colors.primary,
-  },
-  typeLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  actionLabel: {
+    ...typography.bodySmall,
+    color: colors.text,
   },
 });

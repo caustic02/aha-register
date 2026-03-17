@@ -50,6 +50,10 @@ export const colors = {
   aiLight: '#FEF9C3',
   aiSurface: '#FFFBEB',
 
+  // CTA (primary action card)
+  ctaSurface: 'rgba(45, 90, 39, 0.08)',
+  ctaBorder: 'rgba(45, 90, 39, 0.20)',
+
   // Utility
   white: '#FFFFFF',
   black: '#000000',
