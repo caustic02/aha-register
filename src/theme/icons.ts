@@ -67,6 +67,9 @@ export { SlidersHorizontal as FiltersIcon } from 'lucide-react-native';
 export { Square as CheckboxBlankIcon } from 'lucide-react-native';
 export { CheckSquare as CheckboxFilledIcon } from 'lucide-react-native';
 
+// ── Isolation icons ──────────────────────────────────────────────────────────
+export { Scissors as IsolateIcon } from 'lucide-react-native';
+
 // ── Status icons ──────────────────────────────────────────────────────────────
 export { RefreshCw as SyncIcon } from 'lucide-react-native';
 export { WifiOff as OfflineIcon } from 'lucide-react-native';
