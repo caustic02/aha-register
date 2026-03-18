@@ -47,11 +47,6 @@ export async function saveReviewedObject(
   const storageDir = `${Paths.document.uri}media/`;
   const destUri = `${storageDir}${storageName}`;
 
-  console.log('[saveReviewedObject] step 1: copy image', {
-    src: params.imageUri,
-    dest: destUri,
-  });
-
   try {
     const srcFile = new File(params.imageUri);
     if (!srcFile.exists) {
@@ -79,7 +74,6 @@ export async function saveReviewedObject(
   let sha256: string;
   try {
     sha256 = await computeSHA256(destUri);
-    console.log('[saveReviewedObject] step 2: SHA-256 computed', sha256.slice(0, 16));
   } catch (err) {
     console.error('[saveReviewedObject] step 2 FAILED: SHA-256', { destUri, error: err });
     throw new Error(`Step 2 failed: SHA-256 hash — ${err instanceof Error ? err.message : String(err)}`);
@@ -110,13 +104,6 @@ export async function saveReviewedObject(
       : 'document';
 
   // ── 6-9. Single atomic transaction ──────────────────────────────────────
-  console.log('[saveReviewedObject] step 6: starting transaction', {
-    objectId,
-    mediaId,
-    objectType: params.objectType,
-    privacyTier,
-  });
-
   await db.withTransactionAsync(async () => {
     // 6. INSERT object
     try {
@@ -144,7 +131,6 @@ export async function saveReviewedObject(
           now,
         ],
       );
-      console.log('[saveReviewedObject] step 6: object inserted');
     } catch (err) {
       throw new Error(`Step 6 failed: INSERT objects — ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -169,7 +155,6 @@ export async function saveReviewedObject(
           now,
         ],
       );
-      console.log('[saveReviewedObject] step 7: media inserted');
     } catch (err) {
       throw new Error(`Step 7 failed: INSERT media — ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -187,7 +172,6 @@ export async function saveReviewedObject(
           app: params.captureMetadata.appVersion,
         },
       });
-      console.log('[saveReviewedObject] step 8: audit logged');
     } catch (err) {
       throw new Error(`Step 8 failed: audit trail — ${err instanceof Error ? err.message : String(err)}`);
     }
@@ -199,13 +183,11 @@ export async function saveReviewedObject(
         objectId,
         mediaId,
       });
-      console.log('[saveReviewedObject] step 9: sync queued');
     } catch (err) {
       throw new Error(`Step 9 failed: sync queue — ${err instanceof Error ? err.message : String(err)}`);
     }
   });
 
-  console.log('[saveReviewedObject] SUCCESS objectId=', objectId);
   return objectId;
 }
 
