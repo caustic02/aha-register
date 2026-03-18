@@ -313,7 +313,7 @@ type ExportSource =
 ```
 
 **Step 1 — Format selection:**
-- Three `FormatCard` options: PDF, JSON, CSV
+- Three `FormatCard` options: PDF (`ExportIcon`), JSON (`DocumentScanIcon`), CSV (`ListViewIcon`) — lucide icons, `colors.primary`, 22dp
 - JSON and CSV are disabled (`accessibilityState={{ disabled: true }}`) when source mode is not `'object'` (batch/collection only support PDF)
 - Selecting a format advances to step 2
 

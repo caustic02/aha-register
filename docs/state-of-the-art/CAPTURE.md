@@ -457,7 +457,7 @@ Both records are inserted in a single `db.withTransactionAsync` along with audit
 
 ### On-Device OCR
 
-`extractTextOnDevice()` runs `@react-native-ml-kit/text-recognition` on the deskewed image. Results are stored on the **raw scan** media record (not the derivative):
+`extractTextOnDevice()` runs `rn-mlkit-ocr` (Google ML Kit, Expo config plugin) on the deskewed image. Results are stored on the **raw scan** media record (not the derivative):
 
 ```
 media.ocr_text       = extracted text
@@ -514,7 +514,7 @@ media.ocr_source     = 'on_device'
 | 2026-03-18 | C1: `react-native-document-scanner-plugin` chosen (Expo config plugin, VisionKit + ML Kit, actively maintained) |
 | 2026-03-18 | C1: Raw scan gets SHA-256 hash; deskewed derivative has no hash (same rule as B1 isolation) |
 | 2026-03-18 | C1: OCR text stored on raw scan record, not deskewed derivative |
-| 2026-03-18 | C1: `@react-native-ml-kit/text-recognition` for on-device OCR (no config plugin needed) |
+| 2026-03-18 | C1: `rn-mlkit-ocr` for on-device OCR (Expo config plugin, New Architecture compatible — swapped from `@react-native-ml-kit/text-recognition` which failed expo-doctor) |
 | 2026-03-18 | C2: Entry point on ObjectDetailScreen; one card per scan (deskewed for display, raw for OCR data) |
 | 2026-03-18 | C2: `DocumentReview` route registered in HomeStack (C4 placeholder) |
 

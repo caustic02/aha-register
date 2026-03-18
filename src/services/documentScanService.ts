@@ -190,11 +190,9 @@ export async function extractTextOnDevice(
   mediaId: string,
   imageUri: string,
 ): Promise<OcrResult> {
-  const TextRecognition = await import(
-    '@react-native-ml-kit/text-recognition'
-  );
+  const MlkitOcr = await import('rn-mlkit-ocr');
 
-  const result = await TextRecognition.default.recognize(imageUri);
+  const result = await MlkitOcr.default.recognizeText(imageUri);
 
   // Calculate average confidence from block-level data.
   // ML Kit doesn't expose per-block confidence directly;

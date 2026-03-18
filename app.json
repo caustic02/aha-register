@@ -36,7 +36,8 @@
       "expo-updates",
       ["@sentry/react-native/expo", { "uploadSourceMaps": false }],
       "expo-secure-store",
-      "react-native-document-scanner-plugin"
+      "react-native-document-scanner-plugin",
+      "rn-mlkit-ocr"
     ],
     "runtimeVersion": "0.1.0",
     "updates": {
