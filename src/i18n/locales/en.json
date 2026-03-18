@@ -705,7 +705,15 @@
     "title": "Background Removal",
     "processing": "Removing background...",
     "offlineError": "Isolation requires an internet connection",
-    "failed": "Background removal failed"
+    "failed": "Background removal failed",
+    "original": "Original",
+    "isolated": "Isolated",
+    "keep": "Keep",
+    "discard": "Discard",
+    "isolate": "Isolate",
+    "backgroundRemoved": "Background removed",
+    "tryAgain": "Try again",
+    "alreadyIsolated": "Already isolated"
   },
   "home": {
     "title": "Collection",

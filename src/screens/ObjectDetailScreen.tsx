@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { File } from 'expo-file-system';
@@ -30,6 +31,7 @@ import {
   EditIcon,
   ExportIcon,
   ForwardIcon,
+  IsolateIcon,
   WarningIcon,
 } from '../theme/icons';
 import { colors, radii, spacing, touch, typography } from '../theme';
@@ -39,11 +41,11 @@ import { ExportStepperModal, type ExportSource } from '../components/ExportStepp
 import type { ExportableObject } from '../services/export-service';
 import { getDisplayLabel } from '../utils/displayLabels';
 
+import type { HomeStackParamList } from '../navigation/HomeStack';
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-// Minimal param list — any stack with ObjectDetail: { objectId: string } satisfies this.
-type ObjectDetailParamList = { ObjectDetail: { objectId: string } };
-type Props = NativeStackScreenProps<ObjectDetailParamList, 'ObjectDetail'>;
+type Props = NativeStackScreenProps<HomeStackParamList, 'ObjectDetail'>;
 
 interface PersonRow extends ObjectPerson {
   name: string;
@@ -136,9 +138,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     }
   }, [db, objectId, t]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData]),
+  );
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -228,6 +232,31 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       await updateReviewStatus(db, objectId, 'needs_review').catch(() => {});
     }
   }, [object, media, db, objectId, navigation]);
+
+  // ── Isolation check ─────────────────────────────────────────────────────────
+
+  const canIsolate = useMemo(() => {
+    // Need at least one original media
+    const originals = media.filter(
+      (m) => !m.media_type || m.media_type === 'original',
+    );
+    if (originals.length === 0) return false;
+    // Check if a derivative already exists for the primary original
+    const pm = originals.find((m) => m.is_primary === 1) ?? originals[0];
+    const hasDerivative = media.some(
+      (m) => m.media_type === 'derivative_isolated' && m.parent_media_id === pm.id,
+    );
+    return !hasDerivative;
+  }, [media]);
+
+  const handleIsolate = useCallback(() => {
+    const pm = media.find((m) => m.is_primary === 1) ?? media[0];
+    if (!pm) return;
+    navigation.navigate('IsolationCompare', {
+      objectId,
+      mediaId: pm.id,
+    });
+  }, [media, navigation, objectId]);
 
   // ── Derived data for export (must be before early returns) ──────────────────
 
@@ -557,6 +586,13 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           onPress={handleExport}
           accessibilityLabel={t('export.share')}
         />
+        {canIsolate && (
+          <IconButton
+            icon={<IsolateIcon size={22} color={colors.text} />}
+            onPress={handleIsolate}
+            accessibilityLabel={t('isolation.isolate')}
+          />
+        )}
         <View style={styles.actionSpacer} />
         <IconButton
           icon={<DeleteIcon size={22} color={colors.error} />}

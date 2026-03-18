@@ -705,7 +705,15 @@
     "title": "Hintergrund entfernen",
     "processing": "Hintergrund wird entfernt...",
     "offlineError": "Hintergrundentfernung benötigt eine Internetverbindung",
-    "failed": "Hintergrundentfernung fehlgeschlagen"
+    "failed": "Hintergrundentfernung fehlgeschlagen",
+    "original": "Original",
+    "isolated": "Freigestellt",
+    "keep": "Behalten",
+    "discard": "Verwerfen",
+    "isolate": "Freistellen",
+    "backgroundRemoved": "Hintergrund entfernt",
+    "tryAgain": "Erneut versuchen",
+    "alreadyIsolated": "Bereits freigestellt"
   },
   "home": {
     "title": "Sammlung",
