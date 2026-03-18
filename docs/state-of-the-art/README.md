@@ -1,6 +1,6 @@
 # aha! Register -- State of the Art Index
 
-> Last updated: 2026-03-15
+> Last updated: 2026-03-18
 > Notion ADR Hub: https://www.notion.so/32457c3ba0b8814a9d70f73131750ee8
 
 Every major system in Register has a living document here. Read the relevant
@@ -18,6 +18,7 @@ doc before auditing or modifying any system. Update it after every build.
 | Collections | COLLECTIONS.md | Stub | 2026-03-09 |
 | Auth | AUTH.md | Stub | 2026-03-09 |
 | Sync Engine | SYNC.md | Stub | 2026-03-08 |
+| Vocabularies | VOCABULARIES.md | Active | 2026-03-18 |
 | Error Monitoring | ERROR-MONITORING.md | Active | 2026-03-15 |
 | Secure Storage | SECURE-STORAGE.md | Active | 2026-03-15 |
 | Database | DATABASE.md | Active | 2026-03-15 |
