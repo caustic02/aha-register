@@ -55,7 +55,10 @@
     "filter_all": "All",
     "delete_title": "Delete Object",
     "delete_confirm": "Delete \"{{title}}\"? This will also delete all photos and remove it from all collections. This cannot be undone.",
-    "deleted": "Object deleted"
+    "deleted": "Object deleted",
+    "scan_document": "Scan document",
+    "documents": "Documents",
+    "no_documents": "No documents scanned yet"
   },
   "object_types": {
     "museum_object": "Museum Object",
@@ -149,7 +152,13 @@
     "type_desc_specimen": "Biological, geological, or scientific specimens",
     "type_desc_architectural_element": "Structural components, facades, and building elements",
     "type_desc_environmental_sample": "Soil, water, air, or material samples for analysis",
-    "type_desc_conservation_record": "Treatment records and restoration documentation"
+    "type_desc_conservation_record": "Treatment records and restoration documentation",
+    "document_scan": "Scan document",
+    "document_scanning": "Scanning...",
+    "ocr_extracting": "Extracting text...",
+    "ocr_complete": "Text extracted",
+    "ocr_failed": "Could not extract text",
+    "document_deskew": "Straightening document..."
   },
   "collections": {
     "title": "Collections",

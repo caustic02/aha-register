@@ -432,7 +432,65 @@ Each AI-prefilled field renders `<AIFieldBadge visible confidence={n} />` inline
 
 ---
 
+## Document Scanning (C1)
+
+Native document scanning with on-device OCR. The scanner provides edge detection, corner handles, and perspective correction via platform-native APIs.
+
+### Scanner
+
+`react-native-document-scanner-plugin` wraps:
+- **Android**: Google ML Kit Document Scanner API
+- **iOS**: Apple VisionKit
+
+`launchDocumentScanner()` opens the native scanner UI (separate from `expo-camera`). Returns the deskewed image URI on success, or `null` if the user cancels.
+
+### Storage Model
+
+Two media records per scan, following the same derivative pattern as B1 isolation:
+
+| Record | `media_type` | `sha256_hash` | `parent_media_id` |
+|--------|-------------|---------------|-------------------|
+| Raw scan | `'document_scan'` | Computed (evidence) | `NULL` |
+| Deskewed | `'document_deskewed'` | `''` (empty — presentation) | Raw scan ID |
+
+Both records are inserted in a single `db.withTransactionAsync` along with audit trail and sync queue entries.
+
+### On-Device OCR
+
+`extractTextOnDevice()` runs `@react-native-ml-kit/text-recognition` on the deskewed image. Results are stored on the **raw scan** media record (not the derivative):
+
+```
+media.ocr_text       = extracted text
+media.ocr_confidence = 0–100 score
+media.ocr_source     = 'on_device'
+```
+
+### Cloud OCR Upgrade (C6 — stub)
+
+`upgradeOcrFromCloud()` is stubbed for C6. Will call Gemini Edge Function. Only overwrites on-device results if cloud confidence > on_device confidence.
+
+### Key Files (C1)
+
+| File | Purpose |
+|------|---------|
+| `src/services/documentScanService.ts` | `launchDocumentScanner`, `processDocumentScan`, `extractTextOnDevice`, `upgradeOcrFromCloud` |
+| `src/db/schema.ts` | `ocr_text`, `ocr_confidence`, `ocr_source` columns + migration statements |
+| `src/db/types.ts` | `OcrSource` union, extended `MediaType` union |
+| `docs/migrations/20260318200000_add_ocr_columns.sql` | Migration SQL |
+
+### Decision History (C1)
+
+| Date | Decision |
+|------|----------|
+| 2026-03-18 | C1: `react-native-document-scanner-plugin` chosen (Expo config plugin, VisionKit + ML Kit, actively maintained) |
+| 2026-03-18 | C1: Raw scan gets SHA-256 hash; deskewed derivative has no hash (same rule as B1 isolation) |
+| 2026-03-18 | C1: OCR text stored on raw scan record, not deskewed derivative |
+| 2026-03-18 | C1: `@react-native-ml-kit/text-recognition` for on-device OCR (no config plugin needed) |
+
+---
+
 ## Known Gaps
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer
+- Cloud OCR (C6) not yet implemented — stub only

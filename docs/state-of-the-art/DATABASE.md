@@ -121,6 +121,39 @@ Migration SQL: `docs/migrations/20260318160000_media_derivatives.sql`. Also in `
 
 `MediaType` union type added to `src/db/types.ts`.
 
+## C1 Schema Changes (2026-03-18)
+
+### OCR columns on `media`
+
+Three columns added for document scanning OCR:
+
+```sql
+ALTER TABLE media ADD COLUMN ocr_text TEXT;
+ALTER TABLE media ADD COLUMN ocr_confidence REAL;
+ALTER TABLE media ADD COLUMN ocr_source TEXT NOT NULL DEFAULT 'none';
+```
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `ocr_text` | `TEXT` | Extracted text from on-device or cloud OCR. `NULL` when no OCR has run. |
+| `ocr_confidence` | `REAL` | 0–100 confidence score. `NULL` when no OCR has run. |
+| `ocr_source` | `TEXT` (default `'none'`) | `'none'` (no OCR), `'on_device'` (ML Kit), `'cloud'` (Gemini — C6). |
+
+OCR text is stored on the **raw scan** media record, not on the deskewed derivative.
+
+### New `media_type` values
+
+| Value | Purpose |
+|-------|---------|
+| `'document_scan'` | Raw scan image with SHA-256 hash (evidence) |
+| `'document_deskewed'` | Perspective-corrected derivative, NO hash (presentation asset, linked via `parent_media_id`) |
+
+Same derivative pattern as B1 isolation: raw has hash, derivative has `sha256_hash = ''`.
+
+Migration SQL: `docs/migrations/20260318200000_add_ocr_columns.sql`. Also in `MIGRATION_STATEMENTS` for idempotent re-run.
+
+`OcrSource` union type added to `src/db/types.ts`. `MediaType` union extended with `'document_scan' | 'document_deskewed'`.
+
 ## Known Gaps
 
 - iOS native folder not yet prebuilt (requires macOS). EAS Build handles

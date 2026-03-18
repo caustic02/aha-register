@@ -44,7 +44,9 @@ export type LicenseType =
   | 'institution-specific'
   | 'TK-label';
 
-export type MediaType = 'original' | 'derivative_isolated';
+export type MediaType = 'original' | 'derivative_isolated' | 'document_scan' | 'document_deskewed';
+
+export type OcrSource = 'none' | 'on_device' | 'cloud';
 
 export type TranscriptionStatus = 'none' | 'draft' | 'ai_generated' | 'verified';
 
@@ -211,6 +213,10 @@ export interface Media {
   // Derivative tracking (B1 object isolation)
   parent_media_id?: string | null;
   media_type?: MediaType;
+  // OCR (C1 document scanning)
+  ocr_text?: string | null;
+  ocr_confidence?: number | null;
+  ocr_source?: OcrSource;
   // Copyright / licensing (added v1.3)
   rights_holder?: string | null;
   license_type?: LicenseType | null;

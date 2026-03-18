@@ -55,7 +55,10 @@
     "filter_all": "Alle",
     "delete_title": "Objekt l\u00f6schen",
     "delete_confirm": "\"{{title}}\" l\u00f6schen? Alle Fotos werden gel\u00f6scht und es wird aus allen Sammlungen entfernt. Dies kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
-    "deleted": "Objekt gel\u00f6scht"
+    "deleted": "Objekt gel\u00f6scht",
+    "scan_document": "Dokument scannen",
+    "documents": "Dokumente",
+    "no_documents": "Noch keine Dokumente gescannt"
   },
   "object_types": {
     "museum_object": "Museumsobjekt",
@@ -149,7 +152,13 @@
     "type_desc_specimen": "Biologische, geologische oder wissenschaftliche Exemplare",
     "type_desc_architectural_element": "Bauteile, Fassaden und Geb\u00e4udeelemente",
     "type_desc_environmental_sample": "Boden-, Wasser-, Luft- oder Materialproben zur Analyse",
-    "type_desc_conservation_record": "Behandlungsprotokolle und Restaurierungsdokumentation"
+    "type_desc_conservation_record": "Behandlungsprotokolle und Restaurierungsdokumentation",
+    "document_scan": "Dokument scannen",
+    "document_scanning": "Wird gescannt...",
+    "ocr_extracting": "Text wird extrahiert...",
+    "ocr_complete": "Text extrahiert",
+    "ocr_failed": "Text konnte nicht extrahiert werden",
+    "document_deskew": "Dokument wird begradigt..."
   },
   "collections": {
     "title": "Sammlungen",
