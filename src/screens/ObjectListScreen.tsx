@@ -30,6 +30,7 @@ import {
 } from '../components/FilterSheet';
 import {
   BackIcon,
+  CaptureTabIcon,
   CheckboxBlankIcon,
   CheckboxFilledIcon,
   CloseIcon,
@@ -455,9 +456,21 @@ export function ObjectListScreen({ navigation }: Props) {
       {objects.length === 0 ? (
         <View style={styles.emptyWrap}>
           <EmptyState
-            icon={<ObjectsTabIcon size={32} color={colors.textTertiary} />}
-            title={t('objectList.emptySearch')}
-            message={hasActiveFilters ? t('objectList.emptyMessage') : ''}
+            icon={
+              hasActiveFilters
+                ? <SearchIcon size={48} color={colors.textTertiary} />
+                : <CaptureTabIcon size={48} color={colors.textTertiary} />
+            }
+            title={
+              hasActiveFilters
+                ? t('empty_states.search.title')
+                : t('empty_states.objects.title')
+            }
+            message={
+              hasActiveFilters
+                ? t('empty_states.search.description')
+                : t('empty_states.objects.description')
+            }
             actionLabel={
               hasActiveFilters ? t('objectList.clearFilters') : undefined
             }

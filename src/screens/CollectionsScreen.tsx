@@ -16,6 +16,8 @@ import {
 } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
 import { colors, typography, spacing, radii, layout } from '../theme';
+import { EmptyState } from '../components/ui';
+import { CollectionsTabIcon } from '../theme/icons';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionList'>;
 
@@ -109,21 +111,13 @@ export function CollectionsScreen({ navigation }: Props) {
           collections.length === 0 ? styles.emptyContainer : styles.list
         }
         ListEmptyComponent={
-          <View style={styles.emptyContent}>
-            <Text style={styles.emptyIcon}>{'\u25C8'}</Text>
-            <Text style={styles.emptyTitle}>{t('collections.empty_title')}</Text>
-            <Text style={styles.emptySubtitle}>
-              {t('collections.empty_subtitle')}
-            </Text>
-            <Pressable
-              style={styles.emptyBtn}
-              onPress={() => navigation.navigate('CreateCollection')}
-              accessibilityRole="button"
-              accessibilityLabel={t('collections.create')}
-            >
-              <Text style={styles.emptyBtnText}>{t('collections.create')}</Text>
-            </Pressable>
-          </View>
+          <EmptyState
+            icon={<CollectionsTabIcon size={48} color={colors.textTertiary} />}
+            title={t('empty_states.collections.title')}
+            message={t('empty_states.collections.description')}
+            actionLabel={t('collections.create')}
+            onAction={() => navigation.navigate('CreateCollection')}
+          />
         }
         refreshControl={
           <RefreshControl
@@ -219,38 +213,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  emptyContent: {
-    alignItems: 'center',
-    padding: spacing.xxl,
-  },
-  emptyIcon: {
-    fontSize: spacing['3xl'],
-    color: colors.border,
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {
-    color: colors.text,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    marginBottom: spacing.sm,
-  },
-  emptySubtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.size.base,
-    textAlign: 'center',
-    marginBottom: spacing.xxl,
-    lineHeight: 20,
-  },
-  emptyBtn: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xxl,
-    paddingVertical: spacing.md,
-    borderRadius: radii.md,
-  },
-  emptyBtnText: {
-    color: colors.white,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
   },
 });

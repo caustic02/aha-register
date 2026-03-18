@@ -784,5 +784,19 @@
     "skipAiManual": "Skip AI, enter manually",
     "capturedPhoto": "Captured photograph",
     "signInRequired": "Sign in to use AI analysis. You can still enter metadata manually."
+  },
+  "empty_states": {
+    "objects": {
+      "title": "No objects yet",
+      "description": "Capture your first object to get started."
+    },
+    "collections": {
+      "title": "No collections yet",
+      "description": "Create a collection to organize your objects."
+    },
+    "search": {
+      "title": "No results found",
+      "description": "Try adjusting your search or filters."
+    }
   }
 }
