@@ -392,6 +392,26 @@
     "legalHoldWarning": "Dieser Datensatz steht unter rechtlicher Sperrung. Export nur f\u00fcr autorisierte Zwecke.",
     "legalHoldConfirm": "Export fortsetzen"
   },
+  "exportStepper": {
+    "selectFormat": "Format w\u00e4hlen",
+    "reviewScope": "Export pr\u00fcfen",
+    "step": "Schritt {{current}} von {{total}}",
+    "format": "Format",
+    "scope": "Umfang",
+    "privacyBreakdown": "Datenschutz",
+    "scopeOneObject": "1 Objekt",
+    "scopeObjects": "{{count}} Objekte",
+    "pdfOnlyBatch": "Nur f\u00fcr einzelne Objekte verf\u00fcgbar",
+    "anonymousWarning": "Bei {{count}} anonymen Objekt(en) werden Standortdaten entfernt",
+    "legalHoldWarning": "{{count}} Objekt(e) unter rechtlicher Sperrung \u2014 Export nur f\u00fcr autorisierte Zwecke",
+    "exportAs": "Als {{format}} exportieren",
+    "exporting": "Exportiere\u2026",
+    "exportingObject": "Exportiere \u201E{{title}}\u201C\u2026",
+    "exportingBatch": "Exportiere {{count}} Objekte\u2026",
+    "exportingCollection": "Exportiere \u201E{{name}}\u201C\u2026",
+    "exportComplete": "Export abgeschlossen",
+    "retry": "Erneut versuchen"
+  },
   "settings": {
     "title": "Einstellungen",
     "institution": "Institution",
