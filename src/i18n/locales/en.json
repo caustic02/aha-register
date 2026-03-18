@@ -78,7 +78,13 @@
     "jewelry": "Jewelry",
     "manuscript": "Manuscript",
     "mixed_media": "Mixed Media",
+    "uncategorized": "Uncategorized",
     "other": "Other"
+  },
+  "review_status": {
+    "needs_review": "Needs Review",
+    "in_review": "In Review",
+    "complete": "Complete"
   },
   "labels": {
     "coordinate_source": {

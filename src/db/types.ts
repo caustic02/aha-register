@@ -7,11 +7,14 @@ export type ObjectType =
   | 'specimen'
   | 'architectural_element'
   | 'environmental_sample'
-  | 'conservation_record';
+  | 'conservation_record'
+  | 'uncategorized';
 
 export type PrivacyTier = 'public' | 'confidential' | 'anonymous';
 
 export type EvidenceClass = 'primary' | 'corroborative' | 'contextual';
+
+export type ReviewStatus = 'needs_review' | 'in_review' | 'complete';
 
 export type SyncAction = 'insert' | 'update' | 'delete';
 
@@ -182,6 +185,8 @@ export interface RegisterObject {
   event_end: string | null;
   // Type-specific
   type_specific_data: string | null; // JSON
+  // Review workflow
+  review_status: ReviewStatus;
   created_at: string;
   updated_at: string;
 }

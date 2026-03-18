@@ -1,5 +1,4 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { File, Paths } from 'expo-file-system';
 
 import { generateId } from '../utils/uuid';
 import { computeSHA256 } from '../utils/hash';
@@ -7,6 +6,7 @@ import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import type { CaptureMetadata } from './metadata';
 import { getSetting, SETTING_KEYS } from './settingsService';
+import { copyToMediaStorage, buildStorageName, normalizeFileType } from './captureHelpers';
 
 export interface CreateDraftParams {
   imageUri: string;
@@ -30,18 +30,8 @@ export async function createDraftObject(
   const now = new Date().toISOString();
 
   // 1. Copy image to app storage
-  const ext = params.mimeType.split('/')[1] ?? 'jpg';
-  const storageName = `${mediaId}.${ext}`;
-  const storageDir = `${Paths.document.uri}media/`;
-  const destUri = `${storageDir}${storageName}`;
-
-  const srcFile = new File(params.imageUri);
-  const destFile = new File(destUri);
-  const parentDir = destFile.parentDirectory;
-  if (!parentDir.exists) {
-    parentDir.create({ intermediates: true, idempotent: true });
-  }
-  srcFile.copy(destFile);
+  const storageName = buildStorageName(mediaId, params.mimeType);
+  const destUri = copyToMediaStorage(params.imageUri, mediaId, params.mimeType);
 
   // 2. Compute SHA-256 hash
   const sha256 = await computeSHA256(destUri);
@@ -52,11 +42,7 @@ export async function createDraftObject(
 
   // 3-6. All database writes in a single transaction.
   // If any INSERT fails, the entire capture rolls back cleanly.
-  const fileType = params.mimeType.split('/')[0]; // 'image', 'video', 'audio'
-  const normalizedFileType =
-    fileType === 'image' || fileType === 'video' || fileType === 'audio'
-      ? fileType
-      : 'document';
+  const normalizedFileType = normalizeFileType(params.mimeType);
 
   await db.withTransactionAsync(async () => {
     // 3. Insert object record

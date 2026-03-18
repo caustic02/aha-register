@@ -159,6 +159,7 @@ const TYPE_FIELD_LABELS: Record<ObjectType, Record<string, string>> = {
     recommendations: 'Recommendations',
     next_review_date: 'Next Review Date',
   },
+  uncategorized: {},
 };
 
 function formatTsdValue(key: string, value: unknown): string | null {

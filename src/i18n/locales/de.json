@@ -78,7 +78,13 @@
     "jewelry": "Schmuck",
     "manuscript": "Manuskript",
     "mixed_media": "Mischtechnik",
+    "uncategorized": "Nicht kategorisiert",
     "other": "Sonstiges"
+  },
+  "review_status": {
+    "needs_review": "Überprüfung nötig",
+    "in_review": "In Überprüfung",
+    "complete": "Abgeschlossen"
   },
   "labels": {
     "coordinate_source": {
