@@ -45,6 +45,8 @@ export { X as CloseIcon } from 'lucide-react-native';
 
 // ── Camera icons ──────────────────────────────────────────────────────────────
 export { Zap as FlashIcon } from 'lucide-react-native';
+export { Zap as QuickModeIcon } from 'lucide-react-native';
+export { ClipboardList as FullModeIcon } from 'lucide-react-native';
 export { SwitchCamera as FlipCameraIcon } from 'lucide-react-native';
 export { Circle as ShutterIcon } from 'lucide-react-native';
 export { Maximize as AspectRatioIcon } from 'lucide-react-native';
