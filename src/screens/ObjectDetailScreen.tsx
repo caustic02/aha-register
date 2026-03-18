@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Pressable,
@@ -15,6 +16,11 @@ import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { File } from 'expo-file-system';
 import { deleteObject, updateReviewStatus } from '../services/objectService';
+import {
+  launchDocumentScanner,
+  processDocumentScan,
+  extractTextOnDevice,
+} from '../services/documentScanService';
 import type { CaptureMetadata } from '../services/metadata';
 import {
   Badge,
@@ -32,16 +38,19 @@ import {
   ExportIcon,
   ForwardIcon,
   IsolateIcon,
+  ScanIcon,
   WarningIcon,
 } from '../theme/icons';
 import { colors, radii, spacing, touch, typography } from '../theme';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { AIFieldBadge } from '../components/AIFieldBadge';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
 import type { ExportableObject } from '../services/export-service';
 import { getDisplayLabel } from '../utils/displayLabels';
 import { useSyncStatuses } from '../hooks/useSyncStatuses';
 import { SyncBadge } from '../components/SyncBadge';
+import { useObjectDocuments } from '../hooks/useObjectDocuments';
 
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
@@ -101,6 +110,13 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [scanning, setScanning] = useState(false);
+
+  // Document scans for this object
+  const {
+    documents,
+    refresh: refreshDocuments,
+  } = useObjectDocuments(objectId);
 
   // Per-object sync status
   const syncStatusMap = useSyncStatuses([objectId]);
@@ -263,6 +279,49 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       mediaId: pm.id,
     });
   }, [media, navigation, objectId]);
+
+  // ── Document scan handler ───────────────────────────────────────────────────
+
+  const handleScanDocument = useCallback(async () => {
+    try {
+      setScanning(true);
+
+      // 1. Launch native scanner
+      const scanResult = await launchDocumentScanner();
+      if (!scanResult) {
+        // User cancelled
+        setScanning(false);
+        return;
+      }
+
+      // 2. Process: store raw (with hash) + deskewed derivative
+      const record = await processDocumentScan(
+        db,
+        objectId,
+        scanResult.scannedImageUri,
+        scanResult.scannedImageUri,
+      );
+
+      // 3. Run on-device OCR on the deskewed image
+      try {
+        await extractTextOnDevice(
+          db,
+          record.rawMediaId,
+          record.deskewedFilePath,
+        );
+        Alert.alert(t('capture.ocr_complete'));
+      } catch {
+        Alert.alert(t('capture.ocr_failed'));
+      }
+
+      // 4. Refresh the documents list
+      await refreshDocuments();
+    } catch {
+      Alert.alert(t('common.error'));
+    } finally {
+      setScanning(false);
+    }
+  }, [db, objectId, t, refreshDocuments]);
 
   // ── Derived data for export (must be before early returns) ──────────────────
 
@@ -558,7 +617,114 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           </>
         )}
 
-        {/* ── 6. CAPTURE METADATA ──────────────────────────────────────────── */}
+        {/* ── 6. DOCUMENTS ────────────────────────────────────────────────── */}
+        <Divider />
+        <Card style={styles.card}>
+          <SectionHeader
+            title={t('objects.documents')}
+            action={
+              documents.length > 0
+                ? t('objects.document_count', { count: documents.length })
+                : undefined
+            }
+          />
+
+          {documents.length === 0 && !scanning && (
+            <Text style={styles.emptyDocumentsText}>
+              {t('objects.no_documents')}
+            </Text>
+          )}
+
+          {documents.map((doc) => {
+            const ocrSourceLabel =
+              doc.ocrSource === 'cloud'
+                ? t('objects.ocr_cloud')
+                : doc.ocrSource === 'on_device'
+                  ? t('objects.ocr_on_device')
+                  : null;
+            const previewText = doc.ocrText
+              ? doc.ocrText.split('\n').slice(0, 2).join('\n')
+              : null;
+
+            return (
+              <Pressable
+                key={doc.rawMediaId}
+                style={styles.documentCard}
+                onPress={() =>
+                  navigation.navigate('DocumentReview', {
+                    mediaId: doc.rawMediaId,
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={t('objects.view_document')}
+              >
+                <Image
+                  source={{ uri: doc.displayUri }}
+                  style={styles.documentThumb}
+                  resizeMode="cover"
+                />
+                <View style={styles.documentInfo}>
+                  {previewText ? (
+                    <Text
+                      style={styles.documentOcrPreview}
+                      numberOfLines={2}
+                    >
+                      {previewText}
+                    </Text>
+                  ) : (
+                    <Text style={styles.documentNoText}>
+                      {t('capture.ocr_failed')}
+                    </Text>
+                  )}
+                  <View style={styles.documentBadges}>
+                    {doc.ocrConfidence != null && doc.ocrConfidence > 0 && (
+                      <AIFieldBadge
+                        visible
+                        confidence={doc.ocrConfidence}
+                      />
+                    )}
+                    {ocrSourceLabel && (
+                      <Badge
+                        variant="neutral"
+                        label={ocrSourceLabel}
+                        size="sm"
+                      />
+                    )}
+                  </View>
+                </View>
+                <ForwardIcon size={16} color={colors.textTertiary} />
+              </Pressable>
+            );
+          })}
+
+          <Pressable
+            style={[
+              styles.scanButton,
+              scanning && styles.scanButtonDisabled,
+            ]}
+            onPress={handleScanDocument}
+            disabled={scanning}
+            accessibilityRole="button"
+            accessibilityLabel={t('objects.scan_document')}
+          >
+            {scanning ? (
+              <ActivityIndicator
+                size="small"
+                color={colors.primary}
+                accessibilityLabel={t('capture.document_scanning')}
+              />
+            ) : (
+              <ScanIcon size={18} color={colors.primary} />
+            )}
+            <Text style={styles.scanButtonText}>
+              {scanning
+                ? t('capture.document_scanning')
+                : t('objects.scan_document')}
+            </Text>
+          </Pressable>
+        </Card>
+
+        {/* ── 7. CAPTURE METADATA ──────────────────────────────────────────── */}
         <Divider />
         <Card style={styles.card}>
           <SectionHeader title={t('objectDetail.captureData')} />
@@ -788,5 +954,63 @@ const styles = StyleSheet.create({
   },
   actionSpacer: {
     flex: 1,
+  },
+  // Documents section
+  emptyDocumentsText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    paddingVertical: spacing.sm,
+  },
+  documentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    minHeight: touch.minTarget,
+  },
+  documentThumb: {
+    width: 56,
+    height: 56,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surface,
+  },
+  documentInfo: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  documentOcrPreview: {
+    ...typography.bodySmall,
+    color: colors.text,
+  },
+  documentNoText: {
+    ...typography.bodySmall,
+    color: colors.textTertiary,
+    fontStyle: 'italic',
+  },
+  documentBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  scanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: radii.md,
+    minHeight: touch.minTarget,
+  },
+  scanButtonDisabled: {
+    opacity: 0.5,
+  },
+  scanButtonText: {
+    ...typography.bodyMedium,
+    color: colors.primary,
   },
 });

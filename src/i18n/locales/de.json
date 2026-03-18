@@ -58,7 +58,13 @@
     "deleted": "Objekt gel\u00f6scht",
     "scan_document": "Dokument scannen",
     "documents": "Dokumente",
-    "no_documents": "Noch keine Dokumente gescannt"
+    "no_documents": "Noch keine Dokumente gescannt",
+    "ocr_on_device": "Lokal",
+    "ocr_cloud": "Cloud",
+    "ocr_confidence": "Konfidenz",
+    "document_count": "{{count}} Dokumente",
+    "document_count_one": "1 Dokument",
+    "view_document": "Dokument ansehen"
   },
   "object_types": {
     "museum_object": "Museumsobjekt",
