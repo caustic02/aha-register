@@ -1,6 +1,6 @@
 # State of the Art: Capture System
 
-> Last updated: 2026-03-15
+> Last updated: 2026-03-18
 > Status: ACTIVE
 
 ## What This Is
@@ -158,6 +158,47 @@ After successful save, the CaptureStack wrapper:
 ### Hash Integrity Guarantee
 
 The SHA-256 hash is computed on the **stored copy** of the image file (not the original URI) at step 2, **before** the database transaction begins at step 5. The hash value stored in the `media` table matches `sha256sum` / `openssl dgst` on the stored file.
+
+## Domain-Aware AI Analysis
+
+The Gemini analysis prompt is selected based on the user's collection domain setting (`useSettings().collectionDomain`). The domain flows through the full chain:
+
+```
+SettingsScreen → useSettings hook → CaptureStack → AIProcessingScreen → ai-analysis.ts → Edge Function → Gemini
+```
+
+### Domain Prompt Templates
+
+| Domain | System Prompt Focus |
+|--------|-------------------|
+| `museum_collection` | Museum registrar. AAT terminology, precise material/technique, dating with reasoning, condition vocabulary, artist attribution |
+| `conservation_lab` | Conservation specialist. Detailed material layers, cracking/flaking/losses, environmental damage, treatment-relevant technique analysis |
+| `human_rights` | Berkeley Protocol investigator. Objective physical description only, visible markings/text, no speculation on provenance or attribution |
+| `archaeological_site` | Archaeologist. Typological classification, fabric/ware identification, manufacture indicators, stratigraphic observations |
+| `natural_history` | Specimen specialist. Taxonomic identification, preservation state, morphological features, scientific nomenclature |
+| `general` | Generic analysis. Balanced coverage of all fields without domain-specific vocabulary depth |
+
+### Data Flow
+
+1. `CaptureStack.AIProcessingWrapper` reads `collectionDomain` from `useSettings()` hook
+2. Passes `domain` prop to `AIProcessingScreen`
+3. `AIProcessingScreen` calls `analyzeObject(base64, mimeType, domain)`
+4. `ai-analysis.ts` includes `domain` in the Edge Function request body
+5. Edge Function selects `DOMAIN_PROMPTS[domain]` and `DOMAIN_USER_PROMPTS[domain]`
+6. Gemini receives domain-specific system instruction and user prompt
+7. Response JSON schema is consistent across all domains (same `AIAnalysisResult` type)
+
+### Key Files
+
+| File | Role |
+|------|------|
+| `supabase/functions/analyze-object/index.ts` | 6 domain-specific system prompts + user prompts |
+| `src/services/ai-analysis.ts` | `analyzeObject(base64, mime, domain)` — passes domain to Edge Function |
+| `src/screens/AIProcessingScreen.tsx` | Accepts `domain` prop, passes to `analyzeObject` |
+| `src/navigation/CaptureStack.tsx` | Reads `collectionDomain` from settings, passes to AIProcessingScreen |
+| `src/hooks/useSettings.ts` | `CollectionDomain` type and AsyncStorage persistence |
+
+---
 
 ## Known Gaps
 

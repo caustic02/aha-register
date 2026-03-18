@@ -722,6 +722,8 @@
     "mediumPlaceholder": "e.g. Oil on canvas",
     "dimensionsLabel": "Dimensions",
     "dimensionsPlaceholder": "e.g. 30 \u00d7 40 cm",
+    "techniqueLabel": "Technique",
+    "techniquePlaceholder": "e.g. engraving, casting",
     "stylePeriodLabel": "Style / Period",
     "stylePeriodPlaceholder": "e.g. Baroque, Art Nouveau",
     "cultureOriginLabel": "Culture / Origin",

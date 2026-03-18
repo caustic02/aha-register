@@ -34,6 +34,12 @@ import {
   getAllCollections,
   type CollectionWithCount,
 } from '../services/collectionService';
+import { VocabularyPicker } from '../components/VocabularyPicker';
+import type { GettyTerm, VocabularySelection } from '../data/getty/types';
+import objectTypesData from '../data/getty/object-types.json';
+import materialsData from '../data/getty/materials.json';
+import techniquesData from '../data/getty/techniques.json';
+import stylesPeriodsData from '../data/getty/styles-periods.json';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -46,13 +52,51 @@ export interface ReviewCardScreenProps {
   onDiscard?: () => void;
 }
 
-// ── Object type keys (labels resolved via i18n inside component) ─────────────
+// ── Getty vocabulary data (cast for TypeScript — JSON imports have no type) ──
 
-const OBJECT_TYPE_KEYS = [
-  'painting', 'sculpture', 'drawing', 'print', 'photograph', 'textile',
-  'ceramic', 'glass', 'metal', 'furniture', 'jewelry', 'manuscript',
-  'mixed_media', 'other',
-] as const;
+const objectTypesVocab = objectTypesData as GettyTerm[];
+const materialsVocab = materialsData as GettyTerm[];
+const techniquesVocab = techniquesData as GettyTerm[];
+const stylesPeriodsVocab = stylesPeriodsData as GettyTerm[];
+
+/**
+ * Try to match an AI-supplied free-text value to a Getty term.
+ * Returns a VocabularySelection with AAT URI if found, otherwise free text.
+ */
+function matchToGetty(
+  text: string,
+  vocabulary: GettyTerm[],
+): VocabularySelection {
+  if (!text.trim()) return { label: '', uri: null };
+  const lower = text.trim().toLowerCase();
+  const match = vocabulary.find(
+    (t) =>
+      t.label_en.toLowerCase() === lower ||
+      (t.label_de && t.label_de.toLowerCase() === lower),
+  );
+  if (match) return { label: match.label_en, uri: match.uri };
+  // Try substring match for compound terms like "oil on canvas"
+  const partialMatch = vocabulary.find(
+    (t) =>
+      lower.includes(t.label_en.toLowerCase()) ||
+      t.label_en.toLowerCase().includes(lower),
+  );
+  if (partialMatch) return { label: partialMatch.label_en, uri: partialMatch.uri };
+  return { label: text.trim(), uri: null };
+}
+
+/**
+ * Match a comma-separated or single AI value to multiple Getty terms.
+ */
+function matchMultiToGetty(
+  text: string,
+  vocabulary: GettyTerm[],
+): VocabularySelection[] {
+  if (!text.trim()) return [];
+  // Split on common separators: comma, semicolon, " and ", " on "
+  const parts = text.split(/[,;]|\band\b|\bon\b/i).map((s) => s.trim()).filter(Boolean);
+  return parts.map((p) => matchToGetty(p, vocabulary));
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,25 +138,29 @@ export function ReviewCardScreen({
   onSave,
   onDiscard,
 }: ReviewCardScreenProps) {
-  const { t } = useAppTranslation();
+  const { t, i18n } = useAppTranslation();
   const db = useDatabase();
+  const vocabLang = (i18n.language?.startsWith('de') ? 'de' : 'en') as 'en' | 'de';
 
   // ── Editable field state ──────────────────────────────────────────────────
 
   const [title, setTitle] = useState(fieldString(analysisResult.title.value));
-  const [objectType, setObjectType] = useState(
-    fieldString(analysisResult.object_type.value) || 'other',
+  const [objectTypeSel, setObjectTypeSel] = useState<VocabularySelection>(() =>
+    matchToGetty(fieldString(analysisResult.object_type.value) || 'other', objectTypesVocab),
   );
   const [dateCreated, setDateCreated] = useState(
     fieldString(analysisResult.date_created.value),
   );
-  const [medium, setMedium] = useState(fieldString(analysisResult.medium.value));
+  const [mediumSel, setMediumSel] = useState<VocabularySelection[]>(() =>
+    matchMultiToGetty(fieldString(analysisResult.medium.value), materialsVocab),
+  );
   const [dimensions, setDimensions] = useState(
     fieldString(analysisResult.dimensions_description.value),
   );
-  const [stylePeriod, setStylePeriod] = useState(
-    fieldString(analysisResult.style_period.value),
+  const [stylePeriodSel, setStylePeriodSel] = useState<VocabularySelection>(() =>
+    matchToGetty(fieldString(analysisResult.style_period.value), stylesPeriodsVocab),
   );
+  const [techniqueSel, setTechniqueSel] = useState<VocabularySelection[]>([]);
   const [cultureOrigin, setCultureOrigin] = useState(
     fieldString(analysisResult.culture_origin.value),
   );
@@ -181,11 +229,6 @@ export function ReviewCardScreen({
     return { variant: 'error' as const, label: t('reviewCard.lowConfidence') };
   }, [avgConfidence, t]);
 
-  const objectTypeOptions = useMemo(
-    () => OBJECT_TYPE_KEYS.map((k) => ({ value: k, label: t(`reviewCard.objectTypes.${k}`) })),
-    [t],
-  );
-
   const keywordOptions = useMemo(() => {
     const kw = analysisResult.keywords.value;
     if (!Array.isArray(kw)) return [];
@@ -242,13 +285,13 @@ export function ReviewCardScreen({
         mimeType: guessMimeType(imageUri),
         captureMetadata,
         title: title.trim() || 'Untitled',
-        objectType: objectType || 'museum_object',
+        objectType: objectTypeSel.label || 'museum_object',
         description: description.trim() || undefined,
         condition: condition.trim() || undefined,
         dateCreated: dateCreated.trim() || undefined,
-        medium: medium.trim() || undefined,
+        medium: mediumSel.map((s) => s.label).filter(Boolean).join(', ') || undefined,
         dimensions: dimensions.trim() || undefined,
-        stylePeriod: stylePeriod.trim() || undefined,
+        stylePeriod: stylePeriodSel.label || undefined,
         cultureOrigin: cultureOrigin.trim() || undefined,
         keywords: selectedKeywords.length > 0 ? selectedKeywords : undefined,
       });
@@ -282,8 +325,8 @@ export function ReviewCardScreen({
       setSaving(false);
     }
   }, [
-    db, imageUri, captureMetadata, title, objectType, description, condition,
-    dateCreated, medium, dimensions, stylePeriod, cultureOrigin,
+    db, imageUri, captureMetadata, title, objectTypeSel, description, condition,
+    dateCreated, mediumSel, dimensions, stylePeriodSel, cultureOrigin,
     selectedKeywords, selectedCollectionId, onSave, t,
   ]);
 
@@ -397,11 +440,13 @@ export function ReviewCardScreen({
             label={t('reviewCard.objectTypeLabel')}
             confidence={analysisResult.object_type.confidence}
           >
-            <Text style={styles.fieldLabel}>{t('reviewCard.objectTypeLabel')}</Text>
-            <ChipGroup
-              options={objectTypeOptions}
-              selected={objectType}
-              onSelect={(v) => setObjectType(Array.isArray(v) ? v[0] : v)}
+            <VocabularyPicker
+              vocabulary={objectTypesVocab}
+              value={objectTypeSel}
+              onChange={(v) => setObjectTypeSel(Array.isArray(v) ? v[0] : v)}
+              language={vocabLang}
+              label={t('reviewCard.objectTypeLabel')}
+              placeholder={t('reviewCard.objectTypeLabel')}
             />
           </AIField>
 
@@ -421,11 +466,29 @@ export function ReviewCardScreen({
             label={t('reviewCard.mediumLabel')}
             confidence={analysisResult.medium.confidence}
           >
-            <TextInput
+            <VocabularyPicker
+              vocabulary={materialsVocab}
+              value={mediumSel}
+              onChange={(v) => setMediumSel(Array.isArray(v) ? v : [v])}
+              multiSelect
+              language={vocabLang}
               label={t('reviewCard.mediumLabel')}
-              value={medium}
-              onChangeText={setMedium}
               placeholder={t('reviewCard.mediumPlaceholder')}
+            />
+          </AIField>
+
+          <AIField
+            label={t('reviewCard.techniqueLabel')}
+            confidence={0}
+          >
+            <VocabularyPicker
+              vocabulary={techniquesVocab}
+              value={techniqueSel}
+              onChange={(v) => setTechniqueSel(Array.isArray(v) ? v : [v])}
+              multiSelect
+              language={vocabLang}
+              label={t('reviewCard.techniqueLabel')}
+              placeholder={t('reviewCard.techniquePlaceholder')}
             />
           </AIField>
 
@@ -445,10 +508,12 @@ export function ReviewCardScreen({
             label={t('reviewCard.stylePeriodLabel')}
             confidence={analysisResult.style_period.confidence}
           >
-            <TextInput
+            <VocabularyPicker
+              vocabulary={stylesPeriodsVocab}
+              value={stylePeriodSel}
+              onChange={(v) => setStylePeriodSel(Array.isArray(v) ? v[0] : v)}
+              language={vocabLang}
               label={t('reviewCard.stylePeriodLabel')}
-              value={stylePeriod}
-              onChangeText={setStylePeriod}
               placeholder={t('reviewCard.stylePeriodPlaceholder')}
             />
           </AIField>

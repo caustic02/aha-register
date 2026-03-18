@@ -11,6 +11,7 @@ import { ReviewCardScreen } from '../screens/ReviewCardScreen';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
 import type { MainTabParamList } from './MainTabs';
+import { useSettings } from '../hooks/useSettings';
 
 // ── Param list ───────────────────────────────────────────────────────────────
 
@@ -59,6 +60,7 @@ function AIProcessingWrapper({
 }: NativeStackScreenProps<CaptureStackParamList, 'AIProcessing'>) {
   const { imageUri, imageBase64, mimeType, captureMetadata, sha256Hash } =
     route.params;
+  const { collectionDomain } = useSettings();
 
   const handleComplete = useCallback(
     (result: AIAnalysisResult) => {
@@ -87,6 +89,7 @@ function AIProcessingWrapper({
       imageBase64={imageBase64}
       mimeType={mimeType}
       captureMetadata={captureMetadata}
+      domain={collectionDomain}
       onComplete={handleComplete}
       onSkip={handleSkip}
     />

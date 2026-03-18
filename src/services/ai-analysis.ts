@@ -101,6 +101,7 @@ async function callEdgeFunction(
 export async function analyzeObject(
   image_base64: string,
   mime_type: string = 'image/jpeg',
+  domain: string = 'general',
 ): Promise<AIAnalysisResponse> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -111,7 +112,7 @@ export async function analyzeObject(
       return { success: false, error: 'NO_AUTH_SESSION' };
     }
 
-    const payload = JSON.stringify({ image_base64, mime_type });
+    const payload = JSON.stringify({ image_base64, mime_type, domain });
     let response = await callEdgeFunction(token, payload, controller.signal);
 
     // On 401, get a fresh token (refresh → anonymous fallback) and retry once.
