@@ -40,6 +40,8 @@ import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
 import type { ExportableObject } from '../services/export-service';
 import { getDisplayLabel } from '../utils/displayLabels';
+import { useSyncStatuses } from '../hooks/useSyncStatuses';
+import { SyncBadge } from '../components/SyncBadge';
 
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
@@ -99,6 +101,10 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+
+  // Per-object sync status
+  const syncStatusMap = useSyncStatuses([objectId]);
+  const objectSyncStatus = syncStatusMap.get(objectId) ?? 'synced';
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -436,6 +442,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
         <Divider />
 
+        {/* ── SYNC STATUS ──────────────────────────────────────────────────── */}
+        <View style={styles.syncBadgeRow}>
+          <SyncBadge status={objectSyncStatus} size="md" />
+        </View>
+
         {/* ── REVIEW BANNER (needs_review or in_review) ────────────────────── */}
         {object.review_status !== 'complete' && (
           <View style={styles.reviewBanner}>
@@ -691,6 +702,13 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: radii.full,
     backgroundColor: colors.primary,
+  },
+  // Sync status row
+  syncBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   // Review banner
   reviewBanner: {

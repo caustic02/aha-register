@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -46,6 +46,8 @@ import { colors, radii, spacing, touch, typography } from '../theme';
 import { formatRelativeDate } from '../utils/format-date';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 import type { ObjectType } from '../db/types';
+import { useSyncStatuses } from '../hooks/useSyncStatuses';
+import { SyncBadge } from '../components/SyncBadge';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -109,6 +111,10 @@ export function ObjectListScreen({ navigation, route }: Props) {
   // Export stepper
   const [showExportStepper, setShowExportStepper] = useState(false);
   const [exportSource, setExportSource] = useState<ExportSource | null>(null);
+
+  // Sync status badges
+  const objectIds = useMemo(() => objects.map((o) => o.id), [objects]);
+  const syncStatuses = useSyncStatuses(objectIds);
 
   // ── Load view mode preference ───────────────────────────────────────────────
 
@@ -267,6 +273,9 @@ export function ObjectListScreen({ navigation, route }: Props) {
   const renderListItem = useCallback(
     ({ item }: { item: ObjectRow }) => {
       const isSelected = selectedIds.has(item.id);
+      const itemSyncStatus = selectMode
+        ? undefined
+        : (syncStatuses.get(item.id) ?? 'synced');
       return (
         <ListItem
           title={item.title}
@@ -287,6 +296,11 @@ export function ObjectListScreen({ navigation, route }: Props) {
               </View>
             ) : undefined
           }
+          rightElement={
+            itemSyncStatus && itemSyncStatus !== 'synced' ? (
+              <SyncBadge status={itemSyncStatus} size="sm" />
+            ) : undefined
+          }
           onPress={() => {
             if (selectMode) {
               toggleSelection(item.id);
@@ -300,7 +314,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         />
       );
     },
-    [navigation, t, selectMode, selectedIds, toggleSelection, enterSelectMode],
+    [navigation, t, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode],
   );
 
   const renderGridItem = useCallback(
@@ -342,13 +356,21 @@ export function ObjectListScreen({ navigation, route }: Props) {
               )}
             </View>
           )}
+          {!selectMode && (
+            <View style={styles.gridSyncBadge}>
+              <SyncBadge
+                status={syncStatuses.get(item.id) ?? 'synced'}
+                size="sm"
+              />
+            </View>
+          )}
           <Text style={styles.gridTitle} numberOfLines={1}>
             {item.title}
           </Text>
         </Pressable>
       );
     },
-    [navigation, selectMode, selectedIds, toggleSelection, enterSelectMode],
+    [navigation, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode],
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -657,6 +679,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   gridCheckbox: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+  },
+  gridSyncBadge: {
     position: 'absolute',
     top: spacing.xs,
     right: spacing.xs,

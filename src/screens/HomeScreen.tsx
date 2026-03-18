@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -33,6 +33,8 @@ import { SkeletonList, SkeletonLoader } from '../components/SkeletonLoader';
 import { formatRelativeDate } from '../utils/format-date';
 import { getSetting, SETTING_KEYS } from '../services/settingsService';
 import { useSyncStatus } from '../hooks/useSyncStatus';
+import { useSyncStatuses } from '../hooks/useSyncStatuses';
+import { SyncBadge } from '../components/SyncBadge';
 import { CheckIcon } from '../theme/icons';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
@@ -74,6 +76,10 @@ export function HomeScreen({ navigation }: Props) {
   const [recent, setRecent] = useState<RecentObject[]>([]);
   const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [institutionName, setInstitutionName] = useState<string | null>(null);
+
+  // Sync badges for inbox items
+  const inboxIds = useMemo(() => inbox.map((i) => i.id), [inbox]);
+  const inboxSyncStatuses = useSyncStatuses(inboxIds);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -200,7 +206,15 @@ export function HomeScreen({ navigation }: Props) {
                       <ObjectsTabIcon size={20} color={colors.textTertiary} />
                     </View>
                   )}
+                  {/* Amber dot — needs review indicator */}
                   <View style={styles.inboxDot} />
+                  {/* Sync status dot — bottom-left */}
+                  <View style={styles.inboxSyncBadgeWrap}>
+                    <SyncBadge
+                      status={inboxSyncStatuses.get(item.id) ?? 'synced'}
+                      size="sm"
+                    />
+                  </View>
                 </Pressable>
               ))}
             </ScrollView>
@@ -464,6 +478,11 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.statusWarning,
+  },
+  inboxSyncBadgeWrap: {
+    position: 'absolute',
+    bottom: 2,
+    left: 2,
   },
   inboxReviewBtn: {
     marginTop: spacing.md,

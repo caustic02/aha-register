@@ -219,6 +219,12 @@
     "pending": "{{count}} ausstehend",
     "lastSynced": "Zuletzt synchronisiert {{time}}"
   },
+  "syncBadge": {
+    "synced": "Synchronisiert",
+    "pending": "Synchronisierung ausstehend",
+    "failed": "Synchronisierung fehlgeschlagen",
+    "offline": "Offline"
+  },
   "privacy": {
     "public": "\u00d6ffentlich",
     "confidential": "Vertraulich",

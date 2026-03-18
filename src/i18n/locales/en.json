@@ -219,6 +219,12 @@
     "pending": "{{count}} pending",
     "lastSynced": "Last synced {{time}}"
   },
+  "syncBadge": {
+    "synced": "Synced",
+    "pending": "Sync pending",
+    "failed": "Sync failed",
+    "offline": "Offline"
+  },
   "privacy": {
     "public": "Public",
     "confidential": "Confidential",
