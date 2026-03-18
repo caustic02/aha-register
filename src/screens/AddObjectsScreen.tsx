@@ -71,7 +71,13 @@ export function AddObjectsScreen({ route, navigation }: Props) {
     ({ item }: { item: PickerObject }) => {
       const isSelected = selected.has(item.id);
       return (
-        <Pressable style={styles.row} onPress={() => toggleSelect(item.id)}>
+        <Pressable
+          style={styles.row}
+          onPress={() => toggleSelect(item.id)}
+          accessibilityRole="button"
+          accessibilityLabel={item.title}
+          accessibilityState={{ selected: isSelected }}
+        >
           <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
             {isSelected && <Text style={styles.checkmark}>{'\u2713'}</Text>}
           </View>
@@ -101,10 +107,14 @@ export function AddObjectsScreen({ route, navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.cancel')}
+        >
           <Text style={styles.cancelText}>{t('common.cancel')}</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>
+        <Text style={styles.headerTitle} accessibilityRole="header">
           {t('collections.add_objects.title')}
         </Text>
         <View style={styles.headerSpacer} />
@@ -140,6 +150,9 @@ export function AddObjectsScreen({ route, navigation }: Props) {
             style={[styles.addBtn, saving && styles.addBtnDisabled]}
             onPress={handleAdd}
             disabled={saving}
+            accessibilityRole="button"
+            accessibilityLabel={addLabel}
+            accessibilityState={{ disabled: saving }}
           >
             <Text style={styles.addBtnText}>{addLabel}</Text>
           </Pressable>

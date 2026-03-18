@@ -67,13 +67,23 @@ export function CreateCollectionScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.goBack()}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.cancel')}
+        >
           <Text style={styles.cancelText}>{t('common.cancel')}</Text>
         </Pressable>
-        <Text style={styles.headerTitle}>
+        <Text style={styles.headerTitle} accessibilityRole="header">
           {t('collections.create_screen.title')}
         </Text>
-        <Pressable onPress={handleSave} disabled={saving}>
+        <Pressable
+          onPress={handleSave}
+          disabled={saving}
+          accessibilityRole="button"
+          accessibilityLabel={t('common.save')}
+          accessibilityState={{ disabled: saving }}
+        >
           <Text style={[styles.saveText, saving && styles.saveTextDisabled]}>
             {t('common.save')}
           </Text>
@@ -110,6 +120,9 @@ export function CreateCollectionScreen({ navigation }: Props) {
                 key={type}
                 style={[styles.typeBadge, active && styles.typeBadgeActive]}
                 onPress={() => setCollectionType(type)}
+                accessibilityRole="radio"
+                accessibilityLabel={t(`collections.type.${type}`)}
+                accessibilityState={{ checked: active }}
               >
                 <Text
                   style={[
