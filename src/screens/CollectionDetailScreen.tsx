@@ -5,6 +5,7 @@ import {
   FlatList,
   Image,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -25,7 +26,9 @@ import {
 import type { Collection } from '../db/types';
 import { exportCollectionToPDF, exportBatchToPDF, sharePDF } from '../services/exportService';
 import { deleteObject } from '../services/objectService';
+import { IconButton } from '../components/ui';
 import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBar';
+import { BackIcon } from '../theme/icons';
 import { CollectionPickerModal } from '../components/CollectionPickerModal';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
 import type { MainTabParamList } from '../navigation/MainTabs';
@@ -297,7 +300,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   if (!collection) return null;
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       {selectionMode ? (
         <SelectionHeader
@@ -309,14 +312,11 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         />
       ) : (
         <View style={styles.header}>
-          <Pressable
+          <IconButton
+            icon={<BackIcon size={24} color={colors.text} />}
             onPress={() => navigation.goBack()}
-            accessibilityRole="button"
             accessibilityLabel={t('common.back')}
-            style={styles.backBtn}
-          >
-            <Text style={styles.backText}>{'\u2190'} {t('common.back')}</Text>
-          </Pressable>
+          />
           <Pressable
             style={styles.exportBtn}
             onPress={handleExportCollection}
@@ -524,7 +524,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         onSelect={handleCollectionSelected}
         t={t}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -537,17 +537,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 56,
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.sm,
-  },
-  backBtn: {
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-  },
-  backText: {
-    color: colors.accent,
-    fontSize: typography.size.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
   },
   exportBtn: {
     backgroundColor: colors.border,

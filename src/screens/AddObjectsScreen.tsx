@@ -3,6 +3,7 @@ import {
   FlatList,
   Image,
   Pressable,
+  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
@@ -98,7 +99,7 @@ export function AddObjectsScreen({ route, navigation }: Props) {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}>
           <Text style={styles.cancelText}>{t('common.cancel')}</Text>
@@ -144,7 +145,7 @@ export function AddObjectsScreen({ route, navigation }: Props) {
           </Pressable>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -154,24 +155,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: spacing.xl,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
-    color: colors.white,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
+    ...typography.h4,
+    color: colors.text,
   },
   headerSpacer: {
     width: 60,
   },
   cancelText: {
+    ...typography.bodyMedium,
     color: colors.textSecondary,
-    fontSize: typography.size.md,
   },
   searchContainer: {
     paddingHorizontal: layout.screenPadding,

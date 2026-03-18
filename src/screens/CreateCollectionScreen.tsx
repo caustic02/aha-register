@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import {
   Alert,
   Pressable,
+  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -64,7 +65,7 @@ export function CreateCollectionScreen({ navigation }: Props) {
   }, [name, collectionType, description, db, navigation, t]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Pressable onPress={() => navigation.goBack()}>
           <Text style={styles.cancelText}>{t('common.cancel')}</Text>
@@ -136,7 +137,7 @@ export function CreateCollectionScreen({ navigation }: Props) {
           multiline
         />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -146,26 +147,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
+    paddingTop: spacing.xl,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   headerTitle: {
+    ...typography.h4,
     color: colors.text,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
   },
   cancelText: {
+    ...typography.bodyMedium,
     color: colors.textSecondary,
-    fontSize: typography.size.md,
   },
   saveText: {
-    color: colors.accent,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
+    ...typography.bodyMedium,
+    color: colors.primary,
   },
   saveTextDisabled: {
     opacity: 0.4,
