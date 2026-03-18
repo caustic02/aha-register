@@ -99,6 +99,28 @@ Non-destructive migration: existing objects default to `'complete'`. Migration S
 
 New value in the `ObjectType` union. Used as the default `object_type` for quick-captured objects before the user reviews them. Changes to a specific type (e.g. `museum_object`, `site`) when review completes via `updateReviewedObject()`.
 
+## B1 Schema Changes (2026-03-18)
+
+### Derivative media columns on `media`
+
+Two columns added for object isolation (background removal):
+
+```sql
+ALTER TABLE media ADD COLUMN parent_media_id TEXT REFERENCES media(id);
+ALTER TABLE media ADD COLUMN media_type TEXT NOT NULL DEFAULT 'original';
+```
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `parent_media_id` | `TEXT` (FK → `media.id`) | Links derivative to its source original. `NULL` for originals. |
+| `media_type` | `TEXT` (default `'original'`) | `'original'` for capture photos, `'derivative_isolated'` for background-removed PNGs. |
+
+**Key rule:** Derivatives have `sha256_hash = ''` (empty). They are presentation assets, not evidence. The original media record and its hash are never modified.
+
+Migration SQL: `docs/migrations/20260318160000_media_derivatives.sql`. Also in `MIGRATION_STATEMENTS` for idempotent re-run.
+
+`MediaType` union type added to `src/db/types.ts`.
+
 ## Known Gaps
 
 - iOS native folder not yet prebuilt (requires macOS). EAS Build handles

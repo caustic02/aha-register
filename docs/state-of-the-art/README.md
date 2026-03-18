@@ -10,9 +10,9 @@ doc before auditing or modifying any system. Update it after every build.
 
 | System | File | Status | Last Updated |
 |--------|------|--------|--------------|
-| Capture | CAPTURE.md | Active | 2026-03-09 |
+| Capture | CAPTURE.md | Active | 2026-03-18 |
 | Data Model | DATA-MODEL.md | Active | 2026-03-09 |
-| Design System | DESIGN-SYSTEM.md | Active | 2026-03-15 |
+| Design System | DESIGN-SYSTEM.md | Active | 2026-03-18 |
 | i18n | I18N.md | Active | 2026-03-09 |
 | PDF Export | PDF-EXPORT.md | Active | 2026-03-09 |
 | Collections | COLLECTIONS.md | Stub | 2026-03-09 |
@@ -21,7 +21,7 @@ doc before auditing or modifying any system. Update it after every build.
 | Vocabularies | VOCABULARIES.md | Active | 2026-03-18 |
 | Error Monitoring | ERROR-MONITORING.md | Active | 2026-03-15 |
 | Secure Storage | SECURE-STORAGE.md | Active | 2026-03-15 |
-| Database | DATABASE.md | Active | 2026-03-15 |
+| Database | DATABASE.md | Active | 2026-03-18 |
 
 ## Legal Documents
 
