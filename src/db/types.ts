@@ -44,6 +44,8 @@ export type LicenseType =
   | 'institution-specific'
   | 'TK-label';
 
+export type MediaType = 'original' | 'derivative_isolated';
+
 export type TranscriptionStatus = 'none' | 'draft' | 'ai_generated' | 'verified';
 
 // ── JSONB type-specific data templates ───────────────────────────────────────
@@ -206,6 +208,9 @@ export interface Media {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  // Derivative tracking (B1 object isolation)
+  parent_media_id?: string | null;
+  media_type?: MediaType;
   // Copyright / licensing (added v1.3)
   rights_holder?: string | null;
   license_type?: LicenseType | null;
