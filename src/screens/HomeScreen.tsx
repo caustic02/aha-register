@@ -32,6 +32,8 @@ import { colors, radii, spacing, touch, typography } from '../theme';
 import { SkeletonList, SkeletonLoader } from '../components/SkeletonLoader';
 import { formatRelativeDate } from '../utils/format-date';
 import { getSetting, SETTING_KEYS } from '../services/settingsService';
+import { useSyncStatus } from '../hooks/useSyncStatus';
+import { CheckIcon } from '../theme/icons';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -62,6 +64,7 @@ interface InboxItem {
 export function HomeScreen({ navigation }: Props) {
   const db = useDatabase();
   const { t } = useAppTranslation();
+  const syncStatus = useSyncStatus();
 
   const [stats, setStats] = useState<Stats>({
     totalObjects: 0,
@@ -269,12 +272,28 @@ export function HomeScreen({ navigation }: Props) {
             </Pressable>
 
             <View style={styles.statCard}>
-              <ClockIcon
-                size={20}
-                color={stats.pendingSync > 0 ? colors.statusWarning : colors.textTertiary}
-              />
-              <Text style={styles.statValue}>{stats.pendingSync}</Text>
-              <Text style={styles.statLabel}>{t('home.statPending')}</Text>
+              {syncStatus.status === 'idle' && syncStatus.pendingCount === 0 ? (
+                <>
+                  <CheckIcon size={20} color={colors.statusSuccess} />
+                  <Text style={styles.statValue}>{t('syncBar.allSynced')}</Text>
+                  {syncStatus.lastSyncedAt && (
+                    <Text style={styles.statLabel}>
+                      {t('syncBar.lastSynced', {
+                        time: formatRelativeDate(syncStatus.lastSyncedAt.toISOString()),
+                      })}
+                    </Text>
+                  )}
+                </>
+              ) : (
+                <>
+                  <ClockIcon
+                    size={20}
+                    color={syncStatus.pendingCount > 0 ? colors.statusWarning : colors.textTertiary}
+                  />
+                  <Text style={styles.statValue}>{syncStatus.pendingCount}</Text>
+                  <Text style={styles.statLabel}>{t('syncBar.pending', { count: syncStatus.pendingCount })}</Text>
+                </>
+              )}
             </View>
 
             <View style={styles.statCard}>

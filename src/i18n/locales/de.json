@@ -210,6 +210,15 @@
     "disabled": "Synchronisierung deaktiviert",
     "enabled": "Synchronisierung aktiviert"
   },
+  "syncBar": {
+    "syncing": "{{count}} Elemente werden synchronisiert...",
+    "offline": "Offline — Änderungen lokal gespeichert",
+    "failed": "{{count}} Elemente konnten nicht synchronisiert werden",
+    "retry": "Erneut versuchen",
+    "allSynced": "Alles synchronisiert",
+    "pending": "{{count}} ausstehend",
+    "lastSynced": "Zuletzt synchronisiert {{time}}"
+  },
   "privacy": {
     "public": "\u00d6ffentlich",
     "confidential": "Vertraulich",

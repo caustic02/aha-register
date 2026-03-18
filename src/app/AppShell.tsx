@@ -8,6 +8,7 @@ import i18n from 'i18next';
 import { initDatabase } from '../db/database';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
 import { MainTabs } from '../navigation/MainTabs';
+import { SyncStatusBar } from '../components/SyncStatusBar';
 import { getSetting, setSetting, SETTING_KEYS } from '../services/settingsService';
 import { getSession, onAuthStateChange } from '../services/auth';
 import { ensureMigrated } from '../services/supabase';
@@ -144,6 +145,7 @@ export default function AppShell() {
         />
       ) : (
         <NavigationContainer>
+          <SyncStatusBar />
           <MainTabs />
         </NavigationContainer>
       )}

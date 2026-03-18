@@ -210,6 +210,15 @@
     "disabled": "Sync Disabled",
     "enabled": "Sync Enabled"
   },
+  "syncBar": {
+    "syncing": "Syncing {{count}} items...",
+    "offline": "Offline — changes saved locally",
+    "failed": "{{count}} items failed to sync",
+    "retry": "Retry",
+    "allSynced": "All synced",
+    "pending": "{{count}} pending",
+    "lastSynced": "Last synced {{time}}"
+  },
   "privacy": {
     "public": "Public",
     "confidential": "Confidential",
