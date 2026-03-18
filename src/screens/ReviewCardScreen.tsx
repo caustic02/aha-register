@@ -27,7 +27,7 @@ import {
 } from '../components/ui';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
-import { saveReviewedObject } from '../services/objectService';
+import { saveReviewedObject, updateReviewedObject } from '../services/objectService';
 import {
   addObjectToCollection,
   createCollection,
@@ -48,6 +48,8 @@ export interface ReviewCardScreenProps {
   analysisResult: AIAnalysisResult;
   captureMetadata: CaptureMetadata;
   sha256Hash?: string;
+  /** When set, updates the existing object instead of creating a new one */
+  existingObjectId?: string;
   onSave?: (objectId: string) => void;
   onDiscard?: () => void;
 }
@@ -135,6 +137,7 @@ export function ReviewCardScreen({
   analysisResult,
   captureMetadata,
   sha256Hash,
+  existingObjectId,
   onSave,
   onDiscard,
 }: ReviewCardScreenProps) {
@@ -279,22 +282,42 @@ export function ReviewCardScreen({
   const handleSave = useCallback(async () => {
     setSaving(true);
     try {
-      // Persist the object (copy → hash → transaction)
-      const objectId = await saveReviewedObject(db, {
-        imageUri,
-        mimeType: guessMimeType(imageUri),
-        captureMetadata,
-        title: title.trim() || 'Untitled',
-        objectType: objectTypeSel.label || 'museum_object',
-        description: description.trim() || undefined,
-        condition: condition.trim() || undefined,
-        dateCreated: dateCreated.trim() || undefined,
-        medium: mediumSel.map((s) => s.label).filter(Boolean).join(', ') || undefined,
-        dimensions: dimensions.trim() || undefined,
-        stylePeriod: stylePeriodSel.label || undefined,
-        cultureOrigin: cultureOrigin.trim() || undefined,
-        keywords: selectedKeywords.length > 0 ? selectedKeywords : undefined,
-      });
+      let objectId: string;
+
+      if (existingObjectId) {
+        // Review-existing: UPDATE the quick-captured object (no copy, no hash)
+        await updateReviewedObject(db, {
+          objectId: existingObjectId,
+          title: title.trim() || 'Untitled',
+          objectType: objectTypeSel.label || 'museum_object',
+          description: description.trim() || undefined,
+          condition: condition.trim() || undefined,
+          dateCreated: dateCreated.trim() || undefined,
+          medium: mediumSel.map((s) => s.label).filter(Boolean).join(', ') || undefined,
+          dimensions: dimensions.trim() || undefined,
+          stylePeriod: stylePeriodSel.label || undefined,
+          cultureOrigin: cultureOrigin.trim() || undefined,
+          keywords: selectedKeywords.length > 0 ? selectedKeywords : undefined,
+        });
+        objectId = existingObjectId;
+      } else {
+        // New capture: copy → hash → INSERT
+        objectId = await saveReviewedObject(db, {
+          imageUri,
+          mimeType: guessMimeType(imageUri),
+          captureMetadata,
+          title: title.trim() || 'Untitled',
+          objectType: objectTypeSel.label || 'museum_object',
+          description: description.trim() || undefined,
+          condition: condition.trim() || undefined,
+          dateCreated: dateCreated.trim() || undefined,
+          medium: mediumSel.map((s) => s.label).filter(Boolean).join(', ') || undefined,
+          dimensions: dimensions.trim() || undefined,
+          stylePeriod: stylePeriodSel.label || undefined,
+          cultureOrigin: cultureOrigin.trim() || undefined,
+          keywords: selectedKeywords.length > 0 ? selectedKeywords : undefined,
+        });
+      }
 
       // Optionally assign to collection (non-blocking for save)
       if (selectedCollectionId) {
@@ -316,7 +339,7 @@ export function ReviewCardScreen({
       onSave?.(objectId);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.error('[ReviewCard] saveReviewedObject failed:', msg, err);
+      console.error('[ReviewCard] save failed:', msg, err);
       Alert.alert(
         t('common.error'),
         `${t('reviewCard.saveFailed')}\n\n${msg}`,
@@ -327,7 +350,7 @@ export function ReviewCardScreen({
   }, [
     db, imageUri, captureMetadata, title, objectTypeSel, description, condition,
     dateCreated, mediumSel, dimensions, stylePeriodSel, cultureOrigin,
-    selectedKeywords, selectedCollectionId, onSave, t,
+    selectedKeywords, selectedCollectionId, existingObjectId, onSave, t,
   ]);
 
   const handleDiscard = () => {

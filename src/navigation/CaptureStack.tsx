@@ -10,6 +10,8 @@ import { AIProcessingScreen } from '../screens/AIProcessingScreen';
 import { ReviewCardScreen } from '../screens/ReviewCardScreen';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
+import { updateReviewStatus } from '../services/objectService';
+import { useDatabase } from '../contexts/DatabaseContext';
 import type { MainTabParamList } from './MainTabs';
 import { useSettings } from '../hooks/useSettings';
 
@@ -23,12 +25,14 @@ export type CaptureStackParamList = {
     mimeType: string;
     captureMetadata: CaptureMetadata;
     sha256Hash?: string;
+    existingObjectId?: string;
   };
   ReviewCard: {
     imageUri: string;
     analysisResult: AIAnalysisResult;
     captureMetadata: CaptureMetadata;
     sha256Hash?: string;
+    existingObjectId?: string;
   };
 };
 
@@ -58,7 +62,7 @@ function AIProcessingWrapper({
   route,
   navigation,
 }: NativeStackScreenProps<CaptureStackParamList, 'AIProcessing'>) {
-  const { imageUri, imageBase64, mimeType, captureMetadata, sha256Hash } =
+  const { imageUri, imageBase64, mimeType, captureMetadata, sha256Hash, existingObjectId } =
     route.params;
   const { collectionDomain } = useSettings();
 
@@ -69,9 +73,10 @@ function AIProcessingWrapper({
         analysisResult: result,
         captureMetadata,
         sha256Hash,
+        existingObjectId,
       });
     },
-    [navigation, imageUri, captureMetadata, sha256Hash],
+    [navigation, imageUri, captureMetadata, sha256Hash, existingObjectId],
   );
 
   const handleSkip = useCallback(() => {
@@ -80,8 +85,9 @@ function AIProcessingWrapper({
       analysisResult: EMPTY_ANALYSIS,
       captureMetadata,
       sha256Hash,
+      existingObjectId,
     });
-  }, [navigation, imageUri, captureMetadata, sha256Hash]);
+  }, [navigation, imageUri, captureMetadata, sha256Hash, existingObjectId]);
 
   return (
     <AIProcessingScreen
@@ -102,8 +108,9 @@ function ReviewCardWrapper({
   route,
   navigation,
 }: NativeStackScreenProps<CaptureStackParamList, 'ReviewCard'>) {
-  const { imageUri, analysisResult, captureMetadata, sha256Hash } =
+  const { imageUri, analysisResult, captureMetadata, sha256Hash, existingObjectId } =
     route.params;
+  const db = useDatabase();
 
   const tabNav = useNavigation<NavigationProp<MainTabParamList>>();
 
@@ -134,14 +141,23 @@ function ReviewCardWrapper({
     [navigation, tabNav],
   );
 
+  const handleDiscard = useCallback(() => {
+    // If reviewing an existing object, revert to needs_review
+    if (existingObjectId) {
+      updateReviewStatus(db, existingObjectId, 'needs_review').catch(() => {});
+    }
+    resetToCapture();
+  }, [existingObjectId, db, resetToCapture]);
+
   return (
     <ReviewCardScreen
       imageUri={imageUri}
       analysisResult={analysisResult}
       captureMetadata={captureMetadata}
       sha256Hash={sha256Hash}
+      existingObjectId={existingObjectId}
       onSave={handleSave}
-      onDiscard={resetToCapture}
+      onDiscard={handleDiscard}
     />
   );
 }

@@ -12,9 +12,12 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
-import { deleteObject } from '../services/objectService';
+import { File } from 'expo-file-system';
+import { deleteObject, updateReviewStatus } from '../services/objectService';
+import type { CaptureMetadata } from '../services/metadata';
 import {
   Badge,
+  Button,
   Card,
   Divider,
   IconButton,
@@ -27,6 +30,7 @@ import {
   EditIcon,
   ExportIcon,
   ForwardIcon,
+  WarningIcon,
 } from '../theme/icons';
 import { colors, radii, spacing, touch, typography } from '../theme';
 import { SkeletonLoader } from '../components/SkeletonLoader';
@@ -183,6 +187,47 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       ],
     );
   }, [db, navigation, object, objectId, t]);
+
+  const handleStartReview = useCallback(async () => {
+    if (!object) return;
+    const pm = media.find((m) => m.is_primary === 1) ?? media[0];
+    if (!pm) return;
+    try {
+      // Transition to in_review
+      await updateReviewStatus(db, objectId, 'in_review');
+
+      // Build CaptureMetadata from existing object fields
+      const meta: CaptureMetadata = {
+        latitude: object.latitude ?? undefined,
+        longitude: object.longitude ?? undefined,
+        altitude: object.altitude ?? undefined,
+        accuracy: object.coordinate_accuracy ?? undefined,
+        coordinateSource: (object.coordinate_source as 'exif' | 'gps_hardware') ?? undefined,
+        timestamp: object.created_at,
+        appVersion: '0.1.0',
+      };
+
+      // Read image base64 for AI processing
+      const file = new File(pm.file_path);
+      const imageBase64 = await file.base64();
+
+      // Navigate to AI processing via Capture tab
+      navigation.getParent()?.navigate('Capture', {
+        screen: 'AIProcessing',
+        params: {
+          imageUri: pm.file_path,
+          imageBase64,
+          mimeType: pm.mime_type,
+          captureMetadata: meta,
+          sha256Hash: pm.sha256_hash ?? undefined,
+          existingObjectId: objectId,
+        },
+      });
+    } catch {
+      // If anything fails, revert status
+      await updateReviewStatus(db, objectId, 'needs_review').catch(() => {});
+    }
+  }, [object, media, db, objectId, navigation]);
 
   // ── Derived data for export (must be before early returns) ──────────────────
 
@@ -361,6 +406,28 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         )}
 
         <Divider />
+
+        {/* ── REVIEW BANNER (needs_review or in_review) ────────────────────── */}
+        {object.review_status !== 'complete' && (
+          <View style={styles.reviewBanner}>
+            <View style={styles.reviewBannerHeader}>
+              <WarningIcon size={18} color={colors.statusWarning} />
+              <Text style={styles.reviewBannerTitle}>
+                {t('review.needsReview')}
+              </Text>
+            </View>
+            <Text style={styles.reviewBannerText}>
+              {t('review.needsReviewDescription')}
+            </Text>
+            <Button
+              label={t('review.startReview')}
+              variant="primary"
+              size="md"
+              onPress={handleStartReview}
+              fullWidth
+            />
+          </View>
+        )}
 
         {/* ── 3. BASIC INFORMATION ─────────────────────────────────────────── */}
         <Card style={styles.card}>
@@ -588,6 +655,31 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: radii.full,
     backgroundColor: colors.primary,
+  },
+  // Review banner
+  reviewBanner: {
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: colors.warningLight,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.warning,
+  },
+  reviewBannerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  reviewBannerTitle: {
+    ...typography.bodyMedium,
+    color: colors.statusWarning,
+  },
+  reviewBannerText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
   },
   // Cards
   card: {
