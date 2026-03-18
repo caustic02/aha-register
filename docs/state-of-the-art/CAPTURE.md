@@ -22,6 +22,8 @@ idle → extracting → preview → type_select → saving → done
 - **saving**: `createDraftObject()` runs the 6-step database transaction (see below).
 - **done**: Shows object UUID prefix and navigation to Objects list or "Capture Another".
 
+**Quick mode bypasses** the extracting → preview → type_select → saving → done phases entirely. The shutter fires `quickCapture()` in background and the camera stays in `idle`.
+
 ### Image Acquisition
 Two entry points, both return `CaptureResult`:
 - **Camera** (`expo-camera` `CameraView`): `takePictureAsync({ quality: 1, exif: true })`
@@ -80,6 +82,9 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 | `src/services/capture.ts` | expo-camera and expo-image-picker wrappers; returns `CaptureResult` |
 | `src/services/metadata.ts` | EXIF parsing, GPS fallback to hardware, device/OS info |
 | `src/services/draftObject.ts` | 6-step atomic DB transaction: copy → hash → insert → audit → sync |
+| `src/services/quickCapture.ts` | Quick-capture: minimal fire-and-forget persist (B2) |
+| `src/services/captureHelpers.ts` | Shared file-copy and type-normalisation utilities (B2) |
+| `src/services/objectService.ts` | `saveReviewedObject`, `updateReviewedObject`, `updateReviewStatus` |
 | `src/utils/hash.ts` | SHA-256 over raw file bytes (not base64 string) |
 | `src/db/audit.ts` | `logAuditEntry` / `getAuditHistory` helpers |
 | `src/components/TypeSelector.tsx` | Post-preview object type picker UI |
@@ -92,6 +97,7 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 | 2026-03-09 | Friendly error mapping for RLS errors | Device testing bug fixes |
 | 2026-03-09 | Type selector shown post-preview, not pre-capture | Capture flow UX commit |
 | 2026-03-15 | Audit trail userId: param > auth session > 'local' fallback | Gap fix |
+| 2026-03-18 | B2 non-blocking capture: Quick/Full mode toggle, quickCapture service, capture inbox, review flow | B2 feature sprint |
 
 ## Camera Enhancements
 
@@ -200,8 +206,111 @@ SettingsScreen → useSettings hook → CaptureStack → AIProcessingScreen → 
 
 ---
 
+## Quick Capture Mode (B2)
+
+The camera has two modes, toggled by a segmented pill above the shutter button. Mode is persisted in `AsyncStorage` key `capture.mode`. Default: `'quick'`.
+
+### Quick Mode (field work)
+
+Tap shutter → 150ms white flash overlay → `quickCapture()` fires in background → camera stays live → thumbnail appears in strip.
+
+- **No blocking**: the camera never leaves `idle` phase. No preview, no type selection, no AI.
+- **Fire-and-forget**: `quickCapture()` runs as an async IIFE. Errors show a 3-second red toast; the camera is never blocked.
+- **Shutter flash**: `Animated.Value` opacity 0→0.8→0 in 150ms. Respects `AccessibilityInfo.isReduceMotionEnabled()`.
+- **Thumbnail strip**: horizontal `ScrollView` at bottom of camera, 52×52 rounded thumbnails (newest on right). Tapping navigates to `ObjectDetail`. Count badge: "3 captured".
+- **Session state**: thumbnails and count are session-only (`useState`), not DB queries. Cleared on unmount.
+
+### Full Mode (single careful captures)
+
+Tap shutter → existing full flow: `extracting → preview → type_select → saving → done`. No changes from the pre-B2 flow.
+
+### quickCapture Service (`services/quickCapture.ts`)
+
+Minimal-metadata persist: copy → SHA-256 → single atomic transaction.
+
+1. Generate UUIDs for object and media
+2. `copyToMediaStorage()` — copies image to `{Paths.document}/media/{mediaId}.jpg`
+3. `computeSHA256()` on stored copy — **SACRED: before any DB write**
+4. Read `DEFAULT_PRIVACY_TIER` from `app_settings`
+5. Single `db.withTransactionAsync`:
+   - INSERT `objects`: `object_type='uncategorized'`, `review_status='needs_review'`, `title='Untitled'`
+   - INSERT `media`: SHA-256 hash, `is_primary=1`, file_path to stored copy
+   - INSERT `audit_trail`: `action='quick_capture'`
+   - INSERT `sync_queue`
+6. Return object ID
+
+### Shared Helpers (`services/captureHelpers.ts`)
+
+Extracted from duplicated code in `draftObject.ts` and `objectService.ts`:
+- `copyToMediaStorage(sourceUri, mediaId, mimeType)` → returns `destUri`
+- `buildStorageName(mediaId, mimeType)` → returns filename string
+- `normalizeFileType(mimeType)` → `'image' | 'video' | 'audio' | 'document'`
+
+---
+
+## Review Flow (B2)
+
+Quick-captured objects have `review_status = 'needs_review'` and `object_type = 'uncategorized'`. The review flow lets users add full metadata later.
+
+### Capture Inbox (HomeScreen)
+
+- First section on HomeScreen, only rendered when `needs_review` count > 0
+- Queries `objects WHERE review_status = 'needs_review' ORDER BY created_at DESC` joined with `media` for thumbnails
+- Horizontal 52×52 thumbnail row with amber dot indicators (`statusWarning`, 8dp circle)
+- "Review all" navigates to `ObjectListScreen` with `filterReviewStatus: 'needs_review'` route param
+- Tapping a thumbnail navigates to `ObjectDetailScreen`
+
+### Review Banner (ObjectDetailScreen)
+
+When `object.review_status !== 'complete'`, an amber banner appears below the gallery:
+- `WarningIcon` + "This object needs review" + description text
+- "Start review" CTA button
+
+### Review Status Lifecycle
+
+```
+needs_review → in_review → complete
+                 ↓
+              needs_review  (if user backs out)
+```
+
+- `needs_review → in_review`: user taps "Start review" on ObjectDetailScreen
+- `in_review → complete`: `updateReviewedObject()` succeeds via ReviewCardScreen save
+- `in_review → needs_review`: user discards from ReviewCardScreen
+
+Each transition logged in `audit_trail` via `updateReviewStatus()`.
+
+### updateReviewedObject (`services/objectService.ts`)
+
+Updates an existing quick-captured object with full metadata. Does **NOT** copy the image or recompute the hash (sacred from quick capture).
+
+1. Build `type_specific_data` JSON from review metadata
+2. Single `db.withTransactionAsync`:
+   - UPDATE `objects` SET title, object_type, description, type_specific_data, `review_status='complete'`
+   - INSERT `audit_trail`: `action='review_complete'`
+   - INSERT `sync_queue`: `action='update'`
+
+### Navigation Wiring
+
+"Start review" reads the existing media's base64 and navigates to `CaptureStack.AIProcessing` with `existingObjectId` param. This threads through:
+1. `AIProcessingWrapper` → passes `existingObjectId` to `ReviewCard` route
+2. `ReviewCardWrapper` → if `existingObjectId` present, discard reverts to `needs_review`
+3. `ReviewCardScreen` → if `existingObjectId` present, calls `updateReviewedObject` (UPDATE) instead of `saveReviewedObject` (INSERT)
+
+### Key Files (B2 additions)
+
+| File | Purpose |
+|------|---------|
+| `src/services/quickCapture.ts` | `quickCapture()` — minimal fire-and-forget persist |
+| `src/services/captureHelpers.ts` | Shared file-copy and type-normalisation utilities |
+| `src/services/objectService.ts` | `updateReviewedObject()`, `updateReviewStatus()` |
+| `src/screens/CaptureScreen.tsx` | Quick/Full mode toggle, shutter flash, thumbnail strip |
+| `src/screens/HomeScreen.tsx` | Capture inbox section |
+| `src/screens/ObjectDetailScreen.tsx` | Review banner + "Start review" handler |
+
+---
+
 ## Known Gaps
 
-- No batch capture mode
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer

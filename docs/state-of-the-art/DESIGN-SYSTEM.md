@@ -324,6 +324,46 @@ type ExportSource =
 
 **Entry points:** `ObjectDetailScreen`, `ObjectListScreen` (batch select mode), `CollectionDetailScreen` (collection export + batch select mode).
 
+### Capture Mode Toggle
+
+Segmented pill control above the camera shutter button, toggling Quick/Full capture modes.
+
+| Element | Token |
+|---------|-------|
+| Pill container | `rgba(0,0,0,0.55)` bg, `radii.full`, 2dp padding |
+| Active segment | `colors.primary` bg, `radii.full` |
+| Active text/icon | `colors.white`, `typography.caption`, `weight.semibold` |
+| Inactive text/icon | `colors.textTertiary` |
+| Icons | `QuickModeIcon` (Zap), `FullModeIcon` (ClipboardList) — 14dp |
+
+Persistence: `AsyncStorage` key `capture.mode`. Default: `'quick'`.
+
+### Thumbnail Strip
+
+Horizontal `ScrollView` showing captured photos (camera screen: session thumbnails; home screen: inbox thumbnails).
+
+| Element | Token |
+|---------|-------|
+| Thumbnail | 52×52, `radii.sm`, 1dp border |
+| Camera border | `colors.overlayLight` |
+| Inbox border | `colors.border` |
+| Amber dot (inbox) | 8dp circle, `colors.statusWarning`, top-right offset -2dp |
+| Count badge | `rgba(0,0,0,0.55)` bg, white text, `radii.full` |
+
+### Review Banner
+
+Amber banner on ObjectDetailScreen for `needs_review`/`in_review` objects.
+
+| Element | Token |
+|---------|-------|
+| Background | `colors.warningLight` |
+| Border | 1dp, `colors.warning` |
+| Radius | `radii.md` |
+| Icon | `WarningIcon`, `colors.statusWarning` |
+| Title | `typography.bodyMedium`, `colors.statusWarning` |
+| Description | `typography.bodySmall`, `colors.textSecondary` |
+| CTA | `Button` variant `primary`, full width |
+
 ### Bottom Sheets
 Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.
 

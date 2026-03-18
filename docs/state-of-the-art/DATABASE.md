@@ -1,6 +1,6 @@
 # Database
 
-> Last updated: 2026-03-15
+> Last updated: 2026-03-18
 > Status: Active
 
 ## What This Is
@@ -80,6 +80,24 @@ The migration flag ensures this runs exactly once.
   project. iOS prebuild requires macOS with Xcode — deferred to CI/EAS Build.
 - **2026-03-15** — Removed `/android` and `/ios` from `.gitignore` so native
   folders are committed for EAS Build compatibility.
+
+## B2 Schema Changes (2026-03-18)
+
+### `review_status` column on `objects`
+
+Added via `ALTER TABLE objects ADD COLUMN review_status TEXT NOT NULL DEFAULT 'complete'`.
+
+| Value | Meaning |
+|-------|---------|
+| `needs_review` | Quick-captured, awaiting user cataloguing |
+| `in_review` | User has started the review flow |
+| `complete` | Fully catalogued (default for existing and AI-reviewed objects) |
+
+Non-destructive migration: existing objects default to `'complete'`. Migration SQL: `docs/migrations/20260318120000_add_review_status.sql`. Also added to `MIGRATION_STATEMENTS` in `schema.ts` for idempotent re-run on every launch.
+
+### `uncategorized` object type
+
+New value in the `ObjectType` union. Used as the default `object_type` for quick-captured objects before the user reviews them. Changes to a specific type (e.g. `museum_object`, `site`) when review completes via `updateReviewedObject()`.
 
 ## Known Gaps
 
