@@ -138,7 +138,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   // ── Handlers ────────────────────────────────────────────────────────────────
 
   const handleEdit = () => {
-    console.log('Edit not yet implemented');
+    // TODO: implement edit
   };
 
   const handleExport = useCallback(() => {

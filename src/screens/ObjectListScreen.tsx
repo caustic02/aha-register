@@ -356,7 +356,6 @@ export function ObjectListScreen({ navigation }: Props) {
             icon={<ExportIcon size={22} color={colors.primary} />}
             onPress={() => {
               // TODO: Open ExportModal with selected items
-              if (__DEV__) console.log('Export', [...selectedIds]);
             }}
             accessibilityLabel={t('home.exportCollection')}
           />
