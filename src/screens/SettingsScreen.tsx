@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import i18n from 'i18next';
 import Constants from 'expo-constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { useSettings } from '../hooks/useSettings';
@@ -172,15 +173,20 @@ export function SettingsScreen() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [syncEnabled, setSyncEnabled] = useState(false);
 
+  // Camera settings
+  const [cameraGrid, setCameraGrid] = useState(false);
+  const [cameraFlashMode, setCameraFlashMode] = useState<'off' | 'on' | 'auto'>('off');
+
   // Pickers open state
   const [showInstitutionType, setShowInstitutionType] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showObjectType, setShowObjectType] = useState(false);
+  const [showFlashMode, setShowFlashMode] = useState(false);
 
   // ── Load ────────────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
-    const [name, instType, privacy, objType, lang, storageStats, syncEn] =
+    const [name, instType, privacy, objType, lang, storageStats, syncEn, flashMode, gridVal] =
       await Promise.all([
         getSetting(db, SETTING_KEYS.INSTITUTION_NAME),
         getSetting(db, SETTING_KEYS.INSTITUTION_TYPE),
@@ -189,6 +195,8 @@ export function SettingsScreen() {
         getSetting(db, SETTING_KEYS.LANGUAGE),
         getStorageStats(db),
         getSetting(db, SETTING_KEYS.SYNC_ENABLED),
+        getSetting(db, SETTING_KEYS.CAMERA_FLASH_MODE),
+        AsyncStorage.getItem('camera.gridEnabled'),
       ]);
     setInstitutionName(name ?? '');
     setInstitutionType((instType as InstitutionType) ?? '');
@@ -197,6 +205,9 @@ export function SettingsScreen() {
     if (lang) setLanguage(lang);
     setStats(storageStats);
     setSyncEnabled(syncEn === 'true');
+    if (flashMode === 'on' || flashMode === 'auto') setCameraFlashMode(flashMode);
+    else setCameraFlashMode('off');
+    setCameraGrid(gridVal === 'true');
 
     const session = await getSession();
     setUserEmail(session?.user?.email ?? null);
@@ -256,6 +267,31 @@ export function SettingsScreen() {
     },
     [db],
   );
+
+  // ── Camera handlers ─────────────────────────────────────────────────────────
+
+  const handleGridToggle = useCallback(
+    async (value: boolean) => {
+      setCameraGrid(value);
+      await AsyncStorage.setItem('camera.gridEnabled', String(value));
+    },
+    [],
+  );
+
+  const handleFlashModeSelect = useCallback(
+    async (mode: 'off' | 'on' | 'auto') => {
+      setCameraFlashMode(mode);
+      setShowFlashMode(false);
+      await setSetting(db, SETTING_KEYS.CAMERA_FLASH_MODE, mode);
+    },
+    [db],
+  );
+
+  // ── Coming soon stub ────────────────────────────────────────────────────────
+
+  const handleComingSoon = useCallback(() => {
+    Alert.alert(t('settings.comingSoon'), t('settings.comingSoonMessage'));
+  }, [t]);
 
   // ── Auth handlers ───────────────────────────────────────────────────────────
 
@@ -399,6 +435,104 @@ export function SettingsScreen() {
             </View>
           )}
 
+          <Divider />
+
+          {/* Collection domain */}
+          <Text style={styles.sectionDescription}>
+            {t('settings.collectionTypeDescription')}
+          </Text>
+          <View style={styles.domainList}>
+            {DOMAIN_OPTIONS.map((option) => {
+              const isSelected = collectionDomain === option.value;
+              return (
+                <Pressable
+                  key={option.value}
+                  onPress={() => setCollectionDomain(option.value)}
+                  accessibilityRole="radio"
+                  accessibilityLabel={t(`settings.domain.${option.value}`)}
+                  accessibilityState={{ checked: isSelected }}
+                  style={({ pressed }) => [
+                    styles.domainRow,
+                    isSelected && styles.domainRowSelected,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <View style={styles.domainIcon}>{option.icon}</View>
+                  <View style={styles.domainContent}>
+                    <Text
+                      style={[
+                        styles.domainLabel,
+                        isSelected && styles.domainLabelSelected,
+                      ]}
+                    >
+                      {t(`settings.domain.${option.value}`)}
+                    </Text>
+                    <Text style={styles.domainDescription}>
+                      {t(`settings.domain.${option.value}_desc`)}
+                    </Text>
+                  </View>
+                  {isSelected && (
+                    <CheckIcon size={18} color={colors.primary} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Divider />
+
+          {/* Language */}
+          {LANGUAGES.map((lang, idx) => (
+            <View key={lang.code}>
+              <MetadataRow
+                label={`${lang.flag}\u2002${lang.label}`}
+                value={language === lang.code ? '\u2713' : undefined}
+                onPress={() => handleLanguageSelect(lang.code)}
+              />
+              {idx < LANGUAGES.length - 1 && <Divider />}
+            </View>
+          ))}
+        </Card>
+
+        {/* ── Capture ──────────────────────────────────────────────────────── */}
+        <SectionHeader title={t('settings.capture')} />
+        <Card>
+          {/* Default Object Type picker */}
+          <MetadataRow
+            label={t('settings.default_object_type')}
+            value={t(`object_types.${defaultObjectType}`)}
+            onPress={() => setShowObjectType(!showObjectType)}
+          />
+          {showObjectType && (
+            <View style={styles.pickerList}>
+              {OBJECT_TYPES.map((type) => (
+                <Pressable
+                  key={type}
+                  onPress={() => handleObjectTypeSelect(type)}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={t(`object_types.${type}`)}
+                  style={({ pressed }) => [
+                    styles.pickerRow,
+                    defaultObjectType === type && styles.pickerRowActive,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.pickerText,
+                      defaultObjectType === type && styles.pickerTextActive,
+                    ]}
+                  >
+                    {t(`object_types.${type}`)}
+                  </Text>
+                  {defaultObjectType === type && (
+                    <CheckIcon size={16} color={colors.primary} />
+                  )}
+                </Pressable>
+              ))}
+            </View>
+          )}
+
           {/* Default Privacy picker */}
           <MetadataRow
             label={t('settings.default_privacy')}
@@ -440,51 +574,10 @@ export function SettingsScreen() {
             </View>
           )}
 
-          {/* Default Object Type picker */}
-          <MetadataRow
-            label={t('settings.default_object_type')}
-            value={t(`object_types.${defaultObjectType}`)}
-            onPress={() => setShowObjectType(!showObjectType)}
-          />
-          {showObjectType && (
-            <View style={styles.pickerList}>
-              {OBJECT_TYPES.map((type) => (
-                <Pressable
-                  key={type}
-                  onPress={() => handleObjectTypeSelect(type)}
-                  accessibilityRole="menuitem"
-                  accessibilityLabel={t(`object_types.${type}`)}
-                  style={({ pressed }) => [
-                    styles.pickerRow,
-                    defaultObjectType === type && styles.pickerRowActive,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.pickerText,
-                      defaultObjectType === type && styles.pickerTextActive,
-                    ]}
-                  >
-                    {t(`object_types.${type}`)}
-                  </Text>
-                  {defaultObjectType === type && (
-                    <CheckIcon size={16} color={colors.primary} />
-                  )}
-                </Pressable>
-              ))}
-            </View>
-          )}
-        </Card>
+          <Divider />
 
-        {/* ── AI Features ──────────────────────────────────────────────────── */}
-        <SectionHeader title={t('settings.aiFeatures')} />
-        <Card>
           {/* AI Analysis toggle */}
-          <View
-            style={styles.toggleRow}
-            accessibilityRole="none"
-          >
+          <View style={styles.toggleRow} accessibilityRole="none">
             <View style={styles.toggleText}>
               <Text style={styles.toggleTitle}>{t('settings.aiAnalysis')}</Text>
               <Text style={styles.toggleSubtitle}>
@@ -494,13 +587,8 @@ export function SettingsScreen() {
             <Switch
               value={aiAnalysisEnabled}
               onValueChange={setAIAnalysisEnabled}
-              trackColor={{
-                false: colors.border,
-                true: colors.primaryLight,
-              }}
-              thumbColor={
-                aiAnalysisEnabled ? colors.primary : colors.textTertiary
-              }
+              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              thumbColor={aiAnalysisEnabled ? colors.primary : colors.textTertiary}
               accessibilityLabel={t('settings.aiAnalysis')}
               accessibilityRole="switch"
               accessibilityState={{ checked: aiAnalysisEnabled }}
@@ -510,10 +598,7 @@ export function SettingsScreen() {
           <Divider />
 
           {/* Confidence Scores toggle */}
-          <View
-            style={styles.toggleRow}
-            accessibilityRole="none"
-          >
+          <View style={styles.toggleRow} accessibilityRole="none">
             <View style={styles.toggleText}>
               <Text style={styles.toggleTitle}>
                 {t('settings.confidenceScores')}
@@ -525,80 +610,70 @@ export function SettingsScreen() {
             <Switch
               value={showConfidenceScores}
               onValueChange={setShowConfidenceScores}
-              trackColor={{
-                false: colors.border,
-                true: colors.primaryLight,
-              }}
-              thumbColor={
-                showConfidenceScores ? colors.primary : colors.textTertiary
-              }
+              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              thumbColor={showConfidenceScores ? colors.primary : colors.textTertiary}
               accessibilityLabel={t('settings.confidenceScores')}
               accessibilityRole="switch"
               accessibilityState={{ checked: showConfidenceScores }}
             />
           </View>
-        </Card>
 
-        {/* ── Collection Type ───────────────────────────────────────────────── */}
-        <SectionHeader title={t('settings.collectionType')} />
-        <Card>
-          <Text style={styles.sectionDescription}>
-            {t('settings.collectionTypeDescription')}
-          </Text>
-          <View style={styles.domainList}>
-            {DOMAIN_OPTIONS.map((option) => {
-              const isSelected = collectionDomain === option.value;
-              return (
+          <Divider />
+
+          {/* Camera Grid toggle */}
+          <View style={styles.toggleRow} accessibilityRole="none">
+            <View style={styles.toggleText}>
+              <Text style={styles.toggleTitle}>{t('settings.cameraGrid')}</Text>
+              <Text style={styles.toggleSubtitle}>
+                {t('settings.cameraGridDescription')}
+              </Text>
+            </View>
+            <Switch
+              value={cameraGrid}
+              onValueChange={handleGridToggle}
+              trackColor={{ false: colors.border, true: colors.primaryLight }}
+              thumbColor={cameraGrid ? colors.primary : colors.textTertiary}
+              accessibilityLabel={t('settings.cameraGrid')}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: cameraGrid }}
+            />
+          </View>
+
+          {/* Default Flash picker */}
+          <MetadataRow
+            label={t('settings.flashDefault')}
+            value={t(`capture.flash_${cameraFlashMode}`)}
+            onPress={() => setShowFlashMode(!showFlashMode)}
+          />
+          {showFlashMode && (
+            <View style={styles.pickerList}>
+              {(['off', 'on', 'auto'] as const).map((mode) => (
                 <Pressable
-                  key={option.value}
-                  onPress={() => setCollectionDomain(option.value)}
-                  accessibilityRole="radio"
-                  accessibilityLabel={t(
-                    `settings.domain.${option.value}`,
-                  )}
-                  accessibilityState={{ checked: isSelected }}
+                  key={mode}
+                  onPress={() => handleFlashModeSelect(mode)}
+                  accessibilityRole="menuitem"
+                  accessibilityLabel={t(`capture.flash_${mode}`)}
                   style={({ pressed }) => [
-                    styles.domainRow,
-                    isSelected && styles.domainRowSelected,
+                    styles.pickerRow,
+                    cameraFlashMode === mode && styles.pickerRowActive,
                     pressed && styles.pressed,
                   ]}
                 >
-                  <View style={styles.domainIcon}>{option.icon}</View>
-                  <View style={styles.domainContent}>
-                    <Text
-                      style={[
-                        styles.domainLabel,
-                        isSelected && styles.domainLabelSelected,
-                      ]}
-                    >
-                      {t(`settings.domain.${option.value}`)}
-                    </Text>
-                    <Text style={styles.domainDescription}>
-                      {t(`settings.domain.${option.value}_desc`)}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <CheckIcon size={18} color={colors.primary} />
+                  <Text
+                    style={[
+                      styles.pickerText,
+                      cameraFlashMode === mode && styles.pickerTextActive,
+                    ]}
+                  >
+                    {t(`capture.flash_${mode}`)}
+                  </Text>
+                  {cameraFlashMode === mode && (
+                    <CheckIcon size={16} color={colors.primary} />
                   )}
                 </Pressable>
-              );
-            })}
-          </View>
-        </Card>
-
-        {/* ── Language ─────────────────────────────────────────────────────── */}
-        <SectionHeader title={t('settings.language')} />
-        <Card>
-          {LANGUAGES.map((lang, idx) => (
-            <View key={lang.code}>
-              <MetadataRow
-                label={`${lang.flag}\u2002${lang.label}`}
-                value={language === lang.code ? '\u2713' : undefined}
-                onPress={() => handleLanguageSelect(lang.code)}
-              />
-              {idx < LANGUAGES.length - 1 && <Divider />}
+              ))}
             </View>
-          ))}
+          )}
         </Card>
 
         {/* ── Data & Storage ────────────────────────────────────────────────── */}
@@ -623,7 +698,7 @@ export function SettingsScreen() {
           <ListItem
             title={t('settings.exportAllData')}
             rightElement={<ExportIcon size={18} color={colors.textTertiary} />}
-            onPress={() => {}}
+            onPress={handleComingSoon}
           />
           <Pressable
             onPress={handleClearData}
@@ -654,7 +729,7 @@ export function SettingsScreen() {
           <Divider />
           <ListItem
             title={t('settings.licenses')}
-            onPress={() => {}}
+            onPress={handleComingSoon}
           />
         </Card>
 

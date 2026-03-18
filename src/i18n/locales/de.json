@@ -464,7 +464,13 @@
     "clearData": "Alle Daten l\u00f6schen",
     "clearDataTitle": "Alle Daten l\u00f6schen",
     "clearDataConfirm": "Alle Objekte, Medien und Synchronisierungsdaten werden dauerhaft von diesem Ger\u00e4t gel\u00f6scht. Dies kann nicht r\u00fcckg\u00e4ngig gemacht werden.",
-    "licenses": "Open-Source-Lizenzen"
+    "licenses": "Open-Source-Lizenzen",
+    "capture": "Kamera & Erfassung",
+    "cameraGrid": "Kameraraster",
+    "cameraGridDescription": "Rasterüberlagerung im Kamerasucher anzeigen",
+    "flashDefault": "Standard-Blitz",
+    "comingSoon": "Demnächst verfügbar",
+    "comingSoonMessage": "Diese Funktion wird in einem zukünftigen Update verfügbar sein."
   },
   "date_field": {
     "placeholder": "Datum auswählen",
