@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   Image,
@@ -24,10 +23,10 @@ import {
   type CollectionObject,
 } from '../services/collectionService';
 import type { Collection } from '../db/types';
-import { exportCollectionToPDF, exportBatchToPDF, sharePDF } from '../services/exportService';
 import { deleteObject } from '../services/objectService';
 import { IconButton } from '../components/ui';
 import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBar';
+import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
 import { BackIcon } from '../theme/icons';
 import { CollectionPickerModal } from '../components/CollectionPickerModal';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
@@ -45,7 +44,6 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   const [objects, setObjects] = useState<CollectionObject[]>([]);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [exporting, setExporting] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -55,7 +53,10 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
-  const [batchExporting, setBatchExporting] = useState(false);
+
+  // Export stepper
+  const [showExportStepper, setShowExportStepper] = useState(false);
+  const [exportSource, setExportSource] = useState<ExportSource | null>(null);
 
   const load = useCallback(async () => {
     const result = await getCollectionById(db, collectionId);
@@ -135,17 +136,14 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     [navigation],
   );
 
-  const handleExportCollection = useCallback(async () => {
-    setExporting(true);
-    try {
-      const uri = await exportCollectionToPDF(db, collectionId);
-      await sharePDF(uri);
-    } catch {
-      Alert.alert(t('export.error_title'), t('export.error_message'));
-    } finally {
-      setExporting(false);
-    }
-  }, [db, collectionId, t]);
+  const handleExportCollection = useCallback(() => {
+    setExportSource({
+      mode: 'collection',
+      collectionId,
+      collectionName: collection?.name ?? '',
+    });
+    setShowExportStepper(true);
+  }, [collectionId, collection?.name]);
 
   // ── Selection mode handlers ──────────────────────────────────────────────
 
@@ -205,19 +203,15 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
     );
   }, [selectedIds, db, t, cancelSelection, load]);
 
-  const handleBatchExport = useCallback(async () => {
-    setBatchExporting(true);
-    try {
-      const ids = Array.from(selectedIds);
-      const uri = await exportBatchToPDF(db, ids, t('batch.export_title'));
-      await sharePDF(uri);
-      cancelSelection();
-    } catch {
-      Alert.alert(t('export.error_title'), t('export.error_message'));
-    } finally {
-      setBatchExporting(false);
-    }
-  }, [selectedIds, db, t, cancelSelection]);
+  const handleBatchExport = useCallback(() => {
+    const ids = Array.from(selectedIds);
+    setExportSource({
+      mode: 'batch',
+      objectIds: ids,
+      title: t('batch.export_title'),
+    });
+    setShowExportStepper(true);
+  }, [selectedIds, t]);
 
   const handleCollectionSelected = useCallback(
     async (collection: { id: string; name: string }) => {
@@ -320,15 +314,10 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
           <Pressable
             style={styles.exportBtn}
             onPress={handleExportCollection}
-            disabled={exporting}
             accessibilityRole="button"
             accessibilityLabel={t('export.export_pdf')}
           >
-            {exporting ? (
-              <ActivityIndicator size="small" color={colors.accent} />
-            ) : (
-              <Text style={styles.exportBtnText}>{t('export.export_pdf')}</Text>
-            )}
+            <Text style={styles.exportBtnText}>{t('export.export_pdf')}</Text>
           </Pressable>
         </View>
       )}
@@ -513,7 +502,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
           onExportPDF={handleBatchExport}
           onDelete={handleBatchDelete}
           disabled={selectedIds.size === 0}
-          exporting={batchExporting}
+          exporting={false}
           t={t}
         />
       )}
@@ -523,6 +512,13 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         onClose={() => setShowCollectionPicker(false)}
         onSelect={handleCollectionSelected}
         t={t}
+      />
+
+      <ExportStepperModal
+        visible={showExportStepper}
+        onClose={() => setShowExportStepper(false)}
+        source={exportSource}
+        onExportComplete={cancelSelection}
       />
     </SafeAreaView>
   );

@@ -392,6 +392,26 @@
     "legalHoldWarning": "This record is under legal hold. Export for authorized purposes only.",
     "legalHoldConfirm": "Continue Export"
   },
+  "exportStepper": {
+    "selectFormat": "Select Format",
+    "reviewScope": "Review Export",
+    "step": "Step {{current}} of {{total}}",
+    "format": "Format",
+    "scope": "Scope",
+    "privacyBreakdown": "Privacy",
+    "scopeOneObject": "1 object",
+    "scopeObjects": "{{count}} objects",
+    "pdfOnlyBatch": "Available for single objects only",
+    "anonymousWarning": "{{count}} anonymous object(s) will have location data stripped",
+    "legalHoldWarning": "{{count}} object(s) under legal hold — export for authorized use only",
+    "exportAs": "Export as {{format}}",
+    "exporting": "Exporting\u2026",
+    "exportingObject": "Exporting \"{{title}}\"\u2026",
+    "exportingBatch": "Exporting {{count}} objects\u2026",
+    "exportingCollection": "Exporting \"{{name}}\"\u2026",
+    "exportComplete": "Export Complete",
+    "retry": "Retry"
+  },
   "settings": {
     "title": "Settings",
     "institution": "Institution",

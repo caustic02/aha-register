@@ -31,7 +31,7 @@ import {
 import { colors, radii, spacing, touch, typography } from '../theme';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
-import { ExportModal } from '../components/ExportModal';
+import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
 import type { ExportableObject } from '../services/export-service';
 import { getDisplayLabel } from '../utils/displayLabels';
 
@@ -199,6 +199,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       })),
     };
   }, [object, media, persons]);
+
+  const exportSource: ExportSource | null = useMemo(() => {
+    if (!exportData) return null;
+    return { mode: 'object', data: exportData };
+  }, [exportData]);
 
   // ── Loading / error guards ───────────────────────────────────────────────────
 
@@ -494,10 +499,10 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       </View>
 
       {/* ── EXPORT MODAL ──────────────────────────────────────────────────── */}
-      <ExportModal
+      <ExportStepperModal
         visible={showExportModal}
         onClose={() => setShowExportModal(false)}
-        data={exportData}
+        source={exportSource}
       />
     </SafeAreaView>
   );

@@ -28,6 +28,7 @@ import {
   type FilterState,
   type SortOption,
 } from '../components/FilterSheet';
+import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
 import {
   BackIcon,
   CaptureTabIcon,
@@ -101,6 +102,10 @@ export function ObjectListScreen({ navigation }: Props) {
   // Batch selection
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Export stepper
+  const [showExportStepper, setShowExportStepper] = useState(false);
+  const [exportSource, setExportSource] = useState<ExportSource | null>(null);
 
   // ── Load view mode preference ───────────────────────────────────────────────
 
@@ -356,9 +361,16 @@ export function ObjectListScreen({ navigation }: Props) {
           <IconButton
             icon={<ExportIcon size={22} color={colors.primary} />}
             onPress={() => {
-              // TODO: Open ExportModal with selected items
+              const ids = Array.from(selectedIds);
+              setExportSource({
+                mode: 'batch',
+                objectIds: ids,
+                title: t('batch.export_title'),
+              });
+              setShowExportStepper(true);
             }}
             accessibilityLabel={t('home.exportCollection')}
+            disabled={selectedIds.size === 0}
           />
         </View>
       ) : (
@@ -506,6 +518,13 @@ export function ObjectListScreen({ navigation }: Props) {
         availableTypes={availableTypes}
         initialFilters={filters}
         onApply={handleApplyFilters}
+      />
+
+      <ExportStepperModal
+        visible={showExportStepper}
+        onClose={() => setShowExportStepper(false)}
+        source={exportSource}
+        onExportComplete={exitSelectMode}
       />
     </SafeAreaView>
   );
