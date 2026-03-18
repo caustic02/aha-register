@@ -25,6 +25,7 @@ import { useAppTranslation } from '../hooks/useAppTranslation';
 import { pickFromLibrary, type CaptureResult } from '../services/capture';
 import { extractMetadata, type CaptureMetadata } from '../services/metadata';
 import { createDraftObject } from '../services/draftObject';
+import { quickCapture, type LocationData } from '../services/quickCapture';
 import { computeSHA256 } from '../utils/hash';
 import {
   getSetting,
@@ -32,7 +33,7 @@ import {
   SETTING_KEYS,
 } from '../services/settingsService';
 import { TypeSelector } from '../components/TypeSelector';
-import { GridIcon } from '../theme/icons';
+import { GridIcon, QuickModeIcon, FullModeIcon } from '../theme/icons';
 import type { ObjectType } from '../db/types';
 import { colors, typography, spacing, radii, layout, touch } from '../theme';
 
@@ -46,6 +47,14 @@ const OVERLAY_COUNT_BG = 'rgba(0,0,0,0.55)';
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
 type AspectRatio = '4:3' | '1:1';
+type CaptureMode = 'quick' | 'full';
+
+interface QuickCaptureThumbnail {
+  objectId: string;
+  uri: string;
+}
+
+const CAPTURE_MODE_KEY = 'capture.mode';
 
 const FLASH_CYCLE: FlashMode[] = ['off', 'on', 'auto'];
 
@@ -99,6 +108,16 @@ export function CaptureScreen() {
   // Session photo count (increments on each successful save)
   const [sessionPhotoCount, setSessionPhotoCount] = useState(0);
 
+  // Capture mode (quick vs full)
+  const [captureMode, setCaptureMode] = useState<CaptureMode>('quick');
+
+  // Quick-capture thumbnails (session-only, not persisted)
+  const [quickThumbnails, setQuickThumbnails] = useState<QuickCaptureThumbnail[]>([]);
+  const [quickError, setQuickError] = useState<string | null>(null);
+
+  // Shutter flash animation
+  const [shutterFlashAnim] = useState(() => new Animated.Value(0));
+
   // Reduced motion preference
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -119,6 +138,13 @@ export function CaptureScreen() {
   useEffect(() => {
     AsyncStorage.getItem('camera.gridEnabled').then((val) => {
       if (val === 'true') setGridEnabled(true);
+    });
+  }, []);
+
+  // Load persisted capture mode
+  useEffect(() => {
+    AsyncStorage.getItem(CAPTURE_MODE_KEY).then((val) => {
+      if (val === 'quick' || val === 'full') setCaptureMode(val);
     });
   }, []);
 
@@ -196,6 +222,75 @@ export function CaptureScreen() {
   const handleRatioToggle = useCallback(() => {
     setAspectRatio((prev) => (prev === '4:3' ? '1:1' : '4:3'));
   }, []);
+
+  const handleModeToggle = useCallback((mode: CaptureMode) => {
+    setCaptureMode(mode);
+    AsyncStorage.setItem(CAPTURE_MODE_KEY, mode);
+  }, []);
+
+  // Shutter flash effect (white overlay 0→0.8→0 in 150ms)
+  const triggerShutterFlash = useCallback(() => {
+    if (reduceMotion) return;
+    shutterFlashAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(shutterFlashAnim, {
+        toValue: 0.8,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(shutterFlashAnim, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [shutterFlashAnim, reduceMotion]);
+
+  const handleQuickShutter = useCallback(async () => {
+    if (!cameraRef.current || !cameraReady) return;
+    try {
+      const pic = await cameraRef.current.takePictureAsync({
+        quality: 1,
+        exif: true,
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      triggerShutterFlash();
+
+      // Build location data from EXIF (fire-and-forget below)
+      const photoUri = pic.uri;
+      const exif = pic.exif ?? null;
+
+      // Fire and forget — camera stays live
+      (async () => {
+        try {
+          // Extract location from EXIF synchronously enough to pass to quickCapture
+          const meta = await extractMetadata(exif);
+          const location: LocationData | null =
+            meta.latitude != null && meta.longitude != null
+              ? {
+                  latitude: meta.latitude,
+                  longitude: meta.longitude,
+                  altitude: meta.altitude,
+                  accuracy: meta.accuracy,
+                  coordinateSource: meta.coordinateSource ?? 'gps_hardware',
+                }
+              : null;
+
+          const objectId = await quickCapture(db, photoUri, location);
+          setQuickThumbnails((prev) => [...prev, { objectId, uri: photoUri }]);
+          setSessionPhotoCount((prev) => prev + 1);
+          setQuickError(null);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setQuickError(msg);
+          // Auto-dismiss error after 3 seconds
+          setTimeout(() => setQuickError(null), 3000);
+        }
+      })();
+    } catch {
+      // Camera not ready — ignore
+    }
+  }, [cameraReady, db, triggerShutterFlash]);
 
   const handleShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady) return;
@@ -302,6 +397,16 @@ export function CaptureScreen() {
       setPhase('type_select');
     }
   }, [capture, metadata, hash, navigation, handleRetake]);
+
+  const handleThumbnailPress = useCallback(
+    (objectId: string) => {
+      navigation.getParent()?.navigate('Home', {
+        screen: 'ObjectDetail',
+        params: { objectId },
+      });
+    },
+    [navigation],
+  );
 
   // ── Non-idle phases ───────────────────────────────────────────────────────
 
@@ -554,29 +659,127 @@ export function CaptureScreen() {
         </View>
       )}
 
-      {/* Bottom controls: Library | Shutter | (spacer) */}
-      <View style={styles.bottomControls}>
-        {/* Library picker */}
-        <Pressable
-          style={styles.libraryBtn}
-          onPress={handleLibrary}
-          accessibilityLabel={t('capture.choose_from_library')}
-        >
-          <Text style={styles.libraryIcon}>{'\u25A3'}</Text>
-        </Pressable>
+      {/* Shutter flash overlay */}
+      <Animated.View
+        style={[styles.shutterFlash, { opacity: shutterFlashAnim }]}
+        pointerEvents="none"
+      />
 
-        {/* Shutter */}
-        <Pressable
-          style={[styles.shutterBtn, !cameraReady && styles.shutterBtnDisabled]}
-          onPress={handleShutter}
-          disabled={!cameraReady}
-          accessibilityLabel={t('capture.take_photo')}
-        >
-          <View style={styles.shutterInner} />
-        </Pressable>
+      {/* Quick-capture error toast */}
+      {quickError && (
+        <View style={styles.errorToast} pointerEvents="none">
+          <Text style={styles.errorToastText} numberOfLines={2}>
+            {quickError}
+          </Text>
+        </View>
+      )}
 
-        {/* Spacer to balance the row */}
-        <View style={styles.shutterSpacer} />
+      {/* Bottom area: mode toggle + thumbnail strip + controls */}
+      <View style={styles.bottomArea}>
+        {/* Thumbnail strip (quick mode only, when captures exist) */}
+        {captureMode === 'quick' && quickThumbnails.length > 0 && (
+          <View style={styles.thumbStripWrap}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.thumbStripContent}
+            >
+              {quickThumbnails.map((thumb) => (
+                <Pressable
+                  key={thumb.objectId}
+                  onPress={() => handleThumbnailPress(thumb.objectId)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('capture.viewCaptured')}
+                  style={styles.thumbItem}
+                >
+                  <Image source={{ uri: thumb.uri }} style={styles.thumbImage} />
+                </Pressable>
+              ))}
+            </ScrollView>
+            <View style={styles.thumbCountBadge}>
+              <Text style={styles.thumbCountText}>
+                {t('capture.capturedCount', { count: quickThumbnails.length })}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Mode toggle */}
+        <View style={styles.modeToggleRow}>
+          <View style={styles.modeTogglePill}>
+            <Pressable
+              style={[
+                styles.modeToggleBtn,
+                captureMode === 'quick' && styles.modeToggleBtnActive,
+              ]}
+              onPress={() => handleModeToggle('quick')}
+              accessibilityRole="button"
+              accessibilityLabel={t('capture.modeQuick')}
+              accessibilityState={{ selected: captureMode === 'quick' }}
+            >
+              <QuickModeIcon
+                size={14}
+                color={captureMode === 'quick' ? colors.white : colors.textTertiary}
+              />
+              <Text
+                style={[
+                  styles.modeToggleText,
+                  captureMode === 'quick' && styles.modeToggleTextActive,
+                ]}
+              >
+                {t('capture.modeQuick')}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[
+                styles.modeToggleBtn,
+                captureMode === 'full' && styles.modeToggleBtnActive,
+              ]}
+              onPress={() => handleModeToggle('full')}
+              accessibilityRole="button"
+              accessibilityLabel={t('capture.modeFull')}
+              accessibilityState={{ selected: captureMode === 'full' }}
+            >
+              <FullModeIcon
+                size={14}
+                color={captureMode === 'full' ? colors.white : colors.textTertiary}
+              />
+              <Text
+                style={[
+                  styles.modeToggleText,
+                  captureMode === 'full' && styles.modeToggleTextActive,
+                ]}
+              >
+                {t('capture.modeFull')}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Controls: Library | Shutter | (spacer) */}
+        <View style={styles.bottomControls}>
+          {/* Library picker */}
+          <Pressable
+            style={styles.libraryBtn}
+            onPress={handleLibrary}
+            accessibilityLabel={t('capture.choose_from_library')}
+          >
+            <Text style={styles.libraryIcon}>{'\u25A3'}</Text>
+          </Pressable>
+
+          {/* Shutter */}
+          <Pressable
+            style={[styles.shutterBtn, !cameraReady && styles.shutterBtnDisabled]}
+            onPress={captureMode === 'quick' ? handleQuickShutter : handleShutter}
+            disabled={!cameraReady}
+            accessibilityLabel={t('capture.take_photo')}
+          >
+            <View style={styles.shutterInner} />
+          </Pressable>
+
+          {/* Spacer to balance the row */}
+          <View style={styles.shutterSpacer} />
+        </View>
       </View>
     </View>
   );
@@ -769,20 +972,117 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
 
-  // ── Bottom controls ──────────────────────────────────────────────────────────
-  bottomControls: {
+  // ── Bottom area (mode toggle + thumbnail strip + controls) ──────────────────
+  bottomArea: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    zIndex: 10,
+  },
+  bottomControls: {
     paddingBottom: 50,
-    paddingTop: layout.screenPadding,
+    paddingTop: spacing.md,
     paddingHorizontal: spacing.xxxl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.overlayLight,
-    zIndex: 10,
+  },
+
+  // ── Shutter flash ─────────────────────────────────────────────────────────
+  shutterFlash: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.white,
+    zIndex: 15,
+  },
+
+  // ── Error toast ───────────────────────────────────────────────────────────
+  errorToast: {
+    position: 'absolute',
+    top: 140,
+    left: spacing.xl,
+    right: spacing.xl,
+    backgroundColor: colors.error,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    zIndex: 20,
+    alignItems: 'center',
+  },
+  errorToastText: {
+    ...typography.bodySmall,
+    color: colors.white,
+    textAlign: 'center',
+  },
+
+  // ── Mode toggle ───────────────────────────────────────────────────────────
+  modeToggleRow: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.overlayLight,
+  },
+  modeTogglePill: {
+    flexDirection: 'row',
+    backgroundColor: OVERLAY_COUNT_BG,
+    borderRadius: radii.full,
+    padding: 2,
+  },
+  modeToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.full,
+    minHeight: 32,
+  },
+  modeToggleBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  modeToggleText: {
+    ...typography.caption,
+    color: colors.textTertiary,
+    fontWeight: typography.weight.semibold,
+  },
+  modeToggleTextActive: {
+    color: colors.white,
+  },
+
+  // ── Thumbnail strip ───────────────────────────────────────────────────────
+  thumbStripWrap: {
+    backgroundColor: colors.overlayLight,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  thumbStripContent: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  thumbItem: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.overlayLight,
+    overflow: 'hidden',
+  },
+  thumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  thumbCountBadge: {
+    alignSelf: 'center',
+    backgroundColor: OVERLAY_COUNT_BG,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    marginTop: spacing.xs,
+  },
+  thumbCountText: {
+    color: colors.white,
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
   },
   libraryBtn: {
     width: 52,
