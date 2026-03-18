@@ -13,6 +13,12 @@ import {
 import * as Haptics from 'expo-haptics';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { colors, radii, spacing, touch, typography } from '../theme';
+import {
+  ConditionIcon,
+  LayersIcon,
+  RulerIcon,
+  TagIcon,
+} from '../theme/icons';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { useDatabase } from '../contexts/DatabaseContext';
 import {
@@ -25,6 +31,8 @@ import {
   SectionHeader,
   TextInput,
 } from '../components/ui';
+import { FormSection } from '../components/FormSection';
+import { AIFieldBadge } from '../components/AIFieldBadge';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
 import { saveReviewedObject, updateReviewedObject } from '../services/objectService';
@@ -182,6 +190,24 @@ export function ReviewCardScreen({
 
   const [saving, setSaving] = useState(false);
 
+  // ── Form section state ──────────────────────────────────────────────────
+
+  const scrollRef = useRef<ScrollView>(null);
+  const [expandedSections, setExpandedSections] = useState({
+    identification: true,
+    physical: true,
+    classification: false,
+    condition: false,
+  });
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string | null>
+  >({});
+
+  type SectionKey = keyof typeof expandedSections;
+  const toggleSection = useCallback((key: SectionKey) => {
+    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
   // ── Collection picker state ───────────────────────────────────────────────
 
   const [collections, setCollections] = useState<CollectionWithCount[]>([]);
@@ -240,6 +266,45 @@ export function ReviewCardScreen({
 
   const artists = analysisResult.suggested_artists.value;
 
+  // ── AI field counts per section ─────────────────────────────────────────
+
+  const identificationAICount = useMemo(
+    () =>
+      [
+        analysisResult.title.confidence,
+        analysisResult.object_type.confidence,
+        analysisResult.date_created.confidence,
+        analysisResult.description.confidence,
+      ].filter((c) => c > 0).length,
+    [analysisResult],
+  );
+
+  const physicalAICount = useMemo(
+    () =>
+      [
+        analysisResult.medium.confidence,
+        analysisResult.dimensions_description.confidence,
+      ].filter((c) => c > 0).length,
+    [analysisResult],
+  );
+
+  const classificationAICount = useMemo(
+    () =>
+      [
+        analysisResult.style_period.confidence,
+        analysisResult.culture_origin.confidence,
+        analysisResult.keywords.confidence,
+      ].filter((c) => c > 0).length,
+    [analysisResult],
+  );
+
+  const conditionAICount = useMemo(
+    () =>
+      [analysisResult.condition_summary.confidence].filter((c) => c > 0)
+        .length,
+    [analysisResult],
+  );
+
   // ── Collection picker handlers ────────────────────────────────────────────
 
   const openCollectionPicker = useCallback(() => {
@@ -280,6 +345,17 @@ export function ReviewCardScreen({
   // ── Save handler ──────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
+    // ── Inline validation ────────────────────────────────────────────────
+    const errors: Record<string, string | null> = {};
+    if (!title.trim()) errors.title = t('validation.titleRequired');
+    if (!objectTypeSel.label) errors.objectType = t('validation.objectTypeRequired');
+    setValidationErrors(errors);
+    if (Object.values(errors).some(Boolean)) {
+      setExpandedSections((prev) => ({ ...prev, identification: true }));
+      scrollRef.current?.scrollTo({ y: 0, animated: true });
+      return;
+    }
+
     setSaving(true);
     try {
       let objectId: string;
@@ -376,6 +452,7 @@ export function ReviewCardScreen({
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -443,14 +520,15 @@ export function ReviewCardScreen({
           </>
         )}
 
-        {/* 3. CORE METADATA (editable) */}
-        <View style={styles.section}>
-          <SectionHeader title={t('reviewCard.objectDetails')} />
-
-          <AIField
-            label={t('reviewCard.titleLabel')}
-            confidence={analysisResult.title.confidence}
-          >
+        {/* 3. IDENTIFICATION — title, type, date, description */}
+        <FormSection
+          title={t('formSection.identification')}
+          icon={TagIcon}
+          expanded={expandedSections.identification}
+          onToggle={() => toggleSection('identification')}
+          aiFieldCount={identificationAICount}
+        >
+          <AIField confidence={analysisResult.title.confidence}>
             <TextInput
               label={t('reviewCard.titleLabel')}
               value={title}
@@ -458,11 +536,13 @@ export function ReviewCardScreen({
               placeholder={t('reviewCard.titlePlaceholder')}
             />
           </AIField>
+          {validationErrors.title && (
+            <Text style={styles.validationError} accessibilityRole="alert">
+              {validationErrors.title}
+            </Text>
+          )}
 
-          <AIField
-            label={t('reviewCard.objectTypeLabel')}
-            confidence={analysisResult.object_type.confidence}
-          >
+          <AIField confidence={analysisResult.object_type.confidence}>
             <VocabularyPicker
               vocabulary={objectTypesVocab}
               value={objectTypeSel}
@@ -472,11 +552,13 @@ export function ReviewCardScreen({
               placeholder={t('reviewCard.objectTypeLabel')}
             />
           </AIField>
+          {validationErrors.objectType && (
+            <Text style={styles.validationError} accessibilityRole="alert">
+              {validationErrors.objectType}
+            </Text>
+          )}
 
-          <AIField
-            label={t('reviewCard.dateCreatedLabel')}
-            confidence={analysisResult.date_created.confidence}
-          >
+          <AIField confidence={analysisResult.date_created.confidence}>
             <TextInput
               label={t('reviewCard.dateCreatedLabel')}
               value={dateCreated}
@@ -485,10 +567,34 @@ export function ReviewCardScreen({
             />
           </AIField>
 
-          <AIField
-            label={t('reviewCard.mediumLabel')}
-            confidence={analysisResult.medium.confidence}
-          >
+          <AIField confidence={analysisResult.description.confidence}>
+            <TextInput
+              label={t('reviewCard.descriptionLabel')}
+              value={description}
+              onChangeText={setDescription}
+              placeholder={t('reviewCard.descriptionPlaceholder')}
+              multiline
+            />
+            {hasAIData && (
+              <View style={styles.confidenceBarWrap}>
+                <ConfidenceBar
+                  confidence={analysisResult.description.confidence}
+                  label={t('reviewCard.descriptionConfidence')}
+                />
+              </View>
+            )}
+          </AIField>
+        </FormSection>
+
+        {/* 4. PHYSICAL DESCRIPTION — medium, technique, dimensions */}
+        <FormSection
+          title={t('formSection.physical')}
+          icon={RulerIcon}
+          expanded={expandedSections.physical}
+          onToggle={() => toggleSection('physical')}
+          aiFieldCount={physicalAICount}
+        >
+          <AIField confidence={analysisResult.medium.confidence}>
             <VocabularyPicker
               vocabulary={materialsVocab}
               value={mediumSel}
@@ -500,10 +606,7 @@ export function ReviewCardScreen({
             />
           </AIField>
 
-          <AIField
-            label={t('reviewCard.techniqueLabel')}
-            confidence={0}
-          >
+          <AIField confidence={0}>
             <VocabularyPicker
               vocabulary={techniquesVocab}
               value={techniqueSel}
@@ -515,10 +618,7 @@ export function ReviewCardScreen({
             />
           </AIField>
 
-          <AIField
-            label={t('reviewCard.dimensionsLabel')}
-            confidence={analysisResult.dimensions_description.confidence}
-          >
+          <AIField confidence={analysisResult.dimensions_description.confidence}>
             <TextInput
               label={t('reviewCard.dimensionsLabel')}
               value={dimensions}
@@ -526,11 +626,17 @@ export function ReviewCardScreen({
               placeholder={t('reviewCard.dimensionsPlaceholder')}
             />
           </AIField>
+        </FormSection>
 
-          <AIField
-            label={t('reviewCard.stylePeriodLabel')}
-            confidence={analysisResult.style_period.confidence}
-          >
+        {/* 5. CLASSIFICATION — style, culture, keywords */}
+        <FormSection
+          title={t('formSection.classification')}
+          icon={LayersIcon}
+          expanded={expandedSections.classification}
+          onToggle={() => toggleSection('classification')}
+          aiFieldCount={classificationAICount}
+        >
+          <AIField confidence={analysisResult.style_period.confidence}>
             <VocabularyPicker
               vocabulary={stylesPeriodsVocab}
               value={stylePeriodSel}
@@ -541,10 +647,7 @@ export function ReviewCardScreen({
             />
           </AIField>
 
-          <AIField
-            label={t('reviewCard.cultureOriginLabel')}
-            confidence={analysisResult.culture_origin.confidence}
-          >
+          <AIField confidence={analysisResult.culture_origin.confidence}>
             <TextInput
               label={t('reviewCard.cultureOriginLabel')}
               value={cultureOrigin}
@@ -552,47 +655,49 @@ export function ReviewCardScreen({
               placeholder={t('reviewCard.cultureOriginPlaceholder')}
             />
           </AIField>
-        </View>
 
-        <Divider />
-
-        {/* 4. DESCRIPTION */}
-        <View style={styles.section}>
-          <SectionHeader title={t('reviewCard.descriptionSection')} />
-          <TextInput
-            label={t('reviewCard.descriptionLabel')}
-            value={description}
-            onChangeText={setDescription}
-            placeholder={t('reviewCard.descriptionPlaceholder')}
-            multiline
-          />
-          {hasAIData && (
-            <View style={styles.confidenceBarWrap}>
-              <ConfidenceBar
-                confidence={analysisResult.description.confidence}
-                label={t('reviewCard.descriptionConfidence')}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.fieldGroupLabel}>
+              {t('reviewCard.keywordsSection')}
+            </Text>
+            {keywordOptions.length > 0 ? (
+              <ChipGroup
+                options={keywordOptions}
+                selected={selectedKeywords}
+                onSelect={(v) =>
+                  setSelectedKeywords(Array.isArray(v) ? v : [v])
+                }
+                multiSelect
               />
-            </View>
-          )}
-        </View>
+            ) : (
+              <Text style={styles.emptyText}>
+                {t('reviewCard.noKeywords')}
+              </Text>
+            )}
+          </View>
+        </FormSection>
 
+        {/* 6. CONDITION */}
+        <FormSection
+          title={t('formSection.condition')}
+          icon={ConditionIcon}
+          expanded={expandedSections.condition}
+          onToggle={() => toggleSection('condition')}
+          aiFieldCount={conditionAICount}
+        >
+          <AIField confidence={analysisResult.condition_summary.confidence}>
+            <TextInput
+              label={t('reviewCard.conditionLabel')}
+              value={condition}
+              onChangeText={setCondition}
+              placeholder={t('reviewCard.conditionPlaceholder')}
+              multiline
+            />
+          </AIField>
+        </FormSection>
+
+        {/* 7. SUGGESTED ARTISTS */}
         <Divider />
-
-        {/* 5. CONDITION */}
-        <View style={styles.section}>
-          <SectionHeader title={t('reviewCard.conditionSection')} />
-          <TextInput
-            label={t('reviewCard.conditionLabel')}
-            value={condition}
-            onChangeText={setCondition}
-            placeholder={t('reviewCard.conditionPlaceholder')}
-            multiline
-          />
-        </View>
-
-        <Divider />
-
-        {/* 6. SUGGESTED ARTISTS */}
         <View style={styles.section}>
           <SectionHeader
             title={t('reviewCard.artistsSection')}
@@ -618,25 +723,6 @@ export function ReviewCardScreen({
             ))
           ) : (
             <Text style={styles.emptyText}>{t('reviewCard.noArtists')}</Text>
-          )}
-        </View>
-
-        <Divider />
-
-        {/* 7. KEYWORDS */}
-        <View style={styles.section}>
-          <SectionHeader title={t('reviewCard.keywordsSection')} />
-          {keywordOptions.length > 0 ? (
-            <ChipGroup
-              options={keywordOptions}
-              selected={selectedKeywords}
-              onSelect={(v) =>
-                setSelectedKeywords(Array.isArray(v) ? v : [v])
-              }
-              multiSelect
-            />
-          ) : (
-            <Text style={styles.emptyText}>{t('reviewCard.noKeywords')}</Text>
           )}
         </View>
 
@@ -801,14 +887,12 @@ export function ReviewCardScreen({
   );
 }
 
-// ── AIField wrapper — shows AI badge + confidence next to field label ────────
+// ── AIField wrapper — shows AIFieldBadge + confidence-tinted border ──────────
 
 function AIField({
-  label: _label,
   confidence,
   children,
 }: {
-  label: string;
   confidence: number;
   children: React.ReactNode;
 }) {
@@ -817,8 +901,7 @@ function AIField({
     <View style={[styles.aiField, hasAI && styles.aiFieldActive]}>
       {hasAI && (
         <View style={styles.aiFieldHeader}>
-          <Badge variant="ai" label="AI" size="sm" />
-          <Text style={styles.aiConfidenceText}>{confidence}%</Text>
+          <AIFieldBadge visible confidence={confidence} />
         </View>
       )}
       {children}
@@ -881,6 +964,23 @@ const styles = StyleSheet.create({
   },
   badgeSpacer: {
     width: spacing.sm,
+  },
+  // Validation error
+  validationError: {
+    ...typography.caption,
+    color: colors.statusError,
+    marginTop: spacing.xs,
+    marginLeft: spacing.md,
+  },
+  // Field group (sub-label inside FormSection)
+  fieldGroup: {
+    marginTop: spacing.md,
+  },
+  fieldGroupLabel: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontWeight: typography.weight.medium,
+    marginBottom: spacing.sm,
   },
   // AI field wrapper
   aiField: {

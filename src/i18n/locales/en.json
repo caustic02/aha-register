@@ -225,6 +225,20 @@
     "failed": "Sync failed",
     "offline": "Offline"
   },
+  "formSection": {
+    "identification": "Identification",
+    "physical": "Physical description",
+    "classification": "Classification",
+    "condition": "Condition"
+  },
+  "validation": {
+    "titleRequired": "Title is required",
+    "objectTypeRequired": "Object type is required"
+  },
+  "aiBadge": {
+    "ai": "AI",
+    "aiSuggested": "AI suggested"
+  },
   "privacy": {
     "public": "Public",
     "confidential": "Confidential",

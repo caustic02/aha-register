@@ -225,6 +225,20 @@
     "failed": "Synchronisierung fehlgeschlagen",
     "offline": "Offline"
   },
+  "formSection": {
+    "identification": "Identifikation",
+    "physical": "Physische Beschreibung",
+    "classification": "Klassifikation",
+    "condition": "Zustand"
+  },
+  "validation": {
+    "titleRequired": "Titel ist erforderlich",
+    "objectTypeRequired": "Objekttyp ist erforderlich"
+  },
+  "aiBadge": {
+    "ai": "KI",
+    "aiSuggested": "KI-Vorschlag"
+  },
   "privacy": {
     "public": "\u00d6ffentlich",
     "confidential": "Vertraulich",

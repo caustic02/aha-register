@@ -70,6 +70,12 @@ export { CheckSquare as CheckboxFilledIcon } from 'lucide-react-native';
 // ── Isolation icons ──────────────────────────────────────────────────────────
 export { Scissors as IsolateIcon } from 'lucide-react-native';
 
+// ── Form section icons ──────────────────────────────────────────────────────
+export { Tag as TagIcon } from 'lucide-react-native';
+export { Ruler as RulerIcon } from 'lucide-react-native';
+export { Layers as LayersIcon } from 'lucide-react-native';
+export { ShieldCheck as ConditionIcon } from 'lucide-react-native';
+
 // ── Status icons ──────────────────────────────────────────────────────────────
 export { RefreshCw as SyncIcon } from 'lucide-react-native';
 export { WifiOff as OfflineIcon } from 'lucide-react-native';
