@@ -64,7 +64,37 @@
     "specimen": "Exemplar",
     "architectural_element": "Architekturelement",
     "environmental_sample": "Umweltprobe",
-    "conservation_record": "Restaurierungsbericht"
+    "conservation_record": "Restaurierungsbericht",
+    "painting": "Gemälde",
+    "sculpture": "Skulptur",
+    "drawing": "Zeichnung",
+    "print": "Druckgrafik",
+    "photograph": "Fotografie",
+    "textile": "Textil",
+    "ceramic": "Keramik",
+    "glass": "Glas",
+    "metal": "Metall",
+    "furniture": "Möbel",
+    "jewelry": "Schmuck",
+    "manuscript": "Manuskript",
+    "mixed_media": "Mischtechnik",
+    "other": "Sonstiges"
+  },
+  "labels": {
+    "coordinate_source": {
+      "gps_hardware": "GPS (Gerät)",
+      "gps_exif": "GPS (Foto-Metadaten)",
+      "manual": "Manuelle Eingabe",
+      "geocoded": "Geokodiert",
+      "network": "Netzwerkstandort",
+      "unknown": "Unbekannt"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "active": "Aktiv",
+      "archived": "Archiviert",
+      "under_review": "In Prüfung"
+    }
   },
   "location": {
     "section_title": "Standort",
@@ -429,6 +459,7 @@
     "localObjects": "Lokale Objekte",
     "storageUsed": "Genutzter Speicher",
     "storageCalculating": "Wird berechnet\u2026",
+    "storageUnavailable": "Berechnung nicht möglich",
     "exportAllData": "Alle Daten exportieren",
     "clearData": "Alle Daten l\u00f6schen",
     "clearDataTitle": "Alle Daten l\u00f6schen",
@@ -662,6 +693,14 @@
     "uuid": "Objekt-ID",
     "hash": "SHA-256",
     "coordinateSource": "Koordinatenquelle",
+    "estimatedCreationDate": "Geschätztes Entstehungsdatum",
+    "aiEstimate": "KI-Schätzung",
+    "medium": "Material",
+    "dimensions": "Maße",
+    "stylePeriod": "Stil / Epoche",
+    "cultureOrigin": "Kultur / Herkunft",
+    "condition": "Zustand",
+    "keywords": "Schlagwörter",
     "editDisabled": "Bearbeiten (demnächst)",
     "exportDisabled": "Exportieren (demnächst)"
   },

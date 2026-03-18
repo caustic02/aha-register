@@ -64,7 +64,37 @@
     "specimen": "Specimen",
     "architectural_element": "Architectural Element",
     "environmental_sample": "Environmental Sample",
-    "conservation_record": "Conservation Record"
+    "conservation_record": "Conservation Record",
+    "painting": "Painting",
+    "sculpture": "Sculpture",
+    "drawing": "Drawing",
+    "print": "Print",
+    "photograph": "Photograph",
+    "textile": "Textile",
+    "ceramic": "Ceramic",
+    "glass": "Glass",
+    "metal": "Metal",
+    "furniture": "Furniture",
+    "jewelry": "Jewelry",
+    "manuscript": "Manuscript",
+    "mixed_media": "Mixed Media",
+    "other": "Other"
+  },
+  "labels": {
+    "coordinate_source": {
+      "gps_hardware": "GPS (Device)",
+      "gps_exif": "GPS (Photo metadata)",
+      "manual": "Manual entry",
+      "geocoded": "Geocoded",
+      "network": "Network location",
+      "unknown": "Unknown"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "archived": "Archived",
+      "under_review": "Under Review"
+    }
   },
   "location": {
     "section_title": "Location",
@@ -429,6 +459,7 @@
     "localObjects": "Local Objects",
     "storageUsed": "Storage Used",
     "storageCalculating": "Calculating\u2026",
+    "storageUnavailable": "Unable to calculate",
     "exportAllData": "Export All Data",
     "clearData": "Clear All Data",
     "clearDataTitle": "Clear All Data",
@@ -662,6 +693,14 @@
     "uuid": "Object ID",
     "hash": "SHA-256",
     "coordinateSource": "Coordinate Source",
+    "estimatedCreationDate": "Estimated Creation Date",
+    "aiEstimate": "AI estimate",
+    "medium": "Medium",
+    "dimensions": "Dimensions",
+    "stylePeriod": "Style / Period",
+    "cultureOrigin": "Culture / Origin",
+    "condition": "Condition",
+    "keywords": "Keywords",
     "editDisabled": "Edit (coming soon)",
     "exportDisabled": "Export (coming soon)"
   },
