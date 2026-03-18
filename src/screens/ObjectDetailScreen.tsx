@@ -32,6 +32,7 @@ import { colors, radii, spacing, touch, typography } from '../theme';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportModal } from '../components/ExportModal';
 import type { ExportableObject } from '../services/export-service';
+import { getDisplayLabel } from '../utils/displayLabels';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -247,6 +248,24 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   );
   const primaryMedia = media.find((m) => m.is_primary === 1) ?? media[0];
 
+  // Parse AI metadata from type_specific_data JSON
+  const extras: Record<string, unknown> = (() => {
+    try {
+      return object.type_specific_data
+        ? (JSON.parse(object.type_specific_data) as Record<string, unknown>)
+        : {};
+    } catch {
+      return {};
+    }
+  })();
+  const aiDateCreated = typeof extras.dateCreated === 'string' ? extras.dateCreated : null;
+  const aiMedium = typeof extras.medium === 'string' ? extras.medium : null;
+  const aiDimensions = typeof extras.dimensions === 'string' ? extras.dimensions : null;
+  const aiStylePeriod = typeof extras.stylePeriod === 'string' ? extras.stylePeriod : null;
+  const aiCultureOrigin = typeof extras.cultureOrigin === 'string' ? extras.cultureOrigin : null;
+  const aiCondition = typeof extras.condition === 'string' ? extras.condition : null;
+  const aiKeywords = Array.isArray(extras.keywords) ? (extras.keywords as string[]).join(', ') : null;
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -335,8 +354,32 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               value={object.inventory_number}
             />
           )}
+          {aiDateCreated != null && (
+            <MetadataRow
+              label={t('objectDetail.estimatedCreationDate')}
+              value={`${aiDateCreated}  (${t('objectDetail.aiEstimate')})`}
+            />
+          )}
           {dateRange.length > 0 && (
             <MetadataRow label={t('objects.date')} value={dateRange} />
+          )}
+          {aiMedium != null && (
+            <MetadataRow label={t('objectDetail.medium')} value={aiMedium} />
+          )}
+          {aiDimensions != null && (
+            <MetadataRow label={t('objectDetail.dimensions')} value={aiDimensions} />
+          )}
+          {aiStylePeriod != null && (
+            <MetadataRow label={t('objectDetail.stylePeriod')} value={aiStylePeriod} />
+          )}
+          {aiCultureOrigin != null && (
+            <MetadataRow label={t('objectDetail.cultureOrigin')} value={aiCultureOrigin} />
+          )}
+          {aiCondition != null && (
+            <MetadataRow label={t('objectDetail.condition')} value={aiCondition} />
+          )}
+          {aiKeywords != null && (
+            <MetadataRow label={t('objectDetail.keywords')} value={aiKeywords} />
           )}
           {coordString.length > 0 && (
             <MetadataRow
@@ -347,7 +390,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           {object.coordinate_source != null && (
             <MetadataRow
               label={t('objectDetail.coordinateSource')}
-              value={object.coordinate_source}
+              value={getDisplayLabel(object.coordinate_source, 'coordinate_source')}
             />
           )}
         </Card>

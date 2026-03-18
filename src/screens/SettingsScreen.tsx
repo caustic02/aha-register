@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import i18n from 'i18next';
+import Constants from 'expo-constants';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { useSettings } from '../hooks/useSettings';
@@ -49,7 +50,12 @@ import type { CollectionDomain } from '../hooks/useSettings';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const APP_VERSION = '0.1.0';
+const APP_VERSION = Constants.expoConfig?.version ?? '0.1.0';
+const APP_BUILD =
+  Constants.expoConfig?.android?.versionCode?.toString() ??
+  Constants.expoConfig?.ios?.buildNumber ??
+  Constants.expoConfig?.runtimeVersion?.toString() ??
+  APP_VERSION;
 
 const OBJECT_TYPES: ObjectType[] = [
   'museum_object',
@@ -100,6 +106,40 @@ const DOMAIN_OPTIONS: DomainOption[] = [
   },
 ];
 
+// ── Storage size calculation ──────────────────────────────────────────────────
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+async function computeStorageSize(
+  db: import('expo-sqlite').SQLiteDatabase,
+): Promise<string> {
+  // Race the DB query against a 5-second timeout
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('timeout')), 5000),
+  );
+  const query = (async () => {
+    // Sum file_size from media table (best available proxy for storage)
+    const row = await db.getFirstAsync<{ total: number | null }>(
+      'SELECT SUM(file_size) as total FROM media',
+    );
+    // Also estimate DB size via page_count * page_size
+    const dbSize = await db.getFirstAsync<{ size: number | null }>(
+      'SELECT (page_count * page_size) as size FROM pragma_page_count(), pragma_page_size()',
+    );
+    const mediaBytes = row?.total ?? 0;
+    const dbBytes = dbSize?.size ?? 0;
+    return formatBytes(mediaBytes + dbBytes);
+  })();
+
+  return Promise.race([query, timeout]);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function SettingsScreen() {
@@ -126,6 +166,7 @@ export function SettingsScreen() {
     useState<ObjectType>('museum_object');
   const [language, setLanguage] = useState(i18n.language);
   const [stats, setStats] = useState<StorageStats | null>(null);
+  const [storageDisplay, setStorageDisplay] = useState<string | null>(null);
 
   // Auth
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -159,6 +200,11 @@ export function SettingsScreen() {
 
     const session = await getSession();
     setUserEmail(session?.user?.email ?? null);
+
+    // Calculate storage size with 5s timeout
+    computeStorageSize(db).then(setStorageDisplay).catch(() => {
+      setStorageDisplay(null);
+    });
   }, [db]);
 
   useEffect(() => {
@@ -568,7 +614,10 @@ export function SettingsScreen() {
           />
           <MetadataRow
             label={t('settings.storageUsed')}
-            value={t('settings.storageCalculating')}
+            value={
+              storageDisplay ??
+              (stats ? t('settings.storageUnavailable') : t('settings.storageCalculating'))
+            }
           />
           <Divider />
           <ListItem
@@ -600,7 +649,7 @@ export function SettingsScreen() {
           />
           <MetadataRow
             label={t('settings.build')}
-            value={APP_VERSION}
+            value={APP_BUILD}
           />
           <Divider />
           <ListItem

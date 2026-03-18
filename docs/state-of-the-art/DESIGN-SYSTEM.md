@@ -1,6 +1,6 @@
 # aha! Register Design System
 
-> Last updated: 2026-03-17
+> Last updated: 2026-03-18
 > Status: ACTIVE
 
 Centralized design tokens and visual standards for the aha! Register app.
@@ -333,12 +333,44 @@ Standard: **WCAG 2.1 AA** / **EN 301 549** (EU Accessibility Act).
 
 ---
 
+## Display Label Utility
+
+`src/utils/displayLabels.ts` — maps internal enum keys to human-readable i18n labels.
+
+```ts
+import { getDisplayLabel } from '../utils/displayLabels';
+
+getDisplayLabel('gps_hardware', 'coordinate_source'); // → "GPS (Device)"
+getDisplayLabel('draft', 'status');                    // → "Draft"
+getDisplayLabel('museum_object', 'object_type');       // → "Museum Object"
+getDisplayLabel('public', 'privacy_tier');             // → "Public"
+getDisplayLabel('primary', 'evidence_class');          // → "Primary"
+```
+
+**Categories and i18n prefixes:**
+
+| Category | i18n prefix | Example keys |
+|----------|------------|-------------|
+| `object_type` | `object_types.*` | `museum_object`, `painting`, `other` |
+| `coordinate_source` | `labels.coordinate_source.*` | `gps_hardware`, `gps_exif`, `manual` |
+| `status` | `labels.status.*` | `draft`, `active`, `archived`, `under_review` |
+| `privacy_tier` | `privacy.*` | `public`, `confidential`, `anonymous` |
+| `evidence_class` | `evidence.*` | `primary`, `corroborative`, `contextual` |
+
+**Fallback:** If no i18n match exists, the raw key is title-cased (`gps_hardware` → `Gps Hardware`).
+
+**Rule:** Never display raw database enum values to users. Always pass through `getDisplayLabel()` or `t()`.
+
+---
+
 ## File Structure
 
 ```
 src/theme/
   index.ts    — colors, typography, spacing, radii, layout
   icons.ts    — semantic icon re-exports from lucide-react-native
+src/utils/
+  displayLabels.ts — enum-to-label utility (see above)
 ```
 
 All components import from `../theme` or `../../theme` (relative paths).
