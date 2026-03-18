@@ -271,6 +271,59 @@ Active filter chips (shown above the list) use `primaryContainer` bg + `primary`
 
 **Used in:** ReviewCardScreen (Object Type, Medium, Technique, Style/Period fields).
 
+### SkeletonLoader
+
+`src/components/SkeletonLoader.tsx` — pulse-animated loading placeholders for list and card states.
+
+**Implementation:**
+- Pulse driven by `Animated.Value` looping between opacity 0.4 → 1.0 via `Animated.loop` + `Animated.sequence` (Animated API, no third-party dependency)
+- `accessibilityElementsHidden={true}` + `importantForAccessibility="no-hide-descendants"` on the root `Animated.View` — entire skeleton is invisible to screen readers
+- Two variants:
+  - `SkeletonCard` — renders a thumbnail placeholder + two text-line placeholders (title + subtitle). Used in grid/card contexts.
+  - `SkeletonList` — renders a configurable number of `SkeletonCard`s stacked vertically via a `count` prop (default: 5). Used in list contexts while data loads.
+
+**Usage:** Replace `ActivityIndicator` spinners for local DB loads. Do not use for network-progress indication.
+
+### ExportStepperModal
+
+`src/components/ExportStepperModal.tsx` — 3-step bottom-sheet modal for exporting objects.
+
+**Accepts `ExportSource` union:**
+```ts
+type ExportSource =
+  | { mode: 'object'; data: ExportableObject }
+  | { mode: 'batch'; objectIds: string[]; title: string }
+  | { mode: 'collection'; collectionId: string; collectionName: string }
+```
+
+**Step 1 — Format selection:**
+- Three `FormatCard` options: PDF, JSON, CSV
+- JSON and CSV are disabled (`accessibilityState={{ disabled: true }}`) when source mode is not `'object'` (batch/collection only support PDF)
+- Selecting a format advances to step 2
+
+**Step 2 — Scope review:**
+- Queries `privacy_tier` and `legal_hold` from SQLite for all objects in scope
+- Displays: format badge, object count, privacy tier breakdown (public/confidential/anonymous counts)
+- **Privacy tier warning:** shown when `anonymousCount > 0` — amber warning box noting location data will be stripped
+- **Legal hold warning:** shown when `legalHoldCount > 0` — red warning box requiring authorized use acknowledgement
+- Back button returns to step 1; "Export as…" button proceeds to step 3
+
+**Step 3 — Progress / Success / Error:**
+- Loading: `ActivityIndicator` with `accessibilityLabel` for screen readers
+- Success: `CheckIcon` in green circle + "Export Complete" + Done button; calls `onExportComplete` callback
+- Error: error message + Cancel + Retry buttons
+
+**Export routing:**
+| Source mode | Format | Service called |
+|-------------|--------|---------------|
+| `object` | PDF | `exportAsPDF` → `shareExport` (expo-sharing) |
+| `object` | JSON | `exportAsJSON` → `shareExport` |
+| `object` | CSV | `exportAsCSV` → `shareExport` |
+| `batch` | PDF | `exportBatchToPDF` → `sharePDF` |
+| `collection` | PDF | `exportCollectionToPDF` → `sharePDF` |
+
+**Entry points:** `ObjectDetailScreen`, `ObjectListScreen` (batch select mode), `CollectionDetailScreen` (collection export + batch select mode).
+
 ### Bottom Sheets
 Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.
 
