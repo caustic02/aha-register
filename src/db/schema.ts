@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS objects (
   event_end             TEXT,
   -- Type-specific
   type_specific_data    TEXT, -- JSONB
+  -- Review workflow
+  review_status         TEXT NOT NULL DEFAULT 'complete', -- needs_review | in_review | complete
   created_at            TEXT NOT NULL,
   updated_at            TEXT NOT NULL
 );
@@ -242,6 +244,8 @@ CREATE INDEX IF NOT EXISTS idx_object_persons_role ON object_persons(role);
  * already exists. There is no ALTER TABLE ADD COLUMN IF NOT EXISTS.
  */
 const MIGRATION_STATEMENTS = [
+  // objects: review workflow status for quick capture (B2)
+  `ALTER TABLE objects ADD COLUMN review_status TEXT NOT NULL DEFAULT 'complete'`,
   // media: copyright / licensing fields
   `ALTER TABLE media ADD COLUMN rights_holder TEXT`,
   `ALTER TABLE media ADD COLUMN license_type TEXT CHECK(license_type IN ('CC-BY', 'CC-BY-NC', 'CC-BY-SA', 'CC0', 'all-rights-reserved', 'institution-specific', 'TK-label'))`,

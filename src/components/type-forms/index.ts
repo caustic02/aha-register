@@ -16,7 +16,7 @@ export interface TypeFormProps {
   t: (key: string) => string;
 }
 
-export const TYPE_FORM_MAP: Record<ObjectType, React.ComponentType<TypeFormProps>> = {
+export const TYPE_FORM_MAP: Record<ObjectType, React.ComponentType<TypeFormProps> | null> = {
   museum_object: MuseumObjectForm,
   site: SiteForm,
   incident: IncidentForm,
@@ -24,4 +24,5 @@ export const TYPE_FORM_MAP: Record<ObjectType, React.ComponentType<TypeFormProps
   architectural_element: ArchitecturalElementForm,
   environmental_sample: EnvironmentalSampleForm,
   conservation_record: ConservationRecordForm,
+  uncategorized: null, // Quick-captured objects have no type-specific form until reviewed
 };

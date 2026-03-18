@@ -1,11 +1,12 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
-import { File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 
 import { generateId } from '../utils/uuid';
 import { computeSHA256 } from '../utils/hash';
 import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import { getSetting, SETTING_KEYS } from './settingsService';
+import { copyToMediaStorage, buildStorageName, normalizeFileType } from './captureHelpers';
 import type { CaptureMetadata } from './metadata';
 
 // ── Save reviewed object ────────────────────────────────────────────────────
@@ -42,29 +43,22 @@ export async function saveReviewedObject(
   const now = new Date().toISOString();
 
   // ── 1. Copy image to app storage ────────────────────────────────────────
-  const ext = params.mimeType.split('/')[1] ?? 'jpg';
-  const storageName = `${mediaId}.${ext}`;
-  const storageDir = `${Paths.document.uri}media/`;
-  const destUri = `${storageDir}${storageName}`;
+  const storageName = buildStorageName(mediaId, params.mimeType);
+  let destUri: string;
 
   try {
     const srcFile = new File(params.imageUri);
     if (!srcFile.exists) {
       throw new Error(`Source file does not exist: ${params.imageUri}`);
     }
+    destUri = copyToMediaStorage(params.imageUri, mediaId, params.mimeType);
     const destFile = new File(destUri);
-    const parentDir = destFile.parentDirectory;
-    if (!parentDir.exists) {
-      parentDir.create({ intermediates: true, idempotent: true });
-    }
-    srcFile.copy(destFile);
     if (!destFile.exists) {
       throw new Error(`File copy produced no output at: ${destUri}`);
     }
   } catch (err) {
     console.error('[saveReviewedObject] step 1 FAILED: file copy', {
       imageUri: params.imageUri,
-      destUri,
       error: err,
     });
     throw new Error(`Step 1 failed: file copy — ${err instanceof Error ? err.message : String(err)}`);
@@ -97,11 +91,7 @@ export async function saveReviewedObject(
     : null;
 
   // ── 5. File type normalization ──────────────────────────────────────────
-  const fileType = params.mimeType.split('/')[0];
-  const normalizedFileType =
-    fileType === 'image' || fileType === 'video' || fileType === 'audio'
-      ? fileType
-      : 'document';
+  const normalizedFileType = normalizeFileType(params.mimeType);
 
   // ── 6-9. Single atomic transaction ──────────────────────────────────────
   await db.withTransactionAsync(async () => {
