@@ -88,6 +88,9 @@ CREATE TABLE IF NOT EXISTS media (
   privacy_tier  TEXT NOT NULL DEFAULT 'public',
   is_primary    INTEGER NOT NULL DEFAULT 0, -- 1 = primary display image
   sort_order    INTEGER NOT NULL DEFAULT 0,
+  -- Derivative tracking (B1 object isolation)
+  parent_media_id TEXT REFERENCES media(id),
+  media_type      TEXT NOT NULL DEFAULT 'original', -- original | derivative_isolated
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
@@ -251,6 +254,9 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE media ADD COLUMN license_type TEXT CHECK(license_type IN ('CC-BY', 'CC-BY-NC', 'CC-BY-SA', 'CC0', 'all-rights-reserved', 'institution-specific', 'TK-label'))`,
   `ALTER TABLE media ADD COLUMN license_uri TEXT`,
   `ALTER TABLE media ADD COLUMN usage_restrictions TEXT`,
+  // media: derivative tracking for object isolation (B1)
+  `ALTER TABLE media ADD COLUMN parent_media_id TEXT REFERENCES media(id)`,
+  `ALTER TABLE media ADD COLUMN media_type TEXT NOT NULL DEFAULT 'original'`,
   // documents: transcription fields
   `ALTER TABLE documents ADD COLUMN transcription TEXT`,
   `ALTER TABLE documents ADD COLUMN transcription_status TEXT NOT NULL DEFAULT 'none' CHECK(transcription_status IN ('none', 'draft', 'ai_generated', 'verified'))`,

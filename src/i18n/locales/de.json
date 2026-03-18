@@ -701,6 +701,12 @@
     "startReview": "Prüfung starten",
     "reviewComplete": "Prüfung abgeschlossen"
   },
+  "isolation": {
+    "title": "Hintergrund entfernen",
+    "processing": "Hintergrund wird entfernt...",
+    "offlineError": "Hintergrundentfernung benötigt eine Internetverbindung",
+    "failed": "Hintergrundentfernung fehlgeschlagen"
+  },
   "home": {
     "title": "Sammlung",
     "personalCollection": "Pers\u00f6nliche Sammlung",

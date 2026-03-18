@@ -701,6 +701,12 @@
     "startReview": "Start review",
     "reviewComplete": "Review complete"
   },
+  "isolation": {
+    "title": "Background Removal",
+    "processing": "Removing background...",
+    "offlineError": "Isolation requires an internet connection",
+    "failed": "Background removal failed"
+  },
   "home": {
     "title": "Collection",
     "personalCollection": "Personal Collection",
