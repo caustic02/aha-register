@@ -173,7 +173,12 @@
     "ocr_extracting": "Extracting text...",
     "ocr_complete": "Text extracted",
     "ocr_failed": "Could not extract text",
-    "document_deskew": "Straightening document..."
+    "document_deskew": "Straightening document...",
+    "scan_document": "Scan document",
+    "document_linked": "Document linked to {{title}}",
+    "document_linked_last": "Document linked to last capture",
+    "document_saved_standalone": "Document saved. Review to link to an object.",
+    "document_scan_title": "Document scan"
   },
   "collections": {
     "title": "Collections",

@@ -524,7 +524,23 @@ media.ocr_source     = 'on_device'
 | `src/hooks/useObjectDocuments.ts` | Query hook: groups raw+deskewed pairs, returns display data |
 | `src/navigation/HomeStack.tsx` | `DocumentReview` route registration |
 
-### Decision History (C1/C2)
+### Camera Screen Entry Point (C5)
+
+`CaptureScreen` has a document scan button in the bottom controls row (right side, replacing the spacer). Visible in both Quick and Full modes.
+
+**Button placement:** Bottom controls row: Library (left) | Shutter (center) | Document Scan (right). Same size as library button (52×52), overlay background, `ScanIcon` (ScanLine) 22dp white.
+
+**Auto-linking logic (5-minute window):**
+1. User taps document scan button → native scanner launches
+2. On return, queries: `SELECT id, title FROM objects WHERE created_at > [now - 5min] ORDER BY created_at DESC LIMIT 1`
+3. **Path A — recent object found:** links scan to that object, shows "Document linked to [title]"
+4. **Path B — no recent object:** creates a new object (`uncategorized`, `needs_review`, title="Document scan") → links scan → runs OCR → if OCR has text, updates title to first line (max 60 chars)
+
+**Workflow:** photograph artifact → flip tag → tap scan → auto-links to last capture. 5-minute window is generous for field work, tight enough to avoid wrong associations.
+
+Standalone scans (Path B) appear in the capture inbox on HomeScreen for review.
+
+### Decision History (C1–C5)
 
 | Date | Decision |
 |------|----------|
@@ -535,6 +551,7 @@ media.ocr_source     = 'on_device'
 | 2026-03-18 | C2: Entry point on ObjectDetailScreen; one card per scan (deskewed for display, raw for OCR data) |
 | 2026-03-18 | C2: `DocumentReview` route registered in HomeStack |
 | 2026-03-18 | C4: Full DocumentReviewScreen: zoomable image, editable OCR, save/rescan/delete |
+| 2026-03-18 | C5: Camera entry point with 5-minute auto-link; manual toggle deferred auto-detection (simpler, more reliable) |
 
 ---
 
@@ -544,3 +561,4 @@ media.ocr_source     = 'on_device'
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer
 - Cloud OCR (C6) not yet implemented — stub only
 - Cloud OCR upgrade button on DocumentReviewScreen (C6 stub)
+- Camera auto-detection of flat documents deferred in favor of manual toggle (C5)

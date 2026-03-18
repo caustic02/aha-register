@@ -173,7 +173,12 @@
     "ocr_extracting": "Text wird extrahiert...",
     "ocr_complete": "Text extrahiert",
     "ocr_failed": "Text konnte nicht extrahiert werden",
-    "document_deskew": "Dokument wird begradigt..."
+    "document_deskew": "Dokument wird begradigt...",
+    "scan_document": "Dokument scannen",
+    "document_linked": "Dokument verknüpft mit {{title}}",
+    "document_linked_last": "Dokument mit letzter Aufnahme verknüpft",
+    "document_saved_standalone": "Dokument gespeichert. Im Review einem Objekt zuordnen.",
+    "document_scan_title": "Dokumentenscan"
   },
   "collections": {
     "title": "Sammlungen",

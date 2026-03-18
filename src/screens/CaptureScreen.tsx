@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
+  Alert,
   Animated,
   Image,
   Platform,
@@ -33,8 +34,13 @@ import {
   SETTING_KEYS,
 } from '../services/settingsService';
 import { TypeSelector } from '../components/TypeSelector';
-import { GridIcon, QuickModeIcon, FullModeIcon } from '../theme/icons';
-import type { ObjectType } from '../db/types';
+import { GridIcon, QuickModeIcon, FullModeIcon, ScanIcon } from '../theme/icons';
+import type { ObjectType, RegisterObject } from '../db/types';
+import {
+  launchDocumentScanner,
+  processDocumentScan,
+  extractTextOnDevice,
+} from '../services/documentScanService';
 import { colors, typography, spacing, radii, layout, touch } from '../theme';
 
 // Camera-specific overlay colours — rgba values intentionally outside the design
@@ -55,6 +61,7 @@ interface QuickCaptureThumbnail {
 }
 
 const CAPTURE_MODE_KEY = 'capture.mode';
+const RECENT_OBJECT_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
 
 const FLASH_CYCLE: FlashMode[] = ['off', 'on', 'auto'];
 
@@ -407,6 +414,98 @@ export function CaptureScreen() {
     },
     [navigation],
   );
+
+  // ── Document scan from camera ───────────────────────────────────────────────
+
+  const handleDocumentScan = useCallback(async () => {
+    const scanResult = await launchDocumentScanner();
+    if (!scanResult) return; // user cancelled
+
+    try {
+      // Find the most recent object (within 5 minutes)
+      const cutoff = new Date(Date.now() - RECENT_OBJECT_WINDOW_MS).toISOString();
+      const recentObj = await db.getFirstAsync<Pick<RegisterObject, 'id' | 'title'>>(
+        `SELECT id, title FROM objects WHERE created_at > ? ORDER BY created_at DESC LIMIT 1`,
+        [cutoff],
+      );
+
+      let targetObjectId: string;
+      let feedbackMsg: string;
+
+      if (recentObj) {
+        // Path A: link to most recent object
+        targetObjectId = recentObj.id;
+        feedbackMsg = recentObj.title === 'Untitled'
+          ? t('capture.document_linked_last')
+          : t('capture.document_linked', { title: recentObj.title });
+      } else {
+        // Path B: create standalone object
+        const { generateId } = await import('../utils/uuid');
+        const objId = generateId();
+        const now = new Date().toISOString();
+        const privacyTier =
+          (await getSetting(db, SETTING_KEYS.DEFAULT_PRIVACY_TIER)) ?? 'public';
+
+        await db.withTransactionAsync(async () => {
+          await db.runAsync(
+            `INSERT INTO objects
+               (id, object_type, status, title, review_status,
+                privacy_tier, legal_hold, created_at, updated_at)
+             VALUES (?, 'uncategorized', 'draft', ?, 'needs_review',
+                     ?, 0, ?, ?)`,
+            [objId, t('capture.document_scan_title'), privacyTier, now, now],
+          );
+
+          const { logAuditEntry: logAudit } = await import('../db/audit');
+          await logAudit(db, {
+            tableName: 'objects',
+            recordId: objId,
+            action: 'document_scan_standalone',
+            newValues: { objectId: objId },
+          });
+
+          const { SyncEngine: SE } = await import('../sync/engine');
+          const syncEngine = new SE(db);
+          await syncEngine.queueChange('objects', objId, 'insert', { objectId: objId });
+        });
+
+        targetObjectId = objId;
+        feedbackMsg = t('capture.document_saved_standalone');
+      }
+
+      // Store the document scan (raw + deskewed)
+      const record = await processDocumentScan(
+        db,
+        targetObjectId,
+        scanResult.scannedImageUri,
+        scanResult.scannedImageUri,
+      );
+
+      // Run on-device OCR
+      try {
+        const ocrResult = await extractTextOnDevice(
+          db,
+          record.rawMediaId,
+          record.deskewedFilePath,
+        );
+
+        // If standalone and OCR got text, update the object title
+        if (!recentObj && ocrResult.text.trim().length > 0) {
+          const autoTitle = ocrResult.text.trim().split('\n')[0].slice(0, 60);
+          await db.runAsync(
+            `UPDATE objects SET title = ?, updated_at = ? WHERE id = ?`,
+            [autoTitle, new Date().toISOString(), targetObjectId],
+          );
+        }
+      } catch {
+        // OCR failure is non-fatal
+      }
+
+      Alert.alert(feedbackMsg);
+    } catch {
+      Alert.alert(t('common.error'));
+    }
+  }, [db, t]);
 
   // ── Non-idle phases ───────────────────────────────────────────────────────
 
@@ -777,8 +876,15 @@ export function CaptureScreen() {
             <View style={styles.shutterInner} />
           </Pressable>
 
-          {/* Spacer to balance the row */}
-          <View style={styles.shutterSpacer} />
+          {/* Document scan */}
+          <Pressable
+            style={styles.docScanBtn}
+            onPress={handleDocumentScan}
+            accessibilityRole="button"
+            accessibilityLabel={t('capture.scan_document')}
+          >
+            <ScanIcon size={22} color={colors.white} />
+          </Pressable>
         </View>
       </View>
     </View>
@@ -1117,8 +1223,15 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     backgroundColor: colors.white,
   },
-  shutterSpacer: {
+  docScanBtn: {
     width: 52,
+    height: 52,
+    borderRadius: radii.lg,
+    backgroundColor: colors.overlay,
+    borderWidth: 1,
+    borderColor: colors.overlayLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   // ── Permission screen ────────────────────────────────────────────────────────

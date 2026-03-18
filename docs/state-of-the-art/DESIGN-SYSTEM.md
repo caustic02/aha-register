@@ -423,6 +423,20 @@ Secondary-style action button in the Documents section.
 | Disabled state | `opacity: 0.5` |
 | Loading state | `ActivityIndicator` replaces icon |
 
+### Camera Document Scan Button (C5)
+
+Replaces the spacer in the camera bottom controls row (right side of shutter).
+
+| Element | Token |
+|---------|-------|
+| Size | 52×52 (matches library button) |
+| Background | `colors.overlay` |
+| Border | 1dp, `colors.overlayLight` |
+| Radius | `radii.lg` |
+| Icon | `ScanIcon` (ScanLine), 22dp, `colors.white` |
+
+Layout: Library (left) | Shutter (center) | Document Scan (right). Visible in both Quick and Full modes.
+
 ### Bottom Sheets
 Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.
 
