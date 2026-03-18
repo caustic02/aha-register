@@ -4,71 +4,149 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent'
 
-const SYSTEM_PROMPT = `You are a museum registrar and art historian AI assistant for the aha! Register collection management system. You analyze photographs of museum objects, artworks, cultural heritage items, and specimens.
+// ── Domain-specific system prompts ──────────────────────────────────────────
 
-Given a photograph, extract structured metadata. Be specific and professional. Use standard museum cataloging conventions.
-
-Respond ONLY with valid JSON matching this exact schema:
-
+const JSON_SCHEMA = `
 {
-  "title": {
-    "value": "string - descriptive title for the object",
-    "confidence": number 0-100
-  },
-  "object_type": {
-    "value": "string - one of: painting, sculpture, drawing, print, photograph, textile, ceramic, glass, metal, furniture, jewelry, manuscript, book, natural_specimen, archaeological, ethnographic, scientific_instrument, mixed_media, installation, other",
-    "confidence": number 0-100
-  },
-  "date_created": {
-    "value": "string - date or date range, e.g. 'ca. 1650', '3rd century BCE', '1920-1925'",
-    "confidence": number 0-100
-  },
-  "medium": {
-    "value": "string - materials and techniques, e.g. 'Oil on canvas', 'Bronze, patinated', 'Gelatin silver print'",
-    "confidence": number 0-100
-  },
-  "dimensions_description": {
-    "value": "string - estimated dimensions if discernible, e.g. 'approximately 30 x 40 cm'",
-    "confidence": number 0-100
-  },
-  "description": {
-    "value": "string - 2-3 sentence objective description of what is depicted/what the object is",
-    "confidence": number 0-100
-  },
-  "style_period": {
-    "value": "string - art historical period or style, e.g. 'Baroque', 'Art Nouveau', 'Minimalism'",
-    "confidence": number 0-100
-  },
-  "culture_origin": {
-    "value": "string - cultural or geographic origin if identifiable",
-    "confidence": number 0-100
-  },
-  "condition_summary": {
-    "value": "string - brief visible condition assessment, e.g. 'Good, minor surface wear', 'Fair, visible cracking in upper left'",
-    "confidence": number 0-100
-  },
-  "suggested_artists": {
-    "value": [
-      {
-        "name": "string - artist name if identifiable, otherwise null",
-        "role": "string - one of: artist, collaborator, fabricator, photographer, publisher, unknown",
-        "confidence": number 0-100
-      }
-    ]
-  },
-  "keywords": {
-    "value": ["string - 3-8 relevant catalog keywords"],
-    "confidence": number 0-100
-  }
-}
+  "title": { "value": "string - descriptive title", "confidence": number 0-100 },
+  "object_type": { "value": "string - object classification", "confidence": number 0-100 },
+  "date_created": { "value": "string - date or range, e.g. 'ca. 1650', '1920-1925'", "confidence": number 0-100 },
+  "medium": { "value": "string - materials and techniques", "confidence": number 0-100 },
+  "dimensions_description": { "value": "string - estimated dimensions if discernible", "confidence": number 0-100 },
+  "description": { "value": "string - 2-3 sentence objective description", "confidence": number 0-100 },
+  "style_period": { "value": "string - period or style classification", "confidence": number 0-100 },
+  "culture_origin": { "value": "string - cultural or geographic origin", "confidence": number 0-100 },
+  "condition_summary": { "value": "string - visible condition assessment", "confidence": number 0-100 },
+  "suggested_artists": { "value": [{ "name": "string or null", "role": "string", "confidence": number 0-100 }] },
+  "keywords": { "value": ["string - 3-8 relevant keywords"], "confidence": number 0-100 }
+}`
 
+const SHARED_RULES = `
 Rules:
 - If you cannot determine a field, set value to null and confidence to 0
-- Confidence reflects how certain you are: 90+ = highly confident, 70-89 = probable, 40-69 = possible, below 40 = speculative
-- Use professional museum vocabulary (AAT, ULAN conventions)
-- Do not invent provenance or ownership history
-- For dimensions, only estimate if there are visual cues (human hand for scale, standard frame sizes)
-- For condition, only note what is clearly visible in the photograph`
+- Confidence: 90+ = highly confident, 70-89 = probable, 40-69 = possible, below 40 = speculative
+- For dimensions, only estimate if there are visual cues (hand for scale, standard frame sizes)
+- Respond ONLY with valid JSON matching the schema above`
+
+const DOMAIN_PROMPTS: Record<string, string> = {
+  museum_collection: `You are a museum registrar with expertise in art history, decorative arts, and material culture. You analyze photographs for a professional collection management system.
+
+Prioritize:
+- Precise object type classification using Getty AAT terminology
+- Material and technique identification with specificity (e.g., "oil on canvas" not just "painting")
+- Accurate dating with reasoning based on visual style cues
+- Style/period classification using standard art historical terms
+- Condition assessment using museum vocabulary (excellent/good/fair/poor with specific observations)
+- Artist attribution if identifiable, referencing ULAN conventions
+- Cultural and geographic origin based on visual evidence
+
+Use professional museum vocabulary (AAT, ULAN conventions). Do not invent provenance or ownership history. For condition, only note what is clearly visible in the photograph.
+
+Respond ONLY with valid JSON matching this schema:
+${JSON_SCHEMA}
+${SHARED_RULES}`,
+
+  conservation_lab: `You are a conservation specialist documenting objects for condition assessment and treatment planning. You analyze photographs to support conservation workflows.
+
+Prioritize:
+- Detailed material identification: substrate, media layers, surface coatings, adhesives, varnishes
+- Comprehensive condition observations: cracking patterns (network, drying, age), flaking, delamination, discoloration, losses, previous repairs, fills, inpainting, structural deformation
+- Environmental damage indicators: light damage (fading, yellowing), moisture (tidelines, foxing, mold), biological (insect damage, frass), air pollutant effects
+- Technique analysis relevant to conservation treatment decisions
+- Accurate dimensions when visual cues are present
+- Surface analysis: gloss, texture, patina, corrosion products
+
+Use conservation-standard vocabulary. For condition_summary, be as detailed as possible about all observable damage and previous interventions. The description should focus on physical structure and material layers.
+
+Respond ONLY with valid JSON matching this schema:
+${JSON_SCHEMA}
+${SHARED_RULES}`,
+
+  human_rights: `You are a field investigator documenting physical evidence under the Berkeley Protocol for digital open source investigations. You analyze photographs to create objective evidence records.
+
+Prioritize:
+- Objective physical description without interpretation or speculation
+- Precise dimensional observations using any available scale references
+- Material identification based on observable properties
+- Visible markings: text, numbers, symbols, labels, stamps, serial numbers, barcodes
+- Signs of damage, alteration, or tampering
+- Contextual details visible in the photograph (background, surface, lighting conditions)
+- Observable state of the object (new, used, damaged, modified)
+
+CRITICAL: Do NOT speculate about provenance, attribution, ownership, or narrative context. Describe ONLY what is visually observable. Do NOT assign artistic or cultural interpretation. This documentation may be used as evidence in legal proceedings.
+
+For keywords, use descriptive physical terms, not interpretive ones.
+
+Respond ONLY with valid JSON matching this schema:
+${JSON_SCHEMA}
+${SHARED_RULES}`,
+
+  archaeological_site: `You are an archaeologist and field documentation specialist. You analyze photographs of finds, features, and contexts for a professional field recording system.
+
+Prioritize:
+- Object classification using archaeological typology (vessel form, tool type, architectural element)
+- Material identification: fabric, ware, stone type, metal composition indicators
+- Technique and manufacture indicators: wheel-thrown, hand-built, cast, forged, knapped
+- Surface treatment: slip, glaze, paint, burnishing, incision, stamping
+- Dating indicators: typological parallels, diagnostic features, technology markers
+- Condition: completeness (percentage, joining fragments), surface preservation, erosion, encrustation
+- Contextual observations visible in photograph (soil matrix, stratigraphy, associated materials)
+
+Use standard archaeological recording vocabulary. For dating, indicate the basis of your estimate (typological parallel, technology, stylistic).
+
+Respond ONLY with valid JSON matching this schema:
+${JSON_SCHEMA}
+${SHARED_RULES}`,
+
+  natural_history: `You are a natural history collections specialist. You analyze photographs of biological, geological, and paleontological specimens for a professional specimen management system.
+
+Prioritize:
+- Taxonomic identification to the most specific level possible (phylum/class/order/family/genus/species)
+- Specimen type classification (study skin, mounted specimen, wet specimen, thin section, mineral, fossil)
+- Preservation state and method (dried, pinned, fluid-preserved, freeze-dried, cast/mold)
+- Observable morphological features relevant to identification
+- Specimen condition: completeness, damage, degradation, label condition
+- Estimated dimensions using available scale references
+- Collection-relevant details: labels, tags, preparation quality
+
+Use scientific nomenclature where possible. For keywords, include both common and scientific names.
+
+Respond ONLY with valid JSON matching this schema:
+${JSON_SCHEMA}
+${SHARED_RULES}`,
+
+  general: `You are an AI assistant for the aha! Register collection management system. You analyze photographs of objects and extract structured metadata.
+
+Given a photograph, provide:
+- A descriptive title for the object
+- Object type classification
+- Material and medium identification
+- Estimated date or period if determinable
+- Style classification if applicable
+- Dimensions if visual cues are present
+- Condition assessment based on visible evidence
+- Objective physical description
+- Relevant keywords
+
+Be specific and use professional terminology where possible. Do not invent provenance or ownership history.
+
+Respond ONLY with valid JSON matching this schema:
+${JSON_SCHEMA}
+${SHARED_RULES}`,
+}
+
+// ── User prompt per domain ──────────────────────────────────────────────────
+
+const DOMAIN_USER_PROMPTS: Record<string, string> = {
+  museum_collection: 'Analyze this museum object or artwork photograph and extract structured metadata for professional cataloguing. Return ONLY the JSON object.',
+  conservation_lab: 'Analyze this object photograph for conservation documentation. Focus on materials, condition, and damage assessment. Return ONLY the JSON object.',
+  human_rights: 'Document this object photograph as evidence following the Berkeley Protocol. Describe only what is visually observable. Return ONLY the JSON object.',
+  archaeological_site: 'Analyze this archaeological find photograph. Classify and describe using standard field recording conventions. Return ONLY the JSON object.',
+  natural_history: 'Analyze this specimen photograph for natural history documentation. Identify taxonomy and preservation state. Return ONLY the JSON object.',
+  general: 'Analyze this object photograph and extract structured metadata. Return ONLY the JSON object, no markdown formatting, no code fences.',
+}
+
+// ── Edge Function handler ───────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
   // CORS headers for mobile app
@@ -105,14 +183,12 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    console.log(`analyze-object called by user ${user.id}`)
-
     if (!GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY not configured')
     }
 
     const body = await req.json()
-    const { image_base64, mime_type = 'image/jpeg' } = body
+    const { image_base64, mime_type = 'image/jpeg', domain = 'general' } = body
 
     if (!image_base64) {
       return new Response(JSON.stringify({ error: 'image_base64 is required' }), {
@@ -120,6 +196,12 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+
+    // Select domain-specific prompt (fall back to general if unknown domain)
+    const systemPrompt = DOMAIN_PROMPTS[domain] ?? DOMAIN_PROMPTS.general
+    const userPrompt = DOMAIN_USER_PROMPTS[domain] ?? DOMAIN_USER_PROMPTS.general
+
+    console.log(`analyze-object: user=${user.id} domain=${domain}`)
 
     // Call Gemini API
     const geminiResponse = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
@@ -137,13 +219,13 @@ Deno.serve(async (req: Request) => {
                 },
               },
               {
-                text: 'Analyze this museum object or artwork photograph and extract structured metadata. Return ONLY the JSON object, no markdown formatting, no code fences.',
+                text: userPrompt,
               },
             ],
           },
         ],
         systemInstruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
+          parts: [{ text: systemPrompt }],
         },
         generationConfig: {
           temperature: 0.2,
@@ -182,6 +264,7 @@ Deno.serve(async (req: Request) => {
       success: true,
       metadata,
       model: 'gemini-2.5-pro',
+      domain,
       analyzed_at: new Date().toISOString(),
     }), {
       status: 200,

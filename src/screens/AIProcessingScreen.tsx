@@ -24,6 +24,7 @@ export interface AIProcessingScreenProps {
   imageBase64: string;
   mimeType?: string;
   captureMetadata: CaptureMetadata;
+  domain?: string;
   onComplete: (result: AIAnalysisResult) => void;
   onSkip: () => void;
 }
@@ -50,6 +51,7 @@ export function AIProcessingScreen({
   imageBase64,
   mimeType = 'image/jpeg',
   captureMetadata: _captureMetadata,
+  domain = 'general',
   onComplete,
   onSkip,
 }: AIProcessingScreenProps) {
@@ -182,7 +184,7 @@ export function AIProcessingScreen({
   useEffect(() => {
     let cancelled = false;
 
-    analyzeObject(imageBase64, mimeType).then((response) => {
+    analyzeObject(imageBase64, mimeType, domain).then((response) => {
       if (cancelled) return;
       apiDone.current = true;
 
@@ -199,7 +201,7 @@ export function AIProcessingScreen({
     return () => {
       cancelled = true;
     };
-  }, [imageBase64, mimeType, handleComplete, handleError, t]);
+  }, [imageBase64, mimeType, domain, handleComplete, handleError, t]);
 
   const handleRetry = useCallback(() => {
     setError(null);
@@ -223,7 +225,7 @@ export function AIProcessingScreen({
       }, 1200),
     ];
 
-    analyzeObject(imageBase64, mimeType).then((response) => {
+    analyzeObject(imageBase64, mimeType, domain).then((response) => {
       timers.forEach(clearTimeout);
       apiDone.current = true;
       if (response.success && response.metadata) {
@@ -236,7 +238,7 @@ export function AIProcessingScreen({
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageBase64, mimeType, handleComplete, handleError, t]);
+  }, [imageBase64, mimeType, domain, handleComplete, handleError, t]);
 
   // Progress bar width interpolation
   const progressWidth = progressAnim.interpolate({
