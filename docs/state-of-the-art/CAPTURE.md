@@ -378,6 +378,60 @@ After returning from a successful isolation, ObjectDetailScreen reloads via `use
 
 ---
 
+## Review Form Structure (B4)
+
+`ReviewCardScreen` organises its metadata fields into four collapsible `FormSection` wrappers, replacing the previous flat layout.
+
+### Sections
+
+| Section key | Icon | Default state | Required fields |
+|-------------|------|---------------|-----------------|
+| `identification` | `TagIcon` (Tag) | **Expanded** | title, object type |
+| `physical` | `RulerIcon` (Ruler) | **Expanded** | — |
+| `classification` | `LayersIcon` (Layers) | Collapsed | — |
+| `condition` | `ConditionIcon` (ShieldCheck) | Collapsed | — |
+
+### Collapsing Behaviour
+
+- `expanded` + `onToggle` props are managed by `expandedSections` state in `ReviewCardScreen`.
+- Each section header shows an AI count badge (`aiFieldCount`) when ≥1 AI-suggested fields are visible inside it.
+- Toggle drives `LayoutAnimation.configureNext(easeInEaseOut)` for content and `Animated.timing` (200ms, native driver) for the chevron rotation. Both are skipped when `AccessibilityInfo.isReduceMotionEnabled()` returns true.
+
+### Inline Validation
+
+Triggered on "Save" before any async work:
+
+```ts
+if (!title.trim())         errors.title = t('validation.titleRequired');
+if (!objectTypeSel.label)  errors.objectType = t('validation.objectTypeRequired');
+```
+
+If any error exists:
+1. `identification` section is force-expanded.
+2. `scrollRef.current?.scrollTo({ y: 0, animated: true })` scrolls to top.
+3. Error text below the field renders with `accessibilityRole="alert"`.
+
+### AI Badges
+
+Each AI-prefilled field renders `<AIFieldBadge visible confidence={n} />` inline next to its label (see Design System → AIFieldBadge).
+
+### Key Files (B4)
+
+| File | Purpose |
+|------|---------|
+| `src/components/FormSection.tsx` | Collapsible section wrapper with icon, title, AI count, animated chevron |
+| `src/components/AIFieldBadge.tsx` | Inline confidence pill for AI-suggested field values |
+| `src/screens/ReviewCardScreen.tsx` | Hosts 4 FormSections + expanded state + inline validation |
+
+### Decision History
+
+| Date | Decision |
+|------|----------|
+| 2026-03-18 | B4: Flat form → 4 collapsible FormSections; Identification + Physical open by default |
+| 2026-03-18 | B4: Inline validation on Save (not on blur) to avoid interrupting AI prefill review |
+
+---
+
 ## Known Gaps
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)

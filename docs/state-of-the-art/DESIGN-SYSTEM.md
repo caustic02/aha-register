@@ -228,6 +228,15 @@ Labels always visible.
 | View | `Eye` | `ViewIcon` |
 | Primary | `Star` | `PrimaryIcon` |
 
+### Form Section Icons
+
+| Section | Lucide Icon | Export Name |
+|---------|------------|-------------|
+| Identification | `Tag` | `TagIcon` |
+| Physical description | `Ruler` | `RulerIcon` |
+| Classification | `Layers` | `LayersIcon` |
+| Condition | `ShieldCheck` | `ConditionIcon` |
+
 To change an icon app-wide, update the mapping in `src/theme/icons.ts`.
 
 ---
@@ -391,25 +400,94 @@ Fixed bottom bars for batch actions. `surface` background, `accent` primary butt
 ### Cards
 `surface` background, `borderLight` stroke, `md` radius, `cardPadding` internal padding.
 
+### FormSection
+
+`src/components/FormSection.tsx` — collapsible section wrapper for form fields.
+
+**Props:**
+| Prop | Type | Description |
+|------|------|-------------|
+| `title` | `string` | Section heading text |
+| `icon` | `React.ComponentType<{ size, color }>` | Lucide icon rendered left of title |
+| `expanded` | `boolean` | Controlled open/close state |
+| `onToggle` | `() => void` | Called when header is pressed |
+| `aiFieldCount` | `number` (optional) | Shows an AI count badge on the header |
+| `children` | `ReactNode` | Form fields rendered inside the section |
+
+**Behaviour:**
+- Header `Pressable`: `accessibilityRole="button"`, `accessibilityState={{ expanded }}`.
+- Chevron rotates 0° → 180° via `Animated.timing` (200ms, native driver).
+- Content expands/collapses via `LayoutAnimation.configureNext(easeInEaseOut)`.
+- Both animations are skipped when `AccessibilityInfo.isReduceMotionEnabled()` returns true.
+- `rotateAnim` initialised with `useState(() => new Animated.Value(...))` (not `useRef().current`).
+- LayoutAnimation on Android requires `UIManager.setLayoutAnimationEnabledExperimental?.(true)` — called at module level.
+
+**Tokens used:**
+| Element | Token |
+|---------|-------|
+| Header min-height | `touch.minTarget` (48dp) |
+| Title | `typography.size.lg`, `weight.semibold`, `colors.text` |
+| Icon | `colors.textSecondary`, 18dp |
+| Chevron | `colors.textTertiary`, 20dp |
+| AI count badge | `colors.aiLight` bg, `colors.ai` text, `radii.full` |
+| Bottom border | `colors.border`, 1dp |
+| Content padding | `spacing.lg` horizontal, `spacing.lg` bottom |
+
+**Used in:** `ReviewCardScreen` (4 sections: Identification, Physical, Classification, Condition).
+
+### AIFieldBadge
+
+`src/components/AIFieldBadge.tsx` — inline confidence pill shown next to field labels for AI-prefilled values.
+
+**Props:**
+| Prop | Type | Description |
+|------|------|-------------|
+| `visible` | `boolean` | When false, renders null |
+| `confidence` | `number` (optional) | 0–100 integer; shown as `n%` when > 0 |
+
+**Confidence coloring:**
+| Range | Token |
+|-------|-------|
+| ≥ 90% | `colors.aiConfidenceHigh` (green `#2E7D32`) |
+| 40–89% | `colors.aiConfidenceMedium` (amber `#E65100`) |
+| < 40% | `colors.aiConfidenceLow` (red `#C53030`) |
+
+**Tokens used:**
+| Element | Token |
+|---------|-------|
+| Pill background | `colors.aiLight` |
+| Pill radius | `radii.full` |
+| "AI" label | `typography.size.xs`, `weight.semibold`, `colors.ai` |
+| Confidence % | `typography.size.xs`, `weight.medium`, confidence color |
+
+**Accessibility:** `accessibilityRole="text"`, `accessibilityLabel={t('aiBadge.aiSuggested')}`.
+
+**Used in:** `ReviewCardScreen` — next to every AI-prefilled field label.
+
 ### AI Field Accent Pattern
 
-AI-generated fields use a gold accent to signal that the value was produced by Gemini and may need review.
+AI-generated fields use an indigo accent to signal that the value was produced by Gemini and may need review.
 
 **Tokens:**
 | Token | Value | Usage |
 |-------|-------|-------|
-| `colors.ai` | `#A16207` (amber-700) | AI badge text, confidence percentage |
-| `colors.aiLight` | `#FEF9C3` (amber-100) | AI badge background, highlighted field |
-| `colors.aiSurface` | `#FFFBEB` (amber-50) | AI section card background |
+| `colors.ai` | `#5C6BC0` (indigo) | AI badge text, "AI-suggested" labels |
+| `colors.aiLight` | `#E8EAF6` (indigo-50) | AI badge background |
+| `colors.aiSurface` | `rgba(92,107,192,0.06)` | Background for AI-filled fields |
+| `colors.aiBorder` | `rgba(92,107,192,0.25)` | Border for AI-filled fields |
+| `colors.aiConfidenceHigh` | `#2E7D32` | 90–100% confidence |
+| `colors.aiConfidenceMedium` | `#E65100` | 40–89% confidence |
+| `colors.aiConfidenceLow` | `#C53030` | Below 40% confidence |
 
-**Implementation:**
-1. Wrap the field in `<AIField label="..." confidence={n}>` — shows a gold `Badge variant="ai" label="AI"` + confidence `%` when `confidence > 0`.
-2. Render a `<ConfidenceBar confidence={n} label="..." />` below the field for numerical indication.
-3. When `confidence === 0` (manual or skipped AI), the wrapper renders nothing extra — the field looks normal.
+**Implementation (B4 canonical):**
+1. Render `<AIFieldBadge visible={!!confidence} confidence={confidence} />` inline next to the field label.
+2. The `AIField` internal wrapper in `ReviewCardScreen` handles the `aiSurface`/`aiBorder` field highlight.
+3. When `confidence === 0` (manual or skipped AI), `visible={false}` renders nothing — the field looks normal.
+4. The `FormSection` `aiFieldCount` prop aggregates the count of visible badges for the section header.
 
 **Usage sites:** `ReviewCardScreen` — all metadata fields prefilled from `AIAnalysisResult`.
 
-**Rule:** Gold = AI-generated, potentially unverified. Never use `colors.ai` for non-AI content.
+**Rule:** Indigo = AI-generated, potentially unverified. Never use `colors.ai` for non-AI content.
 
 ---
 
