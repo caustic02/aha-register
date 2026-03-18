@@ -689,6 +689,12 @@
     "gridView": "Grid view",
     "listView": "List view"
   },
+  "inbox": {
+    "title": "Capture Inbox",
+    "reviewAll": "Review all",
+    "needsReviewCount": "{{count}} objects need review",
+    "viewObject": "View object"
+  },
   "home": {
     "title": "Collection",
     "personalCollection": "Personal Collection",

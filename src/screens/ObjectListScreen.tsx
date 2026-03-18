@@ -83,10 +83,13 @@ function buildOrderClause(sortBy: SortOption): string {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function ObjectListScreen({ navigation }: Props) {
+export function ObjectListScreen({ navigation, route }: Props) {
   const db = useDatabase();
   const { t } = useAppTranslation();
   const filterSheetRef = useRef<BottomSheet>(null);
+
+  // Route-param filter for review status (from HomeScreen inbox → "Review all")
+  const reviewStatusFilter = route.params?.filterReviewStatus ?? null;
 
   const [objects, setObjects] = useState<ObjectRow[]>([]);
   const [availableTypes, setAvailableTypes] = useState<ObjectType[]>([]);
@@ -145,6 +148,11 @@ export function ObjectListScreen({ navigation }: Props) {
       const conditions: string[] = [];
       const params: (string | number | null)[] = [];
 
+      if (reviewStatusFilter) {
+        conditions.push('o.review_status = ?');
+        params.push(reviewStatusFilter);
+      }
+
       if (debouncedSearch.trim().length > 0) {
         const like = `%${debouncedSearch.trim()}%`;
         conditions.push(
@@ -176,7 +184,7 @@ export function ObjectListScreen({ navigation }: Props) {
     } catch {
       setObjects([]);
     }
-  }, [db, debouncedSearch, filters]);
+  }, [db, debouncedSearch, filters, reviewStatusFilter]);
 
   useFocusEffect(
     useCallback(() => {
@@ -254,7 +262,7 @@ export function ObjectListScreen({ navigation }: Props) {
   // ── Render helpers ─────────────────────────────────────────────────────────
 
   const hasActiveFilters =
-    searchText.trim().length > 0 || filters.objectTypes.length > 0;
+    searchText.trim().length > 0 || filters.objectTypes.length > 0 || !!reviewStatusFilter;
 
   const renderListItem = useCallback(
     ({ item }: { item: ObjectRow }) => {
@@ -381,7 +389,7 @@ export function ObjectListScreen({ navigation }: Props) {
             accessibilityLabel={t('common.back')}
           />
           <Text style={styles.headerTitle} accessibilityRole="header">
-            {t('objectList.title')}
+            {reviewStatusFilter ? t('inbox.title') : t('objectList.title')}
           </Text>
           <Badge label={String(objects.length)} variant="neutral" size="sm" />
           <IconButton
@@ -435,6 +443,17 @@ export function ObjectListScreen({ navigation }: Props) {
                 <CloseIcon size={16} color={colors.textTertiary} />
               </Pressable>
             )}
+          </View>
+        </View>
+      )}
+
+      {/* ── Review status filter chip ──────────────────────────────────────── */}
+      {!selectMode && reviewStatusFilter && (
+        <View style={styles.activeChipsContent}>
+          <View style={styles.activeChip}>
+            <Text style={styles.activeChipText}>
+              {t(`review_status.${reviewStatusFilter}`)}
+            </Text>
           </View>
         </View>
       )}

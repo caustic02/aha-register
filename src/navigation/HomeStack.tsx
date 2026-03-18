@@ -6,7 +6,7 @@ import { ObjectDetailScreen } from '../screens/ObjectDetailScreen';
 
 export type HomeStackParamList = {
   Home: undefined;
-  ObjectList: undefined;
+  ObjectList: { filterReviewStatus?: string } | undefined;
   ObjectDetail: { objectId: string };
 };
 

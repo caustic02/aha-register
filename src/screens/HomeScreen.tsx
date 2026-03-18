@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import {
+  Image,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -12,6 +13,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
+  Badge,
   EmptyState,
   ListItem,
   SectionHeader,
@@ -50,6 +52,11 @@ interface RecentObject {
   file_path: string | null;
 }
 
+interface InboxItem {
+  id: string;
+  file_path: string | null;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function HomeScreen({ navigation }: Props) {
@@ -62,12 +69,13 @@ export function HomeScreen({ navigation }: Props) {
     totalPhotos: 0,
   });
   const [recent, setRecent] = useState<RecentObject[]>([]);
+  const [inbox, setInbox] = useState<InboxItem[]>([]);
   const [institutionName, setInstitutionName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
-      const [totalRow, syncRow, photoRow, recentRows, instName] =
+      const [totalRow, syncRow, photoRow, recentRows, inboxRows, instName] =
         await Promise.all([
           db.getFirstAsync<{ count: number }>(
             'SELECT COUNT(*) as count FROM objects',
@@ -87,6 +95,13 @@ export function HomeScreen({ navigation }: Props) {
              ORDER BY o.created_at DESC
              LIMIT 5`,
           ),
+          db.getAllAsync<InboxItem>(
+            `SELECT o.id, m.file_path
+             FROM objects o
+             LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
+             WHERE o.review_status = 'needs_review'
+             ORDER BY o.created_at DESC`,
+          ),
           getSetting(db, SETTING_KEYS.INSTITUTION_NAME),
         ]);
 
@@ -96,6 +111,7 @@ export function HomeScreen({ navigation }: Props) {
         totalPhotos: photoRow?.count ?? 0,
       });
       setRecent(recentRows);
+      setInbox(inboxRows);
       setInstitutionName(instName);
     } catch {
       // Silently ignore; state stays at defaults
@@ -138,6 +154,69 @@ export function HomeScreen({ navigation }: Props) {
             {institutionName || t('home.personalCollection')}
           </Text>
         </View>
+
+        {/* ── 1b. Capture Inbox (needs_review objects) ─────────────────── */}
+        {!loading && inbox.length > 0 && (
+          <View style={styles.inboxSection}>
+            <View style={styles.inboxHeader}>
+              <Text style={styles.inboxTitle} accessibilityRole="header">
+                {t('inbox.title')}
+              </Text>
+              <Badge
+                label={String(inbox.length)}
+                variant="neutral"
+                size="sm"
+              />
+            </View>
+            <Text style={styles.inboxSubtitle}>
+              {t('inbox.needsReviewCount', { count: inbox.length })}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.inboxThumbRow}
+              style={styles.inboxThumbScroll}
+            >
+              {inbox.map((item) => (
+                <Pressable
+                  key={item.id}
+                  style={styles.inboxThumb}
+                  onPress={() =>
+                    navigation.navigate('ObjectDetail', { objectId: item.id })
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={t('inbox.viewObject')}
+                >
+                  {item.file_path ? (
+                    <Image
+                      source={{ uri: item.file_path }}
+                      style={styles.inboxThumbImage}
+                    />
+                  ) : (
+                    <View style={[styles.inboxThumbImage, styles.inboxThumbPlaceholder]}>
+                      <ObjectsTabIcon size={20} color={colors.textTertiary} />
+                    </View>
+                  )}
+                  <View style={styles.inboxDot} />
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable
+              style={styles.inboxReviewBtn}
+              onPress={() =>
+                navigation.navigate('ObjectList', {
+                  filterReviewStatus: 'needs_review',
+                })
+              }
+              accessibilityRole="button"
+              accessibilityLabel={t('inbox.reviewAll')}
+            >
+              <Text style={styles.inboxReviewBtnText}>
+                {t('inbox.reviewAll')}
+              </Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* ── 2. Sync Status Bar (conditional) ───────────────────────────── */}
         {!loading && stats.pendingSync > 0 && (
@@ -310,6 +389,72 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
     marginTop: spacing.xs,
+  },
+
+  // Capture inbox
+  inboxSection: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    padding: spacing.lg,
+  },
+  inboxHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  inboxTitle: {
+    ...typography.h4,
+    color: colors.text,
+  },
+  inboxSubtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  inboxThumbScroll: {
+    flexGrow: 0,
+  },
+  inboxThumbRow: {
+    gap: spacing.sm,
+  },
+  inboxThumb: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  inboxThumbImage: {
+    width: '100%',
+    height: '100%',
+  },
+  inboxThumbPlaceholder: {
+    backgroundColor: colors.surfaceContainer,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  inboxDot: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.statusWarning,
+  },
+  inboxReviewBtn: {
+    marginTop: spacing.md,
+    minHeight: touch.minTarget,
+    justifyContent: 'center',
+  },
+  inboxReviewBtnText: {
+    ...typography.bodySmall,
+    color: colors.primary,
+    fontWeight: typography.weight.semibold,
   },
 
   // Sync banner
