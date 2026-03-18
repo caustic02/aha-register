@@ -29,6 +29,7 @@ import {
   ForwardIcon,
 } from '../theme/icons';
 import { colors, radii, spacing, touch, typography } from '../theme';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportModal } from '../components/ExportModal';
 import type { ExportableObject } from '../services/export-service';
@@ -210,10 +211,25 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             onPress={() => navigation.goBack()}
             accessibilityLabel={t('common.back')}
           />
+          <View style={styles.skeletonHeaderTitle}>
+            <SkeletonLoader width="55%" height={18} />
+          </View>
         </View>
-        <View style={styles.centred}>
-          <Text style={styles.stateText}>{t('common.loading')}</Text>
+        <View style={styles.breadcrumbScroll}>
+          <View style={styles.breadcrumbContent}>
+            <SkeletonLoader width={180} height={12} />
+          </View>
         </View>
+        <ScrollView contentContainerStyle={styles.skeletonBody}>
+          <SkeletonLoader width={220} height={220} borderRadius={radii.md} />
+          <View style={styles.skeletonRows}>
+            <SkeletonLoader width="70%" height={14} />
+            <SkeletonLoader width="50%" height={14} />
+            <SkeletonLoader width="85%" height={14} />
+            <SkeletonLoader width="60%" height={14} />
+            <SkeletonLoader width="75%" height={14} />
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -583,16 +599,26 @@ const styles = StyleSheet.create({
     color: colors.text,
     lineHeight: 22,
   },
-  // Loading / error states
+  // Skeleton loading state
+  skeletonHeaderTitle: {
+    flex: 1,
+    marginHorizontal: spacing.sm,
+  },
+  skeletonBody: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    gap: spacing.md,
+  },
+  skeletonRows: {
+    gap: spacing.md,
+    paddingTop: spacing.lg,
+  },
+  // Error state
   centred: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing['2xl'],
-  },
-  stateText: {
-    ...typography.body,
-    color: colors.textSecondary,
   },
   errorText: {
     ...typography.body,

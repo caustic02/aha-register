@@ -27,6 +27,7 @@ import {
   SyncIcon,
 } from '../theme/icons';
 import { colors, radii, spacing, touch, typography } from '../theme';
+import { SkeletonList, SkeletonLoader } from '../components/SkeletonLoader';
 import { formatRelativeDate } from '../utils/format-date';
 import { getSetting, SETTING_KEYS } from '../services/settingsService';
 import type { HomeStackParamList } from '../navigation/HomeStack';
@@ -165,33 +166,45 @@ export function HomeScreen({ navigation }: Props) {
         </Pressable>
 
         {/* ── 4. Quick Stats Row ──────────────────────────────────────────── */}
-        <View style={styles.statsRow}>
-          <Pressable
-            style={styles.statCard}
-            onPress={navigateToCollection}
-            accessibilityLabel={`${stats.totalObjects} ${t('home.statObjects')}`}
-            accessibilityRole="button"
-          >
-            <ObjectsTabIcon size={20} color={colors.primary} />
-            <Text style={styles.statValue}>{stats.totalObjects}</Text>
-            <Text style={styles.statLabel}>{t('home.statObjects')}</Text>
-          </Pressable>
-
-          <View style={styles.statCard}>
-            <ClockIcon
-              size={20}
-              color={stats.pendingSync > 0 ? colors.statusWarning : colors.textTertiary}
-            />
-            <Text style={styles.statValue}>{stats.pendingSync}</Text>
-            <Text style={styles.statLabel}>{t('home.statPending')}</Text>
+        {loading ? (
+          <View style={styles.statsRow}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[styles.statCard, styles.statCardSkeleton]}>
+                <SkeletonLoader width={20} height={20} borderRadius={radii.full} />
+                <SkeletonLoader width="70%" height={20} borderRadius={radii.sm} />
+                <SkeletonLoader width="50%" height={12} borderRadius={radii.sm} />
+              </View>
+            ))}
           </View>
+        ) : (
+          <View style={styles.statsRow}>
+            <Pressable
+              style={styles.statCard}
+              onPress={navigateToCollection}
+              accessibilityLabel={`${stats.totalObjects} ${t('home.statObjects')}`}
+              accessibilityRole="button"
+            >
+              <ObjectsTabIcon size={20} color={colors.primary} />
+              <Text style={styles.statValue}>{stats.totalObjects}</Text>
+              <Text style={styles.statLabel}>{t('home.statObjects')}</Text>
+            </Pressable>
 
-          <View style={styles.statCard}>
-            <PhotoIcon size={20} color={colors.textTertiary} />
-            <Text style={styles.statValue}>{stats.totalPhotos}</Text>
-            <Text style={styles.statLabel}>{t('home.statPhotos')}</Text>
+            <View style={styles.statCard}>
+              <ClockIcon
+                size={20}
+                color={stats.pendingSync > 0 ? colors.statusWarning : colors.textTertiary}
+              />
+              <Text style={styles.statValue}>{stats.pendingSync}</Text>
+              <Text style={styles.statLabel}>{t('home.statPending')}</Text>
+            </View>
+
+            <View style={styles.statCard}>
+              <PhotoIcon size={20} color={colors.textTertiary} />
+              <Text style={styles.statValue}>{stats.totalPhotos}</Text>
+              <Text style={styles.statLabel}>{t('home.statPhotos')}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* ── 5. Recent Objects ───────────────────────────────────────────── */}
         <View style={styles.sectionWrap}>
@@ -206,7 +219,9 @@ export function HomeScreen({ navigation }: Props) {
           />
         </View>
 
-        {!loading && recent.length === 0 ? (
+        {loading ? (
+          <SkeletonList count={3} />
+        ) : recent.length === 0 ? (
           <View style={styles.emptyWrap}>
             <EmptyState
               icon={<PackageIcon size={spacing['3xl']} color={colors.textTertiary} />}
@@ -365,6 +380,9 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  statCardSkeleton: {
+    gap: spacing.xs,
   },
 
   // Section wrapper
