@@ -623,7 +623,7 @@ export function SettingsScreen() {
           <ListItem
             title={t('settings.exportAllData')}
             rightElement={<ExportIcon size={18} color={colors.textTertiary} />}
-            onPress={() => console.log('Export all: not yet implemented')}
+            onPress={() => {}}
           />
           <Pressable
             onPress={handleClearData}
@@ -654,7 +654,7 @@ export function SettingsScreen() {
           <Divider />
           <ListItem
             title={t('settings.licenses')}
-            onPress={() => console.log('Licenses: not yet implemented')}
+            onPress={() => {}}
           />
         </Card>
 
