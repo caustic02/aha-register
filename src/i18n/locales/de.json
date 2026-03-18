@@ -784,5 +784,19 @@
     "skipAiManual": "KI überspringen, manuell eingeben",
     "capturedPhoto": "Aufgenommenes Foto",
     "signInRequired": "Melde dich an, um die KI-Analyse zu nutzen. Du kannst Metadaten auch manuell eingeben."
+  },
+  "empty_states": {
+    "objects": {
+      "title": "Noch keine Objekte",
+      "description": "Erfasse dein erstes Objekt, um loszulegen."
+    },
+    "collections": {
+      "title": "Noch keine Sammlungen",
+      "description": "Erstelle eine Sammlung, um deine Objekte zu ordnen."
+    },
+    "search": {
+      "title": "Keine Ergebnisse",
+      "description": "Passe deine Suche oder Filter an."
+    }
   }
 }
