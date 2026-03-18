@@ -73,7 +73,10 @@
     "rescan": "Neu scannen",
     "delete": "Dokument löschen",
     "delete_confirm": "Diesen Dokumentenscan löschen? Dies kann nicht rückgängig gemacht werden.",
-    "no_text": "Kein Text extrahiert"
+    "no_text": "Kein Text extrahiert",
+    "cloud_upgrade": "Durch Cloud-OCR verbessert",
+    "cloud_upgrading": "Texterkennung wird verbessert...",
+    "cloud_no_upgrade": "Cloud-OCR hat keine Verbesserung gefunden"
   },
   "object_types": {
     "museum_object": "Museumsobjekt",

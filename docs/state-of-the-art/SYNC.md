@@ -145,6 +145,28 @@ The middle stat card in the Quick Stats row is sync-status-aware:
 
 ---
 
+## Post-Sync Hooks (C6)
+
+### Cloud OCR Enhancement
+
+After each sync cycle completes (push + pull), the engine fires `runPostSyncCloudOcr()` as a **fire-and-forget** step.
+
+```
+sync() → push → pull → runPostSyncCloudOcr() → setLastSyncTimestamp
+```
+
+**Query:** `SELECT id FROM media WHERE media_type = 'document_scan' AND ocr_source = 'on_device' ORDER BY created_at DESC LIMIT 5`
+
+**For each:** calls `upgradeOcrFromCloud(db, mediaId, domain)` which sends the image to the `ocr-enhance` Edge Function (Gemini 2.5 Pro). If cloud confidence > on-device confidence, the media record is updated with `ocr_source = 'cloud'`.
+
+**Safety:**
+- Never processes `ocr_source = 'cloud'` or `'none'` (avoids loops)
+- `.catch(() => {})` — failures never break the sync cycle
+- Max 5 per cycle to limit API usage
+- Domain read from `collection_domain` setting
+
+---
+
 ## Known Gaps
 
 - Supabase write path is skeleton (lines 235–248 of sync-transport.ts)

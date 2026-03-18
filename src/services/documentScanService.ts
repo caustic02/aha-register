@@ -10,12 +10,16 @@
  * - OCR text is stored on the raw scan media record
  */
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { File } from 'expo-file-system';
+import * as Network from 'expo-network';
 
 import { generateId } from '../utils/uuid';
 import { computeSHA256 } from '../utils/hash';
 import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import { copyToMediaStorage } from './captureHelpers';
+import { supabase, ensureMigrated } from './supabase';
+import type { Media } from '../db/types';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -217,21 +221,166 @@ export async function extractTextOnDevice(
   return { text, confidence };
 }
 
-// ── Cloud OCR upgrade (STUB — C6) ───────────────────────────────────────────
+// ── Cloud OCR upgrade (C6) ───────────────────────────────────────────────────
+
+const OCR_ENHANCE_URL =
+  'https://fdwmfijtpknwaesyvzbg.supabase.co/functions/v1/ocr-enhance';
+
+const CLOUD_OCR_TIMEOUT_MS = 90_000;
+
+async function getAccessToken(): Promise<string | null> {
+  await ensureMigrated();
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    const expiresAt = session.expires_at ?? 0;
+    if (expiresAt > Date.now() / 1000 + 30) {
+      return session.access_token;
+    }
+  }
+
+  const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+  if (refreshed?.access_token) return refreshed.access_token;
+
+  const { data: { session: anonSession }, error } =
+    await supabase.auth.signInAnonymously();
+  if (error || !anonSession?.access_token) return null;
+  return anonSession.access_token;
+}
+
+export type CloudOcrStatus = 'upgraded' | 'no_upgrade' | 'error' | 'skipped';
 
 /**
- * STUB: Will call Gemini Edge Function for higher-quality OCR.
+ * Calls the Gemini-powered ocr-enhance Edge Function for higher-quality OCR.
  * Only overwrites on-device results if cloud confidence > on_device confidence.
  *
- * Implementation deferred to C6.
+ * Fire-and-forget safe: never throws, always returns a status.
  */
 export async function upgradeOcrFromCloud(
-  _db: SQLiteDatabase,
-  _mediaId: string,
-): Promise<void> {
-  // TODO(C6): Implement cloud OCR via Gemini Edge Function.
-  // 1. Read media record → image file → base64
-  // 2. Call analyze-document Edge Function
-  // 3. Compare cloud confidence vs existing ocr_confidence
-  // 4. If cloud > on_device, UPDATE media SET ocr_text, ocr_confidence, ocr_source='cloud'
+  db: SQLiteDatabase,
+  mediaId: string,
+  domain: string = 'general',
+): Promise<CloudOcrStatus> {
+  try {
+    // 1. Load raw scan record
+    const raw = await db.getFirstAsync<Media>(
+      'SELECT * FROM media WHERE id = ?',
+      [mediaId],
+    );
+    if (!raw) return 'error';
+
+    // Skip if already cloud-processed or no on-device OCR
+    if (raw.ocr_source === 'cloud') return 'skipped';
+    if (raw.ocr_source !== 'on_device') return 'skipped';
+
+    // 2. Find display image (deskewed preferred, raw fallback)
+    const deskewed = await db.getFirstAsync<Media>(
+      `SELECT * FROM media WHERE parent_media_id = ? AND media_type = 'document_deskewed'`,
+      [mediaId],
+    );
+    const imageFile = new File(deskewed?.file_path ?? raw.file_path);
+    if (!imageFile.exists) return 'error';
+
+    // 3. Network check
+    const networkState = await Network.getNetworkStateAsync();
+    if (!(networkState.isConnected && networkState.isInternetReachable)) {
+      return 'skipped';
+    }
+
+    // 4. Auth token
+    const token = await getAccessToken();
+    if (!token) return 'error';
+
+    // 5. Read image as base64
+    const imageBase64 = await imageFile.base64();
+
+    // 6. Call Edge Function
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), CLOUD_OCR_TIMEOUT_MS);
+
+    let responseData: {
+      status: string;
+      text?: string;
+      confidence?: number;
+      language?: string;
+      handwriting_detected?: boolean;
+      notes?: string;
+      error?: string;
+    };
+
+    try {
+      const response = await fetch(OCR_ENHANCE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          image_base64: imageBase64,
+          mime_type: raw.mime_type,
+          existing_text: raw.ocr_text ?? '',
+          existing_confidence: raw.ocr_confidence ?? 0,
+          domain,
+        }),
+        signal: controller.signal,
+      });
+
+      responseData = await response.json();
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const now = new Date().toISOString();
+
+    // 7. Handle result
+    if (responseData.status === 'upgraded' && responseData.text != null) {
+      const oldConfidence = raw.ocr_confidence ?? 0;
+      const newConfidence = responseData.confidence ?? 0;
+
+      await db.runAsync(
+        `UPDATE media
+         SET ocr_text = ?, ocr_confidence = ?, ocr_source = 'cloud', updated_at = ?
+         WHERE id = ?`,
+        [responseData.text, newConfidence, now, mediaId],
+      );
+
+      await logAuditEntry(db, {
+        tableName: 'media',
+        recordId: mediaId,
+        action: 'cloud_ocr_upgrade',
+        newValues: {
+          oldConfidence,
+          newConfidence,
+          language: responseData.language,
+          handwritingDetected: responseData.handwriting_detected,
+        },
+      });
+
+      const syncEngine = new SyncEngine(db);
+      await syncEngine.queueChange('media', mediaId, 'update', {
+        ocrSource: 'cloud',
+        ocrConfidence: newConfidence,
+      });
+
+      return 'upgraded';
+    }
+
+    if (responseData.status === 'no_upgrade') {
+      await logAuditEntry(db, {
+        tableName: 'media',
+        recordId: mediaId,
+        action: 'cloud_ocr_no_upgrade',
+        newValues: {
+          existingConfidence: raw.ocr_confidence,
+          cloudConfidence: responseData.confidence,
+        },
+      });
+      return 'no_upgrade';
+    }
+
+    return 'error';
+  } catch {
+    // Fire-and-forget: never throw
+    return 'error';
+  }
 }

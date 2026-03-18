@@ -98,6 +98,9 @@ export class SyncEngine {
       const pullResult = await this.transport.pullChanges(since);
       if (__DEV__) console.log(`[sync] pull complete: ${pullResult.inserted} inserted, ${pullResult.updated} updated, ${pullResult.skipped} skipped, ${pullResult.conflicts} conflicts`);
 
+      // Post-sync: cloud OCR for eligible document scans (fire-and-forget)
+      this.runPostSyncCloudOcr().catch(() => {});
+
       // Update timestamp
       await this.transport.setLastSyncTimestamp(new Date().toISOString());
       if (__DEV__) console.log('[sync] cycle complete');
@@ -137,6 +140,41 @@ export class SyncEngine {
   /** Manual trigger for "Sync Now" button. */
   triggerSync(): void {
     this.sync();
+  }
+
+  // ── Post-sync cloud OCR ──────────────────────────────────────────────────
+
+  /**
+   * Fire-and-forget: find document scans with on-device OCR and attempt
+   * cloud enhancement via Gemini. Only targets ocr_source='on_device';
+   * never re-processes 'cloud' or 'none'. Failures are silent.
+   */
+  private async runPostSyncCloudOcr(): Promise<void> {
+    try {
+      const eligible = await this.db.getAllAsync<{ id: string }>(
+        `SELECT id FROM media
+         WHERE media_type = 'document_scan'
+           AND ocr_source = 'on_device'
+         ORDER BY created_at DESC
+         LIMIT 5`,
+      );
+
+      if (eligible.length === 0) return;
+
+      const { upgradeOcrFromCloud } = await import(
+        '../services/documentScanService'
+      );
+
+      // Read domain setting (best-effort)
+      const domain =
+        (await getSetting(this.db, 'collection_domain')) ?? 'general';
+
+      for (const row of eligible) {
+        await upgradeOcrFromCloud(this.db, row.id, domain);
+      }
+    } catch {
+      // Fire-and-forget: never break sync
+    }
   }
 
   /** Legacy method — now delegates to the full sync cycle. */

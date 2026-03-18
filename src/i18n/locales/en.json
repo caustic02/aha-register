@@ -73,7 +73,10 @@
     "rescan": "Re-scan",
     "delete": "Delete document",
     "delete_confirm": "Delete this document scan? This cannot be undone.",
-    "no_text": "No text extracted"
+    "no_text": "No text extracted",
+    "cloud_upgrade": "Enhanced by cloud OCR",
+    "cloud_upgrading": "Enhancing text recognition...",
+    "cloud_no_upgrade": "Cloud OCR found no improvement"
   },
   "object_types": {
     "museum_object": "Museum Object",

@@ -540,7 +540,43 @@ media.ocr_source     = 'on_device'
 
 Standalone scans (Path B) appear in the capture inbox on HomeScreen for review.
 
-### Decision History (C1–C5)
+### Cloud OCR Enhancement (C6)
+
+After a sync cycle completes, the sync engine runs `runPostSyncCloudOcr()` as a **fire-and-forget** post-sync step. This queries up to 5 document scans where `ocr_source = 'on_device'` and sends each to the `ocr-enhance` Edge Function (Gemini 2.5 Pro).
+
+**OCR lifecycle:**
+```
+Capture → on-device OCR (immediate, rn-mlkit-ocr)
+                ↓
+          Sync cycle
+                ↓
+          Cloud OCR (Gemini 2.5 Pro, if on_device confidence can be improved)
+                ↓
+          ocr_source = 'cloud', confidence updated
+```
+
+**Safety guards:**
+- Only targets `ocr_source = 'on_device'` — never re-processes `'cloud'` or `'none'`
+- Cloud confidence must exceed on-device confidence to upgrade (comparison done server-side)
+- Fire-and-forget: failure never blocks sync, never throws, never crashes
+- Limit 5 per sync cycle to avoid excessive API usage
+- Domain-aware prompting uses `collection_domain` from settings
+
+**Edge Function:** `supabase/functions/ocr-enhance/index.ts`
+- JWT validated (same as analyze-object)
+- Sends image base64 + existing confidence + domain to Gemini
+- Returns `upgraded` (with text, confidence, language, handwriting_detected) or `no_upgrade`
+- Audit trail logged for both outcomes
+
+### Key Files (C6)
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/ocr-enhance/index.ts` | Gemini-powered cloud OCR Edge Function |
+| `src/services/documentScanService.ts` | `upgradeOcrFromCloud()` — calls Edge Function, updates media |
+| `src/sync/engine.ts` | `runPostSyncCloudOcr()` — post-sync trigger |
+
+### Decision History (C1–C6)
 
 | Date | Decision |
 |------|----------|
@@ -552,6 +588,7 @@ Standalone scans (Path B) appear in the capture inbox on HomeScreen for review.
 | 2026-03-18 | C2: `DocumentReview` route registered in HomeStack |
 | 2026-03-18 | C4: Full DocumentReviewScreen: zoomable image, editable OCR, save/rescan/delete |
 | 2026-03-18 | C5: Camera entry point with 5-minute auto-link; manual toggle deferred auto-detection (simpler, more reliable) |
+| 2026-03-18 | C6: Cloud OCR via Gemini 2.5 Pro; fires post-sync, fire-and-forget; only upgrades if cloud confidence > on-device |
 
 ---
 
@@ -559,6 +596,5 @@ Standalone scans (Path B) appear in the capture inbox on HomeScreen for review.
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer
-- Cloud OCR (C6) not yet implemented — stub only
-- Cloud OCR upgrade button on DocumentReviewScreen (C6 stub)
+- Cloud OCR upgrade button on DocumentReviewScreen (manual trigger — currently only auto-triggered via sync)
 - Camera auto-detection of flat documents deferred in favor of manual toggle (C5)
