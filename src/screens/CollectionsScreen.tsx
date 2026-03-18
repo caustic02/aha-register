@@ -3,6 +3,7 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
+  SafeAreaView,
   StyleSheet,
   Text,
   View,
@@ -90,7 +91,7 @@ export function CollectionsScreen({ navigation }: Props) {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('collections.title')}</Text>
         <Pressable
@@ -127,7 +128,7 @@ export function CollectionsScreen({ navigation }: Props) {
           />
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -137,17 +138,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: 60,
-    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   headerTitle: {
+    ...typography.h1,
     color: colors.text,
-    fontSize: typography.size.xxl,
-    fontWeight: typography.weight.bold,
   },
   addBtn: {
     width: 48,
