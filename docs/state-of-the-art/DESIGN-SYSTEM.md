@@ -253,6 +253,24 @@ Used in `FilterSheet` for object type and sort selections.
 
 Active filter chips (shown above the list) use `primaryContainer` bg + `primary` text + CloseIcon to remove.
 
+### VocabularyPicker
+
+`src/components/VocabularyPicker.tsx` — search-and-select for Getty AAT controlled vocabulary terms.
+
+**Tokens used:**
+| Element | Token |
+|---------|-------|
+| Selected chips | `primaryLight` bg, `primary` text, `radii.sm` |
+| Search input | `surface` bg, `border` stroke, `radii.md`, `body` text |
+| Dropdown | `surfaceContainer` bg, `border` stroke, `radii.md` |
+| Dropdown item label | `body`, `colors.text` |
+| Dropdown parent text | `caption`, `colors.textTertiary` |
+| AAT URI badge | `surface` bg, `mono` font, 10px, `textTertiary` |
+| Custom term option | `bodySmall`, `primary` text |
+| Quick-select chips | `surface` bg, `border` stroke; selected: `primaryLight` bg, `primary` border |
+
+**Used in:** ReviewCardScreen (Object Type, Medium, Technique, Style/Period fields).
+
 ### Bottom Sheets
 Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.
 
