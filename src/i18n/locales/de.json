@@ -689,6 +689,12 @@
     "gridView": "Rasteransicht",
     "listView": "Listenansicht"
   },
+  "inbox": {
+    "title": "Aufnahme-Eingang",
+    "reviewAll": "Alle prüfen",
+    "needsReviewCount": "{{count}} Objekte zur Prüfung",
+    "viewObject": "Objekt anzeigen"
+  },
   "home": {
     "title": "Sammlung",
     "personalCollection": "Pers\u00f6nliche Sammlung",
