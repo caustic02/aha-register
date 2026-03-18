@@ -464,7 +464,13 @@
     "clearData": "Clear All Data",
     "clearDataTitle": "Clear All Data",
     "clearDataConfirm": "This will permanently delete all objects, media, and sync data from this device. This cannot be undone.",
-    "licenses": "Open Source Licences"
+    "licenses": "Open Source Licences",
+    "capture": "Capture",
+    "cameraGrid": "Camera Grid",
+    "cameraGridDescription": "Show grid overlay in the camera viewfinder",
+    "flashDefault": "Default Flash",
+    "comingSoon": "Coming Soon",
+    "comingSoonMessage": "This feature will be available in a future update."
   },
   "date_field": {
     "placeholder": "Select date",
