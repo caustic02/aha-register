@@ -66,6 +66,15 @@
     "document_count_one": "1 document",
     "view_document": "View document"
   },
+  "documents": {
+    "edit_text": "Edit text",
+    "save": "Save",
+    "saved": "Document saved",
+    "rescan": "Re-scan",
+    "delete": "Delete document",
+    "delete_confirm": "Delete this document scan? This cannot be undone.",
+    "no_text": "No text extracted"
+  },
   "object_types": {
     "museum_object": "Museum Object",
     "site": "Site",
@@ -544,7 +553,9 @@
     "cameraGridDescription": "Show grid overlay in the camera viewfinder",
     "flashDefault": "Default Flash",
     "comingSoon": "Coming Soon",
-    "comingSoonMessage": "This feature will be available in a future update."
+    "comingSoonMessage": "This feature will be available in a future update.",
+    "change_domain": "Change",
+    "institution_domain": "Collection domain"
   },
   "date_field": {
     "placeholder": "Select date",

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  LayoutAnimation,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -37,6 +38,7 @@ import {
   CheckIcon,
   DeleteIcon,
   ExportIcon,
+  ForwardIcon,
   IncidentIcon,
   MuseumObjectIcon,
   ObjectsTabIcon,
@@ -172,6 +174,9 @@ export function SettingsScreen() {
   // Auth
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [syncEnabled, setSyncEnabled] = useState(false);
+
+  // Domain picker collapse state
+  const [domainExpanded, setDomainExpanded] = useState(!collectionDomain);
 
   // Camera settings
   const [cameraGrid, setCameraGrid] = useState(false);
@@ -441,43 +446,86 @@ export function SettingsScreen() {
           <Text style={styles.sectionDescription}>
             {t('settings.collectionTypeDescription')}
           </Text>
-          <View style={styles.domainList}>
-            {DOMAIN_OPTIONS.map((option) => {
-              const isSelected = collectionDomain === option.value;
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setCollectionDomain(option.value)}
-                  accessibilityRole="radio"
-                  accessibilityLabel={t(`settings.domain.${option.value}`)}
-                  accessibilityState={{ checked: isSelected }}
-                  style={({ pressed }) => [
-                    styles.domainRow,
-                    isSelected && styles.domainRowSelected,
-                    pressed && styles.pressed,
-                  ]}
-                >
-                  <View style={styles.domainIcon}>{option.icon}</View>
-                  <View style={styles.domainContent}>
-                    <Text
-                      style={[
-                        styles.domainLabel,
-                        isSelected && styles.domainLabelSelected,
-                      ]}
-                    >
-                      {t(`settings.domain.${option.value}`)}
-                    </Text>
-                    <Text style={styles.domainDescription}>
-                      {t(`settings.domain.${option.value}_desc`)}
-                    </Text>
-                  </View>
-                  {isSelected && (
-                    <CheckIcon size={18} color={colors.primary} />
-                  )}
-                </Pressable>
-              );
-            })}
-          </View>
+
+          {/* Collapsed: show selected domain + Change button */}
+          {!domainExpanded && collectionDomain ? (() => {
+            const selected = DOMAIN_OPTIONS.find(
+              (o) => o.value === collectionDomain,
+            );
+            return (
+              <Pressable
+                style={styles.domainCollapsed}
+                onPress={() => {
+                  LayoutAnimation.configureNext(
+                    LayoutAnimation.Presets.easeInEaseOut,
+                  );
+                  setDomainExpanded(true);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={t('settings.change_domain')}
+              >
+                {selected && (
+                  <View style={styles.domainIcon}>{selected.icon}</View>
+                )}
+                <View style={styles.domainContent}>
+                  <Text style={styles.domainLabelSelected}>
+                    {t(`settings.domain.${collectionDomain}`)}
+                  </Text>
+                  <Text style={styles.domainDescription}>
+                    {t(`settings.domain.${collectionDomain}_desc`)}
+                  </Text>
+                </View>
+                <Text style={styles.changeText}>
+                  {t('settings.change_domain')}
+                </Text>
+                <ForwardIcon size={16} color={colors.textTertiary} />
+              </Pressable>
+            );
+          })() : (
+            <View style={styles.domainList}>
+              {DOMAIN_OPTIONS.map((option) => {
+                const isSelected = collectionDomain === option.value;
+                return (
+                  <Pressable
+                    key={option.value}
+                    onPress={() => {
+                      LayoutAnimation.configureNext(
+                        LayoutAnimation.Presets.easeInEaseOut,
+                      );
+                      setCollectionDomain(option.value);
+                      setDomainExpanded(false);
+                    }}
+                    accessibilityRole="radio"
+                    accessibilityLabel={t(`settings.domain.${option.value}`)}
+                    accessibilityState={{ checked: isSelected }}
+                    style={({ pressed }) => [
+                      styles.domainRow,
+                      isSelected && styles.domainRowSelected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.domainIcon}>{option.icon}</View>
+                    <View style={styles.domainContent}>
+                      <Text
+                        style={[
+                          styles.domainLabel,
+                          isSelected && styles.domainLabelSelected,
+                        ]}
+                      >
+                        {t(`settings.domain.${option.value}`)}
+                      </Text>
+                      <Text style={styles.domainDescription}>
+                        {t(`settings.domain.${option.value}_desc`)}
+                      </Text>
+                    </View>
+                    {isSelected && (
+                      <CheckIcon size={18} color={colors.primary} />
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
           <Divider />
 
@@ -825,6 +873,21 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.textSecondary,
     marginBottom: spacing.md,
+  },
+  domainCollapsed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: touch.minTarget,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    borderRadius: spacing.sm,
+    backgroundColor: colors.primarySurface,
+    gap: spacing.md,
+  },
+  changeText: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '600',
   },
   domainList: {
     gap: spacing.xs,

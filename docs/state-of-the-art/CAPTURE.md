@@ -498,12 +498,29 @@ media.ocr_source     = 'on_device'
 
 **Data hook:** `useObjectDocuments(objectId)` queries `media WHERE media_type IN ('document_scan', 'document_deskewed')`, groups raw+deskewed pairs, returns one entry per scan sorted by `created_at DESC`.
 
-### Key Files (C2)
+### Document Review Screen (C4)
+
+`DocumentReviewScreen` shows a single document scan with editable OCR text.
+
+**Layout (top to bottom):**
+1. Header with back button + title + Save button (shown when text is dirty)
+2. Zoomable document image (deskewed preferred, raw fallback) — `ScrollView` with `maximumZoomScale={4}`
+3. OCR confidence badge (`AIFieldBadge`) + source badge ("On-device" / "Cloud")
+4. Editable multiline `TextInput` with extracted OCR text
+5. Action row: Re-scan + Delete
+
+**Save flow:** Updates `ocr_text` on raw scan media record, logs `ocr_text_edit` to `audit_trail`, queues to `sync_queue`.
+
+**Re-scan flow:** Deletes old raw + deskewed pair → launches scanner → `processDocumentScan` → `extractTextOnDevice` → navigates to new media ID.
+
+**Delete flow:** Confirmation alert → deletes deskewed derivative + raw scan in transaction → navigates back.
+
+### Key Files (C2/C4)
 
 | File | Purpose |
 |------|---------|
 | `src/screens/ObjectDetailScreen.tsx` | Documents section, scan button, scan flow handler |
-| `src/screens/DocumentReviewScreen.tsx` | Placeholder for C4 full document review |
+| `src/screens/DocumentReviewScreen.tsx` | Full document review: zoomable image, editable OCR, save/rescan/delete |
 | `src/hooks/useObjectDocuments.ts` | Query hook: groups raw+deskewed pairs, returns display data |
 | `src/navigation/HomeStack.tsx` | `DocumentReview` route registration |
 
@@ -516,7 +533,8 @@ media.ocr_source     = 'on_device'
 | 2026-03-18 | C1: OCR text stored on raw scan record, not deskewed derivative |
 | 2026-03-18 | C1: `rn-mlkit-ocr` for on-device OCR (Expo config plugin, New Architecture compatible — swapped from `@react-native-ml-kit/text-recognition` which failed expo-doctor) |
 | 2026-03-18 | C2: Entry point on ObjectDetailScreen; one card per scan (deskewed for display, raw for OCR data) |
-| 2026-03-18 | C2: `DocumentReview` route registered in HomeStack (C4 placeholder) |
+| 2026-03-18 | C2: `DocumentReview` route registered in HomeStack |
+| 2026-03-18 | C4: Full DocumentReviewScreen: zoomable image, editable OCR, save/rescan/delete |
 
 ---
 
@@ -525,4 +543,4 @@ media.ocr_source     = 'on_device'
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer
 - Cloud OCR (C6) not yet implemented — stub only
-- Document review screen (C4) is a placeholder
+- Cloud OCR upgrade button on DocumentReviewScreen (C6 stub)

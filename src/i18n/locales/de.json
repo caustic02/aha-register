@@ -66,6 +66,15 @@
     "document_count_one": "1 Dokument",
     "view_document": "Dokument ansehen"
   },
+  "documents": {
+    "edit_text": "Text bearbeiten",
+    "save": "Speichern",
+    "saved": "Dokument gespeichert",
+    "rescan": "Neu scannen",
+    "delete": "Dokument löschen",
+    "delete_confirm": "Diesen Dokumentenscan löschen? Dies kann nicht rückgängig gemacht werden.",
+    "no_text": "Kein Text extrahiert"
+  },
   "object_types": {
     "museum_object": "Museumsobjekt",
     "site": "Fundst\u00e4tte",
@@ -544,7 +553,9 @@
     "cameraGridDescription": "Rasterüberlagerung im Kamerasucher anzeigen",
     "flashDefault": "Standard-Blitz",
     "comingSoon": "Demnächst verfügbar",
-    "comingSoonMessage": "Diese Funktion wird in einem zukünftigen Update verfügbar sein."
+    "comingSoonMessage": "Diese Funktion wird in einem zukünftigen Update verfügbar sein.",
+    "change_domain": "Ändern",
+    "institution_domain": "Sammlungsbereich"
   },
   "date_field": {
     "placeholder": "Datum auswählen",
