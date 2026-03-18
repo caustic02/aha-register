@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   headerTitle: {
-    ...typography.h2,
+    ...typography.h1,
     color: colors.text,
   },
   scroll: { flex: 1 },
