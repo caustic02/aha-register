@@ -695,6 +695,12 @@
     "needsReviewCount": "{{count}} objects need review",
     "viewObject": "View object"
   },
+  "review": {
+    "needsReview": "This object needs review",
+    "needsReviewDescription": "Add type, metadata, and AI analysis.",
+    "startReview": "Start review",
+    "reviewComplete": "Review complete"
+  },
   "home": {
     "title": "Collection",
     "personalCollection": "Personal Collection",

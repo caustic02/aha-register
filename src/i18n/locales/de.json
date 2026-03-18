@@ -695,6 +695,12 @@
     "needsReviewCount": "{{count}} Objekte zur Prüfung",
     "viewObject": "Objekt anzeigen"
   },
+  "review": {
+    "needsReview": "Dieses Objekt muss geprüft werden",
+    "needsReviewDescription": "Typ, Metadaten und KI-Analyse hinzufügen.",
+    "startReview": "Prüfung starten",
+    "reviewComplete": "Prüfung abgeschlossen"
+  },
   "home": {
     "title": "Sammlung",
     "personalCollection": "Pers\u00f6nliche Sammlung",

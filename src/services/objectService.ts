@@ -181,6 +181,112 @@ export async function saveReviewedObject(
   return objectId;
 }
 
+// ── Update reviewed object (review-existing path for quick captures) ─────────
+
+export interface UpdateReviewedObjectParams {
+  objectId: string;
+  title: string;
+  objectType: string;
+  description?: string;
+  condition?: string;
+  dateCreated?: string;
+  medium?: string;
+  dimensions?: string;
+  stylePeriod?: string;
+  cultureOrigin?: string;
+  keywords?: string[];
+}
+
+/**
+ * Updates an existing quick-captured object with full review metadata.
+ * Does NOT copy the image or recompute the hash — those are sacred from quick capture.
+ * Sets review_status = 'complete'.
+ */
+export async function updateReviewedObject(
+  db: SQLiteDatabase,
+  params: UpdateReviewedObjectParams,
+): Promise<void> {
+  const now = new Date().toISOString();
+
+  // Build type-specific JSON
+  const extras: Record<string, unknown> = {};
+  if (params.dateCreated) extras.dateCreated = params.dateCreated;
+  if (params.medium) extras.medium = params.medium;
+  if (params.dimensions) extras.dimensions = params.dimensions;
+  if (params.stylePeriod) extras.stylePeriod = params.stylePeriod;
+  if (params.cultureOrigin) extras.cultureOrigin = params.cultureOrigin;
+  if (params.condition) extras.condition = params.condition;
+  if (params.keywords?.length) extras.keywords = params.keywords;
+  const typeSpecificData = Object.keys(extras).length > 0
+    ? JSON.stringify(extras)
+    : null;
+
+  await db.withTransactionAsync(async () => {
+    // UPDATE object with full metadata
+    await db.runAsync(
+      `UPDATE objects SET
+         object_type = ?,
+         title = ?,
+         description = ?,
+         type_specific_data = ?,
+         review_status = 'complete',
+         updated_at = ?
+       WHERE id = ?`,
+      [
+        params.objectType || 'museum_object',
+        params.title || 'Untitled',
+        params.description || null,
+        typeSpecificData,
+        now,
+        params.objectId,
+      ],
+    );
+
+    // Audit trail
+    await logAuditEntry(db, {
+      tableName: 'objects',
+      recordId: params.objectId,
+      action: 'review_complete',
+      newValues: {
+        title: params.title,
+        objectType: params.objectType,
+      },
+    });
+
+    // Queue sync
+    const syncEngine = new SyncEngine(db);
+    await syncEngine.queueChange('objects', params.objectId, 'update', {
+      objectId: params.objectId,
+      reviewStatus: 'complete',
+    });
+  });
+}
+
+// ── Review status transitions ────────────────────────────────────────────────
+
+import type { ReviewStatus } from '../db/types';
+
+/**
+ * Transitions an object's review_status and logs an audit entry.
+ */
+export async function updateReviewStatus(
+  db: SQLiteDatabase,
+  objectId: string,
+  status: ReviewStatus,
+): Promise<void> {
+  const now = new Date().toISOString();
+  await db.runAsync(
+    'UPDATE objects SET review_status = ?, updated_at = ? WHERE id = ?',
+    [status, now, objectId],
+  );
+  await logAuditEntry(db, {
+    tableName: 'objects',
+    recordId: objectId,
+    action: `review_status_${status}`,
+    newValues: { review_status: status },
+  });
+}
+
 /**
  * Deletes an object and all associated data.
  * Media files are removed from the filesystem first (best-effort).
