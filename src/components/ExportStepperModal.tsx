@@ -253,16 +253,17 @@ export function ExportStepperModal({
       <Pressable
         style={styles.overlay}
         onPress={step !== 'exporting' ? onClose : undefined}
+        accessibilityRole="button"
         accessibilityLabel={t('common.cancel')}
       >
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={styles.sheet} onPress={() => {}} accessible={false}>
           {/* Handle */}
           <View style={styles.handle} />
 
           {/* ── STEP 1: FORMAT ──────────────────────────────────────────── */}
           {step === 'format' && (
             <View>
-              <Text style={styles.stepTitle}>
+              <Text style={styles.stepTitle} accessibilityRole="header">
                 {t('exportStepper.selectFormat')}
               </Text>
               <Text style={styles.stepLabel}>
@@ -319,7 +320,7 @@ export function ExportStepperModal({
           {/* ── STEP 2: REVIEW ──────────────────────────────────────────── */}
           {step === 'review' && (
             <View>
-              <Text style={styles.stepTitle}>
+              <Text style={styles.stepTitle} accessibilityRole="header">
                 {t('exportStepper.reviewScope')}
               </Text>
               <Text style={styles.stepLabel}>
@@ -391,6 +392,7 @@ export function ExportStepperModal({
                 <Pressable
                   style={styles.backButton}
                   onPress={() => setStep('format')}
+                  accessibilityRole="button"
                   accessibilityLabel={t('common.back')}
                 >
                   <BackIcon size={20} color={colors.textSecondary} />
@@ -420,6 +422,7 @@ export function ExportStepperModal({
                     size="large"
                     color={colors.primary}
                     style={styles.spinner}
+                    accessibilityLabel={t('exportStepper.exporting')}
                   />
                   <Text style={styles.exportingTitle}>
                     {t('exportStepper.exporting')}

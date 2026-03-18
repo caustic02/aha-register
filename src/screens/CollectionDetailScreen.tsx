@@ -377,7 +377,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
               </Pressable>
 
               {/* Objects section header */}
-              <Text style={styles.sectionTitle}>
+              <Text style={styles.sectionTitle} accessibilityRole="header">
                 {t('objects.title')}
               </Text>
 
@@ -401,6 +401,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
                       setDebouncedQuery('');
                     }}
                     hitSlop={8}
+                    accessibilityRole="button"
                     accessibilityLabel={t('common.cancel')}
                   >
                     <Text style={styles.clearBtn}>{'\u2715'}</Text>
