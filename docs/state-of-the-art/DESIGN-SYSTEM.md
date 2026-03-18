@@ -364,6 +364,21 @@ Amber banner on ObjectDetailScreen for `needs_review`/`in_review` objects.
 | Description | `typography.bodySmall`, `colors.textSecondary` |
 | CTA | `Button` variant `primary`, full width |
 
+### IsolationCompareScreen
+
+Full-screen modal for background removal comparison. **Justified exception** to the light theme: uses a near-black background (`rgba(0,0,0,0.95)`) for clear image viewing against both original and transparent-background derivatives.
+
+| Element | Token |
+|---------|-------|
+| Background | `rgba(0,0,0,0.95)` (dark exception) |
+| Header text | `colors.white`, `typography.h4` |
+| Processing overlay | `rgba(0,0,0,0.5)`, animated pulse 0.3↔0.6 opacity |
+| Processing label | `colors.overlay` bg, `colors.white` text, `radii.full` |
+| Segmented toggle (inactive) | `colors.overlay` bg, `colors.textTertiary` text |
+| Segmented toggle (active) | `colors.white` bg, `colors.text` text |
+| Crossfade | `Animated.timing`, 200ms (0ms when `reduceMotion`) |
+| Isolate icon | `IsolateIcon` (Scissors from lucide), 22dp |
+
 ### Bottom Sheets
 Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.
 

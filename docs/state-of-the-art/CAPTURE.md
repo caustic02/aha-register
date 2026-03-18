@@ -310,6 +310,74 @@ Updates an existing quick-captured object with full metadata. Does **NOT** copy 
 
 ---
 
+## Object Isolation — Background Removal (B1)
+
+Removes the background from a captured object photo, creating a derivative PNG. The original photo and its SHA-256 hash are **NEVER** modified.
+
+### Derivative Model
+
+- Derivatives are linked to originals via `parent_media_id` (FK to `media.id`)
+- Column `media_type` distinguishes: `'original'` (default) vs `'derivative_isolated'`
+- Derivatives have **no SHA-256 hash** — they are presentation assets, not evidence
+- The `sha256_hash` field is set to `''` (empty string) for derivatives
+
+### Isolation Service (`services/isolationService.ts`)
+
+`isolateObject(db, objectId, mediaId)` → `{ derivativeId, filePath } | null`
+
+1. Read original media record → `file_path`
+2. Read image file → base64
+3. Network check via `expo-network` — throws `'OFFLINE'` if no connectivity
+4. Auth token (3-tier: cached → refresh → anonymous)
+5. Call `remove-background` Edge Function (remove.bg API)
+6. Save returned PNG to `{Paths.document}/media/{derivativeId}.png`
+7. Transaction: INSERT derivative media (`media_type='derivative_isolated'`, `parent_media_id`) + audit (`action='background_removed'`) + sync queue
+
+### Edge Function (`supabase/functions/remove-background/`)
+
+- POST with `{ imageBase64, mimeType }`, JWT-validated
+- Calls `https://api.remove.bg/v1.0/removebg` with `image_file_b64`, `size=auto`, `format=png`
+- Env var: `REMOVE_BG_API_KEY`
+- Returns `{ resultBase64, mimeType: 'image/png' }`
+
+### Compare View (`screens/IsolationCompareScreen.tsx`)
+
+Full-screen modal (`fullScreenModal` presentation in HomeStack) with three phases:
+
+- **Processing**: original image with animated pulse overlay (opacity 0.3↔0.6). Respects `reduceMotion`.
+- **Error**: "Try again" / "Cancel" buttons. Offline-specific message.
+- **Compare**: crossfade toggle between Original / Isolated (200ms `Animated.timing`). Dark background (`rgba(0,0,0,0.95)`) for image clarity. "Discard" / "Keep" actions.
+
+**Discard** cleanup: deletes derivative file from filesystem → `DELETE FROM media WHERE id = ?` → audit entry (`isolation_discarded`).
+
+### Entry Points
+
+1. **ObjectDetailScreen**: Scissors icon in action bar. Hidden when no original media exists or derivative already exists (no duplicate isolation).
+2. **ReviewCardScreen**: Same button when reviewing an existing object (`existingObjectId` present).
+
+After returning from a successful isolation, ObjectDetailScreen reloads via `useFocusEffect` and shows the derivative in the media gallery.
+
+### Key Files (B1)
+
+| File | Purpose |
+|------|---------|
+| `src/services/isolationService.ts` | `isolateObject()` — network check → Edge Function → save derivative |
+| `supabase/functions/remove-background/index.ts` | remove.bg API proxy with JWT auth |
+| `src/screens/IsolationCompareScreen.tsx` | Processing → Compare → Keep/Discard flow |
+| `src/screens/ObjectDetailScreen.tsx` | Isolate button entry point |
+
+---
+
+## Decision History
+
+| Date | Decision | Reference |
+|------|----------|-----------|
+| 2026-03-18 | B1: remove.bg chosen for background removal (cloud API, no on-device model) | B1 architecture decision |
+| 2026-03-18 | B1: derivatives have no SHA-256 hash — presentation assets, not evidence | B1 integrity rule |
+| 2026-03-18 | B1: original media file and hash are never read, modified, or referenced during isolation | B1 integrity rule |
+
+---
+
 ## Known Gaps
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
