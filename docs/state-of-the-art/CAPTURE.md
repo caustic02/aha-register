@@ -592,9 +592,72 @@ Capture → on-device OCR (immediate, rn-mlkit-ocr)
 
 ---
 
+## View Inventory System (D1)
+
+Tracks which photographic views exist for each object and which views are required based on the object's domain.
+
+### View Types
+
+Controlled vocabulary on `media.view_type` (`NULL` = uncategorized legacy capture):
+
+| View Type | Description |
+|-----------|-------------|
+| `front` | Primary face of the object |
+| `back` | Reverse / verso |
+| `top` | Plan view / bird's eye |
+| `bottom` | Underside (maker's marks, labels, stamps) |
+| `left_side` | Left profile |
+| `right_side` | Right profile |
+| `detail` | Close-up of notable feature |
+| `detail_signature` | Artist signature or maker's mark close-up |
+| `detail_damage` | Condition issue close-up |
+| `detail_label` | Museum label, inventory tag, sticker |
+| `overall` | Object in context / environment |
+| `interior` | Inside view (open boxes, vessels, books) |
+| `document_scan` | Document scan (existing C1 flow) |
+
+### Domain View Requirements
+
+Each domain defines required views (minimum for a complete record), recommended views (improve the record), and a primary/"hero" view type. Config in `src/config/viewRequirements.ts`.
+
+| Domain | Required | Primary |
+|--------|----------|---------|
+| `fine_art_painting` | front, back | front |
+| `fine_art_sculpture` | front, back, left_side, right_side | front |
+| `ceramics` | front, bottom, top | **top** |
+| `textiles` | front, back | front |
+| `furniture` | front, back, top | front |
+| `archaeology` | front, back, top, bottom | front |
+| `natural_history` | front, back, top | front |
+| `ethnography` | front, back | front |
+| `photography_works_on_paper` | front, back | front |
+| `human_rights` | front, overall | front |
+| `conservation` | front, back, detail_damage | front |
+| `general` | front, back | front |
+
+### View Inventory API
+
+`getViewInventory(domain, mediaRecords)` returns:
+- `captured` — view types that have at least one photo
+- `missing_required` / `missing_recommended` — gaps
+- `completeness` — 0–100% of required views captured
+- `primary_image` — best candidate for hero image (tagged primary view → first front → is_primary flag → first capture)
+
+### Key Files (D1)
+
+| File | Purpose |
+|------|---------|
+| `src/config/viewRequirements.ts` | Domain view configs, `getViewRequirements()`, `getViewInventory()` |
+| `src/config/exportTemplates.ts` | Quick/standard/detailed export tier definitions |
+| `src/db/schema.ts` | `view_type` column on media |
+| `src/db/types.ts` | `ViewType` union type |
+
+---
+
 ## Known Gaps
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer
 - Cloud OCR upgrade button on DocumentReviewScreen (manual trigger — currently only auto-triggered via sync)
 - Camera auto-detection of flat documents deferred in favor of manual toggle (C5)
+- View type tagging UI not yet built — captures default to `view_type = NULL`

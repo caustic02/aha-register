@@ -154,6 +154,28 @@ Migration SQL: `docs/migrations/20260318200000_add_ocr_columns.sql`. Also in `MI
 
 `OcrSource` union type added to `src/db/types.ts`. `MediaType` union extended with `'document_scan' | 'document_deskewed'`.
 
+## D1 Schema Changes (2026-03-19)
+
+### `view_type` column on `media`
+
+```sql
+ALTER TABLE media ADD COLUMN view_type TEXT;
+```
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `view_type` | `TEXT` (default `NULL`) | Photographic view classification. `NULL` = uncategorized (legacy/quick captures). |
+
+Valid values: `front`, `back`, `top`, `bottom`, `left_side`, `right_side`, `detail`, `detail_signature`, `detail_damage`, `detail_label`, `overall`, `interior`, `document_scan`.
+
+Drives two features:
+1. **Guided capture** — domain-specific view requirements tell the user which views are missing
+2. **Export configuration** — view inventory determines which images to include in PDF reports
+
+`ViewType` union type added to `src/db/types.ts`. Domain requirements config in `src/config/viewRequirements.ts`.
+
+Migration SQL: `docs/migrations/20260319120000_add_view_type.sql`. Also in `MIGRATION_STATEMENTS` for idempotent re-run.
+
 ## Known Gaps
 
 - iOS native folder not yet prebuilt (requires macOS). EAS Build handles

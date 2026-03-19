@@ -95,6 +95,8 @@ CREATE TABLE IF NOT EXISTS media (
   ocr_text        TEXT,
   ocr_confidence  REAL,
   ocr_source      TEXT NOT NULL DEFAULT 'none', -- none | on_device | cloud
+  -- View inventory (D1)
+  view_type       TEXT, -- front | back | top | bottom | left_side | right_side | detail | detail_signature | detail_damage | detail_label | overall | interior | document_scan | NULL=uncategorized
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
@@ -268,6 +270,8 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE media ADD COLUMN ocr_text TEXT`,
   `ALTER TABLE media ADD COLUMN ocr_confidence REAL`,
   `ALTER TABLE media ADD COLUMN ocr_source TEXT NOT NULL DEFAULT 'none'`,
+  // media: view inventory for guided capture (D1)
+  `ALTER TABLE media ADD COLUMN view_type TEXT`,
 ];
 
 /**

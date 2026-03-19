@@ -42,11 +42,51 @@ Bottom-sheet modal with three `ListItem` rows (PDF, JSON, CSV). Shows per-option
 
 ## Supported Formats
 
-### PDF Report
-- **Engine:** `expo-print` (`Print.printToFileAsync`)
-- **Layout:** A4, header (brand + title + date), primary image (base64 data URI), basic info table, description, persons table, capture metadata table, footer
-- **CSS:** Inline, uses theme color palette (`colors.primary` for headings/borders, `colors.text` for body, `colors.textSecondary` for labels, `colors.border` for table lines)
-- **Image:** Primary media file read via `new File(path).base64()` (SDK 55 new API)
+### PDF Object Data Sheet (D3)
+
+Professional A4 data sheet modeled on Articheck condition reports and museum object data sheets. Layout adapts to the `ExportConfig.template` tier.
+
+**Engine:** `expo-print` (`Print.printToFileAsync`), HTML-to-PDF, A4 with 20mm/18mm margins.
+
+**Typography:**
+- Title: 16pt bold
+- Section headers: 11pt bold, uppercase, letter-spacing 0.6pt, bottom rule
+- Field labels: 9pt bold, gray (`colors.textSecondary`)
+- Field values: 10pt regular, black
+- Footer: 7pt, gray
+- Image view labels: 8pt italic
+
+**Quick layout (1 page):**
+- Header band (institution, title, accession no., date)
+- Single centered primary image (65% width, max 300pt height)
+- Single-column metadata: identification fields only
+- Footer with SHA-256 hash, brand, date
+
+**Standard layout (1–2 pages):**
+- Header band
+- Image area: primary (42% width) + up to 3 thumbnails stacked right
+- Two-column metadata: Col 1 = identification + physical + classification; Col 2 = condition + provenance + capture data
+- Description below columns (full width)
+- Footer
+
+**Detailed layout (multi-page):**
+- Same as standard page 1
+- Page 2+: additional images in 4-column grid, documents with OCR text
+
+**Config wiring:**
+- `config.selectedImageIds` → which images to include
+- `config.useIsolated` → prefer `derivative_isolated` versions
+- `config.sections` → which metadata blocks render
+- `config.showAiBadges` → inline "AI" badges next to AI-analyzed values
+- Falls back to standard template when called without config (backward compatible)
+
+**Dimension format:** `H 45.2 × W 30.1 × D 12.0 cm` (reads from `type_specific_data.dimensions`)
+
+**Image handling:**
+- `expo-file-system` `File.base64()` for offline-first loading
+- Thin 0.5pt border on all images
+- View type labels from `VIEW_LABELS` lookup (not i18n — PDF is static HTML)
+- Missing files silently skipped
 
 ### JSON Data
 - **Structure:** Flat object with nested `media[]`, `persons[]`, and `_export` metadata block
@@ -102,3 +142,111 @@ The new export module (`export-service.ts`, `export-share.ts`) coexists with the
 - Collection-level PDF reports
 
 The new module provides a simpler, format-flexible export path for single objects (PDF/CSV/JSON) triggered from the Object Detail screen.
+
+---
+
+## Export Template Tiers (D1)
+
+Three tiers following the Articheck pattern. Config in `src/config/exportTemplates.ts`.
+
+### Quick
+
+- Max 1 page
+- Primary image only (isolated if available, original if not)
+- Fields: title, object_type, medium, dimensions, date, accession_number
+- No condition, no provenance, no AI badges
+
+### Standard
+
+- 1–2 pages
+- Up to 4 images (primary + 3 selected from view inventory)
+- Fields: all identification + physical description + classification
+- Condition summary (1 line)
+- Getty AAT terms shown
+- AI badges optional (toggle)
+
+### Detailed
+
+- Multi-page (unlimited)
+- All available images with view_type labels
+- All fields including full condition, provenance, exhibition history
+- Getty AAT terms + AI confidence badges
+- Document scans included
+- Audit trail summary
+
+### How View Inventory Feeds Into Image Selection
+
+The view inventory system (`src/config/viewRequirements.ts`) determines which images appear in each tier:
+
+1. **Quick** — `primary_image` from `getViewInventory()` (prefers isolated derivative)
+2. **Standard** — primary + up to 3 additional from captured views, prioritising required views first, then recommended
+3. **Detailed** — all media with `view_type` labels rendered under each image
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/config/exportTemplates.ts` | `ExportTemplateConfig` type, `getExportTemplate()`, tier definitions |
+| `src/config/viewRequirements.ts` | `getViewInventory()` — drives image selection |
+| `src/services/export-service.ts` | Export generation (PDF, JSON, CSV) |
+| `src/components/ExportStepperModal.tsx` | 5-step export stepper (object mode) + legacy flow (batch/collection) |
+| `src/hooks/useExportConfig.ts` | `ExportConfig` state management hook |
+
+---
+
+## Export Stepper — 5-Step Configuration Flow (D2)
+
+Full-screen stepper for single-object exports. Replaces the previous 2-step format→review modal for object mode. Batch/collection exports keep the existing bottom-sheet flow.
+
+### Steps
+
+| # | Step | Description | Skippable? |
+|---|------|-------------|------------|
+| 1 | **Format** | PDF Data Sheet, PDF Condition Report, JSON, CSV | JSON/CSV skip directly to generation |
+| 2 | **Template** | Quick / Standard / Detailed — pre-fills Steps 3–4 | No |
+| 3 | **Images** | Selectable grid with view_type labels, isolated toggle, completeness indicator | No |
+| 4 | **Content** | Section toggles (identification always ON), AI badges, branding | No |
+| 5 | **Preview** | Simplified layout diagram + config summary + Generate button | No |
+
+### Navigation
+
+- Top: step indicator dots (numbered, filled for completed steps)
+- Bottom bar: Back / Next buttons (Next disabled until required selection made)
+- No swipe between steps (prevents accidental navigation)
+- Close button (×) on Step 1; Back arrow (←) on Steps 2–5
+
+### State Management — `useExportConfig`
+
+```typescript
+interface ExportConfig {
+  format: 'pdf_datasheet' | 'pdf_condition' | 'json' | 'csv';
+  template: 'quick' | 'standard' | 'detailed';
+  selectedImageIds: string[];
+  useIsolated: boolean;
+  showDimensions: boolean;
+  sections: { identification, physical, classification, condition, provenance, documents };
+  showAiBadges: boolean;
+  includeBranding: boolean;
+}
+```
+
+Template selection calls `applyTemplate(tier, media, domain)` which:
+1. Reads defaults from `exportTemplates.ts`
+2. Computes view inventory to select appropriate images
+3. Pre-fills section toggles and AI badge setting
+4. User can override any default in subsequent steps
+
+### Entry Points
+
+| Screen | Mode | Flow |
+|--------|------|------|
+| ObjectDetailScreen | `object` | Full 5-step stepper |
+| ObjectListScreen | `batch` | Legacy 3-step bottom sheet |
+| CollectionDetailScreen | `collection` | Legacy 3-step bottom sheet |
+
+### Key Files (D2)
+
+| File | Purpose |
+|------|---------|
+| `src/components/ExportStepperModal.tsx` | Main component — routes between object and legacy flows |
+| `src/hooks/useExportConfig.ts` | Config state, template application, image/section toggling |

@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 3.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -10,8 +11,25 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
       "ios": {
         "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "testflight": {
+      "distribution": "store",
+      "channel": "preview",
+      "autoSubmit": true,
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
+      "ios": {
+        "autoIncrement": true
       },
       "android": {
         "buildType": "apk"
@@ -20,6 +38,12 @@
     "production": {}
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6760840077",
+        "appleId": "caustic02@gmail.com",
+        "appleTeamId": "GM3GG5X5V9"
+      }
+    }
   }
 }

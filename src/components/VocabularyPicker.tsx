@@ -21,6 +21,7 @@ import {
 import { colors, typography, spacing, radii, touch } from '../theme';
 import { SearchIcon, CloseIcon } from '../theme/icons';
 import type { GettyTerm, VocabularySelection } from '../data/getty/types';
+import { cleanAatLabel } from '../utils/vocabulary';
 
 // ── Props ────────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ export function VocabularyPicker({
 
   const getDisplayLabel = useCallback(
     (term: GettyTerm): string =>
-      language === 'de' && term.label_de ? term.label_de : term.label_en,
+      cleanAatLabel(language === 'de' && term.label_de ? term.label_de : term.label_en),
     [language],
   );
 
@@ -293,7 +294,7 @@ export function VocabularyPicker({
                     </Text>
                     {item.parent_en ? (
                       <Text style={styles.dropdownItemParent} numberOfLines={1}>
-                        {item.parent_en}
+                        {cleanAatLabel(item.parent_en)}
                       </Text>
                     ) : null}
                   </View>

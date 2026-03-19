@@ -48,6 +48,21 @@ export type MediaType = 'original' | 'derivative_isolated' | 'document_scan' | '
 
 export type OcrSource = 'none' | 'on_device' | 'cloud';
 
+export type ViewType =
+  | 'front'
+  | 'back'
+  | 'top'
+  | 'bottom'
+  | 'left_side'
+  | 'right_side'
+  | 'detail'
+  | 'detail_signature'
+  | 'detail_damage'
+  | 'detail_label'
+  | 'overall'
+  | 'interior'
+  | 'document_scan';
+
 export type TranscriptionStatus = 'none' | 'draft' | 'ai_generated' | 'verified';
 
 // ── JSONB type-specific data templates ───────────────────────────────────────
@@ -217,6 +232,8 @@ export interface Media {
   ocr_text?: string | null;
   ocr_confidence?: number | null;
   ocr_source?: OcrSource;
+  // View inventory (D1)
+  view_type?: ViewType | null;
   // Copyright / licensing (added v1.3)
   rights_holder?: string | null;
   license_type?: LicenseType | null;
