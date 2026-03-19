@@ -237,6 +237,13 @@ Labels always visible.
 | Classification | `Layers` | `LayersIcon` |
 | Condition | `ShieldCheck` | `ConditionIcon` |
 
+### Document Icons
+
+| Concept | Lucide Icon | Export Name |
+|---------|------------|-------------|
+| Document scan | `FileText` | `DocumentScanIcon` |
+| Scan action | `ScanLine` | `ScanIcon` |
+
 To change an icon app-wide, update the mapping in `src/theme/icons.ts`.
 
 ---
@@ -306,7 +313,7 @@ type ExportSource =
 ```
 
 **Step 1 — Format selection:**
-- Three `FormatCard` options: PDF, JSON, CSV
+- Three `FormatCard` options: PDF (`ExportIcon`), JSON (`DocumentScanIcon`), CSV (`ListViewIcon`) — lucide icons, `colors.primary`, 22dp
 - JSON and CSV are disabled (`accessibilityState={{ disabled: true }}`) when source mode is not `'object'` (batch/collection only support PDF)
 - Selecting a format advances to step 2
 
@@ -387,6 +394,48 @@ Full-screen modal for background removal comparison. **Justified exception** to 
 | Segmented toggle (active) | `colors.white` bg, `colors.text` text |
 | Crossfade | `Animated.timing`, 200ms (0ms when `reduceMotion`) |
 | Isolate icon | `IsolateIcon` (Scissors from lucide), 22dp |
+
+### Document Card (C2)
+
+Displayed in the Documents section on ObjectDetailScreen. One card per raw scan.
+
+| Element | Token |
+|---------|-------|
+| Card row | `minHeight: touch.minTarget`, `gap: spacing.md`, `borderBottomWidth: hairline` |
+| Thumbnail | 56×56, `radii.sm`, `colors.surface` bg |
+| OCR text preview | `typography.bodySmall`, `colors.text`, 2 lines max |
+| No-text fallback | `typography.bodySmall`, `colors.textTertiary`, italic |
+| OCR confidence | `AIFieldBadge` (reuses confidence coloring) |
+| Source badge | `Badge variant="neutral" size="sm"` — "On-device" or "Cloud" |
+| Chevron | `ForwardIcon`, 16dp, `colors.textTertiary` |
+
+### Scan Document Button (C2)
+
+Secondary-style action button in the Documents section.
+
+| Element | Token |
+|---------|-------|
+| Border | 1dp, `colors.primary` |
+| Radius | `radii.md` |
+| Icon | `ScanIcon` (ScanLine), `colors.primary` |
+| Label | `typography.bodyMedium`, `colors.primary` |
+| Height | `touch.minTarget` (48dp) |
+| Disabled state | `opacity: 0.5` |
+| Loading state | `ActivityIndicator` replaces icon |
+
+### Camera Document Scan Button (C5)
+
+Replaces the spacer in the camera bottom controls row (right side of shutter).
+
+| Element | Token |
+|---------|-------|
+| Size | 52×52 (matches library button) |
+| Background | `colors.overlay` |
+| Border | 1dp, `colors.overlayLight` |
+| Radius | `radii.lg` |
+| Icon | `ScanIcon` (ScanLine), 22dp, `colors.white` |
+
+Layout: Library (left) | Shutter (center) | Document Scan (right). Visible in both Quick and Full modes.
 
 ### Bottom Sheets
 Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.

@@ -432,7 +432,169 @@ Each AI-prefilled field renders `<AIFieldBadge visible confidence={n} />` inline
 
 ---
 
+## Document Scanning (C1)
+
+Native document scanning with on-device OCR. The scanner provides edge detection, corner handles, and perspective correction via platform-native APIs.
+
+### Scanner
+
+`react-native-document-scanner-plugin` wraps:
+- **Android**: Google ML Kit Document Scanner API
+- **iOS**: Apple VisionKit
+
+`launchDocumentScanner()` opens the native scanner UI (separate from `expo-camera`). Returns the deskewed image URI on success, or `null` if the user cancels.
+
+### Storage Model
+
+Two media records per scan, following the same derivative pattern as B1 isolation:
+
+| Record | `media_type` | `sha256_hash` | `parent_media_id` |
+|--------|-------------|---------------|-------------------|
+| Raw scan | `'document_scan'` | Computed (evidence) | `NULL` |
+| Deskewed | `'document_deskewed'` | `''` (empty — presentation) | Raw scan ID |
+
+Both records are inserted in a single `db.withTransactionAsync` along with audit trail and sync queue entries.
+
+### On-Device OCR
+
+`extractTextOnDevice()` runs `rn-mlkit-ocr` (Google ML Kit, Expo config plugin) on the deskewed image. Results are stored on the **raw scan** media record (not the derivative):
+
+```
+media.ocr_text       = extracted text
+media.ocr_confidence = 0–100 score
+media.ocr_source     = 'on_device'
+```
+
+### Cloud OCR Upgrade (C6 — stub)
+
+`upgradeOcrFromCloud()` is stubbed for C6. Will call Gemini Edge Function. Only overwrites on-device results if cloud confidence > on_device confidence.
+
+### Key Files (C1)
+
+| File | Purpose |
+|------|---------|
+| `src/services/documentScanService.ts` | `launchDocumentScanner`, `processDocumentScan`, `extractTextOnDevice`, `upgradeOcrFromCloud` |
+| `src/db/schema.ts` | `ocr_text`, `ocr_confidence`, `ocr_source` columns + migration statements |
+| `src/db/types.ts` | `OcrSource` union, extended `MediaType` union |
+| `docs/migrations/20260318200000_add_ocr_columns.sql` | Migration SQL |
+
+### Object Detail Entry Point (C2)
+
+`ObjectDetailScreen` has a "Documents" section (after Persons, before Capture Metadata) showing all document scans for the object.
+
+**Scan flow:**
+1. User taps "Scan document" button (secondary style, `ScanIcon`)
+2. `launchDocumentScanner()` opens native scanner UI
+3. On success: `processDocumentScan()` stores raw + deskewed pair
+4. `extractTextOnDevice()` runs ML Kit OCR on the deskewed image
+5. Documents list refreshes via `useObjectDocuments` hook
+
+**Document card layout:**
+- 56×56 thumbnail (deskewed image preferred)
+- 2-line OCR text preview (truncated)
+- `AIFieldBadge` showing OCR confidence percentage
+- Source badge: "On-device" or "Cloud"
+- Tap navigates to `DocumentReview` screen (C4 placeholder)
+
+**Data hook:** `useObjectDocuments(objectId)` queries `media WHERE media_type IN ('document_scan', 'document_deskewed')`, groups raw+deskewed pairs, returns one entry per scan sorted by `created_at DESC`.
+
+### Document Review Screen (C4)
+
+`DocumentReviewScreen` shows a single document scan with editable OCR text.
+
+**Layout (top to bottom):**
+1. Header with back button + title + Save button (shown when text is dirty)
+2. Zoomable document image (deskewed preferred, raw fallback) — `ScrollView` with `maximumZoomScale={4}`
+3. OCR confidence badge (`AIFieldBadge`) + source badge ("On-device" / "Cloud")
+4. Editable multiline `TextInput` with extracted OCR text
+5. Action row: Re-scan + Delete
+
+**Save flow:** Updates `ocr_text` on raw scan media record, logs `ocr_text_edit` to `audit_trail`, queues to `sync_queue`.
+
+**Re-scan flow:** Deletes old raw + deskewed pair → launches scanner → `processDocumentScan` → `extractTextOnDevice` → navigates to new media ID.
+
+**Delete flow:** Confirmation alert → deletes deskewed derivative + raw scan in transaction → navigates back.
+
+### Key Files (C2/C4)
+
+| File | Purpose |
+|------|---------|
+| `src/screens/ObjectDetailScreen.tsx` | Documents section, scan button, scan flow handler |
+| `src/screens/DocumentReviewScreen.tsx` | Full document review: zoomable image, editable OCR, save/rescan/delete |
+| `src/hooks/useObjectDocuments.ts` | Query hook: groups raw+deskewed pairs, returns display data |
+| `src/navigation/HomeStack.tsx` | `DocumentReview` route registration |
+
+### Camera Screen Entry Point (C5)
+
+`CaptureScreen` has a document scan button in the bottom controls row (right side, replacing the spacer). Visible in both Quick and Full modes.
+
+**Button placement:** Bottom controls row: Library (left) | Shutter (center) | Document Scan (right). Same size as library button (52×52), overlay background, `ScanIcon` (ScanLine) 22dp white.
+
+**Auto-linking logic (5-minute window):**
+1. User taps document scan button → native scanner launches
+2. On return, queries: `SELECT id, title FROM objects WHERE created_at > [now - 5min] ORDER BY created_at DESC LIMIT 1`
+3. **Path A — recent object found:** links scan to that object, shows "Document linked to [title]"
+4. **Path B — no recent object:** creates a new object (`uncategorized`, `needs_review`, title="Document scan") → links scan → runs OCR → if OCR has text, updates title to first line (max 60 chars)
+
+**Workflow:** photograph artifact → flip tag → tap scan → auto-links to last capture. 5-minute window is generous for field work, tight enough to avoid wrong associations.
+
+Standalone scans (Path B) appear in the capture inbox on HomeScreen for review.
+
+### Cloud OCR Enhancement (C6)
+
+After a sync cycle completes, the sync engine runs `runPostSyncCloudOcr()` as a **fire-and-forget** post-sync step. This queries up to 5 document scans where `ocr_source = 'on_device'` and sends each to the `ocr-enhance` Edge Function (Gemini 2.5 Pro).
+
+**OCR lifecycle:**
+```
+Capture → on-device OCR (immediate, rn-mlkit-ocr)
+                ↓
+          Sync cycle
+                ↓
+          Cloud OCR (Gemini 2.5 Pro, if on_device confidence can be improved)
+                ↓
+          ocr_source = 'cloud', confidence updated
+```
+
+**Safety guards:**
+- Only targets `ocr_source = 'on_device'` — never re-processes `'cloud'` or `'none'`
+- Cloud confidence must exceed on-device confidence to upgrade (comparison done server-side)
+- Fire-and-forget: failure never blocks sync, never throws, never crashes
+- Limit 5 per sync cycle to avoid excessive API usage
+- Domain-aware prompting uses `collection_domain` from settings
+
+**Edge Function:** `supabase/functions/ocr-enhance/index.ts`
+- JWT validated (same as analyze-object)
+- Sends image base64 + existing confidence + domain to Gemini
+- Returns `upgraded` (with text, confidence, language, handwriting_detected) or `no_upgrade`
+- Audit trail logged for both outcomes
+
+### Key Files (C6)
+
+| File | Purpose |
+|------|---------|
+| `supabase/functions/ocr-enhance/index.ts` | Gemini-powered cloud OCR Edge Function |
+| `src/services/documentScanService.ts` | `upgradeOcrFromCloud()` — calls Edge Function, updates media |
+| `src/sync/engine.ts` | `runPostSyncCloudOcr()` — post-sync trigger |
+
+### Decision History (C1–C6)
+
+| Date | Decision |
+|------|----------|
+| 2026-03-18 | C1: `react-native-document-scanner-plugin` chosen (Expo config plugin, VisionKit + ML Kit, actively maintained) |
+| 2026-03-18 | C1: Raw scan gets SHA-256 hash; deskewed derivative has no hash (same rule as B1 isolation) |
+| 2026-03-18 | C1: OCR text stored on raw scan record, not deskewed derivative |
+| 2026-03-18 | C1: `rn-mlkit-ocr` for on-device OCR (Expo config plugin, New Architecture compatible — swapped from `@react-native-ml-kit/text-recognition` which failed expo-doctor) |
+| 2026-03-18 | C2: Entry point on ObjectDetailScreen; one card per scan (deskewed for display, raw for OCR data) |
+| 2026-03-18 | C2: `DocumentReview` route registered in HomeStack |
+| 2026-03-18 | C4: Full DocumentReviewScreen: zoomable image, editable OCR, save/rescan/delete |
+| 2026-03-18 | C5: Camera entry point with 5-minute auto-link; manual toggle deferred auto-detection (simpler, more reliable) |
+| 2026-03-18 | C6: Cloud OCR via Gemini 2.5 Pro; fires post-sync, fire-and-forget; only upgrades if cloud confidence > on-device |
+
+---
+
 ## Known Gaps
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
 - Intro overlay uses `AsyncStorage` (not settings DB) — separate persistence layer
+- Cloud OCR upgrade button on DocumentReviewScreen (manual trigger — currently only auto-triggered via sync)
+- Camera auto-detection of flat documents deferred in favor of manual toggle (C5)

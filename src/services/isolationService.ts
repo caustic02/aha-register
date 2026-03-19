@@ -122,7 +122,20 @@ export async function isolateObject(
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => '');
-      throw new Error(`Edge Function error ${response.status}: ${errorBody}`);
+      // Parse structured error from Edge Function for better reporting
+      let detail = errorBody;
+      try {
+        const parsed = JSON.parse(errorBody) as { error?: string; detail?: string };
+        detail = parsed.detail ?? parsed.error ?? errorBody;
+      } catch {
+        // Use raw text if not JSON
+      }
+      if (response.status === 402) {
+        throw new Error('QUOTA_EXHAUSTED');
+      }
+      throw new Error(
+        `ISOLATION_API_ERROR:${response.status}:${detail}`,
+      );
     }
 
     const data = (await response.json()) as {

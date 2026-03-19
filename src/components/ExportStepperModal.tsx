@@ -11,7 +11,14 @@ import * as Haptics from 'expo-haptics';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { Button, Divider } from './ui';
-import { ExportIcon, BackIcon, WarningIcon, CheckIcon } from '../theme/icons';
+import {
+  ExportIcon,
+  BackIcon,
+  WarningIcon,
+  CheckIcon,
+  DocumentScanIcon,
+  ListViewIcon,
+} from '../theme/icons';
 import { colors, radii, spacing, typography, touch } from '../theme';
 import type { ExportableObject } from '../services/export-service';
 import { exportAsJSON, exportAsCSV, exportAsPDF } from '../services/export-service';
@@ -272,14 +279,14 @@ export function ExportStepperModal({
 
               <View style={styles.formatList}>
                 <FormatCard
-                  icon="\uD83D\uDCC4"
+                  icon={<ExportIcon size={22} color={colors.primary} />}
                   title={t('export.pdfOption')}
                   description={t('export.pdfDescription')}
                   onPress={() => handleFormatSelect('pdf')}
                   selected={false}
                 />
                 <FormatCard
-                  icon="{ }"
+                  icon={<DocumentScanIcon size={22} color={colors.primary} />}
                   title={t('export.jsonOption')}
                   description={t('export.jsonDescription')}
                   onPress={() => handleFormatSelect('json')}
@@ -292,7 +299,7 @@ export function ExportStepperModal({
                   selected={false}
                 />
                 <FormatCard
-                  icon="\uD83D\uDCCA"
+                  icon={<ListViewIcon size={22} color={colors.primary} />}
                   title={t('export.csvOption')}
                   description={t('export.csvDescription')}
                   onPress={() => handleFormatSelect('csv')}
@@ -487,7 +494,7 @@ export function ExportStepperModal({
 // ── Format Card ──────────────────────────────────────────────────────────────
 
 interface FormatCardProps {
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
   onPress: () => void;
@@ -516,7 +523,7 @@ function FormatCard({
       accessibilityLabel={title}
       accessibilityState={{ disabled }}
     >
-      <Text style={styles.formatIcon}>{icon}</Text>
+      <View style={styles.formatIconWrap}>{icon}</View>
       <View style={styles.formatCardContent}>
         <Text
           style={[styles.formatCardTitle, disabled && styles.textDisabled]}
@@ -617,10 +624,10 @@ const styles = StyleSheet.create({
   formatCardDisabled: {
     opacity: 0.5,
   },
-  formatIcon: {
-    fontSize: 24,
+  formatIconWrap: {
     width: 36,
-    textAlign: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   formatCardContent: {
     flex: 1,

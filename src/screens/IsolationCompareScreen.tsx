@@ -102,6 +102,13 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg === 'OFFLINE') {
         setErrorMsg(t('isolation.offlineError'));
+      } else if (msg === 'QUOTA_EXHAUSTED') {
+        setErrorMsg(t('isolation.failed') + ' (API quota exhausted — 402)');
+      } else if (msg.startsWith('ISOLATION_API_ERROR:')) {
+        const parts = msg.split(':');
+        const status = parts[1];
+        const detail = parts.slice(2).join(':');
+        setErrorMsg(`${t('isolation.failed')} (${status}: ${detail})`);
       } else {
         setErrorMsg(t('isolation.failed'));
       }

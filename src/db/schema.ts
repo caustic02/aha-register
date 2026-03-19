@@ -90,7 +90,11 @@ CREATE TABLE IF NOT EXISTS media (
   sort_order    INTEGER NOT NULL DEFAULT 0,
   -- Derivative tracking (B1 object isolation)
   parent_media_id TEXT REFERENCES media(id),
-  media_type      TEXT NOT NULL DEFAULT 'original', -- original | derivative_isolated
+  media_type      TEXT NOT NULL DEFAULT 'original', -- original | derivative_isolated | document_scan | document_deskewed
+  -- OCR (C1 document scanning)
+  ocr_text        TEXT,
+  ocr_confidence  REAL,
+  ocr_source      TEXT NOT NULL DEFAULT 'none', -- none | on_device | cloud
   created_at    TEXT NOT NULL,
   updated_at    TEXT NOT NULL
 );
@@ -260,6 +264,10 @@ const MIGRATION_STATEMENTS = [
   // documents: transcription fields
   `ALTER TABLE documents ADD COLUMN transcription TEXT`,
   `ALTER TABLE documents ADD COLUMN transcription_status TEXT NOT NULL DEFAULT 'none' CHECK(transcription_status IN ('none', 'draft', 'ai_generated', 'verified'))`,
+  // media: OCR columns for document scanning (C1)
+  `ALTER TABLE media ADD COLUMN ocr_text TEXT`,
+  `ALTER TABLE media ADD COLUMN ocr_confidence REAL`,
+  `ALTER TABLE media ADD COLUMN ocr_source TEXT NOT NULL DEFAULT 'none'`,
 ];
 
 /**

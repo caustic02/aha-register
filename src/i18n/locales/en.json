@@ -55,7 +55,28 @@
     "filter_all": "All",
     "delete_title": "Delete Object",
     "delete_confirm": "Delete \"{{title}}\"? This will also delete all photos and remove it from all collections. This cannot be undone.",
-    "deleted": "Object deleted"
+    "deleted": "Object deleted",
+    "scan_document": "Scan document",
+    "documents": "Documents",
+    "no_documents": "No documents scanned yet",
+    "ocr_on_device": "On-device",
+    "ocr_cloud": "Cloud",
+    "ocr_confidence": "Confidence",
+    "document_count": "{{count}} documents",
+    "document_count_one": "1 document",
+    "view_document": "View document"
+  },
+  "documents": {
+    "edit_text": "Edit text",
+    "save": "Save",
+    "saved": "Document saved",
+    "rescan": "Re-scan",
+    "delete": "Delete document",
+    "delete_confirm": "Delete this document scan? This cannot be undone.",
+    "no_text": "No text extracted",
+    "cloud_upgrade": "Enhanced by cloud OCR",
+    "cloud_upgrading": "Enhancing text recognition...",
+    "cloud_no_upgrade": "Cloud OCR found no improvement"
   },
   "object_types": {
     "museum_object": "Museum Object",
@@ -149,7 +170,18 @@
     "type_desc_specimen": "Biological, geological, or scientific specimens",
     "type_desc_architectural_element": "Structural components, facades, and building elements",
     "type_desc_environmental_sample": "Soil, water, air, or material samples for analysis",
-    "type_desc_conservation_record": "Treatment records and restoration documentation"
+    "type_desc_conservation_record": "Treatment records and restoration documentation",
+    "document_scan": "Scan document",
+    "document_scanning": "Scanning...",
+    "ocr_extracting": "Extracting text...",
+    "ocr_complete": "Text extracted",
+    "ocr_failed": "Could not extract text",
+    "document_deskew": "Straightening document...",
+    "scan_document": "Scan document",
+    "document_linked": "Document linked to {{title}}",
+    "document_linked_last": "Document linked to last capture",
+    "document_saved_standalone": "Document saved. Review to link to an object.",
+    "document_scan_title": "Document scan"
   },
   "collections": {
     "title": "Collections",
@@ -529,7 +561,9 @@
     "cameraGridDescription": "Show grid overlay in the camera viewfinder",
     "flashDefault": "Default Flash",
     "comingSoon": "Coming Soon",
-    "comingSoonMessage": "This feature will be available in a future update."
+    "comingSoonMessage": "This feature will be available in a future update.",
+    "change_domain": "Change",
+    "institution_domain": "Collection domain"
   },
   "date_field": {
     "placeholder": "Select date",
