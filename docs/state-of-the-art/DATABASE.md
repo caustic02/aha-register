@@ -21,7 +21,7 @@ AppShell
        ├─ PRAGMA key = "x'<256-bit hex>'"  ← MUST be first operation
        ├─ PRAGMA journal_mode=WAL
        ├─ PRAGMA foreign_keys=ON
-       ├─ SCHEMA_SQL (14 tables, IF NOT EXISTS)
+       ├─ SCHEMA_SQL (16 tables, IF NOT EXISTS)
        └─ INDEXES_SQL (19 indexes)
 ```
 
@@ -47,7 +47,7 @@ On the first launch after enabling SQLCipher, if the database already
 contains data, the migration runs automatically:
 
 1. Open existing DB without PRAGMA key (SQLCipher reads plaintext)
-2. Export all rows from all 14 tables into memory
+2. Export all rows from all 16 tables into memory
 3. Close and delete the plaintext file
 4. Create a new encrypted DB with the same name
 5. Apply schema + indexes, reimport all data
@@ -61,7 +61,7 @@ The migration flag ensures this runs exactly once.
 | File | Role |
 |------|------|
 | `src/db/database.ts` | `initDatabase()` — opens DB, sets PRAGMA key, runs schema |
-| `src/db/schema.ts` | 14-table schema definition (SACRED — do not modify) |
+| `src/db/schema.ts` | 16-table schema definition (SACRED — do not modify) |
 | `src/db/indexes.ts` | 19 index definitions |
 | `src/utils/db-encryption.ts` | `getOrCreateDatabaseKey()` — generates/retrieves 256-bit key |
 | `src/utils/db-migration-encrypt.ts` | One-time plaintext → encrypted migration |
