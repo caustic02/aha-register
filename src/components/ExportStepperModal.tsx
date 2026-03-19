@@ -1742,6 +1742,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
+  // ── Review section ──
   reviewSection: {
     marginHorizontal: spacing.lg,
     backgroundColor: colors.surface,
