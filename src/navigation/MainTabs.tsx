@@ -76,7 +76,10 @@ export function MainTabs() {
         ),
         tabBarActiveTintColor: tabBar.activeColor,
         tabBarInactiveTintColor: tabBar.inactiveColor,
-        tabBarLabelStyle: styles.label,
+        tabBarLabelStyle: {
+          ...styles.label,
+          color: undefined, // let tintColor drive it
+        },
         tabBarStyle: styles.bar,
         tabBarHideOnKeyboard: true,
       })}

@@ -5,103 +5,128 @@
  * Every component imports from here. No hardcoded colors, font sizes,
  * spacing, or radii in component files. If a value isn't here, it doesn't exist.
  *
- * Updated: 2026-03-17
+ * Updated: 2026-03-19
+ * Palette: Navy / Brass / Parchment
  * Spec: docs/state-of-the-art/DESIGN-SYSTEM.md
  */
 
 import { Platform } from 'react-native';
 
+// ── Brand ────────────────────────────────────────────────────────────────────
+
+export const brand = {
+  colors: {
+    primary: '#1E2D3D',      // navy — buttons, headers, tab bar, primary actions
+    accent: '#C4975A',        // brass — active tab, trust badges, verified indicators
+    background: '#F5F2EB',    // parchment — screen backgrounds
+    surface: '#EDEAE3',       // input fields, card backgrounds
+    secondaryText: '#6B7B8D', // slate — muted labels, captions
+    text: '#1A1A1A',          // primary text (near-black)
+    textOnPrimary: '#F5F2EB', // text on navy backgrounds
+    border: '#B8B3A8',        // subtle borders, inactive chips
+    danger: '#A32D2D',        // errors, destructive actions
+  },
+  radii: {
+    button: 8,
+    chip: 6,
+    card: 12,
+    input: 6,
+    icon: 14,
+  },
+} as const;
+
 // ── Colors ────────────────────────────────────────────────────────────────────
 
 export const colors = {
-  // ── M3 Primary (main actions, FAB, active tabs) ────────────────────────────
-  primary: '#2D5A27',             // 8.2:1 on white
-  primaryDark: '#1E3D1A',
-  primaryLight: '#E8F0E7',
-  primarySurface: '#F2F7F1',
-  primaryContainer: 'rgba(45, 90, 39, 0.12)', // pill indicators, CTA backgrounds
+  // ── Primary (main actions, headers, tab bar) ─────────────────────────────
+  primary: brand.colors.primary,
+  primaryDark: '#131E29',
+  primaryLight: '#E3E8ED',
+  primarySurface: '#EEF1F4',
+  primaryContainer: 'rgba(30, 45, 61, 0.10)',
 
-  // ── M3 Secondary (tags, filters, less prominent UI) ────────────────────────
-  secondary: '#5C6B5A',          // muted green-gray, 4.6:1 on white
-  secondaryContainer: 'rgba(92, 107, 90, 0.12)',
+  // ── Accent (active tab, trust badges, verified indicators) ────────────────
+  accent: brand.colors.accent,
+  accentLight: '#F5EDE0',
+  accentDark: '#9A7642',
 
-  // ── M3 Tertiary / AI (AI-assisted actions, distinct from primary) ──────────
-  tertiary: '#5C6BC0',           // deep indigo, 4.6:1 on white
+  // ── Secondary (tags, filters, less prominent UI) ─────────────────────────
+  secondary: brand.colors.secondaryText,
+  secondaryContainer: 'rgba(107, 123, 141, 0.10)',
+
+  // ── Tertiary / AI (AI-assisted actions, distinct from primary) ────────────
+  tertiary: '#5C6BC0',
   tertiaryContainer: 'rgba(92, 107, 192, 0.12)',
 
-  // ── Text hierarchy (on white/off-white backgrounds) ────────────────────────
-  text: '#1A1A1A',               // 16.1:1 on white
-  textSecondary: '#5C5C5C',      // 5.9:1 on white
-  textTertiary: '#767676',       // 4.5:1 on white (minimum AA)
-  textInverse: '#FFFFFF',
+  // ── Text hierarchy ───────────────────────────────────────────────────────
+  text: brand.colors.text,
+  textSecondary: brand.colors.secondaryText,
+  textTertiary: '#8A95A0',
+  textInverse: brand.colors.textOnPrimary,
 
-  // ── Surfaces (M3 hierarchy) ────────────────────────────────────────────────
-  background: '#FFFFFF',
-  surface: '#F7F5F0',
-  surfaceContainer: '#F0EDE7',        // slightly darker, card backgrounds
-  surfaceContainerHigh: '#E8E5DF',    // elevated cards, bottom sheets
+  // ── Surfaces ─────────────────────────────────────────────────────────────
+  background: brand.colors.background,
+  surface: brand.colors.surface,
+  surfaceContainer: '#E6E3DC',
+  surfaceContainerHigh: '#DEDBD4',
   surfaceElevated: '#FFFFFF',
 
-  // ── Borders ────────────────────────────────────────────────────────────────
-  border: '#E5E2DB',
-  borderFocused: '#2D5A27',
+  // ── Borders ──────────────────────────────────────────────────────────────
+  border: brand.colors.border,
+  borderFocused: brand.colors.primary,
 
-  // ── Semantic ───────────────────────────────────────────────────────────────
-  error: '#C53030',              // 5.6:1 on white
-  errorLight: '#FEE2E2',
-  warning: '#B45309',            // 4.7:1 on white
+  // ── Semantic ─────────────────────────────────────────────────────────────
+  error: brand.colors.danger,
+  errorLight: '#FADCDC',
+  warning: '#B45309',
   warningLight: '#FEF3C7',
-  success: '#0F766E',            // 5.1:1 on white
+  success: '#0F766E',
   successLight: '#CCFBF1',
-  info: '#1D4ED8',               // 5.3:1 on white
+  info: '#1D4ED8',
   infoLight: '#DBEAFE',
 
-  // ── Status (sync, connectivity) ────────────────────────────────────────────
-  statusSyncing: '#1976D2',      // blue, 5.5:1 on white
-  statusOffline: '#757575',      // gray, 4.6:1 on white
-  statusSuccess: '#2E7D32',      // green, 5.9:1 on white
-  statusWarning: '#E65100',      // deep amber, 5.0:1 on white
-  statusError: '#C53030',        // same as error
+  // ── Status (sync, connectivity) ──────────────────────────────────────────
+  statusSyncing: '#1976D2',
+  statusOffline: '#757575',
+  statusSuccess: '#2E7D32',
+  statusWarning: '#E65100',
+  statusError: brand.colors.danger,
 
-  // ── AI accent (marks all AI-generated content distinctively) ────────────────
-  // Uses tertiary indigo to visually distinguish AI from human data
-  ai: '#5C6BC0',                 // = tertiary, 4.6:1 on white
-  aiLight: '#E8EAF6',            // indigo tint
-  aiSurface: 'rgba(92, 107, 192, 0.06)',   // 6% opacity, field backgrounds
-  aiBorder: 'rgba(92, 107, 192, 0.25)',    // 25% opacity, field borders
-  aiText: '#5C6BC0',             // full strength for labels
+  // ── AI accent ────────────────────────────────────────────────────────────
+  ai: '#5C6BC0',
+  aiLight: '#E8EAF6',
+  aiSurface: 'rgba(92, 107, 192, 0.06)',
+  aiBorder: 'rgba(92, 107, 192, 0.25)',
+  aiText: '#5C6BC0',
 
-  // ── AI Confidence scale ────────────────────────────────────────────────────
-  aiConfidenceHigh: '#2E7D32',   // green, 5.9:1 on white
-  aiConfidenceMedium: '#E65100', // deep amber, 5.0:1 on white
-  aiConfidenceLow: '#C53030',    // red, 5.6:1 on white
+  // ── AI Confidence scale ──────────────────────────────────────────────────
+  aiConfidenceHigh: '#2E7D32',
+  aiConfidenceMedium: '#E65100',
+  aiConfidenceLow: brand.colors.danger,
 
-  // ── CTA (primary action card) ──────────────────────────────────────────────
-  ctaSurface: 'rgba(45, 90, 39, 0.08)',  // = primaryContainer lighter
-  ctaBorder: 'rgba(45, 90, 39, 0.20)',
+  // ── CTA (primary action card) ────────────────────────────────────────────
+  ctaSurface: 'rgba(30, 45, 61, 0.06)',
+  ctaBorder: 'rgba(30, 45, 61, 0.18)',
 
-  // ── Utility ────────────────────────────────────────────────────────────────
+  // ── Utility ──────────────────────────────────────────────────────────────
   white: '#FFFFFF',
   black: '#000000',
   overlay: 'rgba(0, 0, 0, 0.5)',
   overlayLight: 'rgba(0, 0, 0, 0.3)',
   overlayDark: 'rgba(0, 0, 0, 0.7)',
-  skeleton: '#E5E2DB',
-  skeletonHighlight: '#F7F5F0',
+  skeleton: '#D6D3CC',
+  skeletonHighlight: brand.colors.surface,
   transparent: 'transparent',
   camera: '#111111',
 
-  // ── Legacy aliases (keep until all components are migrated) ──
-  accent: '#2D5A27',
-  accentLight: '#E8F0E6',
-  accentDark: '#1A3A16',
-  textPrimary: '#1A1A1A',
-  textMuted: '#767676',
-  borderLight: '#F0F0EC',
-  danger: '#C53030',
-  dangerLight: '#FEE2E2',
-  chipActive: '#2D5A27',
-  chipInactive: '#F4F4F0',
+  // ── Legacy aliases (all now derive from brand) ──
+  textPrimary: brand.colors.text,
+  textMuted: '#8A95A0',
+  borderLight: '#E6E3DC',
+  danger: brand.colors.danger,
+  dangerLight: '#FADCDC',
+  chipActive: brand.colors.primary,
+  chipInactive: brand.colors.surface,
 } as const;
 
 // ── Typography ────────────────────────────────────────────────────────────────
@@ -113,7 +138,6 @@ const monoFamily = Platform.select({
 });
 
 export const typography = {
-  // Semantic styles (use these in new components)
   h1: { fontSize: 28, fontWeight: '700' as const, lineHeight: 36 },
   h2: { fontSize: 24, fontWeight: '700' as const, lineHeight: 32 },
   h3: { fontSize: 20, fontWeight: '600' as const, lineHeight: 28 },
@@ -140,7 +164,7 @@ export const typography = {
 
   caption: { fontSize: 12, fontWeight: '400' as const, lineHeight: 16 },
 
-  // ── Legacy aliases (keep until all components are migrated) ──
+  // ── Legacy aliases ──
   size: {
     xs: 10,
     sm: 12,
@@ -180,9 +204,9 @@ export const spacing = {
 // ── Border Radii ──────────────────────────────────────────────────────────────
 
 export const radii = {
-  sm: 6,
-  md: 10,
-  lg: 16,
+  sm: brand.radii.chip,
+  md: brand.radii.button,
+  lg: brand.radii.card,
   full: 999,
 
   // ── Legacy aliases ──
@@ -222,12 +246,12 @@ export const touch = {
 export const a11y = {
   minContrastNormal: 4.5,
   minContrastLarge: 3.0,
-  focusRingColor: '#2D5A27',
+  focusRingColor: brand.colors.primary,
   focusRingWidth: 2,
   focusRingOffset: 2,
 } as const;
 
-// ── Tab Bar (Material Design 3 spec) ─────────────────────────────────────────
+// ── Tab Bar ─────────────────────────────────────────────────────────────────
 
 export const tabBar = {
   height: 64,
@@ -238,11 +262,13 @@ export const tabBar = {
   indicatorWidth: 64,
   indicatorHeight: 32,
   indicatorRadius: 16,
-  activeColor: '#2D5A27',        // colors.primary
-  inactiveColor: '#767676',      // colors.textMuted
-  backgroundColor: '#F7F5F0',    // colors.surface
-  indicatorColor: 'rgba(45, 90, 39, 0.12)', // primary @ 12% opacity
-  borderColor: '#E5E2DB',        // colors.border
+  activeColor: brand.colors.accent,
+  inactiveColor: 'rgba(245, 242, 235, 0.5)', // textOnPrimary @ 50%
+  backgroundColor: brand.colors.primary,
+  indicatorColor: 'rgba(196, 151, 90, 0.15)', // accent @ 15%
+  borderColor: brand.colors.primary,
+  labelActiveColor: brand.colors.accent,
+  labelInactiveColor: 'rgba(245, 242, 235, 0.5)',
 } as const;
 
 // ── Layout Constants ──────────────────────────────────────────────────────────
