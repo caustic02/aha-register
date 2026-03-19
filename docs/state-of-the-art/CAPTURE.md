@@ -465,9 +465,9 @@ media.ocr_confidence = 0–100 score
 media.ocr_source     = 'on_device'
 ```
 
-### Cloud OCR Upgrade (C6 — stub)
+### Cloud OCR Upgrade (C6)
 
-`upgradeOcrFromCloud()` is stubbed for C6. Will call Gemini Edge Function. Only overwrites on-device results if cloud confidence > on_device confidence.
+`upgradeOcrFromCloud()` calls the `ocr-enhance` Edge Function (Gemini 2.5 Pro). Only overwrites on-device results if cloud confidence > on-device confidence. See the C6 section below for full detail.
 
 ### Key Files (C1)
 
