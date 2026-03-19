@@ -104,8 +104,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
         >
           {/* Header */}
           <View style={styles.header}>
-            <AhaLogo width={180} height={56} />
-            <Text style={styles.appNameSub}>Register</Text>
+            <AhaLogo width={200} height={88} color={colors.primary} />
           </View>
 
           {/* Primary action: Start Documenting */}
@@ -249,7 +248,7 @@ const styles = StyleSheet.create({
     marginBottom: 36,
   },
   appNameSub: {
-    color: colors.textSecondary,
+    color: colors.primary,
     fontSize: typography.size.xl,
     fontWeight: typography.weight.semibold,
     marginTop: spacing.xs,
@@ -257,8 +256,8 @@ const styles = StyleSheet.create({
 
   /* Primary skip/start button */
   startBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
     marginBottom: spacing.xxl,
@@ -335,8 +334,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   submitBtn: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.lg,
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
     marginTop: spacing.xxl,
@@ -354,7 +353,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   toggleText: {
-    color: colors.accent,
+    color: colors.primary,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },

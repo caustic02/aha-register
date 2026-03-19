@@ -15,13 +15,14 @@ export { FlaskConical as EnvironmentalSampleIcon } from 'lucide-react-native';
 export { Wrench as ConservationRecordIcon } from 'lucide-react-native';
 
 // ── Tab icons ─────────────────────────────────────────────────────────────────
-export { LayoutGrid as HomeTabIcon } from 'lucide-react-native';
-export { ScanLine as CaptureTabIcon } from 'lucide-react-native';
-export { Layers as CollectionTabIcon } from 'lucide-react-native';
-export { SlidersHorizontal as SettingsTabIcon } from 'lucide-react-native';
+export { House as HomeTabIcon } from 'lucide-react-native';
+// CaptureTabIcon: custom viewfinder in MainTabs.tsx; Camera used by screens as reference icon
+export { Camera as CaptureTabIcon } from 'lucide-react-native';
+export { Archive as CollectionTabIcon } from 'lucide-react-native';
+export { Settings as SettingsTabIcon } from 'lucide-react-native';
 
 // Legacy aliases (used by HomeScreen, ObjectListScreen, SettingsScreen)
-export { Layers as ObjectsTabIcon } from 'lucide-react-native';
+export { Archive as ObjectsTabIcon } from 'lucide-react-native';
 export { FolderOpen as CollectionsTabIcon } from 'lucide-react-native';
 
 // ── Action icons ──────────────────────────────────────────────────────────────
