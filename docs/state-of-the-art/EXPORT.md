@@ -149,4 +149,64 @@ The view inventory system (`src/config/viewRequirements.ts`) determines which im
 | `src/config/exportTemplates.ts` | `ExportTemplateConfig` type, `getExportTemplate()`, tier definitions |
 | `src/config/viewRequirements.ts` | `getViewInventory()` — drives image selection |
 | `src/services/export-service.ts` | Export generation (PDF, JSON, CSV) |
-| `src/components/ExportStepperModal.tsx` | Export UI stepper |
+| `src/components/ExportStepperModal.tsx` | 5-step export stepper (object mode) + legacy flow (batch/collection) |
+| `src/hooks/useExportConfig.ts` | `ExportConfig` state management hook |
+
+---
+
+## Export Stepper — 5-Step Configuration Flow (D2)
+
+Full-screen stepper for single-object exports. Replaces the previous 2-step format→review modal for object mode. Batch/collection exports keep the existing bottom-sheet flow.
+
+### Steps
+
+| # | Step | Description | Skippable? |
+|---|------|-------------|------------|
+| 1 | **Format** | PDF Data Sheet, PDF Condition Report, JSON, CSV | JSON/CSV skip directly to generation |
+| 2 | **Template** | Quick / Standard / Detailed — pre-fills Steps 3–4 | No |
+| 3 | **Images** | Selectable grid with view_type labels, isolated toggle, completeness indicator | No |
+| 4 | **Content** | Section toggles (identification always ON), AI badges, branding | No |
+| 5 | **Preview** | Simplified layout diagram + config summary + Generate button | No |
+
+### Navigation
+
+- Top: step indicator dots (numbered, filled for completed steps)
+- Bottom bar: Back / Next buttons (Next disabled until required selection made)
+- No swipe between steps (prevents accidental navigation)
+- Close button (×) on Step 1; Back arrow (←) on Steps 2–5
+
+### State Management — `useExportConfig`
+
+```typescript
+interface ExportConfig {
+  format: 'pdf_datasheet' | 'pdf_condition' | 'json' | 'csv';
+  template: 'quick' | 'standard' | 'detailed';
+  selectedImageIds: string[];
+  useIsolated: boolean;
+  showDimensions: boolean;
+  sections: { identification, physical, classification, condition, provenance, documents };
+  showAiBadges: boolean;
+  includeBranding: boolean;
+}
+```
+
+Template selection calls `applyTemplate(tier, media, domain)` which:
+1. Reads defaults from `exportTemplates.ts`
+2. Computes view inventory to select appropriate images
+3. Pre-fills section toggles and AI badge setting
+4. User can override any default in subsequent steps
+
+### Entry Points
+
+| Screen | Mode | Flow |
+|--------|------|------|
+| ObjectDetailScreen | `object` | Full 5-step stepper |
+| ObjectListScreen | `batch` | Legacy 3-step bottom sheet |
+| CollectionDetailScreen | `collection` | Legacy 3-step bottom sheet |
+
+### Key Files (D2)
+
+| File | Purpose |
+|------|---------|
+| `src/components/ExportStepperModal.tsx` | Main component — routes between object and legacy flows |
+| `src/hooks/useExportConfig.ts` | Config state, template application, image/section toggling |
