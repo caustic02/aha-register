@@ -42,6 +42,11 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      ["expo-build-properties", {
+        "ios": {
+          "deploymentTarget": "15.5"
+        }
+      }],
       ["expo-sqlite", { "useSQLCipher": true }],
       "expo-sharing",
       "expo-updates",
