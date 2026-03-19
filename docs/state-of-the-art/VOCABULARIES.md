@@ -112,6 +112,18 @@ When free text is entered:
 
 This enables future LIDO XML export with AAT URIs for linked data.
 
+### Display Formatting
+
+Getty AAT uses angle brackets `<…>` for hierarchical category containers (e.g. `<adhesive by composition or origin>`). These are machine notation not meant for human display.
+
+`cleanAatLabel()` (`src/utils/vocabulary.ts`) strips leading `<` and trailing `>` from labels before rendering. Applied at:
+
+- `VocabularyPicker.getDisplayLabel()` — all display paths (dropdown, chips, suggestions)
+- `VocabularyPicker` parent term display — dropdown secondary text
+- `matchToGetty()` in ReviewCardScreen — AI-to-Getty label matching results
+
+The raw data is **not modified** — brackets are stripped at display time only, preserving data integrity for SPARQL round-tripping.
+
 ### Integration in ReviewCardScreen
 
 | Field | Vocabulary | Mode |

@@ -44,6 +44,7 @@ import {
 } from '../services/collectionService';
 import { VocabularyPicker } from '../components/VocabularyPicker';
 import type { GettyTerm, VocabularySelection } from '../data/getty/types';
+import { cleanAatLabel } from '../utils/vocabulary';
 import objectTypesData from '../data/getty/object-types.json';
 import materialsData from '../data/getty/materials.json';
 import techniquesData from '../data/getty/techniques.json';
@@ -84,14 +85,14 @@ function matchToGetty(
       t.label_en.toLowerCase() === lower ||
       (t.label_de && t.label_de.toLowerCase() === lower),
   );
-  if (match) return { label: match.label_en, uri: match.uri };
+  if (match) return { label: cleanAatLabel(match.label_en), uri: match.uri };
   // Try substring match for compound terms like "oil on canvas"
   const partialMatch = vocabulary.find(
     (t) =>
       lower.includes(t.label_en.toLowerCase()) ||
       t.label_en.toLowerCase().includes(lower),
   );
-  if (partialMatch) return { label: partialMatch.label_en, uri: partialMatch.uri };
+  if (partialMatch) return { label: cleanAatLabel(partialMatch.label_en), uri: partialMatch.uri };
   return { label: text.trim(), uri: null };
 }
 
