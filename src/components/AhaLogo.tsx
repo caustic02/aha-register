@@ -1,47 +1,64 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import Svg, { G, Path } from 'react-native-svg';
-import { colors } from '../theme';
+import Svg, { G, Path, Text as SvgText } from 'react-native-svg';
 
 interface AhaLogoProps {
   width?: number;
   height?: number;
+  /** Logo color — defaults to black, pass parchment for dark backgrounds */
+  color?: string;
 }
 
 /**
- * Path-based SVG logo for "aha!" brand mark.
- * Bold condensed italic letterforms rendered as vector paths (not text spans).
- * "aha" in accent green, "!" in warning gold.
+ * aha! Register brand mark.
+ *
+ * Four viewfinder bracket corners forming a square frame,
+ * with "aha!" bold condensed italic inside and "REGISTER"
+ * in lighter weight below.
  */
-export function AhaLogo({ width = 180, height = 56 }: AhaLogoProps) {
+export function AhaLogo({ width = 180, height = 80, color = '#1A1A1A' }: AhaLogoProps) {
   return (
     <View style={[styles.container, { width, height }]}>
-      <Svg width={width} height={height} viewBox="0 0 200 68">
-        <G transform="translate(20,0) skewX(-10)">
-          {/* a (first) */}
-          <Path
-            d="M42 63L42 15C36 15 28 15 22 15C8 15 0 24 0 39C0 54 8 63 22 63Z M30 27L22 27C13 27 12 33 12 39C12 45 13 51 22 51L30 51Z"
-            fill={colors.accent}
-            fillRule="evenodd"
-          />
-          {/* h */}
-          <Path
-            d="M48 63L48 5L60 5L60 22C63 17 70 15 78 15C86 15 92 20 92 28L92 63L80 63L80 30C80 27 78 26 74 26C68 26 60 28 60 34L60 63Z"
-            fill={colors.accent}
-          />
-          {/* a (second) */}
-          <Path
-            d="M138 63L138 15C132 15 124 15 118 15C104 15 96 24 96 39C96 54 104 63 118 63Z M126 27L118 27C109 27 108 33 108 39C108 45 109 51 118 51L126 51Z"
-            fill={colors.accent}
-            fillRule="evenodd"
-          />
-          {/* ! */}
-          <Path
-            d="M147 15L157 15L155 44L149 44Z M148 50L156 50L156 63L148 63Z"
-            fill={colors.warning}
-            fillRule="evenodd"
-          />
+      <Svg width={width} height={height} viewBox="0 0 180 80">
+        {/* Viewfinder bracket corners */}
+        <G stroke={color} strokeWidth={3} strokeLinecap="square" fill="none">
+          {/* Top-left */}
+          <Path d="M12 28V12h16" />
+          {/* Top-right */}
+          <Path d="M152 12h16v16" />
+          {/* Bottom-left */}
+          <Path d="M12 52v16h16" />
+          {/* Bottom-right */}
+          <Path d="M152 68h16v-16" />
         </G>
+
+        {/* "aha!" text — bold condensed italic */}
+        <SvgText
+          x="90"
+          y="48"
+          textAnchor="middle"
+          fontFamily="Helvetica Neue, Helvetica, Arial, sans-serif"
+          fontSize="32"
+          fontWeight="800"
+          fontStyle="italic"
+          fill={color}
+        >
+          aha!
+        </SvgText>
+
+        {/* "REGISTER" — lighter weight, tracked */}
+        <SvgText
+          x="90"
+          y="74"
+          textAnchor="middle"
+          fontFamily="Helvetica Neue, Helvetica, Arial, sans-serif"
+          fontSize="10"
+          fontWeight="400"
+          letterSpacing={4}
+          fill={color}
+        >
+          REGISTER
+        </SvgText>
       </Svg>
     </View>
   );

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
+import Svg, { Path } from 'react-native-svg';
 
 import { HomeStack } from './HomeStack';
 import type { HomeStackParamList } from './HomeStack';
@@ -13,7 +14,6 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { tabBar } from '../theme';
 import {
   HomeTabIcon,
-  CaptureTabIcon,
   CollectionTabIcon,
   SettingsTabIcon,
 } from '../theme/icons';
@@ -30,11 +30,25 @@ export type MainTabParamList = {
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+// ── Custom viewfinder icon (four corner brackets — matches logo mark) ───────
+
+function ViewfinderIcon({ size, color, strokeWidth }: { size: number; color: string; strokeWidth: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 32 32" fill="none">
+      <Path
+        d="M4 12V4h8M20 4h8v8M4 20v8h8M20 28h8v-8"
+        stroke={color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="square"
+      />
+    </Svg>
+  );
+}
+
 // ── Icon config ──────────────────────────────────────────────────────────────
 
-const TAB_ICONS: Record<string, LucideIcon> = {
+const LUCIDE_ICONS: Record<string, LucideIcon> = {
   Home: HomeTabIcon,
-  Capture: CaptureTabIcon,
   Collection: CollectionTabIcon,
   Settings: SettingsTabIcon,
 };
@@ -50,15 +64,21 @@ function TabIcon({
   focused: boolean;
   color: string;
 }) {
-  const Icon = TAB_ICONS[route];
+  const sw = focused ? tabBar.activeStrokeWidth : tabBar.inactiveStrokeWidth;
+
   return (
     <View style={styles.iconContainer}>
       {focused && <View style={styles.indicator} />}
-      <Icon
-        size={tabBar.iconSize}
-        color={color}
-        strokeWidth={focused ? tabBar.activeStrokeWidth : tabBar.inactiveStrokeWidth}
-      />
+      {route === 'Capture' ? (
+        <ViewfinderIcon size={tabBar.iconSize} color={color} strokeWidth={sw} />
+      ) : (
+        (() => {
+          const Icon = LUCIDE_ICONS[route];
+          return Icon ? (
+            <Icon size={tabBar.iconSize} color={color} strokeWidth={sw} />
+          ) : null;
+        })()
+      )}
     </View>
   );
 }
@@ -76,10 +96,7 @@ export function MainTabs() {
         ),
         tabBarActiveTintColor: tabBar.activeColor,
         tabBarInactiveTintColor: tabBar.inactiveColor,
-        tabBarLabelStyle: {
-          ...styles.label,
-          color: undefined, // let tintColor drive it
-        },
+        tabBarLabelStyle: styles.label,
         tabBarStyle: styles.bar,
         tabBarHideOnKeyboard: true,
       })}
