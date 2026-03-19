@@ -20,6 +20,8 @@ const TABLES_IN_ORDER = [
   'app_settings',
   'audit_trail',
   'sync_queue',
+  'persons',
+  'object_persons',
 ];
 
 interface TableData {
