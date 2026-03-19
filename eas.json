@@ -24,6 +24,7 @@
     "testflight": {
       "distribution": "store",
       "channel": "preview",
+      "autoSubmit": true,
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       },
@@ -37,6 +38,12 @@
     "production": {}
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6760840077",
+        "appleId": "caustic02@gmail.com",
+        "appleTeamId": "GM3GG5X5V9"
+      }
+    }
   }
 }
