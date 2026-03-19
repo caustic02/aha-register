@@ -910,6 +910,21 @@
     "capturedPhoto": "Captured photograph",
     "signInRequired": "Sign in to use AI analysis. You can still enter metadata manually."
   },
+  "views": {
+    "front": "Front",
+    "back": "Back",
+    "top": "Top",
+    "bottom": "Bottom",
+    "left_side": "Left side",
+    "right_side": "Right side",
+    "detail": "Detail",
+    "detail_signature": "Signature / mark",
+    "detail_damage": "Condition detail",
+    "detail_label": "Label / tag",
+    "overall": "Overall / in situ",
+    "interior": "Interior",
+    "document_scan": "Document scan"
+  },
   "empty_states": {
     "objects": {
       "title": "No objects yet",

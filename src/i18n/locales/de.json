@@ -910,6 +910,21 @@
     "capturedPhoto": "Aufgenommenes Foto",
     "signInRequired": "Melde dich an, um die KI-Analyse zu nutzen. Du kannst Metadaten auch manuell eingeben."
   },
+  "views": {
+    "front": "Vorderseite",
+    "back": "Rückseite",
+    "top": "Aufsicht",
+    "bottom": "Unterseite",
+    "left_side": "Linke Seite",
+    "right_side": "Rechte Seite",
+    "detail": "Detail",
+    "detail_signature": "Signatur / Marke",
+    "detail_damage": "Zustandsdetail",
+    "detail_label": "Etikett / Beschriftung",
+    "overall": "Gesamtansicht",
+    "interior": "Innenansicht",
+    "document_scan": "Dokumentenscan"
+  },
   "empty_states": {
     "objects": {
       "title": "Noch keine Objekte",

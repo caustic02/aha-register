@@ -102,3 +102,51 @@ The new export module (`export-service.ts`, `export-share.ts`) coexists with the
 - Collection-level PDF reports
 
 The new module provides a simpler, format-flexible export path for single objects (PDF/CSV/JSON) triggered from the Object Detail screen.
+
+---
+
+## Export Template Tiers (D1)
+
+Three tiers following the Articheck pattern. Config in `src/config/exportTemplates.ts`.
+
+### Quick
+
+- Max 1 page
+- Primary image only (isolated if available, original if not)
+- Fields: title, object_type, medium, dimensions, date, accession_number
+- No condition, no provenance, no AI badges
+
+### Standard
+
+- 1–2 pages
+- Up to 4 images (primary + 3 selected from view inventory)
+- Fields: all identification + physical description + classification
+- Condition summary (1 line)
+- Getty AAT terms shown
+- AI badges optional (toggle)
+
+### Detailed
+
+- Multi-page (unlimited)
+- All available images with view_type labels
+- All fields including full condition, provenance, exhibition history
+- Getty AAT terms + AI confidence badges
+- Document scans included
+- Audit trail summary
+
+### How View Inventory Feeds Into Image Selection
+
+The view inventory system (`src/config/viewRequirements.ts`) determines which images appear in each tier:
+
+1. **Quick** — `primary_image` from `getViewInventory()` (prefers isolated derivative)
+2. **Standard** — primary + up to 3 additional from captured views, prioritising required views first, then recommended
+3. **Detailed** — all media with `view_type` labels rendered under each image
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/config/exportTemplates.ts` | `ExportTemplateConfig` type, `getExportTemplate()`, tier definitions |
+| `src/config/viewRequirements.ts` | `getViewInventory()` — drives image selection |
+| `src/services/export-service.ts` | Export generation (PDF, JSON, CSV) |
+| `src/components/ExportStepperModal.tsx` | Export UI stepper |
