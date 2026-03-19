@@ -334,7 +334,7 @@ function ObjectExportFlow({
       } else {
         // PDF — pass through existing generation for now
         setProgress(t('export.preview_generating'));
-        const uri = await exportAsPDF(data);
+        const uri = await exportAsPDF(data, config);
         const filename = buildExportFilename(title, 'pdf');
         await shareExport(uri, filename, 'application/pdf', true);
       }
@@ -349,7 +349,7 @@ function ObjectExportFlow({
       setError(t('export.error_message'));
       setProgress('');
     }
-  }, [config.format, data, t, onExportComplete]);
+  }, [config, data, t, onExportComplete]);
 
   // Can we advance from the current step?
   const canNext =

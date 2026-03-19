@@ -42,11 +42,51 @@ Bottom-sheet modal with three `ListItem` rows (PDF, JSON, CSV). Shows per-option
 
 ## Supported Formats
 
-### PDF Report
-- **Engine:** `expo-print` (`Print.printToFileAsync`)
-- **Layout:** A4, header (brand + title + date), primary image (base64 data URI), basic info table, description, persons table, capture metadata table, footer
-- **CSS:** Inline, uses theme color palette (`colors.primary` for headings/borders, `colors.text` for body, `colors.textSecondary` for labels, `colors.border` for table lines)
-- **Image:** Primary media file read via `new File(path).base64()` (SDK 55 new API)
+### PDF Object Data Sheet (D3)
+
+Professional A4 data sheet modeled on Articheck condition reports and museum object data sheets. Layout adapts to the `ExportConfig.template` tier.
+
+**Engine:** `expo-print` (`Print.printToFileAsync`), HTML-to-PDF, A4 with 20mm/18mm margins.
+
+**Typography:**
+- Title: 16pt bold
+- Section headers: 11pt bold, uppercase, letter-spacing 0.6pt, bottom rule
+- Field labels: 9pt bold, gray (`colors.textSecondary`)
+- Field values: 10pt regular, black
+- Footer: 7pt, gray
+- Image view labels: 8pt italic
+
+**Quick layout (1 page):**
+- Header band (institution, title, accession no., date)
+- Single centered primary image (65% width, max 300pt height)
+- Single-column metadata: identification fields only
+- Footer with SHA-256 hash, brand, date
+
+**Standard layout (1–2 pages):**
+- Header band
+- Image area: primary (42% width) + up to 3 thumbnails stacked right
+- Two-column metadata: Col 1 = identification + physical + classification; Col 2 = condition + provenance + capture data
+- Description below columns (full width)
+- Footer
+
+**Detailed layout (multi-page):**
+- Same as standard page 1
+- Page 2+: additional images in 4-column grid, documents with OCR text
+
+**Config wiring:**
+- `config.selectedImageIds` → which images to include
+- `config.useIsolated` → prefer `derivative_isolated` versions
+- `config.sections` → which metadata blocks render
+- `config.showAiBadges` → inline "AI" badges next to AI-analyzed values
+- Falls back to standard template when called without config (backward compatible)
+
+**Dimension format:** `H 45.2 × W 30.1 × D 12.0 cm` (reads from `type_specific_data.dimensions`)
+
+**Image handling:**
+- `expo-file-system` `File.base64()` for offline-first loading
+- Thin 0.5pt border on all images
+- View type labels from `VIEW_LABELS` lookup (not i18n — PDF is static HTML)
+- Missing files silently skipped
 
 ### JSON Data
 - **Structure:** Flat object with nested `media[]`, `persons[]`, and `_export` metadata block
