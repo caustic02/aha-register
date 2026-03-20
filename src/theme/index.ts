@@ -262,13 +262,13 @@ export const tabBar = {
   indicatorWidth: 64,
   indicatorHeight: 32,
   indicatorRadius: 16,
-  activeColor: brand.colors.accent,
-  inactiveColor: 'rgba(245, 242, 235, 0.5)', // textOnPrimary @ 50%
-  backgroundColor: brand.colors.primary,
-  indicatorColor: 'rgba(196, 151, 90, 0.15)', // accent @ 15%
-  borderColor: brand.colors.primary,
-  labelActiveColor: brand.colors.accent,
-  labelInactiveColor: 'rgba(245, 242, 235, 0.5)',
+  activeColor: brand.colors.primary,
+  inactiveColor: colors.textSecondary,
+  backgroundColor: brand.colors.background,
+  indicatorColor: 'rgba(30, 45, 61, 0.08)', // primary @ 8%
+  borderColor: colors.border,
+  labelActiveColor: brand.colors.primary,
+  labelInactiveColor: colors.textSecondary,
 } as const;
 
 // ── Layout Constants ──────────────────────────────────────────────────────────

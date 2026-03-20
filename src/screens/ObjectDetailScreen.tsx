@@ -43,6 +43,7 @@ import {
 } from '../theme/icons';
 import { colors, radii, spacing, touch, typography } from '../theme';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { ImageViewer } from '../components/ImageViewer';
 import { AIFieldBadge } from '../components/AIFieldBadge';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
@@ -111,6 +112,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   // Document scans for this object
   const {
@@ -481,19 +483,24 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               contentContainerStyle={styles.galleryContent}
             >
               {media.map((m, idx) => (
-                <View key={m.id} style={styles.galleryItem}>
+                <Pressable
+                  key={m.id}
+                  style={styles.galleryItem}
+                  onPress={() => setViewerUri(m.file_path)}
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
+                  }
+                >
                   <Image
                     source={{ uri: m.file_path }}
                     style={styles.galleryImage}
                     resizeMode="cover"
-                    accessibilityLabel={
-                      m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
-                    }
                   />
                   {m.is_primary === 1 && (
                     <View style={styles.primaryPip} />
                   )}
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
           </View>
@@ -784,6 +791,12 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         onClose={() => setShowExportModal(false)}
         source={exportSource}
       />
+
+      <ImageViewer
+        visible={!!viewerUri}
+        imageUri={viewerUri ?? ''}
+        onClose={() => setViewerUri(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -842,6 +855,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: spacing.sm,
+    paddingBottom: 100,
   },
   // Gallery
   gallerySection: {

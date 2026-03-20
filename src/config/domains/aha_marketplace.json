@@ -1,0 +1,111 @@
+{
+  "id": "aha_marketplace",
+  "label": "aha! Marketplace",
+  "label_de": "aha! Marktplatz",
+  "exportFormats": [
+    {
+      "id": "pdf_provenance_cert",
+      "label": "Provenance Certificate",
+      "label_de": "Provenienzzertifikat",
+      "description": "Verified ownership chain with tamper evidence",
+      "description_de": "Verifizierte Eigentumskette mit Manipulationsschutz",
+      "templateId": "provenance-cert"
+    },
+    {
+      "id": "pdf_materials_passport",
+      "label": "Materials Passport",
+      "label_de": "Materialpass",
+      "description": "Materials, dimensions, handling and framing",
+      "description_de": "Material, Maße, Handhabung und Rahmung",
+      "templateId": "materials-passport"
+    },
+    {
+      "id": "pdf_collector_report",
+      "label": "Collector Report",
+      "label_de": "Sammlerbericht",
+      "description": "Purchase history, condition and shipping details",
+      "description_de": "Kaufhistorie, Zustand und Versanddetails",
+      "templateId": "collector-report"
+    },
+    {
+      "id": "pdf_curator_package",
+      "label": "Curator Submission Package",
+      "label_de": "Kuratorenpaket",
+      "description": "Photos, description, provenance and price range",
+      "description_de": "Fotos, Beschreibung, Provenienz und Preisspanne",
+      "templateId": "curator-package"
+    }
+  ],
+  "fieldCategories": [
+    {
+      "id": "identification",
+      "label": "Identification",
+      "label_de": "Identifikation",
+      "fields": [
+        { "id": "title", "label": "Title", "label_de": "Titel", "defaultOn": true },
+        { "id": "creator", "label": "Artist", "label_de": "Künstler", "defaultOn": true },
+        { "id": "artist_attribution", "label": "Attribution", "label_de": "Zuschreibung", "defaultOn": true },
+        { "id": "date_period", "label": "Date / Period", "label_de": "Datierung / Epoche", "defaultOn": true },
+        { "id": "object_type", "label": "Object type", "label_de": "Objekttyp", "defaultOn": true },
+        { "id": "description", "label": "Description", "label_de": "Beschreibung", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "physical",
+      "label": "Physical Description",
+      "label_de": "Physische Beschreibung",
+      "fields": [
+        { "id": "materials", "label": "Materials", "label_de": "Material", "defaultOn": true },
+        { "id": "technique", "label": "Technique", "label_de": "Technik", "defaultOn": true },
+        { "id": "dimensions", "label": "Dimensions", "label_de": "Maße", "defaultOn": true },
+        { "id": "weight", "label": "Weight", "label_de": "Gewicht", "defaultOn": true },
+        { "id": "inscriptions", "label": "Inscriptions / Signatures", "label_de": "Inschriften / Signaturen", "defaultOn": true },
+        { "id": "condition_summary", "label": "Condition", "label_de": "Zustand", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "provenance",
+      "label": "Provenance",
+      "label_de": "Provenienz",
+      "fields": [
+        { "id": "ownership_history", "label": "Ownership history", "label_de": "Eigentumsgeschichte", "defaultOn": true },
+        { "id": "acquisition_method", "label": "Acquisition method", "label_de": "Erwerbungsart", "defaultOn": true },
+        { "id": "acquisition_date", "label": "Acquisition date", "label_de": "Erwerbungsdatum", "defaultOn": true },
+        { "id": "legal_status", "label": "Legal status", "label_de": "Rechtsstatus", "defaultOn": true },
+        { "id": "credit_line", "label": "Credit line", "label_de": "Dankeszeile", "defaultOn": true },
+        { "id": "export_restrictions", "label": "Export restrictions", "label_de": "Ausfuhrbeschränkungen", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "valuation",
+      "label": "Valuation",
+      "label_de": "Bewertung",
+      "fields": [
+        { "id": "insurance_value", "label": "Insurance value", "label_de": "Versicherungswert", "defaultOn": true },
+        { "id": "fair_market_value", "label": "Fair market value", "label_de": "Marktwert", "defaultOn": true },
+        { "id": "appraisal_date", "label": "Appraisal date", "label_de": "Schätzungsdatum", "defaultOn": true },
+        { "id": "replacement_value", "label": "Replacement value", "label_de": "Wiederbeschaffungswert", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "media",
+      "label": "Media & Images",
+      "label_de": "Medien & Bilder",
+      "fields": [
+        { "id": "primary_photo", "label": "Primary photo", "label_de": "Hauptfoto", "defaultOn": true },
+        { "id": "all_photos", "label": "All photos", "label_de": "Alle Fotos", "defaultOn": true },
+        { "id": "isolated_images", "label": "Background-removed images", "label_de": "Freigestellte Bilder", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "capture",
+      "label": "Capture Verification",
+      "label_de": "Erfassungsverifikation",
+      "fields": [
+        { "id": "sha256_hash", "label": "SHA-256 hash", "label_de": "SHA-256-Hash", "defaultOn": true },
+        { "id": "gps_coordinates", "label": "GPS coordinates", "label_de": "GPS-Koordinaten", "defaultOn": true },
+        { "id": "capture_timestamp", "label": "Capture timestamp", "label_de": "Erfassungszeitstempel", "defaultOn": true }
+      ]
+    }
+  ]
+}

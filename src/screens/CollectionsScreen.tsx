@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing.xxl,
+    paddingBottom: 100,
   },
   card: {
     backgroundColor: colors.borderLight,

@@ -18,7 +18,9 @@ import {
   useExportConfig,
   type ExportFormat,
   type ExportSections,
+  type ExportFields,
 } from '../hooks/useExportConfig';
+import type { DomainConfig } from '../config/domains';
 import type { ExportTier } from '../config/exportTemplates';
 import { getViewInventory } from '../config/viewRequirements';
 import { Button, Divider } from './ui';
@@ -206,13 +208,18 @@ function ObjectExportFlow({
   const { t } = useAppTranslation();
   const {
     config,
+    domain,
+    categoryFields,
     reset,
     setFormat,
     applyTemplate,
     toggleImage,
     toggleSection,
+    toggleField,
+    toggleCategoryFields,
     setFlag,
-  } = useExportConfig();
+    // TODO: domainId should come from user's onboarding domain selection
+  } = useExportConfig('museum_collection');
 
   const [step, setStep] = useState<ObjectStep>('format');
   const [progress, setProgress] = useState('');
@@ -422,10 +429,15 @@ function ObjectExportFlow({
         )}
         {step === 'content' && (
           <ContentStep
+            domain={domain}
+            categoryFields={categoryFields}
             sections={config.sections}
+            fields={config.fields}
             showAiBadges={config.showAiBadges}
             includeBranding={config.includeBranding}
             onToggleSection={toggleSection}
+            onToggleField={toggleField}
+            onToggleCategoryFields={toggleCategoryFields}
             onSetFlag={setFlag}
             t={t}
           />
@@ -755,122 +767,106 @@ function ImagesStep({
 // ═════════════════════════════════════════════════════════════════════════════
 
 function ContentStep({
+  domain,
+  categoryFields,
   sections,
+  fields,
   showAiBadges,
   includeBranding,
   onToggleSection,
+  onToggleField,
+  onToggleCategoryFields,
   onSetFlag,
   t,
 }: {
+  domain: DomainConfig;
+  categoryFields: Record<string, string[]>;
   sections: ExportSections;
+  fields: ExportFields;
   showAiBadges: boolean;
   includeBranding: boolean;
-  onToggleSection: (key: 'identification' | 'physical' | 'classification' | 'condition' | 'provenance' | 'documents') => void;
+  onToggleSection: (key: string) => void;
+  onToggleField: (key: string) => void;
+  onToggleCategoryFields: (category: string, value: boolean) => void;
   onSetFlag: (key: 'showAiBadges' | 'includeBranding', v: boolean) => void;
   t: (k: string) => string;
 }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const lang = t('pdf.html_lang') === 'de' ? 'de' : 'en';
 
   const toggleExpand = useCallback((key: string) => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  const sectionDefs: {
-    key: keyof ExportSections;
-    label: string;
-    locked?: boolean;
-    fields: string[];
-  }[] = [
-    {
-      key: 'identification',
-      label: t('export.content_identification'),
-      locked: true,
-      fields: [
-        t('export.field_accession'),
-        t('export.field_title'),
-        t('export.field_object_type'),
-        t('export.field_creator'),
-        t('export.field_date'),
-        t('export.field_description'),
-      ],
-    },
-    {
-      key: 'physical',
-      label: t('export.content_physical'),
-      fields: [
-        t('export.field_materials'),
-        t('export.field_technique'),
-        t('export.field_dimensions'),
-        t('export.field_inscriptions'),
-      ],
-    },
-    {
-      key: 'classification',
-      label: t('export.content_classification'),
-      fields: [
-        t('export.field_aat_terms'),
-        t('export.field_style_period'),
-        t('export.field_culture'),
-      ],
-    },
-    {
-      key: 'condition',
-      label: t('export.content_condition'),
-      fields: [
-        t('export.field_condition_summary'),
-        t('export.field_damage_notes'),
-        t('export.field_handling'),
-      ],
-    },
-    {
-      key: 'provenance',
-      label: t('export.content_provenance'),
-      fields: [
-        t('export.field_ownership'),
-        t('export.field_acquisition'),
-        t('export.field_legal_status'),
-      ],
-    },
-    {
-      key: 'documents',
-      label: t('export.content_documents'),
-      fields: [
-        t('export.field_photos'),
-        t('export.field_hashes'),
-        t('export.field_capture_metadata'),
-      ],
-    },
-  ];
-
   return (
     <ScrollView contentContainerStyle={styles.stepPad}>
       <Text style={styles.stepHeading}>{t('export.step_content')}</Text>
 
-      {sectionDefs.map((s) => {
-        const isExpanded = expanded[s.key] ?? false;
+      {domain.fieldCategories.map((cat) => {
+        const catFieldIds = categoryFields[cat.id] ?? [];
+        if (catFieldIds.length === 0) return null;
+        const isExpanded = expanded[cat.id] ?? false;
+        const allOn = catFieldIds.every((k) => fields[k]);
+        const someOn = catFieldIds.some((k) => fields[k]);
+
         return (
-          <View key={s.key} style={cs.sectionBlock}>
+          <View key={cat.id} style={cs.sectionBlock}>
+            {/* Category header */}
             <View style={cs.sectionHeader}>
               <Pressable
                 style={cs.sectionTap}
-                onPress={() => toggleExpand(s.key)}
+                onPress={() => toggleExpand(cat.id)}
                 accessibilityRole="button"
               >
-                <Text style={cs.expandArrow}>{isExpanded ? '\u25BC' : '\u25B6'}</Text>
-                <Text style={cs.sectionLabel}>{s.label}</Text>
+                <Text style={cs.expandArrow}>
+                  {isExpanded ? '\u25BC' : '\u25B6'}
+                </Text>
+                <Text style={cs.sectionLabel}>
+                  {lang === 'de' ? cat.label_de : cat.label}
+                </Text>
+                {!allOn && someOn && (
+                  <View style={cs.partialDot} />
+                )}
               </Pressable>
               <Switch
-                value={sections[s.key]}
-                onValueChange={s.locked ? undefined : () => onToggleSection(s.key)}
-                disabled={s.locked}
+                value={allOn}
+                onValueChange={() => {
+                  onToggleCategoryFields(cat.id, !allOn);
+                  if (cat.id !== 'identification') {
+                    if (allOn && sections[cat.id]) onToggleSection(cat.id);
+                    if (!allOn && !sections[cat.id]) onToggleSection(cat.id);
+                  }
+                }}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor={colors.white}
               />
             </View>
+
+            {/* Per-field checkboxes */}
             {isExpanded && (
               <View style={cs.fieldList}>
-                {s.fields.map((field) => (
-                  <Text key={field} style={cs.fieldItem}>{field}</Text>
+                {cat.fields.map((field) => (
+                  <Pressable
+                    key={field.id}
+                    style={cs.fieldRow}
+                    onPress={() => onToggleField(field.id)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: !!fields[field.id] }}
+                  >
+                    <View
+                      style={[
+                        cs.checkbox,
+                        fields[field.id] && cs.checkboxOn,
+                      ]}
+                    >
+                      {fields[field.id] && (
+                        <CheckIcon size={12} color={colors.white} />
+                      )}
+                    </View>
+                    <Text style={cs.fieldLabel}>
+                      {lang === 'de' ? field.label_de : field.label}
+                    </Text>
+                  </Pressable>
                 ))}
               </View>
             )}
@@ -943,16 +939,42 @@ const cs = StyleSheet.create({
     ...typography.bodyMedium,
     color: colors.text,
   },
+  partialDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.warning,
+  },
   fieldList: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    paddingLeft: spacing.lg + 14 + spacing.sm,
-    gap: spacing.xs,
+    paddingVertical: spacing.xs,
     backgroundColor: colors.surface,
   },
-  fieldItem: {
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    gap: spacing.md,
+    minHeight: touch.minTargetSmall,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  fieldLabel: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: colors.text,
+    flex: 1,
   },
 });
 
@@ -1086,11 +1108,11 @@ function ExportingStep({
           <Text style={styles.exportingTitle}>
             {t('exportStepper.exportComplete')}
           </Text>
-          <View style={styles.cancelWrap}>
+          <View style={styles.doneActions}>
             <Button
               label={t('common.done')}
               variant="primary"
-              size="md"
+              size="lg"
               onPress={onClose}
               fullWidth
             />
@@ -1584,6 +1606,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
     padding: spacing.lg,
+    minHeight: touch.minTarget,
   },
   templateCardActive: {
     borderColor: colors.primary,
@@ -1825,6 +1848,12 @@ const styles = StyleSheet.create({
   },
   continueWrap: {
     flex: 1,
+  },
+  doneActions: {
+    width: '100%',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    gap: spacing.md,
   },
   cancelWrap: {
     paddingHorizontal: spacing.lg,

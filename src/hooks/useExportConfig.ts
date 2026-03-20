@@ -1,27 +1,26 @@
 /**
  * Export configuration state hook.
  *
- * Manages the full config for the 5-step export stepper.
- * Template selection pre-fills defaults from exportTemplates.ts;
- * user overrides persist within the session.
+ * Field definitions, categories, and export formats are loaded from
+ * domain JSON configs (src/config/domains/). This hook manages the
+ * runtime toggle state — it does NOT define the field inventory.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { getExportTemplate, type ExportTier } from '../config/exportTemplates';
+import { getDomainConfig, type DomainConfig } from '../config/domains';
 import type { Media } from '../db/types';
 import { getViewInventory } from '../config/viewRequirements';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type ExportFormat = 'pdf_datasheet' | 'pdf_condition' | 'json' | 'csv';
+export type ExportFormat = string;
 
 export interface ExportSections {
-  identification: boolean;
-  physical: boolean;
-  classification: boolean;
-  condition: boolean;
-  provenance: boolean;
-  documents: boolean;
+  [categoryId: string]: boolean;
 }
+
+/** Flat map of field ID → on/off. Populated from domain config. */
+export type ExportFields = Record<string, boolean>;
 
 export interface ExportConfig {
   format: ExportFormat;
@@ -30,27 +29,41 @@ export interface ExportConfig {
   useIsolated: boolean;
   showDimensions: boolean;
   sections: ExportSections;
+  fields: ExportFields;
   showAiBadges: boolean;
   includeBranding: boolean;
 }
 
-// ── Defaults ─────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function buildDefault(): ExportConfig {
+function buildFieldDefaults(domain: DomainConfig): ExportFields {
+  const f: Record<string, boolean> = {};
+  for (const cat of domain.fieldCategories) {
+    for (const field of cat.fields) {
+      f[field.id] = field.defaultOn;
+    }
+  }
+  return f;
+}
+
+function buildSectionDefaults(domain: DomainConfig): ExportSections {
+  const s: Record<string, boolean> = {};
+  for (const cat of domain.fieldCategories) {
+    s[cat.id] = cat.fields.some((f) => f.defaultOn);
+  }
+  return s;
+}
+
+function buildDefault(domain: DomainConfig): ExportConfig {
+  const defaultFormat = domain.exportFormats[0]?.id ?? 'pdf_datasheet';
   return {
-    format: 'pdf_datasheet',
+    format: defaultFormat,
     template: 'standard',
     selectedImageIds: [],
     useIsolated: true,
     showDimensions: false,
-    sections: {
-      identification: true,
-      physical: true,
-      classification: true,
-      condition: false,
-      provenance: false,
-      documents: false,
-    },
+    sections: buildSectionDefaults(domain),
+    fields: buildFieldDefaults(domain),
     showAiBadges: false,
     includeBranding: true,
   };
@@ -58,21 +71,33 @@ function buildDefault(): ExportConfig {
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useExportConfig() {
-  const [config, setConfig] = useState<ExportConfig>(buildDefault);
+export function useExportConfig(domainId: string = 'museum_collection') {
+  const domain = useMemo(() => getDomainConfig(domainId), [domainId]);
+  const [config, setConfig] = useState<ExportConfig>(() => buildDefault(domain));
 
-  const reset = useCallback(() => setConfig(buildDefault()), []);
+  /** Derived: category → field IDs mapping from the domain config. */
+  const categoryFields = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const cat of domain.fieldCategories) {
+      m[cat.id] = cat.fields.map((f) => f.id);
+    }
+    return m;
+  }, [domain]);
+
+  const reset = useCallback(
+    () => setConfig(buildDefault(domain)),
+    [domain],
+  );
 
   const setFormat = useCallback((format: ExportFormat) => {
     setConfig((prev) => ({ ...prev, format }));
   }, []);
 
   const applyTemplate = useCallback(
-    (tier: ExportTier, media: Media[], domain: string) => {
+    (tier: ExportTier, media: Media[], templateDomain: string) => {
       const tmpl = getExportTemplate(tier);
-      const inventory = getViewInventory(domain, media);
+      const inventory = getViewInventory(templateDomain, media);
 
-      // Select images based on template tier
       const originals = media.filter(
         (m) => !m.media_type || m.media_type === 'original',
       );
@@ -101,19 +126,13 @@ export function useExportConfig() {
         selectedImageIds: selectedIds,
         useIsolated: tmpl.preferIsolated,
         showDimensions: false,
-        sections: {
-          identification: true,
-          physical: tmpl.fieldGroups.includes('physical'),
-          classification: tmpl.fieldGroups.includes('classification'),
-          condition: tmpl.condition !== 'none',
-          provenance: tmpl.provenance,
-          documents: tmpl.includeDocuments,
-        },
+        sections: buildSectionDefaults(domain),
+        fields: buildFieldDefaults(domain),
         showAiBadges: tmpl.showAiBadges,
         includeBranding: true,
       }));
     },
-    [],
+    [domain],
   );
 
   const toggleImage = useCallback((mediaId: string) => {
@@ -128,15 +147,32 @@ export function useExportConfig() {
     });
   }, []);
 
-  const toggleSection = useCallback(
-    (key: keyof ExportSections) => {
-      if (key === 'identification') return;
-      setConfig((prev) => ({
-        ...prev,
-        sections: { ...prev.sections, [key]: !prev.sections[key] },
-      }));
+  const toggleSection = useCallback((key: string) => {
+    if (key === 'identification') return;
+    setConfig((prev) => ({
+      ...prev,
+      sections: { ...prev.sections, [key]: !prev.sections[key] },
+    }));
+  }, []);
+
+  const toggleField = useCallback((key: string) => {
+    setConfig((prev) => ({
+      ...prev,
+      fields: { ...prev.fields, [key]: !prev.fields[key] },
+    }));
+  }, []);
+
+  const toggleCategoryFields = useCallback(
+    (category: string, value: boolean) => {
+      const keys = categoryFields[category];
+      if (!keys) return;
+      setConfig((prev) => {
+        const next = { ...prev.fields };
+        for (const k of keys) next[k] = value;
+        return { ...prev, fields: next };
+      });
     },
-    [],
+    [categoryFields],
   );
 
   const setFlag = useCallback(
@@ -151,11 +187,15 @@ export function useExportConfig() {
 
   return {
     config,
+    domain,
+    categoryFields,
     reset,
     setFormat,
     applyTemplate,
     toggleImage,
     toggleSection,
+    toggleField,
+    toggleCategoryFields,
     setFlag,
   };
 }

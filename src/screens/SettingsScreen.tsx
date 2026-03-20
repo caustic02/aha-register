@@ -806,7 +806,7 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing.xl,
-    paddingBottom: spacing['3xl'],
+    paddingBottom: 100,
   },
   // Card gap for TextInput spacing
   cardGap: {
