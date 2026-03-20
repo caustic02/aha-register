@@ -379,10 +379,40 @@ export function CaptureScreen() {
   }, []);
 
   const handleViewObjects = useCallback(() => {
+    const id = savedId;
     handleRetake();
-    // Navigate to Objects tab via parent tab navigator
-    navigation.getParent()?.navigate('Home');
-  }, [navigation, handleRetake]);
+    if (id) {
+      navigation.getParent()?.navigate('Home', {
+        screen: 'ObjectDetail',
+        params: { objectId: id },
+      });
+    } else {
+      navigation.getParent()?.navigate('Home');
+    }
+  }, [navigation, handleRetake, savedId]);
+
+  const handleDirectSave = useCallback(async () => {
+    if (!capture || !metadata) return;
+    setPhase('saving');
+    try {
+      const objectId = await createDraftObject(db, {
+        imageUri: capture.uri,
+        fileName: capture.fileName,
+        fileSize: capture.fileSize,
+        mimeType: capture.mimeType,
+        metadata,
+        objectType: defaultObjectType ?? 'museum_object',
+      });
+      setSessionPhotoCount((prev) => prev + 1);
+      navigation.getParent()?.navigate('Home', {
+        screen: 'ObjectDetail',
+        params: { objectId },
+      });
+      handleRetake();
+    } catch {
+      setPhase('preview');
+    }
+  }, [capture, metadata, db, defaultObjectType, navigation, handleRetake]);
 
   const handleAnalyzeWithAI = useCallback(async () => {
     if (!capture || !metadata) return;
@@ -576,8 +606,12 @@ export function CaptureScreen() {
           )}
         </View>
 
-        <Pressable style={styles.primaryBtn} onPress={handleAnalyzeWithAI} accessibilityRole="button">
-          <Text style={styles.primaryBtnText}>{t('common.next')}</Text>
+        <Pressable style={styles.primaryBtn} onPress={handleDirectSave} accessibilityRole="button">
+          <Text style={styles.primaryBtnText}>{t('reviewCard.saveObject')}</Text>
+        </Pressable>
+
+        <Pressable style={styles.secondaryBtn} onPress={handleAnalyzeWithAI} accessibilityRole="button">
+          <Text style={styles.secondaryBtnText}>{t('common.next')}</Text>
         </Pressable>
 
         <Pressable style={styles.secondaryBtn} onPress={handleRetake} accessibilityRole="button">
