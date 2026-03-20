@@ -14,7 +14,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { signIn, signUp } from '../services/auth';
-import { AhaLogo } from '../components/AhaLogo';
+import AhaLogo from '../components/AhaLogo';
 import { colors, typography, spacing, radii } from '../theme';
 
 interface AuthScreenProps {
