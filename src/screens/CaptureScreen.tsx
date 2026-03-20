@@ -42,6 +42,7 @@ import {
   extractTextOnDevice,
 } from '../services/documentScanService';
 import { colors, typography, spacing, radii, layout, touch } from '../theme';
+import { ImageViewer } from '../components/ImageViewer';
 
 // Camera-specific overlay colours — rgba values intentionally outside the design
 // system token set because they are camera-viewfinder-only and must meet contrast
@@ -130,6 +131,7 @@ export function CaptureScreen() {
 
   // Intro overlay (first-time guidance)
   const [showIntro, setShowIntro] = useState(false);
+  const [viewerUri, setViewerUri] = useState<string | null>(null);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -579,7 +581,15 @@ export function CaptureScreen() {
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
       >
-        <Image source={{ uri: capture.uri }} style={styles.preview} accessibilityLabel="Captured photograph preview" />
+        <Pressable onPress={() => setViewerUri(capture.uri)} accessibilityRole="button" accessibilityLabel="View full-screen">
+          <Image source={{ uri: capture.uri }} style={styles.preview} accessibilityLabel="Captured photograph preview" />
+        </Pressable>
+
+        <ImageViewer
+          visible={!!viewerUri}
+          imageUri={viewerUri ?? ''}
+          onClose={() => setViewerUri(null)}
+        />
 
         <View style={styles.metaSection}>
           <Text style={styles.metaLabel}>{t('capture.coordinates')}</Text>
@@ -1316,7 +1326,7 @@ const styles = StyleSheet.create({
 
   // ── Shared buttons ───────────────────────────────────────────────────────────
   primaryBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1330,7 +1340,7 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: colors.accent,
+    borderColor: colors.primary,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1338,7 +1348,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   secondaryBtnText: {
-    color: colors.accent,
+    color: colors.primary,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },
