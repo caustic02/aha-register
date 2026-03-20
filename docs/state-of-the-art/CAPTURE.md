@@ -654,6 +654,23 @@ Each domain defines required views (minimum for a complete record), recommended 
 
 ---
 
+## Full-Screen Image Viewer (2026-03-20)
+
+New `src/components/ImageViewer.tsx` — reusable full-screen modal with pinch-to-zoom:
+- Library: `@likashefqet/react-native-image-zoom` v4.3.0 (Zoomable component)
+- Pinch to zoom (1x–5x), double-tap to zoom to 2x
+- Black background, safe-area-aware close button (top-right)
+- Wired into: ObjectDetailScreen (gallery images), CaptureScreen (preview phase)
+- Usage: `<ImageViewer visible={!!uri} imageUri={uri} onClose={() => setUri(null)} />`
+
+## Background Removal Edge Function
+
+`supabase/functions/remove-background/index.ts` — calls remove.bg API.
+- Auth: same 3-tier JWT pattern as analyze-object (session → refresh → anonymous)
+- Secret: `REMOVE_BG_API_KEY` is set in Supabase secrets
+- Client: `src/services/isolationService.ts` sends user JWT, handles 401 retry
+- Function redeployed 2026-03-20
+
 ## Known Gaps
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)
