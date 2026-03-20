@@ -92,14 +92,15 @@ function translateDisplayStatus(rawStatus: string, t: TFunc): string {
 // ── CSS ─────────────────────────────────────────────────────────────────────
 
 const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,700&display=swap');
 @page { size: A4; margin: 18mm 20mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-  font-family: -apple-system, system-ui, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: 'DM Sans', -apple-system, system-ui, 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 9.5pt;
   color: ${C.textPrimary};
   line-height: 1.45;
-  background: ${C.surface};
+  background: #FFFFFF;
 }
 code, .mono {
   font-family: 'Courier New', Courier, monospace;
@@ -108,53 +109,56 @@ code, .mono {
 }
 
 /* ── Accent bar ── */
-.accent-bar { height: 8pt; background: ${C.accent}; width: 100%; margin-bottom: 14pt; }
-.accent-bar-sm { height: 5pt; background: ${C.accent}; width: 100%; margin-bottom: 10pt; }
+.accent-bar { height: 4pt; background: ${C.primary}; width: 100%; margin-bottom: 12pt; }
+.accent-bar-sm { height: 3pt; background: ${C.primary}; width: 100%; margin-bottom: 10pt; }
 
 /* ── Header ── */
 .report-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12pt;
+  padding-bottom: 10pt; border-bottom: 0.5pt solid ${C.primary};
+  margin-bottom: 14pt;
 }
 .header-brand { display: flex; align-items: baseline; gap: 4pt; }
-.brand-aha { font-style: italic; font-weight: 800; font-size: 20pt; color: ${C.accent}; }
-.brand-register { font-size: 11pt; color: ${C.textSecondary}; font-weight: 400; }
+.brand-aha { font-style: italic; font-weight: 700; font-size: 18pt; color: ${C.primary}; }
+.brand-register { font-size: 10pt; color: ${C.textSecondary}; font-weight: 400; }
 .header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4pt; }
 .header-badge {
   background: ${C.accent}; color: #FFFFFF;
-  font-size: 7.5pt; font-weight: 700; letter-spacing: 1pt;
-  padding: 3pt 8pt; border-radius: 3pt;
+  font-size: 7pt; font-weight: 700; letter-spacing: 1.5pt;
+  padding: 3pt 10pt; border-radius: 2pt; text-transform: uppercase;
 }
-.header-institution { font-size: 8pt; color: ${C.textMuted}; }
+.header-institution { font-size: 8pt; color: ${C.textSecondary}; font-weight: 500; }
 
 /* ── Title row ── */
 .title-row {
   display: flex; align-items: flex-start; justify-content: space-between;
   gap: 12pt; margin-bottom: 14pt;
-  padding-bottom: 10pt; border-bottom: 1pt solid ${C.border};
+  padding-bottom: 10pt; border-bottom: 0.5pt solid ${C.border};
 }
 .title-block { flex: 1; }
 .obj-type-label {
-  font-size: 7.5pt; font-weight: 600; color: ${C.textMuted};
-  text-transform: uppercase; letter-spacing: 0.8pt; margin-bottom: 3pt;
+  font-size: 7.5pt; font-weight: 700; color: ${C.primary};
+  text-transform: uppercase; letter-spacing: 1.5pt; margin-bottom: 3pt;
 }
 .obj-title { font-size: 16pt; font-weight: 700; color: ${C.textPrimary}; margin-bottom: 3pt; line-height: 1.2; }
-.obj-subtitle { font-size: 9.5pt; color: ${C.textSecondary}; }
+.obj-subtitle { font-size: 9.5pt; color: ${C.textSecondary}; line-height: 1.4; }
 .inv-badge {
-  background: ${C.accentLight}; border: 1pt solid ${C.accent}; color: ${C.accent};
-  font-size: 8.5pt; font-weight: 600; padding: 4pt 10pt;
-  border-radius: 5pt; white-space: nowrap; flex-shrink: 0;
+  background: #FFFFFF; border: 1.5pt solid ${C.accent}; color: ${C.accent};
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 9pt; font-weight: 600; padding: 4pt 10pt;
+  border-radius: 3pt; white-space: nowrap; flex-shrink: 0;
+  letter-spacing: 0.3pt;
 }
 
 /* ── Main two-column layout ── */
-.main-columns { display: flex; gap: 14pt; margin-bottom: 14pt; }
+.main-columns { display: flex; gap: 14pt; margin-bottom: 16pt; }
 .col-image { flex: 0 0 55%; }
 .col-facts { flex: 1; }
 
 /* ── Image ── */
 .image-wrapper {
   position: relative; background: ${C.background};
-  border: 1pt solid ${C.border}; border-radius: 7pt; overflow: hidden;
+  border: 0.5pt solid ${C.border}; border-radius: 4pt; overflow: hidden;
   margin-bottom: 6pt;
 }
 .primary-img { width: 100%; max-height: 200pt; object-fit: contain; display: block; }
@@ -164,60 +168,78 @@ code, .mono {
 }
 .img-count-badge {
   position: absolute; bottom: 6pt; right: 6pt;
-  background: rgba(0,0,0,0.5); color: #FFFFFF;
-  font-size: 7.5pt; font-weight: 600; padding: 2pt 7pt; border-radius: 10pt;
+  background: rgba(0,0,0,0.55); color: #FFFFFF;
+  font-size: 7pt; font-weight: 600; padding: 2pt 7pt; border-radius: 10pt;
 }
 .thumb-strip { display: flex; gap: 5pt; }
-.thumb { flex: 1; max-width: 60pt; height: 40pt; object-fit: cover; border-radius: 4pt; border: 0.5pt solid ${C.border}; }
+.thumb { flex: 1; max-width: 60pt; height: 40pt; object-fit: cover; border-radius: 3pt; border: 0.5pt solid ${C.border}; }
 .thumb-more {
-  flex: 1; max-width: 60pt; height: 40pt; border-radius: 4pt; border: 0.5pt solid ${C.border};
+  flex: 1; max-width: 60pt; height: 40pt; border-radius: 3pt; border: 0.5pt solid ${C.border};
   background: ${C.background}; display: flex; align-items: center; justify-content: center;
   font-size: 8pt; color: ${C.textSecondary}; font-weight: 600;
 }
 
 /* ── Facts card ── */
 .facts-card {
-  background: ${C.background}; border: 1pt solid ${C.border};
-  border-radius: 8pt; padding: 10pt; height: 100%;
+  background: #FFFFFF; border: 0.5pt solid ${C.border};
+  border-radius: 4pt; padding: 10pt 12pt; height: 100%;
 }
-.fact-row { display: flex; gap: 6pt; padding: 4pt 0; border-bottom: 0.5pt solid ${C.border}; align-items: flex-start; }
+.fact-row { display: flex; gap: 6pt; padding: 5pt 0; border-bottom: 0.5pt solid rgba(0,0,0,0.06); align-items: flex-start; }
 .fact-row:last-child { border-bottom: none; }
-.fact-label { font-size: 8pt; color: ${C.textMuted}; font-weight: 600; width: 70pt; flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.5pt; padding-top: 1pt; }
+.fact-label {
+  font-size: 7.5pt; color: ${C.primary}; font-weight: 700; width: 72pt;
+  flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.8pt; padding-top: 1pt;
+}
 .fact-value { font-size: 9pt; color: ${C.textPrimary}; font-weight: 500; flex: 1; display: flex; align-items: center; }
 
 /* ── Section headers ── */
-.section { margin-bottom: 12pt; }
-.section-header { margin-bottom: 7pt; }
-.section-title { font-size: 11pt; font-weight: 700; color: ${C.textPrimary}; }
-.section-underline { height: 2pt; background: ${C.accent}; border-radius: 2pt; margin-top: 3pt; width: 100%; }
+.section { margin-bottom: 16pt; }
+.section-header {
+  margin-bottom: 8pt;
+  border-left: 3pt solid ${C.accent};
+  padding-left: 8pt;
+}
+.section-title {
+  font-size: 8pt; font-weight: 700; color: ${C.primary};
+  text-transform: uppercase; letter-spacing: 1.5pt;
+}
 
 /* ── Data grid (two columns) ── */
 .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14pt; }
-.data-row { display: flex; gap: 6pt; padding: 4pt 0; border-bottom: 0.5pt solid ${C.border}; }
-.data-label { font-size: 8pt; color: ${C.textMuted}; width: 72pt; flex-shrink: 0; padding-top: 1pt; }
+.data-row { display: flex; gap: 6pt; padding: 4pt 0; border-bottom: 0.5pt solid rgba(0,0,0,0.06); }
+.data-label {
+  font-size: 7.5pt; color: ${C.primary}; width: 72pt; flex-shrink: 0;
+  padding-top: 1pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8pt;
+}
 .data-value { font-size: 9pt; color: ${C.textPrimary}; font-weight: 500; flex: 1; }
 
 /* ── Provenance ── */
 .prov-section { margin-bottom: 12pt; }
 .prov-row { margin-bottom: 6pt; }
-.prov-label { font-size: 8pt; font-weight: 600; color: ${C.textMuted}; text-transform: uppercase; letter-spacing: 0.5pt; margin-bottom: 2pt; }
-.prov-text { font-size: 9pt; color: ${C.textPrimary}; }
+.prov-label {
+  font-size: 7.5pt; font-weight: 700; color: ${C.primary};
+  text-transform: uppercase; letter-spacing: 0.8pt; margin-bottom: 2pt;
+}
+.prov-text { font-size: 9pt; color: ${C.textPrimary}; line-height: 1.5; }
 
 /* ── Tamper evidence footer ── */
 .tamper-footer {
-  background: ${C.accentLight}; border: 1pt solid ${C.accent};
-  border-radius: 7pt; padding: 9pt 12pt;
+  background: rgba(30,45,61,0.05); border: 1pt solid rgba(30,45,61,0.15);
+  border-radius: 4pt; padding: 10pt 12pt;
   display: flex; gap: 10pt; align-items: flex-start;
   margin-top: 14pt;
 }
 .tamper-info { flex: 1; }
-.tamper-title { font-size: 7.5pt; font-weight: 700; color: ${C.accent}; text-transform: uppercase; letter-spacing: 0.8pt; margin-bottom: 4pt; }
+.tamper-title {
+  font-size: 7.5pt; font-weight: 700; color: ${C.primary};
+  text-transform: uppercase; letter-spacing: 1.5pt; margin-bottom: 4pt;
+}
 .tamper-hash { font-family: 'Courier New', Courier, monospace; font-size: 8pt; color: ${C.textPrimary}; word-break: break-all; margin-bottom: 4pt; }
 .tamper-meta { display: flex; gap: 14pt; }
 .tamper-meta-item { font-size: 7.5pt; color: ${C.textSecondary}; }
 .tamper-meta-item strong { color: ${C.textPrimary}; }
 .qr-box {
-  width: 44pt; height: 44pt; border: 1.5pt solid ${C.accent}; border-radius: 4pt;
+  width: 44pt; height: 44pt; border: 1pt solid ${C.primary}; border-radius: 3pt;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0; overflow: hidden;
 }
@@ -226,7 +248,7 @@ code, .mono {
 /* ── Page footer ── */
 .page-footer {
   display: flex; justify-content: space-between; align-items: center;
-  margin-top: 10pt; padding-top: 8pt; border-top: 0.5pt solid ${C.border};
+  margin-top: 12pt; padding-top: 8pt; border-top: 0.5pt solid ${C.border};
   font-size: 7.5pt; color: ${C.textMuted};
 }
 
@@ -234,38 +256,39 @@ code, .mono {
 .page-break { page-break-after: always; }
 .narrative { font-size: 9.5pt; color: ${C.textPrimary}; line-height: 1.6; }
 .activity-card {
-  background: ${C.warningLight}; border: 1pt solid ${C.warning};
-  border-radius: 6pt; padding: 8pt 12pt; margin-bottom: 10pt;
+  background: rgba(30,45,61,0.04); border: 0.5pt solid rgba(30,45,61,0.12);
+  border-radius: 4pt; padding: 8pt 12pt; margin-bottom: 10pt;
 }
-.activity-date { font-size: 8pt; color: ${C.warning}; font-weight: 700; margin-bottom: 3pt; }
+.activity-date { font-size: 7.5pt; color: ${C.primary}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5pt; margin-bottom: 3pt; }
 .activity-text { font-size: 9pt; color: ${C.textPrimary}; }
 .bib-list { list-style: none; padding: 0; }
-.bib-item { display: flex; gap: 7pt; padding: 4pt 0; border-bottom: 0.5pt solid ${C.border}; align-items: flex-start; }
-.bib-dot { width: 6pt; height: 6pt; border-radius: 50%; background: ${C.accent}; flex-shrink: 0; margin-top: 3pt; }
-.bib-text { font-size: 9pt; color: ${C.textPrimary}; }
+.bib-item { display: flex; gap: 7pt; padding: 5pt 0; border-bottom: 0.5pt solid rgba(0,0,0,0.06); align-items: flex-start; }
+.bib-dot { width: 5pt; height: 5pt; border-radius: 50%; background: ${C.accent}; flex-shrink: 0; margin-top: 4pt; }
+.bib-text { font-size: 9pt; color: ${C.textPrimary}; line-height: 1.45; }
 
 /* ── Audit timeline ── */
 .timeline { position: relative; }
-.tl-item { display: flex; gap: 10pt; padding-bottom: 8pt; position: relative; }
+.tl-item { display: flex; gap: 10pt; padding-bottom: 7pt; position: relative; }
 .tl-left { display: flex; flex-direction: column; align-items: center; width: 12pt; flex-shrink: 0; }
-.tl-dot { width: 8pt; height: 8pt; border-radius: 50%; background: ${C.accent}; flex-shrink: 0; }
-.tl-line { flex: 1; width: 1pt; background: ${C.border}; min-height: 8pt; }
-.tl-content { flex: 1; padding-bottom: 4pt; }
-.tl-date { font-size: 8pt; color: ${C.textMuted}; font-weight: 600; }
+.tl-dot { width: 7pt; height: 7pt; border-radius: 50%; background: ${C.accent}; flex-shrink: 0; }
+.tl-line { flex: 1; width: 0.5pt; background: ${C.border}; min-height: 8pt; }
+.tl-content { flex: 1; padding-bottom: 3pt; }
+.tl-date { font-size: 7.5pt; color: ${C.textMuted}; font-weight: 600; }
 .tl-action { font-size: 9pt; color: ${C.textPrimary}; font-weight: 500; }
 .tl-detail { font-size: 8pt; color: ${C.textSecondary}; }
 
 /* ── Compact page 2 header ── */
 .compact-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12pt;
+  padding-bottom: 8pt; border-bottom: 0.5pt solid ${C.primary};
+  margin-bottom: 14pt;
 }
 .compact-brand { display: flex; align-items: baseline; gap: 4pt; }
-.compact-brand .brand-aha { font-style: italic; font-weight: 800; font-size: 14pt; color: ${C.accent}; }
+.compact-brand .brand-aha { font-style: italic; font-weight: 700; font-size: 14pt; color: ${C.primary}; }
 .compact-brand .brand-register { font-size: 9pt; color: ${C.textSecondary}; }
 .compact-title-block { text-align: right; }
 .compact-obj-title { font-size: 10pt; font-weight: 600; color: ${C.textPrimary}; }
-.compact-inv { font-size: 8pt; color: ${C.textMuted}; }
+.compact-inv { font-family: 'Courier New', Courier, monospace; font-size: 8pt; color: ${C.textMuted}; }
 `;
 
 // ── QR code element ──────────────────────────────────────────────────────────
@@ -361,12 +384,10 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
   <!-- HEADER -->
   <div class="report-header">
     <div class="header-brand">
-      <span class="brand-aha">aha!</span>
-      <span class="brand-register">Register</span>
+      ${data.institutionName ? `<span class="header-institution">${esc(data.institutionName)}</span>` : `<span class="brand-aha">aha!</span><span class="brand-register">Register</span>`}
     </div>
     <div class="header-right">
       <div class="header-badge">${esc(t('pdf.object_report_badge'))}</div>
-      ${data.institutionName ? `<div class="header-institution">${esc(data.institutionName)}</div>` : ''}
     </div>
   </div>
 
@@ -418,7 +439,6 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
   <div class="section">
     <div class="section-header">
       <div class="section-title">${esc(t('pdf.section_object_data'))}</div>
-      <div class="section-underline"></div>
     </div>
     <div class="data-grid">${dataItems.join('')}</div>
   </div>` : ''}
@@ -428,7 +448,6 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
   <div class="section">
     <div class="section-header">
       <div class="section-title">${esc(t('pdf.section_provenance'))}</div>
-      <div class="section-underline"></div>
     </div>
     ${acquisition ? `<div class="prov-row"><div class="prov-label">${esc(t('pdf.label_acquisition'))}</div><div class="prov-text">${esc(acquisition)}</div></div>` : ''}
     ${permLoan ? `<div class="prov-row"><div class="prov-label">${esc(t('pdf.label_permanent_loan'))}</div><div class="prov-text">${esc(permLoan)}</div></div>` : ''}
@@ -520,7 +539,6 @@ function buildPage2(data: ObjectExportData, now: string, t: TFunc): string {
   <div class="section">
     <div class="section-header">
       <div class="section-title">${esc(t('pdf.section_description'))}</div>
-      <div class="section-underline"></div>
     </div>
     ${descText ? `<p class="narrative">${esc(descText)}</p>` : ''}
     ${scientificNotes ? `<p class="narrative" style="margin-top:8pt;color:${C.textSecondary};">${esc(scientificNotes)}</p>` : ''}
@@ -538,7 +556,6 @@ function buildPage2(data: ObjectExportData, now: string, t: TFunc): string {
   <div class="section">
     <div class="section-header">
       <div class="section-title">${esc(t('pdf.section_bibliography'))}</div>
-      <div class="section-underline"></div>
     </div>
     <ul class="bib-list">
       ${bibLines.map((line) => `
@@ -554,7 +571,6 @@ function buildPage2(data: ObjectExportData, now: string, t: TFunc): string {
   <div class="section">
     <div class="section-header">
       <div class="section-title">${esc(t('pdf.section_audit_trail'))}</div>
-      <div class="section-underline"></div>
     </div>
     <div class="timeline">
       ${recentAudit.map((entry, i) => `

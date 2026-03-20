@@ -769,37 +769,114 @@ function ContentStep({
   onSetFlag: (key: 'showAiBadges' | 'includeBranding', v: boolean) => void;
   t: (k: string) => string;
 }) {
-  const sectionKeys: {
-    key: 'identification' | 'physical' | 'classification' | 'condition' | 'provenance' | 'documents';
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = useCallback((key: string) => {
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  }, []);
+
+  const sectionDefs: {
+    key: keyof ExportSections;
     label: string;
     locked?: boolean;
+    fields: string[];
   }[] = [
-    { key: 'identification', label: t('export.content_identification'), locked: true },
-    { key: 'physical', label: t('export.content_physical') },
-    { key: 'classification', label: t('export.content_classification') },
-    { key: 'condition', label: t('export.content_condition') },
-    { key: 'provenance', label: t('export.content_provenance') },
-    { key: 'documents', label: t('export.content_documents') },
+    {
+      key: 'identification',
+      label: t('export.content_identification'),
+      locked: true,
+      fields: [
+        t('export.field_accession'),
+        t('export.field_title'),
+        t('export.field_object_type'),
+        t('export.field_creator'),
+        t('export.field_date'),
+        t('export.field_description'),
+      ],
+    },
+    {
+      key: 'physical',
+      label: t('export.content_physical'),
+      fields: [
+        t('export.field_materials'),
+        t('export.field_technique'),
+        t('export.field_dimensions'),
+        t('export.field_inscriptions'),
+      ],
+    },
+    {
+      key: 'classification',
+      label: t('export.content_classification'),
+      fields: [
+        t('export.field_aat_terms'),
+        t('export.field_style_period'),
+        t('export.field_culture'),
+      ],
+    },
+    {
+      key: 'condition',
+      label: t('export.content_condition'),
+      fields: [
+        t('export.field_condition_summary'),
+        t('export.field_damage_notes'),
+        t('export.field_handling'),
+      ],
+    },
+    {
+      key: 'provenance',
+      label: t('export.content_provenance'),
+      fields: [
+        t('export.field_ownership'),
+        t('export.field_acquisition'),
+        t('export.field_legal_status'),
+      ],
+    },
+    {
+      key: 'documents',
+      label: t('export.content_documents'),
+      fields: [
+        t('export.field_photos'),
+        t('export.field_hashes'),
+        t('export.field_capture_metadata'),
+      ],
+    },
   ];
 
   return (
     <ScrollView contentContainerStyle={styles.stepPad}>
       <Text style={styles.stepHeading}>{t('export.step_content')}</Text>
 
-      {sectionKeys.map((s) => (
-        <View key={s.key} style={styles.toggleRow}>
-          <View style={styles.toggleText}>
-            <Text style={styles.toggleTitle}>{s.label}</Text>
+      {sectionDefs.map((s) => {
+        const isExpanded = expanded[s.key] ?? false;
+        return (
+          <View key={s.key} style={cs.sectionBlock}>
+            <View style={cs.sectionHeader}>
+              <Pressable
+                style={cs.sectionTap}
+                onPress={() => toggleExpand(s.key)}
+                accessibilityRole="button"
+              >
+                <Text style={cs.expandArrow}>{isExpanded ? '\u25BC' : '\u25B6'}</Text>
+                <Text style={cs.sectionLabel}>{s.label}</Text>
+              </Pressable>
+              <Switch
+                value={sections[s.key]}
+                onValueChange={s.locked ? undefined : () => onToggleSection(s.key)}
+                disabled={s.locked}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.white}
+              />
+            </View>
+            {isExpanded && (
+              <View style={cs.fieldList}>
+                {s.fields.map((field) => (
+                  <Text key={field} style={cs.fieldItem}>{field}</Text>
+                ))}
+              </View>
+            )}
           </View>
-          <Switch
-            value={sections[s.key]}
-            onValueChange={s.locked ? undefined : () => onToggleSection(s.key)}
-            disabled={s.locked}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.white}
-          />
-        </View>
-      ))}
+        );
+      })}
 
       <View style={{ marginVertical: spacing.lg }}><Divider /></View>
 
@@ -833,6 +910,51 @@ function ContentStep({
     </ScrollView>
   );
 }
+
+const cs = StyleSheet.create({
+  sectionBlock: {
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radii.md,
+    overflow: 'hidden',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.surfaceContainer,
+    minHeight: touch.minTarget,
+  },
+  sectionTap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+  },
+  expandArrow: {
+    fontSize: 10,
+    color: colors.textTertiary,
+    width: 14,
+  },
+  sectionLabel: {
+    ...typography.bodyMedium,
+    color: colors.text,
+  },
+  fieldList: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.lg + 14 + spacing.sm,
+    gap: spacing.xs,
+    backgroundColor: colors.surface,
+  },
+  fieldItem: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+  },
+});
 
 // ═════════════════════════════════════════════════════════════════════════════
 // STEP 5: PREVIEW
