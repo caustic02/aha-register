@@ -18,6 +18,8 @@ import {
   useExportConfig,
   type ExportFormat,
   type ExportSections,
+  type ExportFields,
+  CATEGORY_FIELDS,
 } from '../hooks/useExportConfig';
 import type { ExportTier } from '../config/exportTemplates';
 import { getViewInventory } from '../config/viewRequirements';
@@ -211,6 +213,8 @@ function ObjectExportFlow({
     applyTemplate,
     toggleImage,
     toggleSection,
+    toggleField,
+    toggleCategoryFields,
     setFlag,
   } = useExportConfig();
 
@@ -423,9 +427,12 @@ function ObjectExportFlow({
         {step === 'content' && (
           <ContentStep
             sections={config.sections}
+            fields={config.fields}
             showAiBadges={config.showAiBadges}
             includeBranding={config.includeBranding}
             onToggleSection={toggleSection}
+            onToggleField={toggleField}
+            onToggleCategoryFields={toggleCategoryFields}
             onSetFlag={setFlag}
             t={t}
           />
@@ -754,18 +761,107 @@ function ImagesStep({
 // STEP 4: CONTENT
 // ═════════════════════════════════════════════════════════════════════════════
 
+// ── Field i18n key mapping ──────────────────────────────────────────────────
+
+const FIELD_I18N: Record<keyof ExportFields, string> = {
+  accession_number: 'export.f_accession_number',
+  inventory_number: 'export.f_inventory_number',
+  title: 'export.f_title',
+  alt_titles: 'export.f_alt_titles',
+  object_type: 'export.f_object_type',
+  creator: 'export.f_creator',
+  artist_attribution: 'export.f_artist_attribution',
+  date_period: 'export.f_date_period',
+  place_of_origin: 'export.f_place_of_origin',
+  description: 'export.f_description',
+  materials: 'export.f_materials',
+  technique: 'export.f_technique',
+  dimensions: 'export.f_dimensions',
+  weight: 'export.f_weight',
+  inscriptions: 'export.f_inscriptions',
+  color_notes: 'export.f_color_notes',
+  parts_count: 'export.f_parts_count',
+  fragility: 'export.f_fragility',
+  aat_terms: 'export.f_aat_terms',
+  style_period: 'export.f_style_period',
+  subject_matter: 'export.f_subject_matter',
+  cultural_context: 'export.f_cultural_context',
+  domain_specialization: 'export.f_domain_specialization',
+  condition_summary: 'export.f_condition_summary',
+  condition_rating: 'export.f_condition_rating',
+  condition_date: 'export.f_condition_date',
+  damage_notes: 'export.f_damage_notes',
+  conservation_history: 'export.f_conservation_history',
+  handling_requirements: 'export.f_handling_requirements',
+  environmental_sensitivity: 'export.f_environmental_sensitivity',
+  ownership_history: 'export.f_ownership_history',
+  acquisition_method: 'export.f_acquisition_method',
+  acquisition_date: 'export.f_acquisition_date',
+  source_donor: 'export.f_source_donor',
+  credit_line: 'export.f_credit_line',
+  legal_status: 'export.f_legal_status',
+  export_restrictions: 'export.f_export_restrictions',
+  deaccession_status: 'export.f_deaccession_status',
+  current_location: 'export.f_current_location',
+  building_room_shelf: 'export.f_building_room_shelf',
+  storage_requirements: 'export.f_storage_requirements',
+  climate_requirements: 'export.f_climate_requirements',
+  primary_photo: 'export.f_primary_photo',
+  all_photos: 'export.f_all_photos',
+  isolated_images: 'export.f_isolated_images',
+  document_scans: 'export.f_document_scans',
+  sha256_hash: 'export.f_sha256_hash',
+  gps_coordinates: 'export.f_gps_coordinates',
+  capture_timestamp: 'export.f_capture_timestamp',
+  device_info: 'export.f_device_info',
+  coordinate_source: 'export.f_coordinate_source',
+  evidence_class: 'export.f_evidence_class',
+  privacy_tier: 'export.f_privacy_tier',
+  insurance_value: 'export.f_insurance_value',
+  appraisal_date: 'export.f_appraisal_date',
+  fair_market_value: 'export.f_fair_market_value',
+  replacement_value: 'export.f_replacement_value',
+  legal_hold: 'export.f_legal_hold',
+  berkeley_protocol: 'export.f_berkeley_protocol',
+  restricted_access: 'export.f_restricted_access',
+};
+
+const CATEGORY_I18N: Record<string, string> = {
+  identification: 'export.content_identification',
+  physical: 'export.content_physical',
+  classification: 'export.content_classification',
+  condition: 'export.content_condition',
+  provenance: 'export.content_provenance',
+  location: 'export.cat_location',
+  media: 'export.cat_media',
+  capture: 'export.cat_capture',
+  valuation: 'export.cat_valuation',
+  legal: 'export.cat_legal',
+};
+
+const CATEGORY_ORDER = [
+  'identification', 'physical', 'classification', 'condition',
+  'provenance', 'location', 'media', 'capture', 'valuation', 'legal',
+];
+
 function ContentStep({
   sections,
+  fields,
   showAiBadges,
   includeBranding,
   onToggleSection,
+  onToggleField,
+  onToggleCategoryFields,
   onSetFlag,
   t,
 }: {
   sections: ExportSections;
+  fields: ExportFields;
   showAiBadges: boolean;
   includeBranding: boolean;
-  onToggleSection: (key: 'identification' | 'physical' | 'classification' | 'condition' | 'provenance' | 'documents') => void;
+  onToggleSection: (key: keyof ExportSections) => void;
+  onToggleField: (key: keyof ExportFields) => void;
+  onToggleCategoryFields: (category: string, value: boolean) => void;
   onSetFlag: (key: 'showAiBadges' | 'includeBranding', v: boolean) => void;
   t: (k: string) => string;
 }) {
@@ -775,102 +871,78 @@ function ContentStep({
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  const sectionDefs: {
-    key: keyof ExportSections;
-    label: string;
-    locked?: boolean;
-    fields: string[];
-  }[] = [
-    {
-      key: 'identification',
-      label: t('export.content_identification'),
-      locked: true,
-      fields: [
-        t('export.field_accession'),
-        t('export.field_title'),
-        t('export.field_object_type'),
-        t('export.field_creator'),
-        t('export.field_date'),
-        t('export.field_description'),
-      ],
-    },
-    {
-      key: 'physical',
-      label: t('export.content_physical'),
-      fields: [
-        t('export.field_materials'),
-        t('export.field_technique'),
-        t('export.field_dimensions'),
-        t('export.field_inscriptions'),
-      ],
-    },
-    {
-      key: 'classification',
-      label: t('export.content_classification'),
-      fields: [
-        t('export.field_aat_terms'),
-        t('export.field_style_period'),
-        t('export.field_culture'),
-      ],
-    },
-    {
-      key: 'condition',
-      label: t('export.content_condition'),
-      fields: [
-        t('export.field_condition_summary'),
-        t('export.field_damage_notes'),
-        t('export.field_handling'),
-      ],
-    },
-    {
-      key: 'provenance',
-      label: t('export.content_provenance'),
-      fields: [
-        t('export.field_ownership'),
-        t('export.field_acquisition'),
-        t('export.field_legal_status'),
-      ],
-    },
-    {
-      key: 'documents',
-      label: t('export.content_documents'),
-      fields: [
-        t('export.field_photos'),
-        t('export.field_hashes'),
-        t('export.field_capture_metadata'),
-      ],
-    },
-  ];
-
   return (
     <ScrollView contentContainerStyle={styles.stepPad}>
       <Text style={styles.stepHeading}>{t('export.step_content')}</Text>
 
-      {sectionDefs.map((s) => {
-        const isExpanded = expanded[s.key] ?? false;
+      {CATEGORY_ORDER.map((cat) => {
+        const catFields = CATEGORY_FIELDS[cat];
+        if (!catFields) return null;
+        const isExpanded = expanded[cat] ?? false;
+        const allOn = catFields.every((k) => fields[k]);
+        const someOn = catFields.some((k) => fields[k]);
+        // Map old section keys to master toggle where applicable
+        const sectionKey = cat as keyof ExportSections;
+        const hasSectionToggle = sectionKey in sections;
+
         return (
-          <View key={s.key} style={cs.sectionBlock}>
+          <View key={cat} style={cs.sectionBlock}>
+            {/* Category header */}
             <View style={cs.sectionHeader}>
               <Pressable
                 style={cs.sectionTap}
-                onPress={() => toggleExpand(s.key)}
+                onPress={() => toggleExpand(cat)}
                 accessibilityRole="button"
               >
-                <Text style={cs.expandArrow}>{isExpanded ? '\u25BC' : '\u25B6'}</Text>
-                <Text style={cs.sectionLabel}>{s.label}</Text>
+                <Text style={cs.expandArrow}>
+                  {isExpanded ? '\u25BC' : '\u25B6'}
+                </Text>
+                <Text style={cs.sectionLabel}>
+                  {t(CATEGORY_I18N[cat] ?? cat)}
+                </Text>
+                {!allOn && someOn && (
+                  <View style={cs.partialDot} />
+                )}
               </Pressable>
               <Switch
-                value={sections[s.key]}
-                onValueChange={s.locked ? undefined : () => onToggleSection(s.key)}
-                disabled={s.locked}
+                value={allOn}
+                onValueChange={() => {
+                  onToggleCategoryFields(cat, !allOn);
+                  if (hasSectionToggle && sectionKey !== 'identification') {
+                    if (allOn && sections[sectionKey]) onToggleSection(sectionKey);
+                    if (!allOn && !sections[sectionKey]) onToggleSection(sectionKey);
+                  }
+                }}
                 trackColor={{ false: colors.border, true: colors.primary }}
                 thumbColor={colors.white}
               />
             </View>
+
+            {/* Per-field checkboxes */}
             {isExpanded && (
               <View style={cs.fieldList}>
-                {s.fields.map((field) => (
-                  <Text key={field} style={cs.fieldItem}>{field}</Text>
+                {catFields.map((fieldKey) => (
+                  <Pressable
+                    key={fieldKey}
+                    style={cs.fieldRow}
+                    onPress={() => onToggleField(fieldKey)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: fields[fieldKey] }}
+                  >
+                    <View
+                      style={[
+                        cs.checkbox,
+                        fields[fieldKey] && cs.checkboxOn,
+                      ]}
+                    >
+                      {fields[fieldKey] && (
+                        <CheckIcon size={12} color={colors.white} />
+                      )}
+                    </View>
+                    <Text style={cs.fieldLabel}>
+                      {t(FIELD_I18N[fieldKey] ?? fieldKey)}
+                    </Text>
+                  </Pressable>
                 ))}
               </View>
             )}
@@ -943,16 +1015,42 @@ const cs = StyleSheet.create({
     ...typography.bodyMedium,
     color: colors.text,
   },
+  partialDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.warning,
+  },
   fieldList: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    paddingLeft: spacing.lg + 14 + spacing.sm,
-    gap: spacing.xs,
+    paddingVertical: spacing.xs,
     backgroundColor: colors.surface,
   },
-  fieldItem: {
+  fieldRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    gap: spacing.md,
+    minHeight: touch.minTargetSmall,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxOn: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  fieldLabel: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: colors.text,
+    flex: 1,
   },
 });
 
