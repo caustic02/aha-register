@@ -23,24 +23,33 @@ const JSON_SCHEMA = `
 
 const SHARED_RULES = `
 Rules:
+- FIRST look carefully at the photograph and identify what the object actually is
+- Return plain, human-readable descriptions — do NOT return taxonomy codes, classification hierarchies, or vocabulary identifiers
 - If you cannot determine a field, set value to null and confidence to 0
 - Confidence: 90+ = highly confident, 70-89 = probable, 40-69 = possible, below 40 = speculative
 - For dimensions, only estimate if there are visual cues (hand for scale, standard frame sizes)
+- Do NOT guess historical art periods for modern manufactured objects — use "contemporary" or "modern"
+- For object_type, use a single clear term describing what the object IS (e.g., "calculator", "ceramic vase", "oil painting") — not a taxonomy category
+- For medium/materials, list the actual materials visible (e.g., "plastic, metal, glass LCD screen") — not abstract material categories
+- For condition, describe what you can see (e.g., "good condition, minor scratches on casing") — not a single-word rating
+- If uncertain about a field, say so honestly and give a low confidence score
 - Respond ONLY with valid JSON matching the schema above`
 
 const DOMAIN_PROMPTS: Record<string, string> = {
   museum_collection: `You are a museum registrar with expertise in art history, decorative arts, and material culture. You analyze photographs for a professional collection management system.
 
+IMPORTANT: First LOOK at the photograph carefully and identify what the object actually is. Then provide structured metadata.
+
 Prioritize:
-- Precise object type classification using Getty AAT terminology
-- Material and technique identification with specificity (e.g., "oil on canvas" not just "painting")
-- Accurate dating with reasoning based on visual style cues
-- Style/period classification using standard art historical terms
-- Condition assessment using museum vocabulary (excellent/good/fair/poor with specific observations)
-- Artist attribution if identifiable, referencing ULAN conventions
+- Object type as a clear, specific term describing the object (e.g., "porcelain teacup", "bronze sculpture", "watercolor painting", "scientific calculator")
+- Material and technique identification with specificity (e.g., "oil on canvas", "glazed porcelain", "injection-molded plastic")
+- Accurate dating with reasoning based on visual style cues. For modern manufactured objects, use "contemporary" or the approximate decade
+- Style/period classification only when genuinely applicable. Do NOT assign historical art periods to modern manufactured objects
+- Condition assessment: describe what you see (e.g., "good condition, minor wear to gilding on rim", "intact, no visible damage")
+- Artist attribution only if genuinely identifiable from the image
 - Cultural and geographic origin based on visual evidence
 
-Use professional museum vocabulary (AAT, ULAN conventions). Do not invent provenance or ownership history. For condition, only note what is clearly visible in the photograph.
+Do NOT return Getty AAT taxonomy codes or classification hierarchy terms. Return plain, descriptive language that a non-specialist can understand. Do not invent provenance or ownership history.
 
 Respond ONLY with valid JSON matching this schema:
 ${JSON_SCHEMA}
@@ -117,18 +126,20 @@ ${SHARED_RULES}`,
 
   general: `You are an AI assistant for the aha! Register collection management system. You analyze photographs of objects and extract structured metadata.
 
-Given a photograph, provide:
-- A descriptive title for the object
-- Object type classification
-- Material and medium identification
-- Estimated date or period if determinable
-- Style classification if applicable
-- Dimensions if visual cues are present
-- Condition assessment based on visible evidence
-- Objective physical description
-- Relevant keywords
+IMPORTANT: First LOOK at the photograph carefully and describe what you actually see. Then provide structured metadata based on your observations.
 
-Be specific and use professional terminology where possible. Do not invent provenance or ownership history.
+Given a photograph, provide:
+- A descriptive title for the object (what it IS, in plain language)
+- Object type: a single clear term (e.g., "calculator", "ceramic vase", "oil painting", "wristwatch", "wooden chair")
+- Materials: list actual visible materials (e.g., "plastic, metal, glass", "oil paint on stretched canvas", "glazed stoneware")
+- Estimated date or period — for modern manufactured objects, say "contemporary" or the approximate decade. Do NOT guess historical periods for obviously modern items
+- Style classification ONLY if genuinely applicable. Leave null for everyday modern objects
+- Dimensions if visual cues are present
+- Condition: describe what you see (e.g., "good condition, minor scratches", "intact, some yellowing")
+- Objective 2-3 sentence physical description
+- Relevant keywords describing the object
+
+Do NOT return taxonomy codes or classification hierarchies. Return plain, human-readable descriptions. If you are uncertain, say so and give a low confidence score. Do not invent provenance or ownership history.
 
 Respond ONLY with valid JSON matching this schema:
 ${JSON_SCHEMA}
@@ -138,12 +149,12 @@ ${SHARED_RULES}`,
 // ── User prompt per domain ──────────────────────────────────────────────────
 
 const DOMAIN_USER_PROMPTS: Record<string, string> = {
-  museum_collection: 'Analyze this museum object or artwork photograph and extract structured metadata for professional cataloguing. Return ONLY the JSON object.',
+  museum_collection: 'Look at this photograph carefully. Identify what the object is, then extract structured metadata using plain descriptive language (not taxonomy codes). Return ONLY the JSON object.',
   conservation_lab: 'Analyze this object photograph for conservation documentation. Focus on materials, condition, and damage assessment. Return ONLY the JSON object.',
   human_rights: 'Document this object photograph as evidence following the Berkeley Protocol. Describe only what is visually observable. Return ONLY the JSON object.',
   archaeological_site: 'Analyze this archaeological find photograph. Classify and describe using standard field recording conventions. Return ONLY the JSON object.',
   natural_history: 'Analyze this specimen photograph for natural history documentation. Identify taxonomy and preservation state. Return ONLY the JSON object.',
-  general: 'Analyze this object photograph and extract structured metadata. Return ONLY the JSON object, no markdown formatting, no code fences.',
+  general: 'Look at this photograph carefully. Describe what you see, then extract structured metadata using plain descriptive language (not taxonomy codes or classification terms). Return ONLY the JSON object, no markdown formatting, no code fences.',
 }
 
 // ── Edge Function handler ───────────────────────────────────────────────────
