@@ -1,0 +1,171 @@
+{
+  "id": "museum_collection",
+  "label": "Museum / Institutional Collection",
+  "label_de": "Museum / Institutionelle Sammlung",
+  "exportFormats": [
+    {
+      "id": "pdf_datasheet",
+      "label": "PDF Data Sheet",
+      "label_de": "PDF-Datenblatt",
+      "description": "Professional A4 report with images and metadata",
+      "description_de": "Professioneller A4-Bericht mit Bildern und Metadaten",
+      "templateId": "object-report"
+    },
+    {
+      "id": "pdf_condition",
+      "label": "PDF Condition Report",
+      "label_de": "PDF-Zustandsbericht",
+      "description": "Focused on condition assessment and conservation",
+      "description_de": "Fokus auf Zustandsbewertung und Restaurierung",
+      "templateId": "condition-report"
+    },
+    {
+      "id": "json",
+      "label": "JSON Export",
+      "label_de": "JSON-Export",
+      "description": "Complete structured data for integration",
+      "description_de": "Vollständige strukturierte Daten zur Integration",
+      "templateId": null
+    },
+    {
+      "id": "csv",
+      "label": "CSV Spreadsheet",
+      "label_de": "CSV-Tabelle",
+      "description": "Flat table for spreadsheet import",
+      "description_de": "Flache Tabelle für Tabellenimport",
+      "templateId": null
+    }
+  ],
+  "fieldCategories": [
+    {
+      "id": "identification",
+      "label": "Identification",
+      "label_de": "Identifikation",
+      "fields": [
+        { "id": "accession_number", "label": "Accession number", "label_de": "Zugangsnummer", "defaultOn": true },
+        { "id": "inventory_number", "label": "Inventory number", "label_de": "Inventarnummer", "defaultOn": true },
+        { "id": "title", "label": "Title", "label_de": "Titel", "defaultOn": true },
+        { "id": "alt_titles", "label": "Alternative titles", "label_de": "Alternativtitel", "defaultOn": true },
+        { "id": "object_type", "label": "Object type", "label_de": "Objekttyp", "defaultOn": true },
+        { "id": "creator", "label": "Creator / Artist", "label_de": "Künstler / Hersteller", "defaultOn": true },
+        { "id": "artist_attribution", "label": "Artist attribution", "label_de": "Künstlerzuschreibung", "defaultOn": true },
+        { "id": "date_period", "label": "Date / Period", "label_de": "Datierung / Epoche", "defaultOn": true },
+        { "id": "place_of_origin", "label": "Place of origin", "label_de": "Herkunftsort", "defaultOn": true },
+        { "id": "description", "label": "Brief description", "label_de": "Kurzbeschreibung", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "physical",
+      "label": "Physical Description",
+      "label_de": "Physische Beschreibung",
+      "fields": [
+        { "id": "materials", "label": "Materials", "label_de": "Material", "defaultOn": true },
+        { "id": "technique", "label": "Technique", "label_de": "Technik", "defaultOn": true },
+        { "id": "dimensions", "label": "Dimensions (H × W × D)", "label_de": "Maße (H × B × T)", "defaultOn": true },
+        { "id": "weight", "label": "Weight", "label_de": "Gewicht", "defaultOn": true },
+        { "id": "inscriptions", "label": "Inscriptions / Markings", "label_de": "Inschriften / Markierungen", "defaultOn": true },
+        { "id": "color_notes", "label": "Colour notes", "label_de": "Farbnotizen", "defaultOn": true },
+        { "id": "parts_count", "label": "Parts count", "label_de": "Teilezahl", "defaultOn": true },
+        { "id": "fragility", "label": "Fragility assessment", "label_de": "Bruchempfindlichkeit", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "classification",
+      "label": "Classification",
+      "label_de": "Klassifikation",
+      "fields": [
+        { "id": "aat_terms", "label": "Getty AAT terms", "label_de": "Getty-AAT-Begriffe", "defaultOn": true },
+        { "id": "style_period", "label": "Style / Period", "label_de": "Stil / Epoche", "defaultOn": true },
+        { "id": "subject_matter", "label": "Subject matter", "label_de": "Thema / Motiv", "defaultOn": true },
+        { "id": "cultural_context", "label": "Cultural context", "label_de": "Kultureller Kontext", "defaultOn": true },
+        { "id": "domain_specialization", "label": "Domain specialisation", "label_de": "Fachgebietsspezifisch", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "condition",
+      "label": "Condition",
+      "label_de": "Zustand",
+      "fields": [
+        { "id": "condition_summary", "label": "Condition summary", "label_de": "Zustandsbeschreibung", "defaultOn": true },
+        { "id": "condition_rating", "label": "Condition rating", "label_de": "Zustandsbewertung", "defaultOn": true },
+        { "id": "condition_date", "label": "Date assessed", "label_de": "Datum der Begutachtung", "defaultOn": true },
+        { "id": "damage_notes", "label": "Damage notes", "label_de": "Schadensnotizen", "defaultOn": true },
+        { "id": "conservation_history", "label": "Conservation history", "label_de": "Restaurierungsgeschichte", "defaultOn": true },
+        { "id": "handling_requirements", "label": "Handling requirements", "label_de": "Handhabungsanforderungen", "defaultOn": true },
+        { "id": "environmental_sensitivity", "label": "Environmental sensitivity", "label_de": "Umweltempfindlichkeit", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "provenance",
+      "label": "Provenance",
+      "label_de": "Provenienz",
+      "fields": [
+        { "id": "ownership_history", "label": "Ownership history", "label_de": "Eigentumsgeschichte", "defaultOn": true },
+        { "id": "acquisition_method", "label": "Acquisition method", "label_de": "Erwerbungsart", "defaultOn": true },
+        { "id": "acquisition_date", "label": "Acquisition date", "label_de": "Erwerbungsdatum", "defaultOn": true },
+        { "id": "source_donor", "label": "Source / Donor", "label_de": "Quelle / Stifter", "defaultOn": true },
+        { "id": "credit_line", "label": "Credit line", "label_de": "Dankeszeile", "defaultOn": true },
+        { "id": "legal_status", "label": "Legal status", "label_de": "Rechtsstatus", "defaultOn": true },
+        { "id": "export_restrictions", "label": "Export restrictions", "label_de": "Ausfuhrbeschränkungen", "defaultOn": true },
+        { "id": "deaccession_status", "label": "Deaccession status", "label_de": "Aussonderungsstatus", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "location",
+      "label": "Location",
+      "label_de": "Standort",
+      "fields": [
+        { "id": "current_location", "label": "Current location", "label_de": "Aktueller Standort", "defaultOn": true },
+        { "id": "building_room_shelf", "label": "Building / Room / Shelf / Position", "label_de": "Gebäude / Raum / Regal / Position", "defaultOn": true },
+        { "id": "storage_requirements", "label": "Storage requirements", "label_de": "Lagerungsanforderungen", "defaultOn": true },
+        { "id": "climate_requirements", "label": "Climate requirements", "label_de": "Klimaanforderungen", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "media",
+      "label": "Media & Images",
+      "label_de": "Medien & Bilder",
+      "fields": [
+        { "id": "primary_photo", "label": "Primary photo", "label_de": "Hauptfoto", "defaultOn": true },
+        { "id": "all_photos", "label": "All photos", "label_de": "Alle Fotos", "defaultOn": true },
+        { "id": "isolated_images", "label": "Background-removed images", "label_de": "Freigestellte Bilder", "defaultOn": true },
+        { "id": "document_scans", "label": "Document scans", "label_de": "Dokumentenscans", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "capture",
+      "label": "Capture Verification",
+      "label_de": "Erfassungsverifikation",
+      "fields": [
+        { "id": "sha256_hash", "label": "SHA-256 hash", "label_de": "SHA-256-Hash", "defaultOn": true },
+        { "id": "gps_coordinates", "label": "GPS coordinates", "label_de": "GPS-Koordinaten", "defaultOn": true },
+        { "id": "capture_timestamp", "label": "Capture timestamp", "label_de": "Erfassungszeitstempel", "defaultOn": true },
+        { "id": "device_info", "label": "Device info", "label_de": "Geräteinformationen", "defaultOn": true },
+        { "id": "coordinate_source", "label": "Coordinate source", "label_de": "Koordinatenquelle", "defaultOn": true },
+        { "id": "evidence_class", "label": "Evidence classification", "label_de": "Beweisklassifikation", "defaultOn": true },
+        { "id": "privacy_tier", "label": "Privacy tier", "label_de": "Datenschutzstufe", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "valuation",
+      "label": "Valuation",
+      "label_de": "Bewertung",
+      "fields": [
+        { "id": "insurance_value", "label": "Insurance value", "label_de": "Versicherungswert", "defaultOn": true },
+        { "id": "appraisal_date", "label": "Appraisal date", "label_de": "Schätzungsdatum", "defaultOn": true },
+        { "id": "fair_market_value", "label": "Fair market value", "label_de": "Marktwert", "defaultOn": true },
+        { "id": "replacement_value", "label": "Replacement value", "label_de": "Wiederbeschaffungswert", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "legal",
+      "label": "Legal / Compliance",
+      "label_de": "Recht / Compliance",
+      "fields": [
+        { "id": "legal_hold", "label": "Legal hold status", "label_de": "Rechtssperre", "defaultOn": true },
+        { "id": "berkeley_protocol", "label": "Berkeley Protocol classification", "label_de": "Berkeley-Protokoll-Klassifikation", "defaultOn": true },
+        { "id": "restricted_access", "label": "Restricted access notes", "label_de": "Zugangsbeschränkungen", "defaultOn": true }
+      ]
+    }
+  ]
+}

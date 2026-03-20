@@ -1,0 +1,84 @@
+{
+  "id": "general",
+  "label": "General",
+  "label_de": "Allgemein",
+  "exportFormats": [
+    {
+      "id": "pdf_datasheet",
+      "label": "PDF Data Sheet",
+      "label_de": "PDF-Datenblatt",
+      "description": "Professional report with images and metadata",
+      "description_de": "Professioneller Bericht mit Bildern und Metadaten",
+      "templateId": "object-report"
+    },
+    {
+      "id": "json",
+      "label": "JSON Export",
+      "label_de": "JSON-Export",
+      "description": "Complete structured data for integration",
+      "description_de": "Vollständige strukturierte Daten zur Integration",
+      "templateId": null
+    },
+    {
+      "id": "csv",
+      "label": "CSV Spreadsheet",
+      "label_de": "CSV-Tabelle",
+      "description": "Flat table for spreadsheet import",
+      "description_de": "Flache Tabelle für Tabellenimport",
+      "templateId": null
+    }
+  ],
+  "fieldCategories": [
+    {
+      "id": "identification",
+      "label": "Identification",
+      "label_de": "Identifikation",
+      "fields": [
+        { "id": "title", "label": "Title", "label_de": "Titel", "defaultOn": true },
+        { "id": "object_type", "label": "Object type", "label_de": "Objekttyp", "defaultOn": true },
+        { "id": "creator", "label": "Creator / Artist", "label_de": "Künstler / Hersteller", "defaultOn": true },
+        { "id": "date_period", "label": "Date / Period", "label_de": "Datierung / Epoche", "defaultOn": true },
+        { "id": "description", "label": "Description", "label_de": "Beschreibung", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "physical",
+      "label": "Physical Description",
+      "label_de": "Physische Beschreibung",
+      "fields": [
+        { "id": "materials", "label": "Materials", "label_de": "Material", "defaultOn": true },
+        { "id": "technique", "label": "Technique", "label_de": "Technik", "defaultOn": true },
+        { "id": "dimensions", "label": "Dimensions", "label_de": "Maße", "defaultOn": true },
+        { "id": "inscriptions", "label": "Inscriptions", "label_de": "Inschriften", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "condition",
+      "label": "Condition",
+      "label_de": "Zustand",
+      "fields": [
+        { "id": "condition_summary", "label": "Condition summary", "label_de": "Zustandsbeschreibung", "defaultOn": true },
+        { "id": "damage_notes", "label": "Damage notes", "label_de": "Schadensnotizen", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "media",
+      "label": "Media & Images",
+      "label_de": "Medien & Bilder",
+      "fields": [
+        { "id": "primary_photo", "label": "Primary photo", "label_de": "Hauptfoto", "defaultOn": true },
+        { "id": "all_photos", "label": "All photos", "label_de": "Alle Fotos", "defaultOn": true }
+      ]
+    },
+    {
+      "id": "capture",
+      "label": "Capture Verification",
+      "label_de": "Erfassungsverifikation",
+      "fields": [
+        { "id": "sha256_hash", "label": "SHA-256 hash", "label_de": "SHA-256-Hash", "defaultOn": true },
+        { "id": "gps_coordinates", "label": "GPS coordinates", "label_de": "GPS-Koordinaten", "defaultOn": true },
+        { "id": "capture_timestamp", "label": "Capture timestamp", "label_de": "Erfassungszeitstempel", "defaultOn": true }
+      ]
+    }
+  ]
+}

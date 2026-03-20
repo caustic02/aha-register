@@ -77,9 +77,47 @@ Inline `<style>` block, A4 page size (`@page { size: A4; margin: 18mm 20mm; }`),
 | 2026-03-15 | PDF labels use i18n (`pdf.*` keys), no longer hardcoded German | Gap fix — templates accept `TFunc` parameter, labels resolve via i18next |
 | 2026-03-15 | PDF colors imported from `src/theme/index.ts`, no duplication | Gap fix — `const C = colors` replaces hardcoded hex constants |
 
+## Domain-Driven Export Configuration (2026-03-20)
+
+Export field definitions, categories, and format options are now driven by JSON domain configs rather than hardcoded in the React hook.
+
+### Where configs live
+`src/config/domains/` — one JSON file per domain:
+- `museum_collection.json` — full 60-field registrar toolkit (10 categories)
+- `aha_marketplace.json` — marketplace-tailored (6 categories, provenance/valuation focus)
+- `general.json` — minimal default (5 categories, essentials only)
+
+### Registry
+`src/config/domains/index.ts` exports:
+- `getDomainConfig(domainId)` — returns typed `DomainConfig`, falls back to `general`
+- `AVAILABLE_DOMAINS` — list of registered domain IDs
+- `getAllDomainConfigs()` — all configs for domain selector UI
+- TypeScript types: `DomainConfig`, `DomainExportFormat`, `FieldCategory`, `FieldConfig`
+
+### How the export stepper reads from config
+1. `useExportConfig(domainId)` loads the domain config on mount
+2. Field toggle defaults come from each field's `defaultOn` property in JSON
+3. Category list and ordering come from `fieldCategories` array order in JSON
+4. Export format options come from `exportFormats` array in JSON
+5. ContentStep renders categories and fields directly from the domain config
+6. Labels are read from JSON (`label` / `label_de`) — no i18n key indirection needed for field names
+
+### How to add a new domain
+1. Create `src/config/domains/your_domain.json` following the `DomainConfig` schema
+2. Import it in `src/config/domains/index.ts` and add to the `DOMAINS` record
+3. The stepper and hook will pick it up automatically
+
+### Current domains
+| Domain ID | Categories | Fields | Export Formats |
+|-----------|-----------|--------|----------------|
+| `museum_collection` | 10 | 60 | PDF Data Sheet, PDF Condition, JSON, CSV |
+| `aha_marketplace` | 6 | 28 | Provenance Cert, Materials Passport, Collector Report, Curator Package |
+| `general` | 5 | 16 | PDF Data Sheet, JSON, CSV |
+
 ## Known Gaps
 
 - No per-institution branding (logo, custom colors)
 - No watermark option
 - `exportBatchToPDF` exists in `exportService.ts` but the batch export UI in `BatchActionBar` calls it — verify integration is wired
 - No digital signature — SHA-256 hash displayed but not cryptographically signed
+- Marketplace export format templates (provenance-cert, materials-passport, etc.) not yet built — format IDs registered but template rendering is future work

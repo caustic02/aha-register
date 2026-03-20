@@ -1,145 +1,26 @@
 /**
  * Export configuration state hook.
  *
- * Manages the full config for the 5-step export stepper.
- * Template selection pre-fills defaults from exportTemplates.ts;
- * user overrides persist within the session.
+ * Field definitions, categories, and export formats are loaded from
+ * domain JSON configs (src/config/domains/). This hook manages the
+ * runtime toggle state — it does NOT define the field inventory.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { getExportTemplate, type ExportTier } from '../config/exportTemplates';
+import { getDomainConfig, type DomainConfig } from '../config/domains';
 import type { Media } from '../db/types';
 import { getViewInventory } from '../config/viewRequirements';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type ExportFormat = 'pdf_datasheet' | 'pdf_condition' | 'json' | 'csv';
+export type ExportFormat = string;
 
 export interface ExportSections {
-  identification: boolean;
-  physical: boolean;
-  classification: boolean;
-  condition: boolean;
-  provenance: boolean;
-  documents: boolean;
+  [categoryId: string]: boolean;
 }
 
-/** Every individually toggleable field in the export. */
-export interface ExportFields {
-  // Identification
-  accession_number: boolean;
-  inventory_number: boolean;
-  title: boolean;
-  alt_titles: boolean;
-  object_type: boolean;
-  creator: boolean;
-  artist_attribution: boolean;
-  date_period: boolean;
-  place_of_origin: boolean;
-  description: boolean;
-  // Physical
-  materials: boolean;
-  technique: boolean;
-  dimensions: boolean;
-  weight: boolean;
-  inscriptions: boolean;
-  color_notes: boolean;
-  parts_count: boolean;
-  fragility: boolean;
-  // Classification
-  aat_terms: boolean;
-  style_period: boolean;
-  subject_matter: boolean;
-  cultural_context: boolean;
-  domain_specialization: boolean;
-  // Condition
-  condition_summary: boolean;
-  condition_rating: boolean;
-  condition_date: boolean;
-  damage_notes: boolean;
-  conservation_history: boolean;
-  handling_requirements: boolean;
-  environmental_sensitivity: boolean;
-  // Provenance
-  ownership_history: boolean;
-  acquisition_method: boolean;
-  acquisition_date: boolean;
-  source_donor: boolean;
-  credit_line: boolean;
-  legal_status: boolean;
-  export_restrictions: boolean;
-  deaccession_status: boolean;
-  // Location
-  current_location: boolean;
-  building_room_shelf: boolean;
-  storage_requirements: boolean;
-  climate_requirements: boolean;
-  // Media
-  primary_photo: boolean;
-  all_photos: boolean;
-  isolated_images: boolean;
-  document_scans: boolean;
-  // Capture verification
-  sha256_hash: boolean;
-  gps_coordinates: boolean;
-  capture_timestamp: boolean;
-  device_info: boolean;
-  coordinate_source: boolean;
-  evidence_class: boolean;
-  privacy_tier: boolean;
-  // Valuation
-  insurance_value: boolean;
-  appraisal_date: boolean;
-  fair_market_value: boolean;
-  replacement_value: boolean;
-  // Legal
-  legal_hold: boolean;
-  berkeley_protocol: boolean;
-  restricted_access: boolean;
-}
-
-/** Maps each category to its field keys. */
-export const CATEGORY_FIELDS: Record<string, (keyof ExportFields)[]> = {
-  identification: [
-    'accession_number', 'inventory_number', 'title', 'alt_titles',
-    'object_type', 'creator', 'artist_attribution', 'date_period',
-    'place_of_origin', 'description',
-  ],
-  physical: [
-    'materials', 'technique', 'dimensions', 'weight',
-    'inscriptions', 'color_notes', 'parts_count', 'fragility',
-  ],
-  classification: [
-    'aat_terms', 'style_period', 'subject_matter',
-    'cultural_context', 'domain_specialization',
-  ],
-  condition: [
-    'condition_summary', 'condition_rating', 'condition_date',
-    'damage_notes', 'conservation_history', 'handling_requirements',
-    'environmental_sensitivity',
-  ],
-  provenance: [
-    'ownership_history', 'acquisition_method', 'acquisition_date',
-    'source_donor', 'credit_line', 'legal_status',
-    'export_restrictions', 'deaccession_status',
-  ],
-  location: [
-    'current_location', 'building_room_shelf',
-    'storage_requirements', 'climate_requirements',
-  ],
-  media: [
-    'primary_photo', 'all_photos', 'isolated_images', 'document_scans',
-  ],
-  capture: [
-    'sha256_hash', 'gps_coordinates', 'capture_timestamp',
-    'device_info', 'coordinate_source', 'evidence_class', 'privacy_tier',
-  ],
-  valuation: [
-    'insurance_value', 'appraisal_date', 'fair_market_value', 'replacement_value',
-  ],
-  legal: [
-    'legal_hold', 'berkeley_protocol', 'restricted_access',
-  ],
-};
+/** Flat map of field ID → on/off. Populated from domain config. */
+export type ExportFields = Record<string, boolean>;
 
 export interface ExportConfig {
   format: ExportFormat;
@@ -153,32 +34,36 @@ export interface ExportConfig {
   includeBranding: boolean;
 }
 
-// ── Defaults ─────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-function allFieldsOn(): ExportFields {
+function buildFieldDefaults(domain: DomainConfig): ExportFields {
   const f: Record<string, boolean> = {};
-  for (const keys of Object.values(CATEGORY_FIELDS)) {
-    for (const k of keys) f[k] = true;
+  for (const cat of domain.fieldCategories) {
+    for (const field of cat.fields) {
+      f[field.id] = field.defaultOn;
+    }
   }
-  return f as unknown as ExportFields;
+  return f;
 }
 
-function buildDefault(): ExportConfig {
+function buildSectionDefaults(domain: DomainConfig): ExportSections {
+  const s: Record<string, boolean> = {};
+  for (const cat of domain.fieldCategories) {
+    s[cat.id] = cat.fields.some((f) => f.defaultOn);
+  }
+  return s;
+}
+
+function buildDefault(domain: DomainConfig): ExportConfig {
+  const defaultFormat = domain.exportFormats[0]?.id ?? 'pdf_datasheet';
   return {
-    format: 'pdf_datasheet',
+    format: defaultFormat,
     template: 'standard',
     selectedImageIds: [],
     useIsolated: true,
     showDimensions: false,
-    sections: {
-      identification: true,
-      physical: true,
-      classification: true,
-      condition: false,
-      provenance: false,
-      documents: false,
-    },
-    fields: allFieldsOn(),
+    sections: buildSectionDefaults(domain),
+    fields: buildFieldDefaults(domain),
     showAiBadges: false,
     includeBranding: true,
   };
@@ -186,21 +71,33 @@ function buildDefault(): ExportConfig {
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useExportConfig() {
-  const [config, setConfig] = useState<ExportConfig>(buildDefault);
+export function useExportConfig(domainId: string = 'museum_collection') {
+  const domain = useMemo(() => getDomainConfig(domainId), [domainId]);
+  const [config, setConfig] = useState<ExportConfig>(() => buildDefault(domain));
 
-  const reset = useCallback(() => setConfig(buildDefault()), []);
+  /** Derived: category → field IDs mapping from the domain config. */
+  const categoryFields = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const cat of domain.fieldCategories) {
+      m[cat.id] = cat.fields.map((f) => f.id);
+    }
+    return m;
+  }, [domain]);
+
+  const reset = useCallback(
+    () => setConfig(buildDefault(domain)),
+    [domain],
+  );
 
   const setFormat = useCallback((format: ExportFormat) => {
     setConfig((prev) => ({ ...prev, format }));
   }, []);
 
   const applyTemplate = useCallback(
-    (tier: ExportTier, media: Media[], domain: string) => {
+    (tier: ExportTier, media: Media[], templateDomain: string) => {
       const tmpl = getExportTemplate(tier);
-      const inventory = getViewInventory(domain, media);
+      const inventory = getViewInventory(templateDomain, media);
 
-      // Select images based on template tier
       const originals = media.filter(
         (m) => !m.media_type || m.media_type === 'original',
       );
@@ -229,20 +126,13 @@ export function useExportConfig() {
         selectedImageIds: selectedIds,
         useIsolated: tmpl.preferIsolated,
         showDimensions: false,
-        sections: {
-          identification: true,
-          physical: tmpl.fieldGroups.includes('physical'),
-          classification: tmpl.fieldGroups.includes('classification'),
-          condition: tmpl.condition !== 'none',
-          provenance: tmpl.provenance,
-          documents: tmpl.includeDocuments,
-        },
-        fields: allFieldsOn(),
+        sections: buildSectionDefaults(domain),
+        fields: buildFieldDefaults(domain),
         showAiBadges: tmpl.showAiBadges,
         includeBranding: true,
       }));
     },
-    [],
+    [domain],
   );
 
   const toggleImage = useCallback((mediaId: string) => {
@@ -257,18 +147,15 @@ export function useExportConfig() {
     });
   }, []);
 
-  const toggleSection = useCallback(
-    (key: keyof ExportSections) => {
-      if (key === 'identification') return;
-      setConfig((prev) => ({
-        ...prev,
-        sections: { ...prev.sections, [key]: !prev.sections[key] },
-      }));
-    },
-    [],
-  );
+  const toggleSection = useCallback((key: string) => {
+    if (key === 'identification') return;
+    setConfig((prev) => ({
+      ...prev,
+      sections: { ...prev.sections, [key]: !prev.sections[key] },
+    }));
+  }, []);
 
-  const toggleField = useCallback((key: keyof ExportFields) => {
+  const toggleField = useCallback((key: string) => {
     setConfig((prev) => ({
       ...prev,
       fields: { ...prev.fields, [key]: !prev.fields[key] },
@@ -277,7 +164,7 @@ export function useExportConfig() {
 
   const toggleCategoryFields = useCallback(
     (category: string, value: boolean) => {
-      const keys = CATEGORY_FIELDS[category];
+      const keys = categoryFields[category];
       if (!keys) return;
       setConfig((prev) => {
         const next = { ...prev.fields };
@@ -285,7 +172,7 @@ export function useExportConfig() {
         return { ...prev, fields: next };
       });
     },
-    [],
+    [categoryFields],
   );
 
   const setFlag = useCallback(
@@ -300,6 +187,8 @@ export function useExportConfig() {
 
   return {
     config,
+    domain,
+    categoryFields,
     reset,
     setFormat,
     applyTemplate,
