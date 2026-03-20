@@ -317,8 +317,8 @@ export function VocabularyPicker({
         </View>
       )}
 
-      {/* Quick suggestion chips */}
-      {quickSuggestions.length > 0 && (
+      {/* Quick suggestion chips — only shown when user is actively searching */}
+      {isDropdownOpen && debouncedQuery.trim().length > 0 && quickSuggestions.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

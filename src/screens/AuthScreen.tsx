@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,8 +15,10 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { signIn, signUp } from '../services/auth';
-import { AhaLogo } from '../components/AhaLogo';
+import AhaLogo from '../components/AhaLogo';
 import { colors, typography, spacing, radii } from '../theme';
+
+const HERO_HEIGHT = Dimensions.get('window').height * 0.30;
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
@@ -102,127 +105,134 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <AhaLogo width={200} height={88} color={colors.primary} />
+          {/* Navy hero */}
+          <View style={styles.hero}>
+            <AhaLogo width={280} height={124} />
           </View>
 
-          {/* Primary action: Start Documenting */}
-          <Pressable style={styles.startBtn} onPress={onSkip} accessibilityRole="button" accessibilityLabel={t('auth.start_documenting')}>
-            <Text style={styles.startBtnText}>
-              {t('auth.start_documenting')}
-            </Text>
-          </Pressable>
+          {/* Form card — overlaps hero with rounded top corners */}
+          <View style={styles.formCard}>
+            {/* Primary action: Explore the App */}
+            <Pressable
+              style={styles.startBtn}
+              onPress={onSkip}
+              accessibilityRole="button"
+              accessibilityLabel={t('auth.start_documenting')}
+            >
+              <Text style={styles.startBtnText}>{t('auth.start_documenting')}</Text>
+            </Pressable>
 
-          {/* Divider with account prompt */}
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>{t('auth.have_account')}</Text>
-            <View style={styles.dividerLine} />
-          </View>
+            {/* Divider with account prompt */}
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{t('auth.have_account')}</Text>
+              <View style={styles.dividerLine} />
+            </View>
 
-          {/* Form */}
-          <View key={mode} style={styles.form}>
-            <Text style={styles.fieldLabel}>{t('auth.email')}</Text>
-            <TextInput
-              style={styles.textInput}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="email@example.com"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="next"
-              accessibilityLabel={t('auth.email')}
-            />
-
-            <Text style={styles.fieldLabel}>{t('auth.password')}</Text>
-            <View style={styles.passwordRow}>
+            {/* Form */}
+            <View key={mode} style={styles.form}>
+              <Text style={styles.fieldLabel}>{t('auth.email')}</Text>
               <TextInput
-                style={styles.passwordInput}
-                value={password}
-                onChangeText={setPassword}
-                placeholder={'\u2022'.repeat(8)}
+                style={styles.textInput}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="email@example.com"
                 placeholderTextColor={colors.textMuted}
-                secureTextEntry={!showPassword}
-                returnKeyType={mode === 'signup' ? 'next' : 'done'}
-                accessibilityLabel={t('auth.password')}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="next"
+                accessibilityLabel={t('auth.email')}
               />
+
+              <Text style={styles.fieldLabel}>{t('auth.password')}</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  style={styles.passwordInput}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={'\u2022'.repeat(8)}
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry={!showPassword}
+                  returnKeyType={mode === 'signup' ? 'next' : 'done'}
+                  accessibilityLabel={t('auth.password')}
+                />
+                <Pressable
+                  onPress={() => setShowPassword((v) => !v)}
+                  style={styles.eyeBtn}
+                  hitSlop={8}
+                  accessibilityLabel="Toggle password visibility"
+                  accessibilityRole="button"
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color={colors.textSecondary} />
+                  ) : (
+                    <Eye size={20} color={colors.textSecondary} />
+                  )}
+                </Pressable>
+              </View>
+
+              {mode === 'signup' && (
+                <>
+                  <Text style={styles.fieldLabel}>{t('auth.confirm_password')}</Text>
+                  <View style={styles.passwordRow}>
+                    <TextInput
+                      style={styles.passwordInput}
+                      value={confirmPassword}
+                      onChangeText={setConfirmPassword}
+                      placeholder={'\u2022'.repeat(8)}
+                      placeholderTextColor={colors.textMuted}
+                      secureTextEntry={!showConfirmPassword}
+                      returnKeyType="done"
+                      accessibilityLabel={t('auth.confirm_password')}
+                    />
+                    <Pressable
+                      onPress={() => setShowConfirmPassword((v) => !v)}
+                      style={styles.eyeBtn}
+                      hitSlop={8}
+                      accessibilityLabel="Toggle password visibility"
+                      accessibilityRole="button"
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff size={20} color={colors.textSecondary} />
+                      ) : (
+                        <Eye size={20} color={colors.textSecondary} />
+                      )}
+                    </Pressable>
+                  </View>
+                </>
+              )}
+
+              {error && <Text style={styles.errorText}>{error}</Text>}
+
               <Pressable
-                onPress={() => setShowPassword((v) => !v)}
-                style={styles.eyeBtn}
-                hitSlop={8}
-                accessibilityLabel="Toggle password visibility"
+                style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+                onPress={handleSubmit}
+                disabled={loading}
                 accessibilityRole="button"
               >
-                {showPassword ? (
-                  <EyeOff size={20} color={colors.textSecondary} />
+                {loading ? (
+                  <ActivityIndicator color={colors.white} size="small" />
                 ) : (
-                  <Eye size={20} color={colors.textSecondary} />
+                  <Text style={styles.submitBtnText}>
+                    {mode === 'signin' ? t('auth.sign_in') : t('auth.create_account')}
+                  </Text>
                 )}
               </Pressable>
             </View>
 
-            {mode === 'signup' && (
-              <>
-                <Text style={styles.fieldLabel}>{t('auth.confirm_password')}</Text>
-                <View style={styles.passwordRow}>
-                  <TextInput
-                    style={styles.passwordInput}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    placeholder={'\u2022'.repeat(8)}
-                    placeholderTextColor={colors.textMuted}
-                    secureTextEntry={!showConfirmPassword}
-                    returnKeyType="done"
-                    accessibilityLabel={t('auth.confirm_password')}
-                  />
-                  <Pressable
-                    onPress={() => setShowConfirmPassword((v) => !v)}
-                    style={styles.eyeBtn}
-                    hitSlop={8}
-                    accessibilityLabel="Toggle password visibility"
-                    accessibilityRole="button"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff size={20} color={colors.textSecondary} />
-                    ) : (
-                      <Eye size={20} color={colors.textSecondary} />
-                    )}
-                  </Pressable>
-                </View>
-              </>
-            )}
-
-            {error && <Text style={styles.errorText}>{error}</Text>}
-
+            {/* Toggle sign-in / sign-up */}
             <Pressable
-              style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
-              onPress={handleSubmit}
-              disabled={loading}
+              style={styles.toggleBtn}
+              onPress={toggleMode}
+              hitSlop={12}
               accessibilityRole="button"
             >
-              {loading ? (
-                <ActivityIndicator color={colors.white} size="small" />
-              ) : (
-                <Text style={styles.submitBtnText}>
-                  {mode === 'signin'
-                    ? t('auth.sign_in')
-                    : t('auth.create_account')}
-                </Text>
-              )}
+              <Text style={styles.toggleText}>
+                {mode === 'signin' ? t('auth.no_account') : t('auth.already_have_account')}
+              </Text>
             </Pressable>
           </View>
-
-          {/* Toggle sign-in / sign-up */}
-          <Pressable style={styles.toggleBtn} onPress={toggleMode} hitSlop={12} accessibilityRole="button">
-            <Text style={styles.toggleText}>
-              {mode === 'signin'
-                ? t('auth.no_account')
-                : t('auth.already_have_account')}
-            </Text>
-          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -232,26 +242,39 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.primary, // navy fills status bar area
   },
   flex: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 28,
-    paddingTop: 80,
-    paddingBottom: 200,
   },
-  header: {
+
+  /* Navy hero */
+  hero: {
+    height: HERO_HEIGHT,
+    backgroundColor: colors.primary,
     alignItems: 'center',
-    marginBottom: 36,
+    justifyContent: 'center',
+    paddingTop: spacing.xxl,
   },
-  appNameSub: {
-    color: colors.primary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.semibold,
-    marginTop: spacing.xs,
+
+  /* Parchment form card — overlaps hero */
+  formCard: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -28,
+    paddingHorizontal: 28,
+    paddingTop: 32,
+    paddingBottom: 60,
+    shadowColor: colors.textPrimary,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
 
   /* Primary skip/start button */
