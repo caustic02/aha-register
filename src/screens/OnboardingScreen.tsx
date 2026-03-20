@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: colors.textSecondary,
     textDecorationLine: 'underline',
   },
   pressed: {

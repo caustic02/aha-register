@@ -535,7 +535,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
           data={objects}
           keyExtractor={(item) => item.id}
           renderItem={renderListItem}
-
+          ListFooterComponent={ListFooterSpacer}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           extraData={selectMode ? selectedIds.size : 0}
@@ -545,7 +545,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
           data={objects}
           keyExtractor={(item) => item.id}
           renderItem={renderGridItem}
-
+          ListFooterComponent={ListFooterSpacer}
           numColumns={3}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -572,6 +572,9 @@ export function ObjectListScreen({ navigation, route }: Props) {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
+
+const FOOTER_PAD = { height: 100 };
+const ListFooterSpacer = () => <View style={FOOTER_PAD} />;
 
 const styles = StyleSheet.create({
   safe: {

@@ -1108,11 +1108,11 @@ function ExportingStep({
           <Text style={styles.exportingTitle}>
             {t('exportStepper.exportComplete')}
           </Text>
-          <View style={styles.cancelWrap}>
+          <View style={styles.doneActions}>
             <Button
               label={t('common.done')}
               variant="primary"
-              size="md"
+              size="lg"
               onPress={onClose}
               fullWidth
             />
@@ -1606,6 +1606,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
     padding: spacing.lg,
+    minHeight: touch.minTarget,
   },
   templateCardActive: {
     borderColor: colors.primary,
@@ -1847,6 +1848,12 @@ const styles = StyleSheet.create({
   },
   continueWrap: {
     flex: 1,
+  },
+  doneActions: {
+    width: '100%',
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    gap: spacing.md,
   },
   cancelWrap: {
     paddingHorizontal: spacing.lg,

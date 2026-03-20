@@ -406,7 +406,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingTop: spacing.lg },
+  scrollContent: { paddingTop: spacing.lg, paddingBottom: 100 },
   bottomSpacer: { height: spacing.xl },
 
   // Header

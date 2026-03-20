@@ -855,6 +855,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: spacing.sm,
+    paddingBottom: 100,
   },
   // Gallery
   gallerySection: {
