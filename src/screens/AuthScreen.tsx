@@ -18,7 +18,7 @@ import { signIn, signUp } from '../services/auth';
 import AhaLogo from '../components/AhaLogo';
 import { colors, typography, spacing, radii } from '../theme';
 
-const HERO_HEIGHT = Dimensions.get('window').height * 0.38;
+const HERO_HEIGHT = Dimensions.get('window').height * 0.30;
 
 interface AuthScreenProps {
   onAuthenticated: () => void;
@@ -107,7 +107,7 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
         >
           {/* Navy hero */}
           <View style={styles.hero}>
-            <AhaLogo width={240} height={106} />
+            <AhaLogo width={280} height={124} />
           </View>
 
           {/* Form card — overlaps hero with rounded top corners */}
@@ -266,14 +266,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    marginTop: -24,
+    marginTop: -28,
     paddingHorizontal: 28,
     paddingTop: 32,
     paddingBottom: 60,
     shadowColor: colors.textPrimary,
     shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
     elevation: 8,
   },
 
