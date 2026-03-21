@@ -1,6 +1,6 @@
 # State of the Art: Capture System
 
-> Last updated: 2026-03-18
+> Last updated: 2026-03-21
 > Status: ACTIVE
 
 ## What This Is
@@ -98,6 +98,7 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 | 2026-03-09 | Type selector shown post-preview, not pre-capture | Capture flow UX commit |
 | 2026-03-15 | Audit trail userId: param > auth session > 'local' fallback | Gap fix |
 | 2026-03-18 | B2 non-blocking capture: Quick/Full mode toggle, quickCapture service, capture inbox, review flow | B2 feature sprint |
+| 2026-03-21 | Hide camera controls during protocol capture; move progress pill to left of topBar | Layout fix — device testing |
 
 ## Camera Enhancements
 
@@ -124,6 +125,14 @@ A small pill-shaped badge (top-left of camera view, below top controls) showing 
 - Background: `rgba(0,0,0,0.55)` / white text / `radii.full` border radius
 - Incremented in `handleSave` after `setSavedId` (on successful `createDraftObject`)
 - Resets to 0 only when the component unmounts (navigating away from Capture tab)
+
+### Protocol Capture Layout
+
+When a capture protocol is active (`protocolHook.protocol` is non-null), the default camera controls bar (Flash | Ratio | Flip | Grid) is hidden. The `CaptureGuidanceOverlay` replaces the top-of-screen controls during guided capture. Controls reappear when no protocol is active.
+
+- **Hide condition:** `{!protocolHook.protocol && <View style={styles.topControls}>…</View>}` — conditional render in `CaptureScreen.tsx`
+- **Why:** The controls bar (`zIndex: 10`) rendered on top of the overlay (`zIndex: 8`) and competed visually with the protocol guidance UI
+- **Progress pill position:** Moved to the **left** side of the `topBar` (pill first, then protocol name), so it does not compete with any top-right navigation elements. Protocol name is right-aligned and flex-fills remaining space.
 
 ### Flash Control
 
