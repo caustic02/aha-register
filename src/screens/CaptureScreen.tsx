@@ -27,6 +27,7 @@ import { pickFromLibrary, type CaptureResult } from '../services/capture';
 import { extractMetadata, type CaptureMetadata } from '../services/metadata';
 import { createDraftObject } from '../services/draftObject';
 import { quickCapture, type LocationData } from '../services/quickCapture';
+import { addMediaToObject } from '../services/mediaService';
 import { computeSHA256 } from '../utils/hash';
 import {
   getSetting,
@@ -302,7 +303,9 @@ export function CaptureScreen() {
     ]).start();
   }, [shutterFlashAnim, reduceMotion]);
 
-  // Protocol-aware shutter: captures a photo and tags it with shot metadata
+  // Protocol-aware shutter: captures a photo and tags it with shot metadata.
+  // First shot creates the object + primary media; subsequent shots add media
+  // to the same object so the protocol produces ONE object with multiple photos.
   const handleProtocolShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady || !protocolHook.currentShot || !protocolHook.protocol) return;
     try {
@@ -317,26 +320,37 @@ export function CaptureScreen() {
       const currentShotId = protocolHook.currentShot.id;
       const currentShotOrder = protocolHook.currentShot.order;
       const currentProtocolId = protocolHook.protocol.id;
+      const existingObjectId = protocolFirstObjectIdRef.current;
 
       // Fire and forget — camera stays live, like quick mode
       (async () => {
         try {
-          const meta = await extractMetadata(pic.exif ?? null);
-          const location: LocationData | null =
-            meta.latitude != null && meta.longitude != null
-              ? {
-                  latitude: meta.latitude,
-                  longitude: meta.longitude,
-                  altitude: meta.altitude,
-                  accuracy: meta.accuracy,
-                  coordinateSource: meta.coordinateSource ?? 'gps_hardware',
-                }
-              : null;
+          let objectId: string;
+          let newMediaId: string | null = null;
 
-          const objectId = await quickCapture(db, photoUri, location);
+          if (!existingObjectId) {
+            // First shot: create object + primary media via quickCapture
+            // (quickCapture handles file copy, SHA-256, audit, sync internally)
+            const meta = await extractMetadata(pic.exif ?? null);
+            const location: LocationData | null =
+              meta.latitude != null && meta.longitude != null
+                ? {
+                    latitude: meta.latitude,
+                    longitude: meta.longitude,
+                    altitude: meta.altitude,
+                    accuracy: meta.accuracy,
+                    coordinateSource: meta.coordinateSource ?? 'gps_hardware',
+                  }
+                : null;
 
-          if (!protocolFirstObjectIdRef.current) {
+            objectId = await quickCapture(db, photoUri, location);
             protocolFirstObjectIdRef.current = objectId;
+          } else {
+            // Subsequent shots: add media to the existing object
+            // (addMediaToObject handles file copy, SHA-256, audit, sync internally)
+            objectId = existingObjectId;
+            const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
+            newMediaId = media.id;
           }
 
           // Tag the object with protocol metadata
@@ -359,10 +373,19 @@ export function CaptureScreen() {
           );
 
           // Tag the media record with shot metadata
-          await db.runAsync(
-            `UPDATE media SET shot_type = ?, protocol_id = ?, shot_order = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
-            [currentShotId, currentProtocolId, currentShotOrder, now, objectId],
-          );
+          if (newMediaId) {
+            // Subsequent shot: tag specific media by its ID
+            await db.runAsync(
+              `UPDATE media SET shot_type = ?, protocol_id = ?, shot_order = ?, updated_at = ? WHERE id = ?`,
+              [currentShotId, currentProtocolId, currentShotOrder, now, newMediaId],
+            );
+          } else {
+            // First shot: tag primary media
+            await db.runAsync(
+              `UPDATE media SET shot_type = ?, protocol_id = ?, shot_order = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
+              [currentShotId, currentProtocolId, currentShotOrder, now, objectId],
+            );
+          }
 
           // Advance the protocol hook
           protocolHook.captureShot(currentShotId, photoUri);
