@@ -98,14 +98,14 @@ export function CaptureGuidanceOverlay({
     <View style={styles.container} pointerEvents="box-none">
       {/* ── Top bar ───────────────────────────────────────────────────────── */}
       <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
-        <Text style={styles.protocolName} numberOfLines={1}>
-          {protocolName}
-        </Text>
         <View style={styles.progressPill}>
           <Text style={styles.progressText}>
             {t('protocols.progress', { completed: completedCount, total: totalShots })}
           </Text>
         </View>
+        <Text style={styles.protocolName} numberOfLines={1}>
+          {protocolName}
+        </Text>
       </View>
 
       {/* ── Bottom card ───────────────────────────────────────────────────── */}
@@ -197,7 +197,8 @@ const styles = StyleSheet.create({
     fontSize: typography.size.sm,
     fontWeight: typography.weight.medium,
     flex: 1,
-    marginRight: spacing.sm,
+    marginLeft: spacing.sm,
+    textAlign: 'right',
   },
   progressPill: {
     backgroundColor: PROGRESS_BG,

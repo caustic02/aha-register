@@ -918,8 +918,8 @@ export function CaptureScreen() {
         </View>
       )}
 
-      {/* Top controls: Flash | Ratio | Flip | Grid */}
-      <View style={styles.topControls}>
+      {/* Top controls: Flash | Ratio | Flip | Grid — hidden during protocol capture */}
+      {!protocolHook.protocol && <View style={styles.topControls}>
         {/* Flash toggle */}
         <Pressable
           style={styles.controlBtn}
@@ -965,7 +965,7 @@ export function CaptureScreen() {
             color={gridEnabled ? colors.primary : colors.white}
           />
         </Pressable>
-      </View>
+      </View>}
 
       {/* Intro overlay for first-time users */}
       {showIntro && (
