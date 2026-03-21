@@ -4,7 +4,7 @@
  * and allows saving, continuing, or retaking individual shots.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Image,
   Modal,
@@ -12,6 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
 } from 'react-native';
@@ -35,7 +36,8 @@ interface CompletionSummaryProps {
   isComplete: boolean;
   hasIncompleteRequired: boolean;
   progress: { completed: number; total: number; required: number; requiredCompleted: number };
-  onSave: () => void;
+  initialTitle?: string;
+  onSave: (title: string) => void;
   onContinue: () => void;
   onRetake: (shotId: string) => void;
   onClose: () => void;
@@ -49,6 +51,7 @@ export function CompletionSummary({
   isComplete,
   hasIncompleteRequired,
   progress,
+  initialTitle,
   onSave,
   onContinue,
   onRetake,
@@ -58,6 +61,7 @@ export function CompletionSummary({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isGerman = i18n.language.startsWith('de');
+  const [titleText, setTitleText] = useState(initialTitle ?? '');
 
   const cardWidth = (width - spacing.xl * 2 - spacing.md) / 2;
   const sortedShots = [...protocol.shots].sort((a, b) => a.order - b.order);
@@ -176,10 +180,25 @@ export function CompletionSummary({
           </View>
         </ScrollView>
 
+        {/* Title input */}
+        <View style={styles.titleSection}>
+          <Text style={styles.titlePrompt}>{t('protocols.object_title_prompt')}</Text>
+          <TextInput
+            style={styles.titleInput}
+            value={titleText}
+            onChangeText={setTitleText}
+            placeholder={t('protocols.object_title_placeholder')}
+            placeholderTextColor={colors.textTertiary}
+            autoCapitalize="sentences"
+            returnKeyType="done"
+            maxLength={200}
+          />
+        </View>
+
         {/* Bottom action bar */}
         <View style={[styles.actionBar, { paddingBottom: insets.bottom + spacing.lg }]}>
           {isComplete ? (
-            <Pressable style={styles.savePrimaryBtn} onPress={onSave} accessibilityRole="button">
+            <Pressable style={styles.savePrimaryBtn} onPress={() => onSave(titleText.trim() || t('protocols.untitled_object_fallback'))} accessibilityRole="button">
               <Text style={styles.savePrimaryText}>{t('protocols.save_complete')}</Text>
             </Pressable>
           ) : hasIncompleteRequired ? (
@@ -187,12 +206,12 @@ export function CompletionSummary({
               <Pressable style={styles.continueBtn} onPress={onContinue} accessibilityRole="button">
                 <Text style={styles.continueBtnText}>{t('protocols.continue_capturing')}</Text>
               </Pressable>
-              <Pressable style={styles.saveAnywayBtn} onPress={onSave} accessibilityRole="button">
+              <Pressable style={styles.saveAnywayBtn} onPress={() => onSave(titleText.trim() || t('protocols.untitled_object_fallback'))} accessibilityRole="button">
                 <Text style={styles.saveAnywayText}>{t('protocols.save_incomplete')}</Text>
               </Pressable>
             </View>
           ) : (
-            <Pressable style={styles.savePrimaryBtn} onPress={onSave} accessibilityRole="button">
+            <Pressable style={styles.savePrimaryBtn} onPress={() => onSave(titleText.trim() || t('protocols.untitled_object_fallback'))} accessibilityRole="button">
               <Text style={styles.savePrimaryText}>{t('protocols.save_complete')}</Text>
             </Pressable>
           )}
@@ -340,6 +359,30 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: typography.weight.semibold,
     color: colors.text,
+  },
+  titleSection: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+  titlePrompt: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontWeight: typography.weight.medium,
+    marginBottom: spacing.xs,
+  },
+  titleInput: {
+    ...typography.body,
+    color: colors.text,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: touch.minTargetSmall,
   },
   actionBar: {
     paddingHorizontal: spacing.xl,

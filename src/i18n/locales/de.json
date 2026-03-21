@@ -1055,7 +1055,10 @@
     "additional_photos": "Zusätzliche Fotos",
     "review": "Überprüfen",
     "tap_to_retake": "Tippen zum Wiederholen",
-    "tap_to_capture": "Tippen zum Aufnehmen"
+    "tap_to_capture": "Tippen zum Aufnehmen",
+    "object_title_prompt": "Objekt benennen",
+    "object_title_placeholder": "z.B. Bronzefigur, Öl auf Leinwand",
+    "untitled_object_fallback": "Unbenanntes Objekt"
   },
   "empty_states": {
     "objects": {
