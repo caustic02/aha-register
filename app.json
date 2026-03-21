@@ -30,7 +30,7 @@
       "versionCode": 2,
       "adaptiveIcon": {
         "backgroundColor": "#1E2D3D",
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
@@ -42,15 +42,28 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      ["expo-build-properties", {
-        "ios": {
-          "deploymentTarget": "15.5"
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.5"
+          }
         }
-      }],
-      ["expo-sqlite", { "useSQLCipher": true }],
+      ],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
       "expo-sharing",
       "expo-updates",
-      ["@sentry/react-native/expo", { "uploadSourceMaps": false }],
+      [
+        "@sentry/react-native/expo",
+        {
+          "uploadSourceMaps": false
+        }
+      ],
       "expo-secure-store",
       "react-native-document-scanner-plugin",
       "rn-mlkit-ocr"
