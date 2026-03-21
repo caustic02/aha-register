@@ -103,6 +103,7 @@ export function CaptureScreen() {
   const [cameraReady, setCameraReady] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
+  const protocolFirstObjectIdRef = useRef<string | null>(null);
 
   // Capture / form state
   const [phase, setPhase] = useState<Phase>('idle');
@@ -217,6 +218,7 @@ export function CaptureScreen() {
   }, [captureMode, protocolHook.protocol, protocolPickerDismissed, phase]);
 
   const handleProtocolSelect = useCallback((protocolId: string) => {
+    protocolFirstObjectIdRef.current = null;
     protocolHook.selectProtocol(protocolId);
     setShowProtocolPicker(false);
     setProtocolPickerDismissed(true);
@@ -332,6 +334,10 @@ export function CaptureScreen() {
               : null;
 
           const objectId = await quickCapture(db, photoUri, location);
+
+          if (!protocolFirstObjectIdRef.current) {
+            protocolFirstObjectIdRef.current = objectId;
+          }
 
           // Tag the object with protocol metadata
           const now = new Date().toISOString();
@@ -1014,11 +1020,17 @@ export function CaptureScreen() {
           hasIncompleteRequired={protocolHook.hasIncompleteRequired}
           progress={protocolHook.progress}
           onSave={() => {
+            const targetId = protocolFirstObjectIdRef.current;
+            protocolFirstObjectIdRef.current = null;
             setShowCompletionSummary(false);
-            // Protocol metadata is already tagged on each individual capture
-            // Reset protocol for next session
             protocolHook.reset();
             setProtocolPickerDismissed(false);
+            if (targetId) {
+              navigation.getParent()?.navigate('Home', {
+                screen: 'ObjectDetail',
+                params: { objectId: targetId },
+              });
+            }
           }}
           onContinue={() => {
             setShowCompletionSummary(false);
