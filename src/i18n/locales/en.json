@@ -557,7 +557,13 @@
     "preview_generate": "Generate PDF",
     "preview_generating": "Generating\u2026",
     "back": "Back",
-    "next": "Next"
+    "next": "Next",
+    "protocol_section": "Documentation protocol",
+    "protocol_complete": "Documentation complete",
+    "protocol_incomplete": "Documentation incomplete ({{count}} required shots missing)",
+    "shot_status_completed": "Completed",
+    "shot_status_skipped": "Skipped",
+    "shot_status_missing": "Missing"
   },
   "exportStepper": {
     "selectFormat": "Select Format",
@@ -1020,6 +1026,36 @@
     "overall": "Overall / in situ",
     "interior": "Interior",
     "document_scan": "Document scan"
+  },
+  "protocols": {
+    "picker_title": "Documentation Protocol",
+    "picker_subtitle": "Choose how to document this object",
+    "no_protocol": "Freeform (no protocol)",
+    "shots_required": "{{count}} shots required",
+    "shots_optional": "{{count}} optional",
+    "progress": "{{completed}} of {{total}}",
+    "current_shot": "Shot {{current}} of {{total}}",
+    "skip": "Skip",
+    "retake": "Retake",
+    "show_tips": "Tips",
+    "review_title": "Review Documentation",
+    "incomplete_title": "Incomplete Documentation",
+    "incomplete_message": "{{remaining}} required shots are missing. You can still save.",
+    "save_complete": "Save",
+    "save_incomplete": "Save Anyway",
+    "continue_capturing": "Continue Capturing",
+    "required_badge": "Required",
+    "optional_badge": "Optional",
+    "skipped_badge": "Skipped",
+    "completed_badge": "Done",
+    "documentation_protocol": "Documentation protocol",
+    "status_complete": "Complete",
+    "status_incomplete": "Incomplete",
+    "missing_required": "{{count}} required shots missing",
+    "additional_photos": "Additional photos",
+    "review": "Review",
+    "tap_to_retake": "Tap to retake",
+    "tap_to_capture": "Tap to capture"
   },
   "empty_states": {
     "objects": {

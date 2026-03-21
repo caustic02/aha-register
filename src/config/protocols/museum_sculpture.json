@@ -1,0 +1,114 @@
+{
+  "id": "museum_sculpture",
+  "name": "Sculpture Documentation",
+  "name_de": "Skulptur-Dokumentation",
+  "description": "Standard protocol for documenting three-dimensional works in museum collections",
+  "description_de": "Standardprotokoll für die Dokumentation dreidimensionaler Werke in Museumssammlungen",
+  "version": "1.0",
+  "domain": "museum_collection",
+  "object_types": ["sculpture", "relief", "installation", "ceramic", "vessel"],
+  "shots": [
+    {
+      "id": "front",
+      "order": 1,
+      "label": "Front View",
+      "label_de": "Vorderansicht",
+      "instruction": "Front view, straight-on at eye level. Center the work and fill the frame.",
+      "instruction_de": "Vorderansicht, frontal auf Augenhöhe. Zentrieren Sie das Werk und füllen Sie den Bildausschnitt.",
+      "required": true,
+      "icon": "image",
+      "tips": ["Position the camera at the midpoint height of the sculpture", "Use a neutral background if possible", "Avoid harsh shadows — diffused lighting works best"],
+      "tips_de": ["Positionieren Sie die Kamera auf halber Höhe der Skulptur", "Verwenden Sie einen neutralen Hintergrund, wenn möglich", "Vermeiden Sie harte Schatten — diffuses Licht ist am besten"]
+    },
+    {
+      "id": "back",
+      "order": 2,
+      "label": "Rear View",
+      "label_de": "Rückansicht",
+      "instruction": "Rear view, same height as front. Capture any markings, mounting hardware, or structural details.",
+      "instruction_de": "Rückansicht auf gleicher Höhe wie die Vorderansicht. Erfassen Sie Markierungen, Befestigungen oder strukturelle Details.",
+      "required": true,
+      "icon": "flip-horizontal",
+      "tips": ["Keep the same camera height as the front view", "Document any foundry marks or inscriptions on the back", "Note if the back is unfinished — this is significant information"],
+      "tips_de": ["Halten Sie die gleiche Kamerahöhe wie bei der Vorderansicht", "Dokumentieren Sie Gießereimarken oder Inschriften auf der Rückseite", "Notieren Sie, ob die Rückseite unbearbeitet ist — das ist bedeutsam"]
+    },
+    {
+      "id": "left_profile",
+      "order": 3,
+      "label": "Left Profile",
+      "label_de": "Linkes Profil",
+      "instruction": "Left side, 90 degrees from front. Maintain the same camera height.",
+      "instruction_de": "Linke Seite, 90 Grad von der Vorderansicht. Gleiche Kamerahöhe beibehalten.",
+      "required": true,
+      "icon": "arrow-left",
+      "tips": ["Exactly perpendicular to the front view", "Helpful for showing depth and profile of the work", "Keep the same distance as your other shots for consistency"],
+      "tips_de": ["Genau senkrecht zur Vorderansicht", "Zeigt Tiefe und Profil des Werks", "Halten Sie den gleichen Abstand wie bei den anderen Aufnahmen"]
+    },
+    {
+      "id": "right_profile",
+      "order": 4,
+      "label": "Right Profile",
+      "label_de": "Rechtes Profil",
+      "instruction": "Right side, 90 degrees from front. Maintain the same camera height.",
+      "instruction_de": "Rechte Seite, 90 Grad von der Vorderansicht. Gleiche Kamerahöhe beibehalten.",
+      "required": true,
+      "icon": "arrow-right",
+      "tips": ["Mirror position of the left profile shot", "Symmetry between left and right profiles aids documentation", "Watch for reflective surfaces catching the light differently from this angle"],
+      "tips_de": ["Spiegelbildlich zur linken Profilaufnahme", "Symmetrie zwischen links und rechts hilft bei der Dokumentation", "Achten Sie auf reflektierende Flächen, die aus diesem Winkel anders leuchten"]
+    },
+    {
+      "id": "top",
+      "order": 5,
+      "label": "Top View",
+      "label_de": "Draufsicht",
+      "instruction": "Top-down view if safely accessible. Shows the work from directly above.",
+      "instruction_de": "Draufsicht, wenn sicher zugänglich. Zeigt das Werk von direkt oben.",
+      "required": false,
+      "icon": "arrow-up",
+      "tips": ["Only attempt if you can safely position the camera above the work", "A stepladder or raised platform helps for larger pieces", "This view is especially valuable for relief sculptures and vessels"],
+      "tips_de": ["Nur versuchen, wenn Sie die Kamera sicher über dem Werk positionieren können", "Eine Trittleiter oder erhöhte Plattform hilft bei größeren Stücken", "Diese Ansicht ist besonders wertvoll für Reliefs und Gefäße"]
+    },
+    {
+      "id": "detail_markings",
+      "order": 6,
+      "label": "Signatures / Markings",
+      "label_de": "Signaturen / Markierungen",
+      "instruction": "Close-up of any signatures, foundry marks, inscriptions, or inventory labels.",
+      "instruction_de": "Nahaufnahme aller Signaturen, Gießereimarken, Inschriften oder Inventaretiketten.",
+      "required": true,
+      "icon": "pen-tool",
+      "tips": ["Use macro mode for small markings", "Raking light can reveal incised or stamped marks", "Photograph each marking separately if there are multiple"],
+      "tips_de": ["Verwenden Sie den Makromodus für kleine Markierungen", "Streiflicht kann eingeritzte oder gestempelte Marken sichtbar machen", "Fotografieren Sie jede Markierung einzeln, wenn es mehrere gibt"]
+    },
+    {
+      "id": "detail_condition",
+      "order": 7,
+      "label": "Condition Issues",
+      "label_de": "Zustandsschäden",
+      "instruction": "Document visible damage or repairs: chips, cracks, missing elements, patina loss, past restorations.",
+      "instruction_de": "Dokumentieren Sie sichtbare Schäden oder Reparaturen: Absplitterungen, Risse, fehlende Teile, Patinaverlust, frühere Restaurierungen.",
+      "required": false,
+      "icon": "alert-triangle",
+      "tips": ["Include a note about the location of damage on the sculpture", "Photograph from multiple angles if the damage extends across surfaces", "Color reference card helps document patina and surface treatment accurately"],
+      "tips_de": ["Notieren Sie die Position des Schadens an der Skulptur", "Fotografieren Sie aus mehreren Winkeln, wenn sich der Schaden über Flächen erstreckt", "Eine Farbreferenzkarte hilft bei der genauen Dokumentation von Patina und Oberflächenbehandlung"]
+    },
+    {
+      "id": "scale",
+      "order": 8,
+      "label": "Scale Reference",
+      "label_de": "Maßstabsreferenz",
+      "instruction": "Full view with ruler or scale bar visible alongside the work.",
+      "instruction_de": "Gesamtansicht mit sichtbarem Lineal oder Maßstab neben dem Werk.",
+      "required": true,
+      "icon": "ruler",
+      "tips": ["Place the scale bar at the same distance from the camera as the sculpture", "For large works, a 1-meter scale bar is more readable", "This shot is essential for accurate 3D documentation"],
+      "tips_de": ["Platzieren Sie den Maßstab im gleichen Abstand zur Kamera wie die Skulptur", "Für große Werke ist ein 1-Meter-Maßstab besser lesbar", "Diese Aufnahme ist essentiell für genaue 3D-Dokumentation"]
+    }
+  ],
+  "completion_rules": {
+    "minimum_required": 5,
+    "allow_incomplete_save": true,
+    "incomplete_warning": "This object has incomplete documentation. {{remaining}} required shots are missing.",
+    "incomplete_warning_de": "Dieses Objekt hat eine unvollständige Dokumentation. {{remaining}} erforderliche Aufnahmen fehlen."
+  }
+}

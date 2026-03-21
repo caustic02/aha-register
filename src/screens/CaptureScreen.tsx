@@ -43,6 +43,12 @@ import {
 } from '../services/documentScanService';
 import { colors, typography, spacing, radii, layout, touch } from '../theme';
 import { ImageViewer } from '../components/ImageViewer';
+import { useCaptureProtocol } from '../hooks/useCaptureProtocol';
+import { ProtocolPicker } from '../components/ProtocolPicker';
+import { CaptureGuidanceOverlay } from '../components/CaptureGuidanceOverlay';
+import { ShotListSidebar } from '../components/ShotListSidebar';
+import { TipsModal } from '../components/TipsModal';
+import { CompletionSummary } from '../components/CompletionSummary';
 
 // Camera-specific overlay colours — rgba values intentionally outside the design
 // system token set because they are camera-viewfinder-only and must meet contrast
@@ -133,6 +139,14 @@ export function CaptureScreen() {
   const [showIntro, setShowIntro] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
 
+  // Protocol guidance
+  const protocolHook = useCaptureProtocol();
+  const [showProtocolPicker, setShowProtocolPicker] = useState(false);
+  const [showShotList, setShowShotList] = useState(false);
+  const [showTips, setShowTips] = useState(false);
+  const [showCompletionSummary, setShowCompletionSummary] = useState(false);
+  const [protocolPickerDismissed, setProtocolPickerDismissed] = useState(false);
+
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
   }, []);
@@ -188,6 +202,32 @@ export function CaptureScreen() {
     });
   }, [db]);
 
+  // Show completion summary when protocol transitions to reviewing
+  useEffect(() => {
+    if (protocolHook.state === 'reviewing' && protocolHook.protocol) {
+      setShowCompletionSummary(true);
+    }
+  }, [protocolHook.state, protocolHook.protocol]);
+
+  // Show protocol picker when entering full mode without a protocol
+  useEffect(() => {
+    if (captureMode === 'full' && !protocolHook.protocol && !protocolPickerDismissed && phase === 'idle') {
+      setShowProtocolPicker(true);
+    }
+  }, [captureMode, protocolHook.protocol, protocolPickerDismissed, phase]);
+
+  const handleProtocolSelect = useCallback((protocolId: string) => {
+    protocolHook.selectProtocol(protocolId);
+    setShowProtocolPicker(false);
+    setProtocolPickerDismissed(true);
+  }, [protocolHook]);
+
+  const handleProtocolSkip = useCallback(() => {
+    protocolHook.clearProtocol();
+    setShowProtocolPicker(false);
+    setProtocolPickerDismissed(true);
+  }, [protocolHook]);
+
   const processCapture = useCallback(
     async (result: CaptureResult) => {
       setCapture(result);
@@ -235,7 +275,12 @@ export function CaptureScreen() {
   const handleModeToggle = useCallback((mode: CaptureMode) => {
     setCaptureMode(mode);
     AsyncStorage.setItem(CAPTURE_MODE_KEY, mode);
-  }, []);
+    // Reset protocol when switching to quick mode
+    if (mode === 'quick') {
+      protocolHook.reset();
+      setProtocolPickerDismissed(false);
+    }
+  }, [protocolHook]);
 
   // Shutter flash effect (white overlay 0→0.8→0 in 150ms)
   const triggerShutterFlash = useCallback(() => {
@@ -254,6 +299,81 @@ export function CaptureScreen() {
       }),
     ]).start();
   }, [shutterFlashAnim, reduceMotion]);
+
+  // Protocol-aware shutter: captures a photo and tags it with shot metadata
+  const handleProtocolShutter = useCallback(async () => {
+    if (!cameraRef.current || !cameraReady || !protocolHook.currentShot || !protocolHook.protocol) return;
+    try {
+      const pic = await cameraRef.current.takePictureAsync({
+        quality: 1,
+        exif: true,
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      triggerShutterFlash();
+
+      const photoUri = pic.uri;
+      const currentShotId = protocolHook.currentShot.id;
+      const currentShotOrder = protocolHook.currentShot.order;
+      const currentProtocolId = protocolHook.protocol.id;
+
+      // Fire and forget — camera stays live, like quick mode
+      (async () => {
+        try {
+          const meta = await extractMetadata(pic.exif ?? null);
+          const location: LocationData | null =
+            meta.latitude != null && meta.longitude != null
+              ? {
+                  latitude: meta.latitude,
+                  longitude: meta.longitude,
+                  altitude: meta.altitude,
+                  accuracy: meta.accuracy,
+                  coordinateSource: meta.coordinateSource ?? 'gps_hardware',
+                }
+              : null;
+
+          const objectId = await quickCapture(db, photoUri, location);
+
+          // Tag the object with protocol metadata
+          const now = new Date().toISOString();
+          const completedKeys = [...protocolHook.completedShots.keys(), currentShotId];
+          const remainingKeys = protocolHook.protocol!.shots
+            .filter((s) => !completedKeys.includes(s.id) && !protocolHook.skippedShots.has(s.id))
+            .map((s) => s.id);
+
+          await db.runAsync(
+            `UPDATE objects SET protocol_id = ?, protocol_complete = ?, shots_completed = ?, shots_remaining = ?, updated_at = ? WHERE id = ?`,
+            [
+              currentProtocolId,
+              remainingKeys.length === 0 ? 1 : 0,
+              JSON.stringify(completedKeys),
+              JSON.stringify(remainingKeys),
+              now,
+              objectId,
+            ],
+          );
+
+          // Tag the media record with shot metadata
+          await db.runAsync(
+            `UPDATE media SET shot_type = ?, protocol_id = ?, shot_order = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
+            [currentShotId, currentProtocolId, currentShotOrder, now, objectId],
+          );
+
+          // Advance the protocol hook
+          protocolHook.captureShot(currentShotId, photoUri);
+
+          setQuickThumbnails((prev) => [...prev, { objectId, uri: photoUri }]);
+          setSessionPhotoCount((prev) => prev + 1);
+          setQuickError(null);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setQuickError(msg);
+          setTimeout(() => setQuickError(null), 3000);
+        }
+      })();
+    } catch {
+      // Camera not ready — ignore
+    }
+  }, [cameraReady, db, triggerShutterFlash, protocolHook]);
 
   const handleQuickShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady) return;
@@ -405,6 +525,34 @@ export function CaptureScreen() {
         metadata,
         objectType: defaultObjectType ?? 'museum_object',
       });
+
+      // Tag with protocol metadata if a protocol is active
+      if (protocolHook.protocol && protocolHook.currentShot) {
+        const now = new Date().toISOString();
+        const shotId = protocolHook.currentShot.id;
+        const completedKeys = [...protocolHook.completedShots.keys(), shotId];
+        const remainingKeys = protocolHook.protocol.shots
+          .filter((s) => !completedKeys.includes(s.id) && !protocolHook.skippedShots.has(s.id))
+          .map((s) => s.id);
+
+        await db.runAsync(
+          `UPDATE objects SET protocol_id = ?, protocol_complete = ?, shots_completed = ?, shots_remaining = ?, updated_at = ? WHERE id = ?`,
+          [
+            protocolHook.protocol.id,
+            remainingKeys.length === 0 ? 1 : 0,
+            JSON.stringify(completedKeys),
+            JSON.stringify(remainingKeys),
+            now,
+            objectId,
+          ],
+        );
+        await db.runAsync(
+          `UPDATE media SET shot_type = ?, protocol_id = ?, shot_order = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
+          [shotId, protocolHook.protocol.id, protocolHook.currentShot.order, now, objectId],
+        );
+        protocolHook.captureShot(shotId, capture.uri);
+      }
+
       setSessionPhotoCount((prev) => prev + 1);
       navigation.getParent()?.navigate('Home', {
         screen: 'ObjectDetail',
@@ -414,7 +562,7 @@ export function CaptureScreen() {
     } catch {
       setPhase('preview');
     }
-  }, [capture, metadata, db, defaultObjectType, navigation, handleRetake]);
+  }, [capture, metadata, db, defaultObjectType, navigation, handleRetake, protocolHook]);
 
   const handleAnalyzeWithAI = useCallback(async () => {
     if (!capture || !metadata) return;
@@ -808,6 +956,97 @@ export function CaptureScreen() {
         pointerEvents="none"
       />
 
+      {/* Protocol guidance overlay */}
+      {protocolHook.protocol && protocolHook.currentShot && protocolHook.state === 'capturing' && (
+        <CaptureGuidanceOverlay
+          protocol={protocolHook.protocol}
+          currentShot={protocolHook.currentShot}
+          currentShotIndex={protocolHook.currentShotIndex}
+          totalShots={protocolHook.protocol.shots.length}
+          completedCount={protocolHook.completedShots.size}
+          onSkip={() => protocolHook.skipShot(protocolHook.currentShot!.id)}
+          onShowTips={() => setShowTips(true)}
+          onShowShotList={() => setShowShotList(true)}
+          onReview={() => protocolHook.startReview()}
+        />
+      )}
+
+      {/* Protocol shot list sidebar */}
+      {protocolHook.protocol && (
+        <ShotListSidebar
+          visible={showShotList}
+          protocol={protocolHook.protocol}
+          completedShots={protocolHook.completedShots}
+          skippedShots={protocolHook.skippedShots}
+          currentShotId={protocolHook.currentShot?.id ?? null}
+          onSelectShot={(shotId) => {
+            protocolHook.goToShot(shotId);
+            setShowShotList(false);
+          }}
+          onClose={() => setShowShotList(false)}
+        />
+      )}
+
+      {/* Protocol tips modal */}
+      {protocolHook.currentShot && (
+        <TipsModal
+          visible={showTips}
+          shot={protocolHook.currentShot}
+          onClose={() => setShowTips(false)}
+        />
+      )}
+
+      {/* Protocol picker */}
+      <ProtocolPicker
+        visible={showProtocolPicker}
+        onSelect={handleProtocolSelect}
+        onSkip={handleProtocolSkip}
+      />
+
+      {/* Protocol completion summary */}
+      {protocolHook.protocol && (
+        <CompletionSummary
+          visible={showCompletionSummary}
+          protocol={protocolHook.protocol}
+          completedShots={protocolHook.completedShots}
+          skippedShots={protocolHook.skippedShots}
+          isComplete={protocolHook.isComplete}
+          hasIncompleteRequired={protocolHook.hasIncompleteRequired}
+          progress={protocolHook.progress}
+          onSave={() => {
+            setShowCompletionSummary(false);
+            // Protocol metadata is already tagged on each individual capture
+            // Reset protocol for next session
+            protocolHook.reset();
+            setProtocolPickerDismissed(false);
+          }}
+          onContinue={() => {
+            setShowCompletionSummary(false);
+            // Find the first incomplete shot and go to it
+            const incomplete = protocolHook.protocol!.shots
+              .sort((a, b) => a.order - b.order)
+              .find((s) => !protocolHook.completedShots.has(s.id) && !protocolHook.skippedShots.has(s.id));
+            if (incomplete) {
+              protocolHook.goToShot(incomplete.id);
+            }
+          }}
+          onRetake={(shotId) => {
+            setShowCompletionSummary(false);
+            protocolHook.retakeShot(shotId);
+          }}
+          onClose={() => {
+            setShowCompletionSummary(false);
+            // Go back to capturing state if there are incomplete shots
+            const incomplete = protocolHook.protocol!.shots
+              .sort((a, b) => a.order - b.order)
+              .find((s) => !protocolHook.completedShots.has(s.id) && !protocolHook.skippedShots.has(s.id));
+            if (incomplete) {
+              protocolHook.goToShot(incomplete.id);
+            }
+          }}
+        />
+      )}
+
       {/* Quick-capture error toast */}
       {quickError && (
         <View style={styles.errorToast} pointerEvents="none">
@@ -913,7 +1152,13 @@ export function CaptureScreen() {
           {/* Shutter */}
           <Pressable
             style={[styles.shutterBtn, !cameraReady && styles.shutterBtnDisabled]}
-            onPress={captureMode === 'quick' ? handleQuickShutter : handleShutter}
+            onPress={
+              protocolHook.protocol
+                ? handleProtocolShutter
+                : captureMode === 'quick'
+                  ? handleQuickShutter
+                  : handleShutter
+            }
             disabled={!cameraReady}
             accessibilityLabel={t('capture.take_photo')}
           >

@@ -557,7 +557,13 @@
     "preview_generate": "PDF erstellen",
     "preview_generating": "Wird erstellt\u2026",
     "back": "Zur\u00fcck",
-    "next": "Weiter"
+    "next": "Weiter",
+    "protocol_section": "Dokumentationsprotokoll",
+    "protocol_complete": "Dokumentation vollst\u00e4ndig",
+    "protocol_incomplete": "Dokumentation unvollst\u00e4ndig ({{count}} erforderliche Aufnahmen fehlen)",
+    "shot_status_completed": "Abgeschlossen",
+    "shot_status_skipped": "\u00dcbersprungen",
+    "shot_status_missing": "Fehlend"
   },
   "exportStepper": {
     "selectFormat": "Format w\u00e4hlen",
@@ -1020,6 +1026,36 @@
     "overall": "Gesamtansicht",
     "interior": "Innenansicht",
     "document_scan": "Dokumentenscan"
+  },
+  "protocols": {
+    "picker_title": "Dokumentationsprotokoll",
+    "picker_subtitle": "Wählen Sie, wie dieses Objekt dokumentiert werden soll",
+    "no_protocol": "Frei (kein Protokoll)",
+    "shots_required": "{{count}} Aufnahmen erforderlich",
+    "shots_optional": "{{count}} optional",
+    "progress": "{{completed}} von {{total}}",
+    "current_shot": "Aufnahme {{current}} von {{total}}",
+    "skip": "Überspringen",
+    "retake": "Neu aufnehmen",
+    "show_tips": "Tipps",
+    "review_title": "Dokumentation prüfen",
+    "incomplete_title": "Unvollständige Dokumentation",
+    "incomplete_message": "{{remaining}} erforderliche Aufnahmen fehlen. Sie können trotzdem speichern.",
+    "save_complete": "Speichern",
+    "save_incomplete": "Trotzdem speichern",
+    "continue_capturing": "Weiter dokumentieren",
+    "required_badge": "Erforderlich",
+    "optional_badge": "Optional",
+    "skipped_badge": "Übersprungen",
+    "completed_badge": "Erledigt",
+    "documentation_protocol": "Dokumentationsprotokoll",
+    "status_complete": "Vollständig",
+    "status_incomplete": "Unvollständig",
+    "missing_required": "{{count}} erforderliche Aufnahmen fehlen",
+    "additional_photos": "Zusätzliche Fotos",
+    "review": "Überprüfen",
+    "tap_to_retake": "Tippen zum Wiederholen",
+    "tap_to_capture": "Tippen zum Aufnehmen"
   },
   "empty_states": {
     "objects": {

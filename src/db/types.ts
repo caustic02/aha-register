@@ -206,6 +206,11 @@ export interface RegisterObject {
   type_specific_data: string | null; // JSON
   // Review workflow
   review_status: ReviewStatus;
+  // Capture protocol tracking
+  protocol_id?: string | null;
+  protocol_complete?: number;
+  shots_completed?: string;
+  shots_remaining?: string;
   created_at: string;
   updated_at: string;
 }
@@ -234,6 +239,10 @@ export interface Media {
   ocr_source?: OcrSource;
   // View inventory (D1)
   view_type?: ViewType | null;
+  // Capture protocol shot tracking
+  shot_type?: string | null;
+  protocol_id?: string | null;
+  shot_order?: number | null;
   // Copyright / licensing (added v1.3)
   rights_holder?: string | null;
   license_type?: LicenseType | null;
@@ -374,6 +383,22 @@ export interface SyncQueueItem {
   payload: string | null; // JSON
   status: SyncStatus;
   retry_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CaptureProtocolRow {
+  id: string;
+  name: string;
+  name_de: string | null;
+  description: string | null;
+  description_de: string | null;
+  version: string;
+  domain: string;
+  object_types: string; // JSON array
+  shots: string; // JSON array
+  completion_rules: string; // JSON
+  is_active: number; // 0 or 1
   created_at: string;
   updated_at: string;
 }

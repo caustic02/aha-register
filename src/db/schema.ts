@@ -243,6 +243,25 @@ CREATE TABLE IF NOT EXISTS object_persons (
 CREATE INDEX IF NOT EXISTS idx_object_persons_object ON object_persons(object_id);
 CREATE INDEX IF NOT EXISTS idx_object_persons_person ON object_persons(person_id);
 CREATE INDEX IF NOT EXISTS idx_object_persons_role ON object_persons(role);
+
+-- 17. capture_protocols
+CREATE TABLE IF NOT EXISTS capture_protocols (
+  id                TEXT PRIMARY KEY,
+  name              TEXT NOT NULL,
+  name_de           TEXT,
+  description       TEXT,
+  description_de    TEXT,
+  version           TEXT NOT NULL DEFAULT '1.0',
+  domain            TEXT NOT NULL,
+  object_types      TEXT NOT NULL DEFAULT '[]', -- JSON array
+  shots             TEXT NOT NULL DEFAULT '[]', -- JSON array
+  completion_rules  TEXT NOT NULL DEFAULT '{}', -- JSON
+  is_active         INTEGER NOT NULL DEFAULT 1,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_capture_protocols_domain ON capture_protocols(domain);
+CREATE INDEX IF NOT EXISTS idx_capture_protocols_active ON capture_protocols(is_active);
 `;
 
 /**
@@ -272,6 +291,15 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE media ADD COLUMN ocr_source TEXT NOT NULL DEFAULT 'none'`,
   // media: view inventory for guided capture (D1)
   `ALTER TABLE media ADD COLUMN view_type TEXT`,
+  // media: capture protocol shot tracking
+  `ALTER TABLE media ADD COLUMN shot_type TEXT`,
+  `ALTER TABLE media ADD COLUMN protocol_id TEXT`,
+  `ALTER TABLE media ADD COLUMN shot_order INTEGER`,
+  // objects: capture protocol tracking
+  `ALTER TABLE objects ADD COLUMN protocol_id TEXT`,
+  `ALTER TABLE objects ADD COLUMN protocol_complete INTEGER DEFAULT 0`,
+  `ALTER TABLE objects ADD COLUMN shots_completed TEXT DEFAULT '[]'`,
+  `ALTER TABLE objects ADD COLUMN shots_remaining TEXT DEFAULT '[]'`,
 ];
 
 /**

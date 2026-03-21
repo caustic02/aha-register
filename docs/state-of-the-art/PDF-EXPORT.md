@@ -114,6 +114,25 @@ Export field definitions, categories, and format options are now driven by JSON 
 | `aha_marketplace` | 6 | 28 | Provenance Cert, Materials Passport, Collector Report, Curator Package |
 | `general` | 5 | 16 | PDF Data Sheet, JSON, CSV |
 
+## Protocol Compliance Section (2026-03-21)
+
+When an object has a `protocol_id`, the PDF report includes a "Documentation Protocol" section between the Objektdaten grid and Provenienz section on Page 1.
+
+### Content
+- Protocol name (localized via `getProtocol()`)
+- Completion status badge: "Documentation complete" (green) or "Documentation incomplete (N required shots missing)" (amber)
+- Shot checklist table with three columns: Shot label, Required/Optional, Status (Completed/Skipped/Missing)
+
+### Photo Grouping
+When a protocol is present, the thumbnail strip below the primary image groups photos by `shot_type`:
+- Each shot type gets a sub-heading (localized from protocol definition)
+- Photos without a `shot_type` go under "Additional photos"
+- When no protocol: standard flat thumbnail strip (unchanged)
+
+### Key Files
+- `src/templates/object-report.ts` — `buildProtocolSection()` function, grouped thumbnail logic in `buildPage1()`
+- `src/config/protocols/index.ts` — `getProtocol()` used to resolve protocol metadata
+
 ## Known Gaps
 
 - No per-institution branding (logo, custom colors)

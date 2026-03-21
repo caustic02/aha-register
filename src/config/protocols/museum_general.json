@@ -1,0 +1,66 @@
+{
+  "id": "museum_general",
+  "name": "General Documentation",
+  "name_de": "Allgemeine Dokumentation",
+  "description": "Minimal documentation protocol suitable for any object type",
+  "description_de": "Minimales Dokumentationsprotokoll für beliebige Objekttypen",
+  "version": "1.0",
+  "domain": "museum_collection",
+  "object_types": [],
+  "shots": [
+    {
+      "id": "front",
+      "order": 1,
+      "label": "Primary View",
+      "label_de": "Hauptansicht",
+      "instruction": "Primary view of the object. Fill the frame with even lighting.",
+      "instruction_de": "Hauptansicht des Objekts. Füllen Sie den Bildausschnitt bei gleichmäßiger Beleuchtung.",
+      "required": true,
+      "icon": "image",
+      "tips": ["Show the most recognizable or characteristic side", "Use diffused lighting to avoid harsh shadows", "Center the object in the frame"],
+      "tips_de": ["Zeigen Sie die markanteste oder typischste Seite", "Verwenden Sie diffuses Licht, um harte Schatten zu vermeiden", "Zentrieren Sie das Objekt im Bildausschnitt"]
+    },
+    {
+      "id": "back",
+      "order": 2,
+      "label": "Secondary View",
+      "label_de": "Zweitansicht",
+      "instruction": "Reverse or secondary view of the object. Capture any labels, marks, or details not visible from the front.",
+      "instruction_de": "Rückseite oder Zweitansicht des Objekts. Erfassen Sie Etiketten, Markierungen oder Details, die von vorne nicht sichtbar sind.",
+      "required": true,
+      "icon": "flip-horizontal",
+      "tips": ["Check for labels, stickers, or inventory marks", "This view often reveals construction or manufacturing details", "Important for provenance documentation"],
+      "tips_de": ["Achten Sie auf Etiketten, Aufkleber oder Inventarmarken", "Diese Ansicht zeigt oft Konstruktions- oder Fertigungsdetails", "Wichtig für die Provenienzdokumentation"]
+    },
+    {
+      "id": "detail",
+      "order": 3,
+      "label": "Detail",
+      "label_de": "Detailaufnahme",
+      "instruction": "Close-up of any notable features: markings, damage, distinctive characteristics.",
+      "instruction_de": "Nahaufnahme besonderer Merkmale: Markierungen, Schäden, charakteristische Eigenschaften.",
+      "required": false,
+      "icon": "zoom-in",
+      "tips": ["Focus on what makes this object unique or identifiable", "Use macro mode for small details", "Multiple detail shots are welcome if needed"],
+      "tips_de": ["Konzentrieren Sie sich auf das, was dieses Objekt einzigartig oder identifizierbar macht", "Verwenden Sie den Makromodus für kleine Details", "Mehrere Detailaufnahmen sind willkommen, wenn nötig"]
+    },
+    {
+      "id": "scale",
+      "order": 4,
+      "label": "Scale Reference",
+      "label_de": "Maßstabsreferenz",
+      "instruction": "Full view with a ruler, scale bar, or known-size reference visible.",
+      "instruction_de": "Gesamtansicht mit sichtbarem Lineal, Maßstab oder Referenz bekannter Größe.",
+      "required": true,
+      "icon": "ruler",
+      "tips": ["A ruler or coin provides instant size context", "Place the reference at the same depth as the object", "This enables accurate measurements from the photograph"],
+      "tips_de": ["Ein Lineal oder eine Münze gibt sofort Größenkontext", "Platzieren Sie die Referenz in der gleichen Tiefe wie das Objekt", "So lassen sich genaue Maße aus dem Foto ableiten"]
+    }
+  ],
+  "completion_rules": {
+    "minimum_required": 2,
+    "allow_incomplete_save": true,
+    "incomplete_warning": "This object has incomplete documentation. {{remaining}} required shots are missing.",
+    "incomplete_warning_de": "Dieses Objekt hat eine unvollständige Dokumentation. {{remaining}} erforderliche Aufnahmen fehlen."
+  }
+}
