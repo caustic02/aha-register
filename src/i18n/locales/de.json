@@ -1021,6 +1021,28 @@
     "interior": "Innenansicht",
     "document_scan": "Dokumentenscan"
   },
+  "protocols": {
+    "picker_title": "Dokumentationsprotokoll",
+    "picker_subtitle": "Wählen Sie, wie dieses Objekt dokumentiert werden soll",
+    "no_protocol": "Frei (kein Protokoll)",
+    "shots_required": "{{count}} Aufnahmen erforderlich",
+    "shots_optional": "{{count}} optional",
+    "progress": "{{completed}} von {{total}}",
+    "current_shot": "Aufnahme {{current}} von {{total}}",
+    "skip": "Überspringen",
+    "retake": "Neu aufnehmen",
+    "show_tips": "Tipps",
+    "review_title": "Dokumentation prüfen",
+    "incomplete_title": "Unvollständige Dokumentation",
+    "incomplete_message": "{{remaining}} erforderliche Aufnahmen fehlen. Sie können trotzdem speichern.",
+    "save_complete": "Speichern",
+    "save_incomplete": "Trotzdem speichern",
+    "continue_capturing": "Weiter dokumentieren",
+    "required_badge": "Erforderlich",
+    "optional_badge": "Optional",
+    "skipped_badge": "Übersprungen",
+    "completed_badge": "Erledigt"
+  },
   "empty_states": {
     "objects": {
       "title": "Noch keine Objekte",

@@ -1,0 +1,90 @@
+{
+  "id": "museum_painting",
+  "name": "Painting Documentation",
+  "name_de": "Gemälde-Dokumentation",
+  "description": "Standard protocol for documenting paintings in museum collections",
+  "description_de": "Standardprotokoll für die Dokumentation von Gemälden in Museumssammlungen",
+  "version": "1.0",
+  "domain": "museum_collection",
+  "object_types": ["painting", "drawing", "print", "photograph"],
+  "shots": [
+    {
+      "id": "front",
+      "order": 1,
+      "label": "Front View",
+      "label_de": "Vorderansicht",
+      "instruction": "Photograph the front of the work straight-on. Fill the frame. Ensure even lighting with no glare.",
+      "instruction_de": "Fotografieren Sie die Vorderseite des Werks frontal. Füllen Sie den Bildausschnitt. Achten Sie auf gleichmäßige Beleuchtung ohne Blendung.",
+      "required": true,
+      "icon": "image",
+      "tips": ["Stand directly in front, not at an angle", "Avoid flash — use ambient or studio lighting", "Include the entire work with minimal border"],
+      "tips_de": ["Stehen Sie direkt davor, nicht schräg", "Vermeiden Sie Blitzlicht — nutzen Sie Umgebungs- oder Studiolicht", "Zeigen Sie das gesamte Werk mit minimalem Rand"]
+    },
+    {
+      "id": "back",
+      "order": 2,
+      "label": "Back / Verso",
+      "label_de": "Rückseite / Verso",
+      "instruction": "Photograph the back of the work. Capture any labels, stamps, inscriptions, or structural details.",
+      "instruction_de": "Fotografieren Sie die Rückseite des Werks. Erfassen Sie alle Etiketten, Stempel, Inschriften oder strukturelle Details.",
+      "required": true,
+      "icon": "flip-horizontal",
+      "tips": ["Labels and stamps are critical provenance evidence", "If the back is inaccessible, mark as skipped with a note"],
+      "tips_de": ["Etiketten und Stempel sind wichtige Provenienz-Nachweise", "Wenn die Rückseite nicht zugänglich ist, als übersprungen markieren mit Notiz"]
+    },
+    {
+      "id": "detail_signature",
+      "order": 3,
+      "label": "Signature / Markings",
+      "label_de": "Signatur / Markierungen",
+      "instruction": "Close-up of the artist's signature, date, or any inscriptions on the front.",
+      "instruction_de": "Nahaufnahme der Künstlersignatur, des Datums oder anderer Inschriften auf der Vorderseite.",
+      "required": true,
+      "icon": "pen-tool",
+      "tips": ["Use macro mode if available", "Ensure the text is sharp and readable", "If no signature exists, photograph where it would typically appear"],
+      "tips_de": ["Verwenden Sie den Makromodus, falls verfügbar", "Stellen Sie sicher, dass der Text scharf und lesbar ist", "Wenn keine Signatur vorhanden ist, fotografieren Sie die Stelle, wo sie typischerweise wäre"]
+    },
+    {
+      "id": "detail_condition",
+      "order": 4,
+      "label": "Condition Issues",
+      "label_de": "Zustandsschäden",
+      "instruction": "Document any visible damage: cracks, tears, discoloration, losses, repairs.",
+      "instruction_de": "Dokumentieren Sie alle sichtbaren Schäden: Risse, Einrisse, Verfärbungen, Fehlstellen, Restaurierungen.",
+      "required": false,
+      "icon": "alert-triangle",
+      "tips": ["Take multiple detail shots if there are several areas of concern", "Include a color reference card if available", "Raking light reveals surface texture and damage"],
+      "tips_de": ["Machen Sie mehrere Detailaufnahmen, wenn mehrere Problembereiche bestehen", "Fügen Sie eine Farbreferenzkarte bei, falls verfügbar", "Streiflicht zeigt Oberflächenstruktur und Schäden"]
+    },
+    {
+      "id": "scale",
+      "order": 5,
+      "label": "Scale Reference",
+      "label_de": "Maßstabsreferenz",
+      "instruction": "Full view of the work with a ruler, scale bar, or known-size reference object visible.",
+      "instruction_de": "Gesamtansicht des Werks mit sichtbarem Lineal, Maßstab oder Referenzobjekt bekannter Größe.",
+      "required": true,
+      "icon": "ruler",
+      "tips": ["A standard ruler or museum scale bar works best", "Place the reference at the same plane as the work surface", "This shot enables accurate dimension calculation"],
+      "tips_de": ["Ein Standardlineal oder Museums-Maßstab funktioniert am besten", "Platzieren Sie die Referenz in der gleichen Ebene wie die Werkoberfläche", "Diese Aufnahme ermöglicht eine genaue Maßberechnung"]
+    },
+    {
+      "id": "context",
+      "order": 6,
+      "label": "Context / Environment",
+      "label_de": "Kontext / Umgebung",
+      "instruction": "Show the work in its current location or display context.",
+      "instruction_de": "Zeigen Sie das Werk in seinem aktuellen Standort oder Ausstellungskontext.",
+      "required": false,
+      "icon": "map-pin",
+      "tips": ["Include surrounding objects for spatial context", "Show the room, wall, or storage location", "Useful for provenance and installation history"],
+      "tips_de": ["Zeigen Sie umgebende Objekte für räumlichen Kontext", "Zeigen Sie den Raum, die Wand oder den Lagerort", "Nützlich für Provenienz- und Ausstellungsgeschichte"]
+    }
+  ],
+  "completion_rules": {
+    "minimum_required": 4,
+    "allow_incomplete_save": true,
+    "incomplete_warning": "This object has incomplete documentation. {{remaining}} required shots are missing.",
+    "incomplete_warning_de": "Dieses Objekt hat eine unvollständige Dokumentation. {{remaining}} erforderliche Aufnahmen fehlen."
+  }
+}

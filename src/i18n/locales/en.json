@@ -1021,6 +1021,28 @@
     "interior": "Interior",
     "document_scan": "Document scan"
   },
+  "protocols": {
+    "picker_title": "Documentation Protocol",
+    "picker_subtitle": "Choose how to document this object",
+    "no_protocol": "Freeform (no protocol)",
+    "shots_required": "{{count}} shots required",
+    "shots_optional": "{{count}} optional",
+    "progress": "{{completed}} of {{total}}",
+    "current_shot": "Shot {{current}} of {{total}}",
+    "skip": "Skip",
+    "retake": "Retake",
+    "show_tips": "Tips",
+    "review_title": "Review Documentation",
+    "incomplete_title": "Incomplete Documentation",
+    "incomplete_message": "{{remaining}} required shots are missing. You can still save.",
+    "save_complete": "Save",
+    "save_incomplete": "Save Anyway",
+    "continue_capturing": "Continue Capturing",
+    "required_badge": "Required",
+    "optional_badge": "Optional",
+    "skipped_badge": "Skipped",
+    "completed_badge": "Done"
+  },
   "empty_states": {
     "objects": {
       "title": "No objects yet",
