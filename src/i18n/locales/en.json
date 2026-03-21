@@ -1055,7 +1055,10 @@
     "additional_photos": "Additional photos",
     "review": "Review",
     "tap_to_retake": "Tap to retake",
-    "tap_to_capture": "Tap to capture"
+    "tap_to_capture": "Tap to capture",
+    "object_title_prompt": "Name this object",
+    "object_title_placeholder": "e.g. Bronze figurine, Oil on canvas",
+    "untitled_object_fallback": "Untitled Object"
   },
   "empty_states": {
     "objects": {

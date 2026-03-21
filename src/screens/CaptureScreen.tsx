@@ -644,7 +644,7 @@ export function CaptureScreen() {
       if (recentObj) {
         // Path A: link to most recent object
         targetObjectId = recentObj.id;
-        feedbackMsg = recentObj.title === 'Untitled'
+        feedbackMsg = recentObj.title === 'Untitled' || recentObj.title === 'Untitled Object'
           ? t('capture.document_linked_last')
           : t('capture.document_linked', { title: recentObj.title });
       } else {
@@ -1042,13 +1042,17 @@ export function CaptureScreen() {
           isComplete={protocolHook.isComplete}
           hasIncompleteRequired={protocolHook.hasIncompleteRequired}
           progress={protocolHook.progress}
-          onSave={() => {
+          onSave={(title: string) => {
             const targetId = protocolFirstObjectIdRef.current;
             protocolFirstObjectIdRef.current = null;
             setShowCompletionSummary(false);
             protocolHook.reset();
             setProtocolPickerDismissed(false);
             if (targetId) {
+              db.runAsync(
+                `UPDATE objects SET title = ?, updated_at = ? WHERE id = ?`,
+                [title, new Date().toISOString(), targetId],
+              ).catch(() => {});
               navigation.getParent()?.navigate('Home', {
                 screen: 'ObjectDetail',
                 params: { objectId: targetId },

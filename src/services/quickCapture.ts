@@ -70,7 +70,7 @@ export async function quickCapture(
           latitude, longitude, altitude,
           coordinate_accuracy, coordinate_source,
           privacy_tier, legal_hold, created_at, updated_at)
-       VALUES (?, 'uncategorized', 'draft', 'Untitled', 'needs_review',
+       VALUES (?, 'uncategorized', 'draft', 'Untitled Object', 'needs_review',
                ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
       [
         objectId,

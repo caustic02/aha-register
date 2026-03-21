@@ -99,6 +99,22 @@ Shown when `AsyncStorage` key `capture_intro_dismissed` is absent or not `'true'
 | 2026-03-15 | Audit trail userId: param > auth session > 'local' fallback | Gap fix |
 | 2026-03-18 | B2 non-blocking capture: Quick/Full mode toggle, quickCapture service, capture inbox, review flow | B2 feature sprint |
 | 2026-03-21 | Hide camera controls during protocol capture; move progress pill to left of topBar | Layout fix — device testing |
+| 2026-03-21 | Auto-title + title input on protocol save; quickCapture default changed from "Untitled" to "Untitled Object" | Title UX fix — demo readiness |
+
+## Protocol Object Titling
+
+Objects created via protocol capture use a three-layer title strategy:
+
+1. **Layer 1 — Auto-title from AI analysis**: If Gemini analysis has already run on any photo in the session, the AI-suggested title is pre-filled. (Currently N/A — protocol capture does not trigger AI analysis, but the plumbing supports it if added later.)
+2. **Layer 2 — Title input on save**: `CompletionSummary` shows an inline `TextInput` ("Name this object") above the action bar. Pre-fills with `initialTitle` prop if available. User can type a title or leave empty.
+3. **Layer 3 — Fallback**: If the user saves without typing, the title defaults to `t('protocols.untitled_object_fallback')` → "Untitled Object" (EN) / "Unbenanntes Objekt" (DE).
+
+The title is persisted via `UPDATE objects SET title = ? WHERE id = ?` in the `onSave` callback in `CaptureScreen.tsx`, immediately before navigating to `ObjectDetail`.
+
+### i18n Keys (protocols namespace)
+- `object_title_prompt` — label above input
+- `object_title_placeholder` — placeholder text
+- `untitled_object_fallback` — empty-input fallback title
 
 ## Camera Enhancements
 
