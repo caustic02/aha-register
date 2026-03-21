@@ -68,6 +68,7 @@ interface CaptureGuidanceOverlayProps {
   onSkip: () => void;
   onShowTips: () => void;
   onShowShotList: () => void;
+  onReview?: () => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -81,6 +82,7 @@ export function CaptureGuidanceOverlay({
   onSkip,
   onShowTips,
   onShowShotList,
+  onReview,
 }: CaptureGuidanceOverlayProps) {
   const { t, i18n } = useAppTranslation();
   const insets = useSafeAreaInsets();
@@ -143,6 +145,18 @@ export function CaptureGuidanceOverlay({
               accessibilityLabel={t('protocols.skip')}
             >
               <Text style={styles.actionBtnText}>{t('protocols.skip')}</Text>
+            </Pressable>
+          )}
+
+          {completedCount > 0 && onReview && (
+            <Pressable
+              style={styles.actionBtn}
+              onPress={onReview}
+              hitSlop={touch.hitSlop}
+              accessibilityRole="button"
+              accessibilityLabel={t('protocols.review')}
+            >
+              <Text style={styles.actionBtnText}>{t('protocols.review')}</Text>
             </Pressable>
           )}
 

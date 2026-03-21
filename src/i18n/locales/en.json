@@ -1041,7 +1041,15 @@
     "required_badge": "Required",
     "optional_badge": "Optional",
     "skipped_badge": "Skipped",
-    "completed_badge": "Done"
+    "completed_badge": "Done",
+    "documentation_protocol": "Documentation protocol",
+    "status_complete": "Complete",
+    "status_incomplete": "Incomplete",
+    "missing_required": "{{count}} required shots missing",
+    "additional_photos": "Additional photos",
+    "review": "Review",
+    "tap_to_retake": "Tap to retake",
+    "tap_to_capture": "Tap to capture"
   },
   "empty_states": {
     "objects": {

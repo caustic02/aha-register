@@ -48,6 +48,7 @@ import { ProtocolPicker } from '../components/ProtocolPicker';
 import { CaptureGuidanceOverlay } from '../components/CaptureGuidanceOverlay';
 import { ShotListSidebar } from '../components/ShotListSidebar';
 import { TipsModal } from '../components/TipsModal';
+import { CompletionSummary } from '../components/CompletionSummary';
 
 // Camera-specific overlay colours — rgba values intentionally outside the design
 // system token set because they are camera-viewfinder-only and must meet contrast
@@ -143,6 +144,7 @@ export function CaptureScreen() {
   const [showProtocolPicker, setShowProtocolPicker] = useState(false);
   const [showShotList, setShowShotList] = useState(false);
   const [showTips, setShowTips] = useState(false);
+  const [showCompletionSummary, setShowCompletionSummary] = useState(false);
   const [protocolPickerDismissed, setProtocolPickerDismissed] = useState(false);
 
   useEffect(() => {
@@ -199,6 +201,13 @@ export function CaptureScreen() {
       }
     });
   }, [db]);
+
+  // Show completion summary when protocol transitions to reviewing
+  useEffect(() => {
+    if (protocolHook.state === 'reviewing' && protocolHook.protocol) {
+      setShowCompletionSummary(true);
+    }
+  }, [protocolHook.state, protocolHook.protocol]);
 
   // Show protocol picker when entering full mode without a protocol
   useEffect(() => {
@@ -958,6 +967,7 @@ export function CaptureScreen() {
           onSkip={() => protocolHook.skipShot(protocolHook.currentShot!.id)}
           onShowTips={() => setShowTips(true)}
           onShowShotList={() => setShowShotList(true)}
+          onReview={() => protocolHook.startReview()}
         />
       )}
 
@@ -992,6 +1002,50 @@ export function CaptureScreen() {
         onSelect={handleProtocolSelect}
         onSkip={handleProtocolSkip}
       />
+
+      {/* Protocol completion summary */}
+      {protocolHook.protocol && (
+        <CompletionSummary
+          visible={showCompletionSummary}
+          protocol={protocolHook.protocol}
+          completedShots={protocolHook.completedShots}
+          skippedShots={protocolHook.skippedShots}
+          isComplete={protocolHook.isComplete}
+          hasIncompleteRequired={protocolHook.hasIncompleteRequired}
+          progress={protocolHook.progress}
+          onSave={() => {
+            setShowCompletionSummary(false);
+            // Protocol metadata is already tagged on each individual capture
+            // Reset protocol for next session
+            protocolHook.reset();
+            setProtocolPickerDismissed(false);
+          }}
+          onContinue={() => {
+            setShowCompletionSummary(false);
+            // Find the first incomplete shot and go to it
+            const incomplete = protocolHook.protocol!.shots
+              .sort((a, b) => a.order - b.order)
+              .find((s) => !protocolHook.completedShots.has(s.id) && !protocolHook.skippedShots.has(s.id));
+            if (incomplete) {
+              protocolHook.goToShot(incomplete.id);
+            }
+          }}
+          onRetake={(shotId) => {
+            setShowCompletionSummary(false);
+            protocolHook.retakeShot(shotId);
+          }}
+          onClose={() => {
+            setShowCompletionSummary(false);
+            // Go back to capturing state if there are incomplete shots
+            const incomplete = protocolHook.protocol!.shots
+              .sort((a, b) => a.order - b.order)
+              .find((s) => !protocolHook.completedShots.has(s.id) && !protocolHook.skippedShots.has(s.id));
+            if (incomplete) {
+              protocolHook.goToShot(incomplete.id);
+            }
+          }}
+        />
+      )}
 
       {/* Quick-capture error toast */}
       {quickError && (

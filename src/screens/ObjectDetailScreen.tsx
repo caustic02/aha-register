@@ -52,6 +52,8 @@ import { getDisplayLabel } from '../utils/displayLabels';
 import { useSyncStatuses } from '../hooks/useSyncStatuses';
 import { SyncBadge } from '../components/SyncBadge';
 import { useObjectDocuments } from '../hooks/useObjectDocuments';
+import { getProtocol, type CaptureProtocol } from '../config/protocols';
+import { CheckIcon } from '../theme/icons';
 
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
@@ -346,6 +348,40 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     return { mode: 'object', data: exportData };
   }, [exportData]);
 
+  // Group media by shot_type for protocol objects (must be before early returns)
+  const isGerman = t('pdf.html_lang') === 'de';
+  const mediaGrouped = useMemo(() => {
+    if (!object) return null;
+    const pId = object.protocol_id;
+    if (!pId) return null;
+    const pDef = getProtocol(pId);
+    if (!pDef) return null;
+    const groups: { label: string; items: Media[] }[] = [];
+    const sorted = [...pDef.shots].sort((a, b) => a.order - b.order);
+    const used = new Set<string>();
+
+    for (const shot of sorted) {
+      const matching = media.filter((m) => m.shot_type === shot.id);
+      if (matching.length > 0) {
+        groups.push({
+          label: isGerman ? shot.label_de : shot.label,
+          items: matching,
+        });
+        matching.forEach((m) => used.add(m.id));
+      }
+    }
+
+    const additional = media.filter((m) => !used.has(m.id));
+    if (additional.length > 0) {
+      groups.push({
+        label: t('protocols.additional_photos'),
+        items: additional,
+      });
+    }
+
+    return groups;
+  }, [object, media, isGerman, t]);
+
   // ── Loading / error guards ───────────────────────────────────────────────────
 
   if (loading) {
@@ -428,6 +464,22 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const aiCondition = typeof extras.condition === 'string' ? extras.condition : null;
   const aiKeywords = Array.isArray(extras.keywords) ? (extras.keywords as string[]).join(', ') : null;
 
+  // Protocol data (fields added in Phase 1 as optional on RegisterObject)
+  const protocolId = object.protocol_id;
+  const protocolComplete = object.protocol_complete;
+  const shotsCompletedRaw = object.shots_completed;
+  const shotsRemainingRaw = object.shots_remaining;
+
+  const protocolDef: CaptureProtocol | null = protocolId ? getProtocol(protocolId) : null;
+  const shotsCompletedArr: string[] = (() => {
+    try { return shotsCompletedRaw ? JSON.parse(shotsCompletedRaw) : []; }
+    catch { return []; }
+  })();
+  const shotsRemainingArr: string[] = (() => {
+    try { return shotsRemainingRaw ? JSON.parse(shotsRemainingRaw) : []; }
+    catch { return []; }
+  })();
+
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
@@ -475,7 +527,43 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         keyboardShouldPersistTaps="handled"
       >
         {/* ── 2. IMAGE GALLERY ─────────────────────────────────────────────── */}
-        {media.length > 0 && (
+        {media.length > 0 && mediaGrouped ? (
+          /* Grouped gallery for protocol objects */
+          <View style={styles.gallerySection}>
+            {mediaGrouped.map((group, gi) => (
+              <View key={gi} style={styles.galleryGroup}>
+                <Text style={styles.galleryGroupLabel}>{group.label}</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryContent}
+                >
+                  {group.items.map((m, idx) => (
+                    <Pressable
+                      key={m.id}
+                      style={styles.galleryItem}
+                      onPress={() => setViewerUri(m.file_path)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
+                      }
+                    >
+                      <Image
+                        source={{ uri: m.file_path }}
+                        style={styles.galleryImage}
+                        resizeMode="cover"
+                      />
+                      {m.is_primary === 1 && (
+                        <View style={styles.primaryPip} />
+                      )}
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+            ))}
+          </View>
+        ) : media.length > 0 ? (
+          /* Flat gallery for freeform objects */
           <View style={styles.gallerySection}>
             <ScrollView
               horizontal
@@ -504,7 +592,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               ))}
             </ScrollView>
           </View>
-        )}
+        ) : null}
 
         <Divider />
 
@@ -533,6 +621,49 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               fullWidth
             />
           </View>
+        )}
+
+        {/* ── PROTOCOL STATUS ──────────────────────────────────────────────── */}
+        {protocolDef && (
+          <Card style={styles.card}>
+            <SectionHeader title={t('protocols.documentation_protocol')} />
+            <MetadataRow
+              label={isGerman ? protocolDef.name_de : protocolDef.name}
+              value={
+                protocolComplete === 1
+                  ? t('protocols.status_complete')
+                  : shotsRemainingArr.length > 0
+                    ? t('protocols.missing_required', { count: shotsRemainingArr.length })
+                    : t('protocols.status_incomplete')
+              }
+            />
+            {protocolDef.shots
+              .sort((a, b) => a.order - b.order)
+              .map((shot) => {
+                const isDone = shotsCompletedArr.includes(shot.id);
+                const shotLabel = isGerman ? shot.label_de : shot.label;
+                return (
+                  <View key={shot.id} style={styles.protocolShotRow}>
+                    {isDone ? (
+                      <CheckIcon size={14} color={colors.success} />
+                    ) : (
+                      <View style={styles.protocolShotDot} />
+                    )}
+                    <Text
+                      style={[
+                        styles.protocolShotLabel,
+                        isDone && styles.protocolShotDone,
+                      ]}
+                    >
+                      {shotLabel}
+                    </Text>
+                    {shot.required && !isDone && (
+                      <Badge variant="warning" label={t('protocols.required_badge')} size="sm" />
+                    )}
+                  </View>
+                );
+              })}
+          </Card>
         )}
 
         {/* ── 3. BASIC INFORMATION ─────────────────────────────────────────── */}
@@ -1026,5 +1157,37 @@ const styles = StyleSheet.create({
   scanButtonText: {
     ...typography.bodyMedium,
     color: colors.primary,
+  },
+  // Gallery groups (protocol objects)
+  galleryGroup: {
+    marginBottom: spacing.md,
+  },
+  galleryGroupLabel: {
+    ...typography.label,
+    color: colors.textSecondary,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  // Protocol status section
+  protocolShotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  protocolShotDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  protocolShotLabel: {
+    ...typography.bodySmall,
+    color: colors.text,
+    flex: 1,
+  },
+  protocolShotDone: {
+    color: colors.textSecondary,
   },
 });
