@@ -7,6 +7,7 @@
 
 import type { ObjectExportData } from '../services/exportTemplate';
 import { colors } from '../theme';
+import { getProtocol } from '../config/protocols';
 
 // ── Theme colors (imported from centralized design system) ──────────────────
 
@@ -64,6 +65,78 @@ function fmtDims(v: unknown, t: TFunc): string | null {
   if (parts.length === 0) return null;
   const unit = typeof d.unit === 'string' ? ` ${d.unit}` : '';
   return parts.join(' × ') + unit;
+}
+
+function buildProtocolSection(obj: ObjectExportData['object'], t: TFunc): string {
+  const protocolId = (obj as unknown as Record<string, unknown>).protocol_id as string | undefined;
+  if (!protocolId) return '';
+
+  const protocol = getProtocol(protocolId);
+  if (!protocol) return '';
+
+  const shotsCompletedRaw = (obj as unknown as Record<string, unknown>).shots_completed as string | undefined;
+  const shotsRemainingRaw = (obj as unknown as Record<string, unknown>).shots_remaining as string | undefined;
+  const protocolComplete = (obj as unknown as Record<string, unknown>).protocol_complete as number | undefined;
+
+  let shotsCompleted: string[] = [];
+  let shotsRemaining: string[] = [];
+  try { shotsCompleted = shotsCompletedRaw ? JSON.parse(shotsCompletedRaw) : []; } catch { /* empty */ }
+  try { shotsRemaining = shotsRemainingRaw ? JSON.parse(shotsRemainingRaw) : []; } catch { /* empty */ }
+
+  const isGerman = t('pdf.html_lang') === 'de';
+  const protocolName = isGerman ? protocol.name_de : protocol.name;
+
+  const statusLabel = protocolComplete === 1
+    ? t('export.protocol_complete')
+    : t('export.protocol_incomplete', { count: shotsRemaining.length });
+
+  const statusColor = protocolComplete === 1 ? C.success : C.warning;
+
+  const shotRows = [...protocol.shots]
+    .sort((a, b) => a.order - b.order)
+    .map((shot) => {
+      const label = isGerman ? shot.label_de : shot.label;
+      const reqLabel = shot.required ? t('protocols.required_badge') : t('protocols.optional_badge');
+      let status: string;
+      let statusCls: string;
+      if (shotsCompleted.includes(shot.id)) {
+        status = t('export.shot_status_completed');
+        statusCls = `color:${C.success};font-weight:600;`;
+      } else if (!shotsRemaining.includes(shot.id) && !shotsCompleted.includes(shot.id)) {
+        status = t('export.shot_status_skipped');
+        statusCls = `color:${C.warning};font-weight:600;`;
+      } else {
+        status = t('export.shot_status_missing');
+        statusCls = `color:${C.danger};font-weight:600;`;
+      }
+      return `<tr>
+        <td style="padding:3pt 6pt;font-size:9pt;">${esc(label)}</td>
+        <td style="padding:3pt 6pt;font-size:8pt;color:${C.textSecondary};">${esc(reqLabel)}</td>
+        <td style="padding:3pt 6pt;font-size:8pt;${statusCls}">${esc(status)}</td>
+      </tr>`;
+    })
+    .join('');
+
+  return `
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">${esc(t('export.protocol_section'))}</div>
+    </div>
+    <div style="margin-bottom:8pt;">
+      <span style="font-size:9.5pt;font-weight:600;color:${C.textPrimary};">${esc(protocolName)}</span>
+      <span style="display:inline-block;margin-left:8pt;font-size:8pt;font-weight:600;color:${statusColor};background:${statusColor}15;padding:2pt 8pt;border-radius:3pt;">${esc(statusLabel)}</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;border:0.5pt solid ${C.border};border-radius:3pt;">
+      <thead>
+        <tr style="background:rgba(30,45,61,0.05);">
+          <th style="padding:4pt 6pt;font-size:7.5pt;color:${C.primary};text-align:left;font-weight:700;text-transform:uppercase;letter-spacing:0.8pt;">Shot</th>
+          <th style="padding:4pt 6pt;font-size:7.5pt;color:${C.primary};text-align:left;font-weight:700;text-transform:uppercase;letter-spacing:0.8pt;">Type</th>
+          <th style="padding:4pt 6pt;font-size:7.5pt;color:${C.primary};text-align:left;font-weight:700;text-transform:uppercase;letter-spacing:0.8pt;">Status</th>
+        </tr>
+      </thead>
+      <tbody>${shotRows}</tbody>
+    </table>
+  </div>`;
 }
 
 function statusDot(status: string | null | undefined): string {
@@ -324,15 +397,46 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
   const standort = typeof tsd.storage_location === 'string' ? tsd.storage_location : null;
 
   // ── Image section ──
+  const objProtocolId = (obj as unknown as Record<string, unknown>).protocol_id as string | undefined;
+  const objProtocol = objProtocolId ? getProtocol(objProtocolId) : null;
+  const pdfIsGerman = t('pdf.html_lang') === 'de';
+
+  let thumbStripHtml: string;
+  if (objProtocol && others.length > 0) {
+    // Group thumbnails by shot_type
+    const sortedShots = [...objProtocol.shots].sort((a, b) => a.order - b.order);
+    const usedIds = new Set<string>();
+    const groups: string[] = [];
+    for (const shot of sortedShots) {
+      const matching = others.filter((m) => (m as unknown as Record<string, unknown>).shot_type === shot.id);
+      if (matching.length > 0) {
+        const label = pdfIsGerman ? shot.label_de : shot.label;
+        groups.push(
+          `<div style="margin-bottom:4pt;"><div style="font-size:7pt;color:${C.textSecondary};font-weight:600;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2pt;">${esc(label)}</div><div class="thumb-strip">${matching.map((m) => `<img class="thumb" src="data:${m.mime_type};base64,${m.base64Data}" />`).join('')}</div></div>`
+        );
+        matching.forEach((m) => usedIds.add(m.id));
+      }
+    }
+    const extra = others.filter((m) => !usedIds.has(m.id));
+    if (extra.length > 0) {
+      groups.push(
+        `<div style="margin-bottom:4pt;"><div style="font-size:7pt;color:${C.textSecondary};font-weight:600;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2pt;">${esc(t('protocols.additional_photos'))}</div><div class="thumb-strip">${extra.slice(0, 3).map((m) => `<img class="thumb" src="data:${m.mime_type};base64,${m.base64Data}" />`).join('')}${extra.length > 3 ? `<div class="thumb-more">+${extra.length - 3}</div>` : ''}</div></div>`
+      );
+    }
+    thumbStripHtml = groups.join('');
+  } else {
+    thumbStripHtml = `<div class="thumb-strip">
+         ${others.slice(0, 3).map((m) => `<img class="thumb" src="data:${m.mime_type};base64,${m.base64Data}" />`).join('')}
+         ${others.length > 3 ? `<div class="thumb-more">+${others.length - 3}</div>` : ''}
+       </div>`;
+  }
+
   const imageHtml = primary
     ? `<div class="image-wrapper">
         <img class="primary-img" src="data:${primary.mime_type};base64,${primary.base64Data}" />
         ${media.length > 1 ? `<div class="img-count-badge">${t('pdf.photos_count', { count: media.length })}</div>` : ''}
        </div>
-       <div class="thumb-strip">
-         ${others.slice(0, 3).map((m) => `<img class="thumb" src="data:${m.mime_type};base64,${m.base64Data}" />`).join('')}
-         ${others.length > 3 ? `<div class="thumb-more">+${others.length - 3}</div>` : ''}
-       </div>`
+       ${thumbStripHtml}`
     : `<div class="image-wrapper"><div class="image-placeholder">${t('pdf.no_image')}</div></div>`;
 
   // ── Objektdaten grid ──
@@ -442,6 +546,9 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
     </div>
     <div class="data-grid">${dataItems.join('')}</div>
   </div>` : ''}
+
+  <!-- PROTOCOL COMPLIANCE -->
+  ${buildProtocolSection(obj, t)}
 
   <!-- PROVENIENZ & ERWERBUNG -->
   ${showProv ? `

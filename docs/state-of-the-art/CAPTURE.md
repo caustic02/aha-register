@@ -671,6 +671,78 @@ New `src/components/ImageViewer.tsx` — reusable full-screen modal with pinch-t
 - Client: `src/services/isolationService.ts` sends user JWT, handles 401 retry
 - Function redeployed 2026-03-20
 
+## Capture Guidance Protocol System (2026-03-21)
+
+Protocol-driven capture guidance that walks users through required documentation shots for institutional compliance. Protocols define ordered sequences of required and optional shots with localized instructions and tips.
+
+### Architecture
+
+JSON protocol configs in `src/config/protocols/` follow the same pattern as domain export configs. Each protocol specifies:
+- Ordered shot list with localized labels, instructions, and tips
+- Required vs optional designation per shot
+- Completion rules (minimum required count, allow incomplete save)
+- Object type matching (e.g., painting protocol matches painting/drawing/print/photograph)
+
+The `useCaptureProtocol` hook is a `useReducer`-based state machine: `idle → selecting → capturing → reviewing → complete`. It tracks completed shots, skipped shots, and derives progress/completeness.
+
+### Built-in Protocols
+
+| Protocol | Shots | Required | Object Types |
+|----------|-------|----------|-------------|
+| `museum_painting` | 6 | 4 | painting, drawing, print, photograph |
+| `museum_sculpture` | 8 | 5 | sculpture, relief, installation, ceramic, vessel |
+| `museum_general` | 4 | 2 | any (fallback) |
+
+### UI Components
+
+| Component | Purpose |
+|-----------|---------|
+| `ProtocolPicker` | Modal with protocol cards, recommended badge for matching types, freeform option |
+| `CaptureGuidanceOverlay` | Camera viewfinder overlay with shot instruction, progress pill, skip/tips/review buttons |
+| `ShotListSidebar` | Slide-in panel with per-shot status badges and thumbnails |
+| `TipsModal` | Per-shot tips display with localized content |
+| `CompletionSummary` | Full-screen review grid with save/continue/retake actions |
+
+### Data Model
+
+Protocol metadata on objects table: `protocol_id`, `protocol_complete`, `shots_completed` (JSON), `shots_remaining` (JSON).
+Shot metadata on media table: `shot_type`, `protocol_id`, `shot_order`.
+
+### Integration Points
+
+- **CaptureScreen**: Protocol picker on Full mode entry, guidance overlay on camera, protocol-aware shutter (fire-and-forget with metadata tagging)
+- **ObjectDetailScreen**: Protocol status section with shot checklist, photos grouped by shot type
+- **PDF Export**: Protocol compliance section with shot status table, photos grouped by shot type in thumbnail strip
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/config/protocols/museum_painting.json` | 6-shot painting protocol |
+| `src/config/protocols/museum_sculpture.json` | 8-shot sculpture protocol |
+| `src/config/protocols/museum_general.json` | 4-shot general fallback |
+| `src/config/protocols/index.ts` | Protocol registry, loader, type interfaces |
+| `src/hooks/useCaptureProtocol.ts` | State machine hook |
+| `src/components/ProtocolPicker.tsx` | Protocol selection modal |
+| `src/components/CaptureGuidanceOverlay.tsx` | Camera overlay with instructions |
+| `src/components/ShotListSidebar.tsx` | Slide-in shot list panel |
+| `src/components/TipsModal.tsx` | Per-shot tips modal |
+| `src/components/CompletionSummary.tsx` | Review grid with save/continue/retake |
+| `src/db/schema.ts` | `capture_protocols` table + migration columns |
+| `src/db/types.ts` | `CaptureProtocolRow` interface + field types |
+| `docs/migrations/20260321120000_capture_protocols.sql` | Migration SQL |
+
+### Decision History
+
+| Date | Decision |
+|------|----------|
+| 2026-03-21 | Text overlay for v1 (universal device support), AR guidance deferred to v2 |
+| 2026-03-21 | Allow incomplete save with warning — field conditions may prevent full documentation |
+| 2026-03-21 | JSON configs not database-first — mirrors export pipeline pattern |
+| 2026-03-21 | Protocol events logged to audit_trail for institutional compliance |
+
+---
+
 ## Known Gaps
 
 - No LiDAR/3D scan integration (Kiri Engine identified, not integrated)

@@ -557,7 +557,13 @@
     "preview_generate": "PDF erstellen",
     "preview_generating": "Wird erstellt\u2026",
     "back": "Zur\u00fcck",
-    "next": "Weiter"
+    "next": "Weiter",
+    "protocol_section": "Dokumentationsprotokoll",
+    "protocol_complete": "Dokumentation vollst\u00e4ndig",
+    "protocol_incomplete": "Dokumentation unvollst\u00e4ndig ({{count}} erforderliche Aufnahmen fehlen)",
+    "shot_status_completed": "Abgeschlossen",
+    "shot_status_skipped": "\u00dcbersprungen",
+    "shot_status_missing": "Fehlend"
   },
   "exportStepper": {
     "selectFormat": "Format w\u00e4hlen",

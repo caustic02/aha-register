@@ -557,7 +557,13 @@
     "preview_generate": "Generate PDF",
     "preview_generating": "Generating\u2026",
     "back": "Back",
-    "next": "Next"
+    "next": "Next",
+    "protocol_section": "Documentation protocol",
+    "protocol_complete": "Documentation complete",
+    "protocol_incomplete": "Documentation incomplete ({{count}} required shots missing)",
+    "shot_status_completed": "Completed",
+    "shot_status_skipped": "Skipped",
+    "shot_status_missing": "Missing"
   },
   "exportStepper": {
     "selectFormat": "Select Format",
