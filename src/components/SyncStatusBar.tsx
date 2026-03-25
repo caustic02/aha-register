@@ -4,6 +4,7 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { useDatabase } from '../contexts/DatabaseContext';
@@ -16,17 +17,19 @@ export function SyncStatusBar() {
   const { status, pendingCount, failedCount } = useSyncStatus();
   const { t } = useAppTranslation();
   const db = useDatabase();
+  const insets = useSafeAreaInsets();
+  const totalHeight = BAR_HEIGHT + insets.top;
 
   const [translateY] = useState(() => new Animated.Value(-BAR_HEIGHT));
   const visible = status !== 'idle';
 
   useEffect(() => {
     Animated.timing(translateY, {
-      toValue: visible ? 0 : -BAR_HEIGHT,
+      toValue: visible ? 0 : -totalHeight,
       duration: 200,
       useNativeDriver: true,
     }).start();
-  }, [visible, translateY]);
+  }, [visible, translateY, totalHeight]);
 
   const handleRetry = useCallback(() => {
     const engine = new SyncEngine(db);
@@ -61,7 +64,7 @@ export function SyncStatusBar() {
 
   return (
     <Animated.View
-      style={[styles.bar, { backgroundColor: bgColor, transform: [{ translateY }] }]}
+      style={[styles.bar, { backgroundColor: bgColor, height: totalHeight, paddingTop: insets.top, transform: [{ translateY }] }]}
       accessibilityRole="summary"
       accessibilityLiveRegion="polite"
       accessibilityLabel={text}
@@ -85,7 +88,6 @@ export function SyncStatusBar() {
 
 const styles = StyleSheet.create({
   bar: {
-    height: BAR_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
