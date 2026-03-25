@@ -104,6 +104,12 @@ export function MainTabs() {
       <Tab.Screen
         name="Home"
         component={HomeStack}
+        listeners={({ navigation }) => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            navigation.navigate('Home', { screen: 'Home' });
+          },
+        })}
         options={{ tabBarAccessibilityLabel: 'Home tab' }}
       />
       <Tab.Screen
