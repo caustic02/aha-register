@@ -8,6 +8,7 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Zoomable } from '@likashefqet/react-native-image-zoom';
 import { Image } from 'react-native';
 import { CloseIcon } from '../theme/icons';
@@ -33,6 +34,7 @@ export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
       statusBarTranslucent
       onRequestClose={onClose}
     >
+      <GestureHandlerRootView style={styles.root}>
       <View style={styles.backdrop}>
         <Zoomable
           minScale={1}
@@ -58,11 +60,15 @@ export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
           <CloseIcon size={24} color={colors.white} />
         </Pressable>
       </View>
+      </GestureHandlerRootView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: VIEWER_BG,

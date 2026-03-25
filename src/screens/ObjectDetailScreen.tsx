@@ -33,8 +33,10 @@ import {
 } from '../components/ui';
 import {
   BackIcon,
+  CollapseIcon,
   DeleteIcon,
   EditIcon,
+  ExpandIcon,
   ExportIcon,
   ForwardIcon,
   IsolateIcon,
@@ -115,6 +117,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
+  const [showTechnical, setShowTechnical] = useState(false);
 
   // Document scans for this object
   const {
@@ -870,17 +873,33 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             label={t('objectDetail.captureDate')}
             value={formatDate(object.created_at)}
           />
-          <MetadataRow
-            label={t('objectDetail.uuid')}
-            value={object.id}
-            variant="stacked"
-          />
-          {primaryMedia?.sha256_hash != null && (
-            <MetadataRow
-              label={t('objectDetail.hash')}
-              value={primaryMedia.sha256_hash}
-              variant="stacked"
-            />
+          <Pressable
+            style={styles.technicalToggle}
+            onPress={() => setShowTechnical(v => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={t('objectDetail.technicalDetails')}
+          >
+            <Text style={styles.technicalToggleText}>{t('objectDetail.technicalDetails')}</Text>
+            {showTechnical
+              ? <CollapseIcon size={16} color={colors.textTertiary} />
+              : <ExpandIcon size={16} color={colors.textTertiary} />
+            }
+          </Pressable>
+          {showTechnical && (
+            <>
+              <MetadataRow
+                label={t('objectDetail.uuid')}
+                value={object.id}
+                variant="stacked"
+              />
+              {primaryMedia?.sha256_hash != null && (
+                <MetadataRow
+                  label={t('objectDetail.hash')}
+                  value={primaryMedia.sha256_hash}
+                  variant="stacked"
+                />
+              )}
+            </>
           )}
         </Card>
 
@@ -891,10 +910,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       {/* ── 7. FIXED ACTION BAR ──────────────────────────────────────────────── */}
       <View style={styles.actionBar}>
         <IconButton
-          icon={<EditIcon size={22} color={colors.textTertiary} />}
+          icon={<EditIcon size={22} color={colors.text} />}
           onPress={handleEdit}
-          accessibilityLabel={t('objectDetail.editDisabled')}
-          disabled
+          accessibilityLabel={t('common.edit')}
         />
         <IconButton
           icon={<ExportIcon size={22} color={colors.text} />}
@@ -1189,5 +1207,18 @@ const styles = StyleSheet.create({
   },
   protocolShotDone: {
     color: colors.textSecondary,
+  },
+  // Technical details collapsible
+  technicalToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  technicalToggleText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    fontWeight: typography.weight.medium,
   },
 });

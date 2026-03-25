@@ -919,6 +919,7 @@
     "captureDate": "Capture Date",
     "uuid": "Object ID",
     "hash": "SHA-256",
+    "technicalDetails": "Technical details",
     "coordinateSource": "Coordinate Source",
     "estimatedCreationDate": "Estimated Creation Date",
     "aiEstimate": "AI estimate",
