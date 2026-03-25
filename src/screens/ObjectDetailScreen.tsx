@@ -74,7 +74,13 @@ interface PersonRow extends ObjectPerson {
 function formatDate(iso?: string | null): string {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleString();
+    return new Date(iso).toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   } catch {
     return iso;
   }
@@ -694,9 +700,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           {aiMedium != null && (
             <MetadataRow label={t('objectDetail.medium')} value={aiMedium} />
           )}
-          {aiDimensions != null && (
-            <MetadataRow label={t('objectDetail.dimensions')} value={aiDimensions} />
-          )}
           {aiStylePeriod != null && (
             <MetadataRow label={t('objectDetail.stylePeriod')} value={aiStylePeriod} />
           )}
@@ -708,18 +711,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           )}
           {aiKeywords != null && (
             <MetadataRow label={t('objectDetail.keywords')} value={aiKeywords} />
-          )}
-          {coordString.length > 0 && (
-            <MetadataRow
-              label={t('location.section_title')}
-              value={coordString}
-            />
-          )}
-          {object.coordinate_source != null && (
-            <MetadataRow
-              label={t('objectDetail.coordinateSource')}
-              value={getDisplayLabel(object.coordinate_source, 'coordinate_source')}
-            />
           )}
         </Card>
 
@@ -896,6 +887,23 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                 <MetadataRow
                   label={t('objectDetail.hash')}
                   value={primaryMedia.sha256_hash}
+                  variant="stacked"
+                />
+              )}
+              {aiDimensions != null && (
+                <MetadataRow label={t('objectDetail.dimensions')} value={aiDimensions} variant="stacked" />
+              )}
+              {coordString.length > 0 && (
+                <MetadataRow
+                  label={t('location.section_title')}
+                  value={coordString}
+                  variant="stacked"
+                />
+              )}
+              {object.coordinate_source != null && (
+                <MetadataRow
+                  label={t('objectDetail.coordinateSource')}
+                  value={getDisplayLabel(object.coordinate_source, 'coordinate_source')}
                   variant="stacked"
                 />
               )}

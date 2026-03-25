@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { colors, radii, spacing, touch, typography } from '../theme';
 import {
+  CheckIcon,
   ConditionIcon,
   LayersIcon,
   RulerIcon,
@@ -117,20 +118,6 @@ function fieldString(value: string | string[] | null): string {
   return value;
 }
 
-function formatTimestamp(ts?: string): string {
-  if (!ts) return '—';
-  try {
-    return new Date(ts).toLocaleString();
-  } catch {
-    return ts;
-  }
-}
-
-function formatCoords(meta: CaptureMetadata, fallback: string): string {
-  if (meta.latitude == null || meta.longitude == null) return fallback;
-  return `${meta.latitude.toFixed(6)}, ${meta.longitude.toFixed(6)}`;
-}
-
 function guessMimeType(uri: string): string {
   const lower = uri.toLowerCase();
   if (lower.endsWith('.png')) return 'image/png';
@@ -145,7 +132,7 @@ export function ReviewCardScreen({
   imageUri,
   analysisResult,
   captureMetadata,
-  sha256Hash,
+  sha256Hash: _sha256Hash,
   existingObjectId,
   onSave,
   onDiscard,
@@ -466,18 +453,9 @@ export function ReviewCardScreen({
             resizeMode="cover"
             accessibilityLabel="Captured photograph"
           />
-          <View style={styles.captureMetaRow}>
-            <Text style={styles.captureMeta}>
-              {formatTimestamp(captureMetadata.timestamp)}
-            </Text>
-            <Text style={styles.captureMeta}>
-              {formatCoords(captureMetadata, t('reviewCard.coordsNotAvailable'))}
-            </Text>
-            {sha256Hash != null && (
-              <Text style={[styles.captureMeta, typography.mono]}>
-                {sha256Hash.slice(0, 8)}
-              </Text>
-            )}
+          <View style={styles.capturedBadge}>
+            <CheckIcon size={13} color={colors.accent} />
+            <Text style={styles.capturedBadgeText}>{t('reviewCard.photoCaptured')}</Text>
           </View>
         </Card>
 
@@ -935,15 +913,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
   },
-  captureMetaRow: {
+  capturedBadge: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
+    alignItems: 'center',
+    gap: spacing.xs,
     padding: spacing.lg,
   },
-  captureMeta: {
+  capturedBadgeText: {
     ...typography.caption,
-    color: colors.textTertiary,
+    color: colors.accent,
   },
   // Sections
   section: {
