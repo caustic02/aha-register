@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import type { CameraType, FlashMode, CameraRatio } from 'expo-camera';
+import type { CameraType, FlashMode } from 'expo-camera';
 import { File } from 'expo-file-system';
 import type { CaptureStackParamList } from '../navigation/CaptureStack';
 import { useDatabase } from '../contexts/DatabaseContext';
@@ -35,7 +35,7 @@ import {
   SETTING_KEYS,
 } from '../services/settingsService';
 import { TypeSelector } from '../components/TypeSelector';
-import { GridIcon, QuickModeIcon, FullModeIcon, ScanIcon } from '../theme/icons';
+import { FlipCameraIcon, QuickModeIcon, FullModeIcon, ScanIcon } from '../theme/icons';
 import type { ObjectType, RegisterObject } from '../db/types';
 import {
   launchDocumentScanner,
@@ -60,7 +60,6 @@ const OVERLAY_LEVEL_FLAT = 'rgba(45,90,39,0.85)';
 const OVERLAY_COUNT_BG = 'rgba(0,0,0,0.55)';
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
-type AspectRatio = '4:3' | '1:1';
 type CaptureMode = 'quick' | 'full';
 
 interface QuickCaptureThumbnail {
@@ -100,7 +99,6 @@ export function CaptureScreen() {
   // Camera settings
   const [facing, setFacing] = useState<CameraType>('back');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('4:3');
   const [cameraReady, setCameraReady] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
@@ -147,7 +145,7 @@ export function CaptureScreen() {
   const [showShotList, setShowShotList] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [showCompletionSummary, setShowCompletionSummary] = useState(false);
-  const [protocolPickerDismissed, setProtocolPickerDismissed] = useState(false);
+  const [, setProtocolPickerDismissed] = useState(false);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -211,13 +209,6 @@ export function CaptureScreen() {
     }
   }, [protocolHook.state, protocolHook.protocol]);
 
-  // Show protocol picker when entering full mode without a protocol
-  useEffect(() => {
-    if (captureMode === 'full' && !protocolHook.protocol && !protocolPickerDismissed && phase === 'idle') {
-      setShowProtocolPicker(true);
-    }
-  }, [captureMode, protocolHook.protocol, protocolPickerDismissed, phase]);
-
   const handleProtocolSelect = useCallback((protocolId: string) => {
     protocolFirstObjectIdRef.current = null;
     protocolHook.selectProtocol(protocolId);
@@ -250,14 +241,6 @@ export function CaptureScreen() {
 
   // ── Camera controls ──────────────────────────────────────────────────────────
 
-  const handleGridToggle = useCallback(() => {
-    setGridEnabled((prev) => {
-      const next = !prev;
-      AsyncStorage.setItem('camera.gridEnabled', String(next));
-      return next;
-    });
-  }, []);
-
   const handleFlashToggle = useCallback(() => {
     setFlashMode((prev) => {
       const idx = FLASH_CYCLE.indexOf(prev);
@@ -269,10 +252,6 @@ export function CaptureScreen() {
 
   const handleFacingToggle = useCallback(() => {
     setFacing((prev) => (prev === 'back' ? 'front' : 'back'));
-  }, []);
-
-  const handleRatioToggle = useCallback(() => {
-    setAspectRatio((prev) => (prev === '4:3' ? '1:1' : '4:3'));
   }, []);
 
   const handleModeToggle = useCallback((mode: CaptureMode) => {
@@ -850,9 +829,8 @@ export function CaptureScreen() {
   const flashColor =
     flashMode === 'off' ? colors.textMuted : flashMode === 'on' ? colors.warning : colors.accent;
 
-  // Android ratio prop (iOS uses container styling)
-  const androidRatio: CameraRatio | undefined =
-    Platform.OS === 'android' ? aspectRatio : undefined;
+  // Android ratio prop (iOS uses container styling); fixed 4:3 — no in-viewfinder toggle
+  const androidRatio = Platform.OS === 'android' ? ('4:3' as const) : undefined;
 
   return (
     <View style={styles.cameraContainer}>
@@ -865,14 +843,6 @@ export function CaptureScreen() {
         ratio={androidRatio}
         onCameraReady={() => setCameraReady(true)}
       />
-
-      {/* 1:1 crop overlay — two dark bars to frame the square composition zone */}
-      {aspectRatio === '1:1' && (
-        <>
-          <View style={styles.cropBarTop} pointerEvents="none" />
-          <View style={styles.cropBarBottom} pointerEvents="none" />
-        </>
-      )}
 
       {/* ── Grid overlay + crosshair (pointerEvents="none" so touches pass through) */}
       {gridEnabled && (
@@ -918,54 +888,23 @@ export function CaptureScreen() {
         </View>
       )}
 
-      {/* Top controls: Flash | Ratio | Flip | Grid — hidden during protocol capture */}
-      {!protocolHook.protocol && <View style={styles.topControls}>
-        {/* Flash toggle */}
-        <Pressable
-          style={styles.controlBtn}
-          onPress={handleFlashToggle}
-          accessibilityLabel={flashLabel(flashMode, t)}
-        >
-          <Text style={[styles.controlIcon, { color: flashColor }]}>
-            {flashIcon(flashMode)}
-          </Text>
-          <Text style={[styles.controlLabel, { color: flashColor }]}>
-            {flashMode === 'auto' ? 'AUTO' : flashMode.toUpperCase()}
-          </Text>
-        </Pressable>
-
-        {/* Aspect ratio toggle */}
-        <Pressable
-          style={styles.controlBtn}
-          onPress={handleRatioToggle}
-          accessibilityLabel={t('capture.ratio_label')}
-        >
-          <Text style={styles.ratioText}>{aspectRatio}</Text>
-        </Pressable>
-
-        {/* Flip camera */}
-        <Pressable
-          style={styles.controlBtn}
-          onPress={handleFacingToggle}
-          accessibilityLabel={t('capture.flip_camera')}
-        >
-          <Text style={styles.controlIcon}>{'\u21BA'}</Text>
-        </Pressable>
-
-        {/* Grid toggle */}
-        <Pressable
-          style={[styles.controlBtn, gridEnabled && styles.controlBtnActive]}
-          onPress={handleGridToggle}
-          accessibilityRole="button"
-          accessibilityLabel={t('camera.gridToggle')}
-          accessibilityState={{ checked: gridEnabled }}
-        >
-          <GridIcon
-            size={20}
-            color={gridEnabled ? colors.primary : colors.white}
-          />
-        </Pressable>
-      </View>}
+      {/* Top controls: flash only — hidden during protocol capture */}
+      {!protocolHook.protocol && (
+        <View style={styles.topControls}>
+          <Pressable
+            style={styles.controlBtn}
+            onPress={handleFlashToggle}
+            accessibilityLabel={flashLabel(flashMode, t)}
+          >
+            <Text style={[styles.controlIcon, { color: flashColor }]}>
+              {flashIcon(flashMode)}
+            </Text>
+            <Text style={[styles.controlLabel, { color: flashColor }]}>
+              {flashMode === 'auto' ? 'AUTO' : flashMode.toUpperCase()}
+            </Text>
+          </Pressable>
+        </View>
+      )}
 
       {/* Intro overlay for first-time users */}
       {showIntro && (
@@ -1177,7 +1116,7 @@ export function CaptureScreen() {
           </View>
         </View>
 
-        {/* Controls: Library | Shutter | (spacer) */}
+        {/* Controls: Library | Shutter | Scan + flip (right) */}
         <View style={styles.bottomControls}>
           {/* Library picker */}
           <Pressable
@@ -1204,15 +1143,24 @@ export function CaptureScreen() {
             <View style={styles.shutterInner} />
           </Pressable>
 
-          {/* Document scan */}
-          <Pressable
-            style={styles.docScanBtn}
-            onPress={handleDocumentScan}
-            accessibilityRole="button"
-            accessibilityLabel={t('capture.scan_document')}
-          >
-            <ScanIcon size={22} color={colors.white} />
-          </Pressable>
+          <View style={styles.bottomControlsTrailing}>
+            <Pressable
+              style={styles.docScanBtn}
+              onPress={handleDocumentScan}
+              accessibilityRole="button"
+              accessibilityLabel={t('capture.scan_document')}
+            >
+              <ScanIcon size={22} color={colors.white} />
+            </Pressable>
+            <Pressable
+              style={styles.flipCameraBtn}
+              onPress={handleFacingToggle}
+              accessibilityRole="button"
+              accessibilityLabel={t('capture.flip_camera')}
+            >
+              <FlipCameraIcon size={22} color={colors.white} />
+            </Pressable>
+          </View>
         </View>
       </View>
     </View>
@@ -1236,28 +1184,6 @@ const styles = StyleSheet.create({
   cameraContainer: {
     flex: 1,
     backgroundColor: colors.camera,
-  },
-
-  // Crop overlay bars for 1:1 ratio (appear above/below the square zone)
-  cropBarTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    // Height is calculated so the remaining visible area is square (width-based)
-    // We overlay ~20% from top and bottom as a darkened guide
-    height: '15%',
-    backgroundColor: colors.overlay,
-    zIndex: 2,
-  },
-  cropBarBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '15%',
-    backgroundColor: colors.overlay,
-    zIndex: 2,
   },
 
   // ── Grid overlay ────────────────────────────────────────────────────────────
@@ -1386,10 +1312,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 2,
   },
-  controlBtnActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySurface,
-  },
   controlIcon: {
     fontSize: typography.size.xl,
     color: colors.white,
@@ -1399,13 +1321,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.bold,
     letterSpacing: 0.5,
   },
-  ratioText: {
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.bold,
-    color: colors.white,
-    paddingVertical: spacing.xs,
-  },
-
   // ── Bottom area (mode toggle + thumbnail strip + controls) ──────────────────
   bottomArea: {
     position: 'absolute',
@@ -1422,6 +1337,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.overlayLight,
+  },
+  bottomControlsTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
 
   // ── Shutter flash ─────────────────────────────────────────────────────────
@@ -1552,6 +1472,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   docScanBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: radii.lg,
+    backgroundColor: colors.overlay,
+    borderWidth: 1,
+    borderColor: colors.overlayLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  flipCameraBtn: {
     width: 52,
     height: 52,
     borderRadius: radii.lg,

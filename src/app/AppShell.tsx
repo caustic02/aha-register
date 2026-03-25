@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, AppState, StyleSheet, Text, View } from 'react-native';
 import { colors, typography, spacing } from '../theme';
 import { NavigationContainer } from '@react-navigation/native';
 import type { SQLiteDatabase } from 'expo-sqlite';
@@ -25,6 +25,21 @@ export default function AppShell() {
   const [authenticated, setAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const syncEngineRef = useRef<SyncEngine | null>(null);
+  const appStateRef = useRef(AppState.currentState);
+  const [mainTabsKey, setMainTabsKey] = useState(0);
+
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appStateRef.current === 'background' && next === 'active') {
+        setMainTabsKey((k) => k + 1);
+      }
+      appStateRef.current = next;
+    });
+
+    return () => sub.remove();
+  }, [authenticated]);
 
   useEffect(() => {
     initDatabase()
@@ -146,7 +161,7 @@ export default function AppShell() {
       ) : (
         <NavigationContainer>
           <SyncStatusBar />
-          <MainTabs />
+          <MainTabs key={mainTabsKey} />
         </NavigationContainer>
       )}
     </DatabaseProvider>

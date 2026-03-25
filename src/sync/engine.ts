@@ -4,6 +4,7 @@ import type { SyncAction, SyncStatus, SyncQueueItem } from '../db/types';
 import { SyncTransport } from '../services/sync-transport';
 import { getSetting } from '../services/settingsService';
 import { generateId } from '../utils/uuid';
+import { beginSyncCycle, endSyncCycle } from './syncCycle';
 
 export type { SyncAction, SyncStatus, SyncQueueItem };
 
@@ -78,6 +79,7 @@ export class SyncEngine {
     }
 
     this.syncing = true;
+    beginSyncCycle();
     try {
       if (__DEV__) console.log('[sync] starting sync cycle');
 
@@ -107,6 +109,7 @@ export class SyncEngine {
     } catch (err) {
       if (__DEV__) console.warn('[sync] cycle error:', err);
     } finally {
+      endSyncCycle();
       this.syncing = false;
     }
   }

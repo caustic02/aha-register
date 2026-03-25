@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -26,7 +27,6 @@ import {
   ObjectsTabIcon,
   PackageIcon,
   PhotoIcon,
-  SyncIcon,
 } from '../theme/icons';
 import { colors, radii, spacing, touch, typography } from '../theme';
 import { SkeletonList, SkeletonLoader } from '../components/SkeletonLoader';
@@ -44,7 +44,6 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
 interface Stats {
   totalObjects: number;
-  pendingSync: number;
   totalPhotos: number;
 }
 
@@ -70,7 +69,6 @@ export function HomeScreen({ navigation }: Props) {
 
   const [stats, setStats] = useState<Stats>({
     totalObjects: 0,
-    pendingSync: 0,
     totalPhotos: 0,
   });
   const [recent, setRecent] = useState<RecentObject[]>([]);
@@ -84,16 +82,11 @@ export function HomeScreen({ navigation }: Props) {
 
   const loadData = useCallback(async () => {
     try {
-      const [totalRow, syncRow, photoRow, recentRows, inboxRows, instName] =
+      const [totalRow, photoRow, recentRows, inboxRows, instName] =
         await Promise.all([
           db.getFirstAsync<{ count: number }>(
             'SELECT COUNT(*) as count FROM objects',
           ),
-          db
-            .getFirstAsync<{ count: number }>(
-              "SELECT COUNT(*) as count FROM sync_queue WHERE status = 'pending'",
-            )
-            .catch((): { count: number } => ({ count: 0 })),
           db.getFirstAsync<{ count: number }>(
             'SELECT COUNT(*) as count FROM media',
           ),
@@ -116,7 +109,6 @@ export function HomeScreen({ navigation }: Props) {
 
       setStats({
         totalObjects: totalRow?.count ?? 0,
-        pendingSync: syncRow?.count ?? 0,
         totalPhotos: photoRow?.count ?? 0,
       });
       setRecent(recentRows);
@@ -235,17 +227,7 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* ── 2. Sync Status Bar (conditional) ───────────────────────────── */}
-        {!loading && stats.pendingSync > 0 && (
-          <View style={styles.syncBanner}>
-            <SyncIcon size={14} color={colors.statusWarning} />
-            <Text style={styles.syncBannerText}>
-              {t('home.pendingSyncBanner', { count: stats.pendingSync })}
-            </Text>
-          </View>
-        )}
-
-        {/* ── 3. Primary CTA Card ────────────────────────────────────────── */}
+        {/* ── 2. Primary CTA Card ────────────────────────────────────────── */}
         <Pressable
           style={styles.ctaCard}
           onPress={navigateToCapture}
@@ -261,7 +243,7 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         </Pressable>
 
-        {/* ── 4. Quick Stats Row ──────────────────────────────────────────── */}
+        {/* ── 3. Quick Stats Row ──────────────────────────────────────────── */}
         {loading ? (
           <View style={styles.statsRow}>
             {[0, 1, 2].map((i) => (
@@ -286,12 +268,15 @@ export function HomeScreen({ navigation }: Props) {
             </Pressable>
 
             <View style={styles.statCard}>
-              {syncStatus.status === 'idle' && syncStatus.pendingCount === 0 ? (
+              {syncStatus.pendingCount === 0 ? (
                 <>
-                  <CheckIcon size={20} color={colors.statusSuccess} />
-                  <Text style={styles.statValue}>{t('syncBar.allSynced')}</Text>
+                  <CheckIcon size={20} color={colors.textTertiary} />
+                  <Text style={styles.statValue}>0</Text>
+                  <Text style={styles.statLabel}>
+                    {t('syncBar.pending', { count: 0 })}
+                  </Text>
                   {syncStatus.lastSyncedAt && (
-                    <Text style={styles.statLabel}>
+                    <Text style={[styles.statLabel, styles.statLastSynced]}>
                       {t('syncBar.lastSynced', {
                         time: formatRelativeDate(syncStatus.lastSyncedAt.toISOString()),
                       })}
@@ -300,12 +285,18 @@ export function HomeScreen({ navigation }: Props) {
                 </>
               ) : (
                 <>
-                  <ClockIcon
-                    size={20}
-                    color={syncStatus.pendingCount > 0 ? colors.statusWarning : colors.textTertiary}
-                  />
-                  <Text style={styles.statValue}>{syncStatus.pendingCount}</Text>
-                  <Text style={styles.statLabel}>{t('syncBar.pending', { count: syncStatus.pendingCount })}</Text>
+                  <ClockIcon size={20} color={colors.statusWarning} />
+                  <View style={styles.statValueWithIndicator}>
+                    {syncStatus.status === 'syncing' ? (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    ) : (
+                      <View style={styles.pendingSyncDot} />
+                    )}
+                    <Text style={styles.statValue}>{syncStatus.pendingCount}</Text>
+                  </View>
+                  <Text style={styles.statLabel}>
+                    {t('syncBar.pending', { count: syncStatus.pendingCount })}
+                  </Text>
                 </>
               )}
             </View>
@@ -318,7 +309,7 @@ export function HomeScreen({ navigation }: Props) {
           </View>
         )}
 
-        {/* ── 5. Recent Objects ───────────────────────────────────────────── */}
+        {/* ── 4. Recent Objects ───────────────────────────────────────────── */}
         <View style={styles.sectionWrap}>
           <SectionHeader
             title={t('home.recentCaptures')}
@@ -359,7 +350,7 @@ export function HomeScreen({ navigation }: Props) {
           ))
         )}
 
-        {/* ── 6. Quick Actions ───────────────────────────────────────────── */}
+        {/* ── 5. Quick Actions ───────────────────────────────────────────── */}
         {!loading && stats.totalObjects > 0 && (
           <>
             <View style={styles.sectionWrap}>
@@ -495,23 +486,6 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.semibold,
   },
 
-  // Sync banner
-  syncBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.warningLight,
-    borderRadius: radii.sm,
-  },
-  syncBannerText: {
-    ...typography.caption,
-    color: colors.statusWarning,
-  },
-
   // Primary CTA
   ctaCard: {
     flexDirection: 'row',
@@ -563,6 +537,24 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.caption,
     color: colors.textSecondary,
+  },
+  statLastSynced: {
+    marginTop: 2,
+    ...typography.caption,
+    color: colors.textTertiary,
+  },
+  statValueWithIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.xs,
+  },
+  pendingSyncDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.statusWarning,
   },
   statCardSkeleton: {
     gap: spacing.xs,
