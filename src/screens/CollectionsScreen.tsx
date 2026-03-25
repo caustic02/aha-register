@@ -91,7 +91,7 @@ export function CollectionsScreen({ navigation }: Props) {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('collections.title')}</Text>
         <Pressable
@@ -138,7 +138,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     flexDirection: 'row',

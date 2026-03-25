@@ -1,5 +1,5 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, typography, radii } from '../theme';
+import { colors, typography, radii, spacing } from '../theme';
 
 interface SelectionHeaderProps {
   selectedCount: number;
@@ -38,7 +38,7 @@ const hStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
+    paddingTop: spacing.sm,
     paddingHorizontal: 20,
     paddingBottom: 12,
     backgroundColor: colors.surface,

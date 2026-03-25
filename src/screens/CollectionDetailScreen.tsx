@@ -294,7 +294,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   if (!collection) return null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       {selectionMode ? (
         <SelectionHeader

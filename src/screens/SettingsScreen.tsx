@@ -344,7 +344,7 @@ export function SettingsScreen() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('settings.title')}</Text>
@@ -796,7 +796,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
     paddingBottom: spacing.sm,
   },
   headerTitle: {

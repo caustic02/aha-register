@@ -168,7 +168,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    paddingTop: spacing.xl,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.md,
     flexDirection: 'row',

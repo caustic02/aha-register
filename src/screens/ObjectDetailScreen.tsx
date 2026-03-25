@@ -386,7 +386,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.headerRow}>
           <IconButton
             icon={<BackIcon size={24} color={colors.text} />}
@@ -418,7 +418,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
   if (error || !object) {
     return (
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.headerRow}>
           <IconButton
             icon={<BackIcon size={24} color={colors.text} />}
@@ -483,7 +483,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       {/* ── 1. HEADER ──────────────────────────────────────────────────────── */}
       <View style={styles.headerRow}>
         <IconButton
