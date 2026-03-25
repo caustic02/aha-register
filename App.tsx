@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import { useTranslation } from 'react-i18next';
 import AppShell from './src/app/AppShell';
@@ -65,10 +66,12 @@ class AppErrorBoundary extends React.Component<
 function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <AppErrorBoundary>
-        <StatusBar style="light" />
-        <AppShell />
-      </AppErrorBoundary>
+      <SafeAreaProvider>
+        <AppErrorBoundary>
+          <StatusBar style="light" />
+          <AppShell />
+        </AppErrorBoundary>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

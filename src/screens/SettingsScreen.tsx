@@ -3,13 +3,13 @@ import {
   Alert,
   LayoutAnimation,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Switch,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from 'i18next';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';

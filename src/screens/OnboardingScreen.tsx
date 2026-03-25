@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
   useWindowDimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { Button } from '../components/ui';
