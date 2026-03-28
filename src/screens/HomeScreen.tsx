@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import {
-  Alert,
   Animated as RNAnimated,
   Dimensions,
   Image,
@@ -24,21 +23,11 @@ import {
   SettingsTabIcon,
   PackageIcon,
   CameraIcon,
-  ExportIcon,
 } from '../theme/icons';
 import {
   ChevronRight,
-  QrCode,
-  Map as MapIcon,
-  Box as BoxIcon,
-  CheckCircle,
   FolderPlus,
   FolderOpen,
-  Search,
-  Sparkles,
-  ScanLine,
-  FileDown,
-  Layers,
 } from 'lucide-react-native';
 import Svg, { Path, Rect, Circle, Polyline, Line } from 'react-native-svg';
 import { colors, radii, spacing, touch, typography } from '../theme';
@@ -75,7 +64,8 @@ interface Stats { totalObjects: number; totalPhotos: number; storageBytes: numbe
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const NAVY = '#2B3A4E';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const LOGO_IMAGE = require('../../assets/images/register-logo.png');
 const CREAM = '#F5F2EB';
 const STANDARD_VIEW_KEYS = STANDARD_VIEW_TYPES.map((v) => v.key);
 const TOTAL_STANDARD_VIEWS = STANDARD_VIEW_KEYS.length;
@@ -140,7 +130,7 @@ function isComplete(obj: DashboardObject): boolean {
 // ── Press animation wrapper ─────────────────────────────────────────────────
 
 function PressScale({ children, onPress, style, ...rest }: React.ComponentProps<typeof Pressable>) {
-  const scale = useRef(new RNAnimated.Value(1)).current;
+  const [scale] = useState(() => new RNAnimated.Value(1));
   return (
     <RNAnimated.View style={{ transform: [{ scale }] }}>
       <Pressable
@@ -248,8 +238,8 @@ function CompactRow({ obj, onPress }: { obj: DashboardObject; onPress: () => voi
 // ── Animated pulse dot ──────────────────────────────────────────────────────
 
 function PulseDot({ active }: { active: boolean }) {
-  const pulseScale = useRef(new RNAnimated.Value(1)).current;
-  const pulseOpacity = useRef(new RNAnimated.Value(0)).current;
+  const [pulseScale] = useState(() => new RNAnimated.Value(1));
+  const [pulseOpacity] = useState(() => new RNAnimated.Value(0));
 
   useEffect(() => {
     if (!active) return;
@@ -297,7 +287,7 @@ export function HomeScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(true);
   const [exportSource, setExportSource] = useState<ExportSource | null>(null);
   const [showExport, setShowExport] = useState(false);
-  const [mapPinCount, setMapPinCount] = useState(0);
+  const [_mapPinCount, setMapPinCount] = useState(0);
 
   const viewTypeList = STANDARD_VIEW_KEYS.map((k) => `'${k}'`).join(',');
 
@@ -325,8 +315,8 @@ export function HomeScreen({ navigation }: Props) {
       setStats({ totalObjects: totalRow?.count ?? 0, totalPhotos: photoRow?.count ?? 0, storageBytes: storageRow?.total ?? 0 });
       setObjects(objRows);
       setCollections(collRows);
-      try { const r = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) as c FROM map_pins WHERE object_id IS NOT NULL'); setMapPinCount(r?.c ?? 0); } catch {}
-    } catch {} finally { setLoading(false); }
+      try { const r = await db.getFirstAsync<{ c: number }>('SELECT COUNT(*) as c FROM map_pins WHERE object_id IS NOT NULL'); setMapPinCount(r?.c ?? 0); } catch { /* table may not exist */ }
+    } catch { /* silently ignore */ } finally { setLoading(false); }
   }, [db, viewTypeList]);
 
   useFocusEffect(useCallback(() => { setLoading(true); loadData(); }, [loadData]));
@@ -357,7 +347,7 @@ export function HomeScreen({ navigation }: Props) {
       {/* ── Glassmorphism header ── */}
       <View style={st.header}>
         <Image
-          source={require('../../assets/images/register-logo.png')}
+          source={LOGO_IMAGE}
           style={{ width: 120, height: 44 }}
           resizeMode="contain"
         />

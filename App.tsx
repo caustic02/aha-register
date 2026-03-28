@@ -65,14 +65,14 @@ class AppErrorBoundary extends React.Component<
 
 function App() {
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.root}>
         <AppErrorBoundary>
           <StatusBar style="light" />
           <AppShell />
         </AppErrorBoundary>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

@@ -106,7 +106,7 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
   const editValueRef = useRef('');
 
   // Pulse animation for loading
-  const pulseAnim = useRef(new Animated.Value(0.3)).current;
+  const [pulseAnim] = useState(() => new Animated.Value(0.3));
 
   useEffect(() => {
     if (!loading) return;
