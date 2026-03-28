@@ -291,6 +291,11 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE media ADD COLUMN ocr_source TEXT NOT NULL DEFAULT 'none'`,
   // media: view inventory for guided capture (D1)
   `ALTER TABLE media ADD COLUMN view_type TEXT`,
+  // media: per-view dimensions and notes for Registerbogen multi-view capture
+  `ALTER TABLE media ADD COLUMN view_dimensions TEXT`,
+  `ALTER TABLE media ADD COLUMN view_notes TEXT`,
+  // media: Supabase Storage path for cloud-synced photos
+  `ALTER TABLE media ADD COLUMN storage_path TEXT`,
   // media: capture protocol shot tracking
   `ALTER TABLE media ADD COLUMN shot_type TEXT`,
   `ALTER TABLE media ADD COLUMN protocol_id TEXT`,
@@ -300,6 +305,48 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE objects ADD COLUMN protocol_complete INTEGER DEFAULT 0`,
   `ALTER TABLE objects ADD COLUMN shots_completed TEXT DEFAULT '[]'`,
   `ALTER TABLE objects ADD COLUMN shots_remaining TEXT DEFAULT '[]'`,
+  // objects: location tagging
+  `ALTER TABLE objects ADD COLUMN location_building TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_floor TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_room TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_shelf TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_notes TEXT`,
+];
+
+/**
+ * Tables created via runMigrations (not in SCHEMA_SQL).
+ * Uses CREATE TABLE IF NOT EXISTS so safe on re-launch.
+ */
+const MIGRATION_TABLES = [
+  `CREATE TABLE IF NOT EXISTS object_tasks (
+    id          TEXT PRIMARY KEY,
+    object_id   TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+    title       TEXT NOT NULL,
+    completed   INTEGER DEFAULT 0,
+    sort_order  INTEGER DEFAULT 0,
+    created_at  TEXT DEFAULT (datetime('now')),
+    completed_at TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS floor_maps (
+    id            TEXT PRIMARY KEY,
+    name          TEXT NOT NULL,
+    building      TEXT,
+    floor         TEXT,
+    image_uri     TEXT NOT NULL,
+    image_width   INTEGER,
+    image_height  INTEGER,
+    created_at    TEXT DEFAULT (datetime('now')),
+    updated_at    TEXT DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS map_pins (
+    id            TEXT PRIMARY KEY,
+    floor_map_id  TEXT NOT NULL REFERENCES floor_maps(id) ON DELETE CASCADE,
+    object_id     TEXT REFERENCES objects(id) ON DELETE SET NULL,
+    x_percent     REAL NOT NULL,
+    y_percent     REAL NOT NULL,
+    label         TEXT,
+    created_at    TEXT DEFAULT (datetime('now'))
+  )`,
 ];
 
 /**
@@ -314,6 +361,14 @@ export async function runMigrations(
       await db.execAsync(sql);
     } catch {
       // Column already exists — expected on re-launch, safe to ignore
+    }
+  }
+  // Create new tables (IF NOT EXISTS is safe)
+  for (const sql of MIGRATION_TABLES) {
+    try {
+      await db.execAsync(sql);
+    } catch {
+      // Table already exists — safe to ignore
     }
   }
 }

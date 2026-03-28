@@ -61,7 +61,24 @@ export type ViewType =
   | 'detail_label'
   | 'overall'
   | 'interior'
-  | 'document_scan';
+  | 'document_scan'
+  // Registerbogen multi-view capture types
+  | 'ansicht_front'
+  | 'ansicht_rechts'
+  | 'ansicht_links'
+  | 'ansicht_hinten'
+  | 'aufsicht'
+  | 'untersicht';
+
+/** Registerbogen 6-view subset used in guided multi-view capture */
+export type RegisterViewType =
+  | 'ansicht_front'
+  | 'ansicht_rechts'
+  | 'ansicht_links'
+  | 'ansicht_hinten'
+  | 'aufsicht'
+  | 'untersicht'
+  | 'detail';
 
 export type TranscriptionStatus = 'none' | 'draft' | 'ai_generated' | 'verified';
 
@@ -211,6 +228,12 @@ export interface RegisterObject {
   protocol_complete?: number;
   shots_completed?: string;
   shots_remaining?: string;
+  // Location tagging
+  location_building?: string | null;
+  location_floor?: string | null;
+  location_room?: string | null;
+  location_shelf?: string | null;
+  location_notes?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -239,6 +262,11 @@ export interface Media {
   ocr_source?: OcrSource;
   // View inventory (D1)
   view_type?: ViewType | null;
+  // Per-view dimensions and notes (Registerbogen multi-view)
+  view_dimensions?: string | null;
+  view_notes?: string | null;
+  // Supabase Storage path for cloud-synced photos
+  storage_path?: string | null;
   // Capture protocol shot tracking
   shot_type?: string | null;
   protocol_id?: string | null;
@@ -385,6 +413,38 @@ export interface SyncQueueItem {
   retry_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ObjectTask {
+  id: string;
+  object_id: string;
+  title: string;
+  completed: number; // 0 or 1
+  sort_order: number;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface FloorMap {
+  id: string;
+  name: string;
+  building: string | null;
+  floor: string | null;
+  image_uri: string;
+  image_width: number | null;
+  image_height: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MapPin {
+  id: string;
+  floor_map_id: string;
+  object_id: string | null;
+  x_percent: number;
+  y_percent: number;
+  label: string | null;
+  created_at: string;
 }
 
 export interface CaptureProtocolRow {

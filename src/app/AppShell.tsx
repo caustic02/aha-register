@@ -7,7 +7,7 @@ import i18n from 'i18next';
 
 import { initDatabase } from '../db/database';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
-import { MainTabs } from '../navigation/MainTabs';
+import { RootStack } from '../navigation/RootStack';
 import { SyncStatusBar } from '../components/SyncStatusBar';
 import { getSetting, setSetting, SETTING_KEYS } from '../services/settingsService';
 import { getSession, onAuthStateChange } from '../services/auth';
@@ -26,14 +26,14 @@ export default function AppShell() {
   const [authChecked, setAuthChecked] = useState(false);
   const syncEngineRef = useRef<SyncEngine | null>(null);
   const appStateRef = useRef(AppState.currentState);
-  const [mainTabsKey, setMainTabsKey] = useState(0);
+  const [rootKey, setRootKey] = useState(0);
 
   useEffect(() => {
     if (!authenticated) return;
 
     const sub = AppState.addEventListener('change', (next) => {
       if (appStateRef.current === 'background' && next === 'active') {
-        setMainTabsKey((k) => k + 1);
+        setRootKey((k) => k + 1);
       }
       appStateRef.current = next;
     });
@@ -161,7 +161,7 @@ export default function AppShell() {
       ) : (
         <NavigationContainer>
           <SyncStatusBar />
-          <MainTabs key={mainTabsKey} />
+          <RootStack key={rootKey} />
         </NavigationContainer>
       )}
     </DatabaseProvider>

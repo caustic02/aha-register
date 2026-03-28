@@ -7,6 +7,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,12 +15,14 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
+import { useSettings } from '../hooks/useSettings';
 import { File } from 'expo-file-system';
 import { deleteObject, updateReviewStatus } from '../services/objectService';
 import {
   launchDocumentScanner,
   processDocumentScan,
   extractTextOnDevice,
+  extractTextFromCloud,
 } from '../services/documentScanService';
 import type { CaptureMetadata } from '../services/metadata';
 import {
@@ -46,6 +49,8 @@ import {
 import { colors, radii, spacing, touch, typography } from '../theme';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { ImageViewer } from '../components/ImageViewer';
+import { VideoPlayer } from '../components/VideoPlayer';
+import { Play } from 'lucide-react-native';
 import { AIFieldBadge } from '../components/AIFieldBadge';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
@@ -56,12 +61,18 @@ import { SyncBadge } from '../components/SyncBadge';
 import { useObjectDocuments } from '../hooks/useObjectDocuments';
 import { getProtocol, type CaptureProtocol } from '../config/protocols';
 import { CheckIcon } from '../theme/icons';
-
-import type { HomeStackParamList } from '../navigation/HomeStack';
+import { Camera, QrCode } from 'lucide-react-native';
+import { VIEW_TYPES, STANDARD_VIEW_TYPES } from '../constants/viewTypes';
+import type { RegisterViewType } from '../db/types';
+import type { RootStackParamList } from '../navigation/RootStack';
+import { LocationPicker } from '../components/LocationPicker';
+import { ObjectChecklist } from '../components/ObjectChecklist';
+import { Map as MapIcon } from 'lucide-react-native';
+import type { MapPin as MapPinType, FloorMap } from '../db/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'ObjectDetail'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'ObjectDetail'>;
 
 interface PersonRow extends ObjectPerson {
   name: string;
@@ -114,6 +125,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const { objectId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
+  const { collectionDomain } = useSettings();
 
   const [object, setObject] = useState<RegisterObject | null>(null);
   const [media, setMedia] = useState<Media[]>([]);
@@ -123,7 +135,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [showExportModal, setShowExportModal] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [viewerUri, setViewerUri] = useState<string | null>(null);
+  const [videoPlayerUri, setVideoPlayerUri] = useState<string | null>(null);
   const [showTechnical, setShowTechnical] = useState(false);
+
+  // Tab navigation for multi-view capture
+  // Single stack - no tab nav needed
 
   // Document scans for this object
   const {
@@ -134,6 +150,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   // Per-object sync status
   const syncStatusMap = useSyncStatuses([objectId]);
   const objectSyncStatus = syncStatusMap.get(objectId) ?? 'synced';
+
+  // Map pin for this object
+  const [mapPinInfo, setMapPinInfo] = useState<{ mapName: string; mapId: string } | null>(null);
 
   // ── Data loading ────────────────────────────────────────────────────────────
 
@@ -166,6 +185,21 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       setObject(obj ?? null);
       setMedia(mediaRows);
       setPersons(personRows);
+
+      // Check for map pin (best-effort, don't fail if table doesn't exist yet)
+      try {
+        const pinRow = await db.getFirstAsync<{ map_id: string; map_name: string }>(
+          `SELECT fm.id as map_id, fm.name as map_name
+           FROM map_pins mp
+           JOIN floor_maps fm ON fm.id = mp.floor_map_id
+           WHERE mp.object_id = ?
+           LIMIT 1`,
+          [objectId],
+        );
+        setMapPinInfo(pinRow ? { mapName: pinRow.map_name, mapId: pinRow.map_id } : null);
+      } catch {
+        setMapPinInfo(null);
+      }
     } catch {
       setError(t('common.error'));
     } finally {
@@ -250,17 +284,14 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       const file = new File(pm.file_path);
       const imageBase64 = await file.base64();
 
-      // Navigate to AI processing via Capture tab
-      navigation.getParent()?.navigate('Capture', {
-        screen: 'AIProcessing',
-        params: {
-          imageUri: pm.file_path,
-          imageBase64,
-          mimeType: pm.mime_type,
-          captureMetadata: meta,
-          sha256Hash: pm.sha256_hash ?? undefined,
-          existingObjectId: objectId,
-        },
+      // Navigate to AI processing
+      navigation.navigate('AIProcessing', {
+        imageUri: pm.file_path,
+        imageBase64,
+        mimeType: pm.mime_type,
+        captureMetadata: meta,
+        sha256Hash: pm.sha256_hash ?? undefined,
+        existingObjectId: objectId,
       });
     } catch {
       // If anything fails, revert status
@@ -316,25 +347,63 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       );
 
       // 3. Run on-device OCR on the deskewed image
+      let ocrSuccess = false;
       try {
-        await extractTextOnDevice(
+        const result = await extractTextOnDevice(
           db,
           record.rawMediaId,
           record.deskewedFilePath,
         );
-        Alert.alert(t('capture.ocr_complete'));
-      } catch {
-        Alert.alert(t('capture.ocr_failed'));
+        if (result.text.trim().length > 0) {
+          ocrSuccess = true;
+          Alert.alert(t('capture.ocr_complete'));
+        }
+      } catch (onDeviceErr) {
+        console.error(
+          '[OCR] On-device OCR failed, attempting cloud fallback:',
+          onDeviceErr instanceof Error ? onDeviceErr.message : String(onDeviceErr),
+        );
       }
 
-      // 4. Refresh the documents list
+      // 4. Cloud fallback — if on-device OCR failed or returned empty text
+      if (!ocrSuccess) {
+        try {
+          console.log('[OCR] Trying cloud OCR fallback via ocr-enhance Edge Function...');
+          const cloudResult = await extractTextFromCloud(
+            db,
+            record.rawMediaId,
+            record.deskewedFilePath,
+            collectionDomain,
+          );
+          if (cloudResult.text.trim().length > 0) {
+            ocrSuccess = true;
+            Alert.alert(t('capture.ocr_complete'));
+          }
+        } catch (cloudErr) {
+          console.error(
+            '[OCR] Cloud OCR fallback also failed:',
+            cloudErr instanceof Error ? cloudErr.message : String(cloudErr),
+          );
+        }
+      }
+
+      // 5. Show meaningful error if both failed
+      if (!ocrSuccess) {
+        Alert.alert(t('capture.ocr_failed_detailed'));
+      }
+
+      // 6. Refresh the documents list
       await refreshDocuments();
-    } catch {
+    } catch (err) {
+      console.error(
+        '[OCR] Document scan flow error:',
+        err instanceof Error ? err.message : String(err),
+      );
       Alert.alert(t('common.error'));
     } finally {
       setScanning(false);
     }
-  }, [db, objectId, t, refreshDocuments]);
+  }, [db, objectId, t, refreshDocuments, collectionDomain]);
 
   // ── Derived data for export (must be before early returns) ──────────────────
 
@@ -455,6 +524,16 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   );
   const primaryMedia = media.find((m) => m.is_primary === 1) ?? media[0];
 
+  const isVideoMedia = (m: Media) => m.file_type === 'video' || m.mime_type.startsWith('video/');
+
+  const handleMediaTap = (m: Media) => {
+    if (isVideoMedia(m)) {
+      setVideoPlayerUri(m.file_path);
+    } else {
+      setViewerUri(m.file_path);
+    }
+  };
+
   // Parse AI metadata from type_specific_data JSON
   const extras: Record<string, unknown> = (() => {
     try {
@@ -472,6 +551,22 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const aiCultureOrigin = typeof extras.cultureOrigin === 'string' ? extras.cultureOrigin : null;
   const aiCondition = typeof extras.condition === 'string' ? extras.condition : null;
   const aiKeywords = Array.isArray(extras.keywords) ? (extras.keywords as string[]).join(', ') : null;
+
+  // Device metadata stored at capture time
+  const deviceData =
+    extras.device != null && typeof extras.device === 'object'
+      ? (extras.device as Record<string, string>)
+      : null;
+  const captureDeviceLabel =
+    deviceData != null
+      ? [deviceData.manufacturer, deviceData.model].filter(Boolean).join(' ')
+      : null;
+  const captureOs = deviceData?.os ?? null;
+  const captureAppVersion = deviceData?.appVersion ?? null;
+  const captureDeviceId =
+    deviceData?.deviceId != null
+      ? `${deviceData.deviceId.slice(0, 8)}…`
+      : null;
 
   // Protocol data (fields added in Phase 1 as optional on RegisterObject)
   const protocolId = object.protocol_id;
@@ -535,6 +630,22 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* ── IDENTIFICATION (top, per museum workflow) ─────────────────── */}
+        <Card style={styles.card}>
+          <SectionHeader title={t('quickId.title')} />
+          <MetadataRow label={t('objects.title')} value={object.title} />
+          <MetadataRow
+            label={t('objects.object_type')}
+            value={typeLabel}
+          />
+          {object.inventory_number != null && (
+            <MetadataRow
+              label={t('objects.inventory_number')}
+              value={object.inventory_number}
+            />
+          )}
+        </Card>
+
         {/* ── 2. IMAGE GALLERY ─────────────────────────────────────────────── */}
         {media.length > 0 && mediaGrouped ? (
           /* Grouped gallery for protocol objects */
@@ -551,7 +662,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                     <Pressable
                       key={m.id}
                       style={styles.galleryItem}
-                      onPress={() => setViewerUri(m.file_path)}
+                      onPress={() => handleMediaTap(m)}
                       accessibilityRole="button"
                       accessibilityLabel={
                         m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
@@ -562,6 +673,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                         style={styles.galleryImage}
                         resizeMode="cover"
                       />
+                      {isVideoMedia(m) && (
+                        <View style={styles.videoPlayOverlay}>
+                          <Play size={18} color={colors.white} fill={colors.white} />
+                        </View>
+                      )}
                       {m.is_primary === 1 && (
                         <View style={styles.primaryPip} />
                       )}
@@ -583,7 +699,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                 <Pressable
                   key={m.id}
                   style={styles.galleryItem}
-                  onPress={() => setViewerUri(m.file_path)}
+                  onPress={() => handleMediaTap(m)}
                   accessibilityRole="button"
                   accessibilityLabel={
                     m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
@@ -594,6 +710,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                     style={styles.galleryImage}
                     resizeMode="cover"
                   />
+                  {isVideoMedia(m) && (
+                    <View style={styles.videoPlayOverlay}>
+                      <Play size={18} color={colors.white} fill={colors.white} />
+                    </View>
+                  )}
                   {m.is_primary === 1 && (
                     <View style={styles.primaryPip} />
                   )}
@@ -602,6 +723,131 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             </ScrollView>
           </View>
         ) : null}
+
+        {/* ── MULTI-VIEW GALLERY (Registerbogen) ──────────────────────────── */}
+        <View style={styles.viewGallerySection}>
+          <SectionHeader title={t('view_checklist.title')} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.viewGalleryContent}
+          >
+            {VIEW_TYPES.map((viewDef) => {
+              const captured = media.find(
+                (m) => m.view_type === viewDef.key && m.media_type !== 'derivative_isolated',
+              );
+              return (
+                <Pressable
+                  key={viewDef.key}
+                  style={[
+                    styles.viewGalleryItem,
+                    captured ? styles.viewGalleryItemCaptured : styles.viewGalleryItemEmpty,
+                  ]}
+                  onPress={() => {
+                    if (captured) {
+                      setViewerUri(captured.file_path);
+                    } else {
+                      navigation.navigate('CaptureCamera', {
+                        viewType: viewDef.key as RegisterViewType,
+                        objectId: object.id,
+                      });
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(viewDef.labelKey)}
+                >
+                  {captured ? (
+                    <>
+                      <Image
+                        source={{ uri: captured.file_path }}
+                        style={styles.viewGalleryImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.viewGalleryCheck}>
+                        <CheckIcon size={12} color={colors.white} />
+                      </View>
+                    </>
+                  ) : (
+                    <Camera size={20} color={colors.textTertiary} />
+                  )}
+                  <Text
+                    style={[
+                      styles.viewGalleryLabel,
+                      captured && styles.viewGalleryLabelCaptured,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {t(viewDef.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          {/* Per-view dimension inputs for captured views */}
+          {media
+            .filter((m) => m.view_type && VIEW_TYPES.some((v) => v.key === m.view_type))
+            .map((m) => (
+              <View key={m.id} style={styles.viewDimensionRow}>
+                <Text style={styles.viewDimensionLabel}>
+                  {t(`view_types.${m.view_type}`)} - {t('view_checklist.dimensions_label')}
+                </Text>
+                <TextInput
+                  style={styles.viewDimensionInput}
+                  placeholder={t('view_checklist.dimensions_placeholder')}
+                  placeholderTextColor={colors.textTertiary}
+                  defaultValue={m.view_dimensions ?? ''}
+                  onEndEditing={(e) => {
+                    const val = e.nativeEvent.text.trim();
+                    db.runAsync(
+                      `UPDATE media SET view_dimensions = ?, updated_at = ? WHERE id = ?`,
+                      [val || null, new Date().toISOString(), m.id],
+                    ).then(() => {
+                      import('../sync/engine').then(({ SyncEngine: SE }) => {
+                        new SE(db).queueChange('media', m.id, 'update', { view_dimensions: val || null });
+                      });
+                    }).catch(() => {});
+                  }}
+                />
+                {m.view_type === 'detail' && (
+                  <>
+                    <Text style={[styles.viewDimensionLabel, { marginTop: spacing.sm }]}>
+                      {t('view_checklist.notes_label')}
+                    </Text>
+                    <TextInput
+                      style={styles.viewDimensionInput}
+                      placeholder={t('view_checklist.notes_placeholder')}
+                      placeholderTextColor={colors.textTertiary}
+                      defaultValue={m.view_notes ?? ''}
+                      multiline
+                      onEndEditing={(e) => {
+                        const val = e.nativeEvent.text.trim();
+                        db.runAsync(
+                          `UPDATE media SET view_notes = ?, updated_at = ? WHERE id = ?`,
+                          [val || null, new Date().toISOString(), m.id],
+                        ).then(() => {
+                          import('../sync/engine').then(({ SyncEngine: SE }) => {
+                            new SE(db).queueChange('media', m.id, 'update', { view_notes: val || null });
+                          });
+                        }).catch(() => {});
+                      }}
+                    />
+                  </>
+                )}
+              </View>
+            ))}
+        </View>
+
+        {/* ── ADD VIDEO BUTTON ─────────────────────────────────────────────── */}
+        <Pressable
+          style={styles.addVideoBtn}
+          onPress={() => navigation.navigate('VideoRecord', { objectId: object.id })}
+          accessibilityRole="button"
+          accessibilityLabel={t('objectDetail.addVideo')}
+        >
+          <Play size={18} color={colors.heroGreen} />
+          <Text style={styles.addVideoBtnText}>{t('objectDetail.addVideo')}</Text>
+        </Pressable>
 
         <Divider />
 
@@ -907,9 +1153,84 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                   variant="stacked"
                 />
               )}
+              {captureDeviceLabel != null && (
+                <MetadataRow
+                  label={t('objectDetail.deviceDevice')}
+                  value={captureDeviceLabel}
+                  variant="stacked"
+                />
+              )}
+              {captureOs != null && (
+                <MetadataRow
+                  label={t('objectDetail.deviceOs')}
+                  value={captureOs}
+                  variant="stacked"
+                />
+              )}
+              {captureAppVersion != null && (
+                <MetadataRow
+                  label={t('objectDetail.appVersion')}
+                  value={captureAppVersion}
+                  variant="stacked"
+                />
+              )}
+              {captureDeviceId != null && (
+                <MetadataRow
+                  label={t('objectDetail.deviceId')}
+                  value={captureDeviceId}
+                  variant="stacked"
+                />
+              )}
             </>
           )}
         </Card>
+
+        {/* ── 8. LOCATION ──────────────────────────────────────────────────── */}
+        <Divider />
+        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
+          <LocationPicker
+            objectId={object.id}
+            initialBuilding={object.location_building}
+            initialFloor={object.location_floor}
+            initialRoom={object.location_room}
+            initialShelf={object.location_shelf}
+            initialNotes={object.location_notes}
+          />
+        </View>
+
+        {/* ── 8b. LOCATION ON MAP ─────────────────────────────────────────── */}
+        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
+          <Pressable
+            style={styles.mapLinkCard}
+            onPress={() =>
+              navigation.navigate('FloorMap', mapPinInfo
+                ? { objectId: object.id, mapId: mapPinInfo.mapId }
+                : { objectId: object.id })
+            }
+            accessibilityRole="button"
+            accessibilityLabel={mapPinInfo ? 'View on map' : 'Place on map'}
+          >
+            <MapIcon size={18} color={colors.heroGreen} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.mapLinkTitle}>
+                {mapPinInfo ? `Placed on ${mapPinInfo.mapName}` : 'Place on map'}
+              </Text>
+              <Text style={styles.mapLinkSub}>
+                {mapPinInfo ? 'View on floor map' : 'Pin this object to a floor plan'}
+              </Text>
+            </View>
+            <ForwardIcon size={16} color={colors.textTertiary} />
+          </Pressable>
+        </View>
+
+        {/* ── 9. CHECKLIST ───────────────────────────────────────────────────── */}
+        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
+          <ObjectChecklist
+            objectId={object.id}
+            viewCount={media.filter((m) => m.view_type && STANDARD_VIEW_TYPES.some((v) => v.key === m.view_type)).length}
+            hasAI={!!(object.description && object.title && object.title !== 'Untitled')}
+          />
+        </View>
 
         {/* Bottom spacer for fixed action bar */}
         <View style={{ height: ACTION_BAR_HEIGHT + spacing.xl }} />
@@ -934,6 +1255,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             accessibilityLabel={t('isolation.isolate')}
           />
         )}
+        <IconButton
+          icon={<QrCode size={22} color={colors.text} />}
+          onPress={() => navigation.navigate('QRCode', { objectId })}
+          accessibilityLabel="QR Code"
+        />
         <View style={styles.actionSpacer} />
         <IconButton
           icon={<DeleteIcon size={22} color={colors.error} />}
@@ -953,6 +1279,12 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         visible={!!viewerUri}
         imageUri={viewerUri ?? ''}
         onClose={() => setViewerUri(null)}
+      />
+
+      <VideoPlayer
+        visible={!!videoPlayerUri}
+        videoUri={videoPlayerUri ?? ''}
+        onClose={() => setVideoPlayerUri(null)}
       />
     </SafeAreaView>
   );
@@ -1039,6 +1371,132 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: radii.full,
     backgroundColor: colors.primary,
+  },
+  // ── Multi-view gallery (Registerbogen) ──────────────────────────────────────
+  viewGallerySection: {
+    marginBottom: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  viewGalleryContent: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+    paddingBottom: spacing.sm,
+  },
+  viewGalleryItem: {
+    width: 88,
+    height: 104,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  viewGalleryItemCaptured: {
+    borderWidth: 2,
+    borderColor: colors.success,
+  },
+  viewGalleryItemEmpty: {
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+  },
+  viewGalleryImage: {
+    width: '100%',
+    height: 76,
+  },
+  viewGalleryCheck: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  viewGalleryLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 2,
+    paddingHorizontal: 2,
+  },
+  viewGalleryLabelCaptured: {
+    color: colors.success,
+    fontWeight: typography.weight.semibold,
+  },
+  viewDimensionRow: {
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+  },
+  viewDimensionLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  viewDimensionInput: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    ...typography.bodySmall,
+    color: colors.text,
+    minHeight: touch.minTargetSmall,
+  },
+
+  addVideoBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 1.5,
+    borderColor: colors.heroGreen,
+    borderRadius: radii.lg,
+    minHeight: touch.minTarget,
+  },
+  addVideoBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.heroGreen,
+  },
+  // Map link card
+  mapLinkCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: touch.minTarget,
+  },
+  mapLinkTitle: {
+    fontSize: 13,
+    fontWeight: typography.weight.semibold,
+    color: colors.text,
+  },
+  mapLinkSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  // eslint-disable-next-line react-native/no-color-literals
+  videoPlayOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Sync status row
   syncBadgeRow: {

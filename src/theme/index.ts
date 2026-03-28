@@ -108,6 +108,18 @@ export const colors = {
   ctaSurface: 'rgba(30, 45, 61, 0.06)',
   ctaBorder: 'rgba(30, 45, 61, 0.18)',
 
+  // ── Home V2 palette ────────────────────────────────────────────────────
+  heroGreen: '#2D5A27',
+  surfaceMuted: '#F2F2EE',
+  amber: '#D4A017',
+  borderCard: '#E8E8E4',
+  purpleLight: '#EDE9FE',
+  purple: '#5B21B6',
+  greenLight: '#D1FAE5',
+  greenDark: '#065F46',
+  brownDark: '#92400E',
+  blueDark: '#1E40AF',
+
   // ── Utility ──────────────────────────────────────────────────────────────
   white: '#FFFFFF',
   black: '#000000',
@@ -118,6 +130,7 @@ export const colors = {
   skeletonHighlight: brand.colors.surface,
   transparent: 'transparent',
   camera: '#111111',
+  cameraBg: '#0D0D0D',
 
   // ── Legacy aliases (all now derive from brand) ──
   textPrimary: brand.colors.text,

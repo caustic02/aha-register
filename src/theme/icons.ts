@@ -81,6 +81,13 @@ export { ShieldCheck as ConditionIcon } from 'lucide-react-native';
 export { FileText as DocumentScanIcon } from 'lucide-react-native';
 export { ScanLine as ScanIcon } from 'lucide-react-native';
 
+// ── Home V2 icons ────────────────────────────────────────────────────────────
+export { Sparkles as AiSparklesIcon } from 'lucide-react-native';
+export { HardDrive as StorageIcon } from 'lucide-react-native';
+
+// ── Placeholder icons ────────────────────────────────────────────────────────
+export { Camera as CameraIcon } from 'lucide-react-native';
+
 // ── Status icons ──────────────────────────────────────────────────────────────
 export { RefreshCw as SyncIcon } from 'lucide-react-native';
 export { WifiOff as OfflineIcon } from 'lucide-react-native';

@@ -40,6 +40,18 @@ export async function createDraftObject(
   const privacyTier =
     (await getSetting(db, SETTING_KEYS.DEFAULT_PRIVACY_TIER)) ?? 'public';
 
+  // 2c. Build device metadata for type_specific_data
+  const deviceData: Record<string, string> = {};
+  if (params.metadata.deviceModel != null) deviceData.model = params.metadata.deviceModel;
+  if (params.metadata.deviceManufacturer != null) deviceData.manufacturer = params.metadata.deviceManufacturer;
+  if (params.metadata.osName != null && params.metadata.osVersion != null) {
+    deviceData.os = `${params.metadata.osName} ${params.metadata.osVersion}`;
+  }
+  if (params.metadata.appVersion != null) deviceData.appVersion = params.metadata.appVersion;
+  if (params.metadata.deviceId != null) deviceData.deviceId = params.metadata.deviceId;
+
+  const typeSpecificData = JSON.stringify({ device: deviceData });
+
   // 3-6. All database writes in a single transaction.
   // If any INSERT fails, the entire capture rolls back cleanly.
   const normalizedFileType = normalizeFileType(params.mimeType);
@@ -50,8 +62,8 @@ export async function createDraftObject(
       `INSERT INTO objects
          (id, object_type, status, title, latitude, longitude, altitude,
           coordinate_accuracy, coordinate_source, privacy_tier,
-          legal_hold, created_at, updated_at)
-       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+          type_specific_data, legal_hold, created_at, updated_at)
+       VALUES (?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
       [
         objectId,
         params.objectType ?? 'museum_object',
@@ -62,6 +74,7 @@ export async function createDraftObject(
         params.metadata.accuracy ?? null,
         params.metadata.coordinateSource ?? null,
         privacyTier,
+        typeSpecificData,
         now,
         now,
       ],
@@ -96,7 +109,9 @@ export async function createDraftObject(
       newValues: { objectId, mediaId, sha256 },
       deviceInfo: {
         model: params.metadata.deviceModel,
-        os: params.metadata.osVersion,
+        os: params.metadata.osName != null && params.metadata.osVersion != null
+          ? `${params.metadata.osName} ${params.metadata.osVersion}`
+          : params.metadata.osVersion,
         app: params.metadata.appVersion,
       },
     });

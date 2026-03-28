@@ -7,6 +7,8 @@ import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import { getSetting, SETTING_KEYS } from './settingsService';
 import type { Media } from '../db/types';
+import { uploadAndRecordStoragePath } from './storage-upload';
+import { supabase } from './supabase';
 
 /**
  * Returns all media rows for an object, ordered by is_primary DESC, sort_order ASC.
@@ -108,6 +110,15 @@ export async function addMediaToObject(
       mediaId,
     });
   });
+
+  // Fire-and-forget: upload to Supabase Storage in background
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user?.id) {
+      uploadAndRecordStoragePath(
+        db, mediaId, destUri, session.user.id, objectId, ext,
+      ).catch(() => {});
+    }
+  }).catch(() => {});
 
   // Return the inserted record
   const inserted = await db.getFirstAsync<Media>(

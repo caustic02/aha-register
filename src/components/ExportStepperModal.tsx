@@ -33,6 +33,7 @@ import {
   DocumentScanIcon,
   ListViewIcon,
 } from '../theme/icons';
+import { FileText, Zap, Archive, Table, Code } from 'lucide-react-native';
 import { colors, radii, spacing, typography, touch, shadows } from '../theme';
 import type { ExportableObject } from '../services/export-service';
 import { exportAsJSON, exportAsCSV, exportAsPDF } from '../services/export-service';
@@ -74,6 +75,86 @@ const OBJECT_PDF_STEPS: ObjectStep[] = [
   'images',
   'content',
   'preview',
+];
+
+// ── Export presets ───────────────────────────────────────────────────────────
+
+interface ExportPreset {
+  id: string;
+  nameKey: string;
+  subtitleKey: string;
+  icon: React.ComponentType<{ size: number; color: string }>;
+  format: ExportFormat;
+  template: ExportTier | null;
+  imageSelection: 'primary' | 'all' | 'none';
+  allSectionsOn: boolean;
+  sectionOverrides?: Record<string, boolean>;
+  showAiBadges: boolean;
+  includeBranding: boolean;
+}
+
+const EXPORT_PRESETS: ExportPreset[] = [
+  {
+    id: 'registerbogen',
+    nameKey: 'export.preset_registerbogen',
+    subtitleKey: 'export.preset_registerbogen_sub',
+    icon: FileText,
+    format: 'pdf_datasheet',
+    template: 'standard',
+    imageSelection: 'all',
+    allSectionsOn: true,
+    showAiBadges: true,
+    includeBranding: true,
+  },
+  {
+    id: 'quick',
+    nameKey: 'export.preset_quick',
+    subtitleKey: 'export.preset_quick_sub',
+    icon: Zap,
+    format: 'pdf_datasheet',
+    template: 'quick',
+    imageSelection: 'primary',
+    allSectionsOn: false,
+    sectionOverrides: { identification: true, physical: true, condition: true },
+    showAiBadges: false,
+    includeBranding: true,
+  },
+  {
+    id: 'full_archive',
+    nameKey: 'export.preset_full_archive',
+    subtitleKey: 'export.preset_full_archive_sub',
+    icon: Archive,
+    format: 'pdf_datasheet',
+    template: 'detailed',
+    imageSelection: 'all',
+    allSectionsOn: true,
+    showAiBadges: true,
+    includeBranding: true,
+  },
+  {
+    id: 'inventory_csv',
+    nameKey: 'export.preset_inventory_csv',
+    subtitleKey: 'export.preset_inventory_csv_sub',
+    icon: Table,
+    format: 'csv',
+    template: null,
+    imageSelection: 'none',
+    allSectionsOn: true,
+    showAiBadges: false,
+    includeBranding: false,
+  },
+  {
+    id: 'digital_handover',
+    nameKey: 'export.preset_digital_handover',
+    subtitleKey: 'export.preset_digital_handover_sub',
+    icon: Code,
+    format: 'json',
+    template: null,
+    imageSelection: 'none',
+    allSectionsOn: true,
+    showAiBadges: false,
+    includeBranding: false,
+  },
 ];
 
 // ── Step indicator ──────────────────────────────────────────────────────────
@@ -225,6 +306,7 @@ function ObjectExportFlow({
   const [progress, setProgress] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [activePreset, setActivePreset] = useState<string | null>(null);
 
   const { data } = source;
   const media = data.media;
@@ -254,6 +336,7 @@ function ObjectExportFlow({
     setError(null);
     setDone(false);
     setProgress('');
+    setActivePreset(null);
   }, [reset]);
 
   // Step index for indicator
@@ -292,6 +375,33 @@ function ObjectExportFlow({
       setStep('images');
     },
     [applyTemplate, media],
+  );
+
+  const handlePresetSelect = useCallback(
+    (preset: ExportPreset) => {
+      setActivePreset(preset.id);
+      setFormat(preset.format);
+
+      // Apply template for PDF presets (sets image selection + section defaults)
+      if (preset.template) {
+        applyTemplate(preset.template, media, 'general');
+      }
+
+      // Override section toggles based on preset
+      if (!preset.allSectionsOn && preset.sectionOverrides) {
+        for (const cat of domain.fieldCategories) {
+          const shouldBeOn = preset.sectionOverrides[cat.id] ?? false;
+          toggleCategoryFields(cat.id, shouldBeOn);
+        }
+      }
+
+      setFlag('showAiBadges', preset.showAiBadges);
+      setFlag('includeBranding', preset.includeBranding);
+
+      // All presets jump to preview — user taps "Generate" to execute
+      setStep('preview');
+    },
+    [setFormat, applyTemplate, media, domain, toggleCategoryFields, setFlag],
   );
 
   const goBack = useCallback(() => {
@@ -405,7 +515,7 @@ function ObjectExportFlow({
       {/* Step content */}
       <View style={styles.content}>
         {step === 'format' && (
-          <FormatStep onSelect={handleFormatSelect} t={t} />
+          <FormatStep onSelect={handleFormatSelect} onPreset={handlePresetSelect} t={t} />
         )}
         {step === 'template' && (
           <TemplateStep
@@ -446,6 +556,7 @@ function ObjectExportFlow({
           <PreviewStep
             config={config}
             imageCount={config.selectedImageIds.length}
+            presetId={activePreset}
             t={t}
           />
         )}
@@ -506,10 +617,12 @@ function ObjectExportFlow({
 
 function FormatStep({
   onSelect,
+  onPreset,
   t,
 }: {
   onSelect: (f: ExportFormat) => void;
-  t: (k: string) => string;
+  onPreset: (p: ExportPreset) => void;
+  t: (k: string, opts?: Record<string, unknown>) => string;
 }) {
   const formats: { key: ExportFormat; icon: React.ReactNode; title: string; desc: string }[] = [
     {
@@ -540,6 +653,39 @@ function FormatStep({
 
   return (
     <ScrollView contentContainerStyle={styles.stepPad}>
+      {/* Quick presets */}
+      <Text style={styles.presetSectionTitle}>{t('export.presets_title')}</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.presetRow}
+        style={styles.presetScroll}
+      >
+        {EXPORT_PRESETS.map((p) => {
+          const Icon = p.icon;
+          return (
+            <Pressable
+              key={p.id}
+              style={({ pressed }) => [
+                styles.presetCard,
+                pressed && styles.presetCardPressed,
+              ]}
+              onPress={() => onPreset(p)}
+              accessibilityRole="button"
+              accessibilityLabel={t(p.nameKey)}
+            >
+              <Icon size={20} color={colors.primary} />
+              <Text style={styles.presetName} numberOfLines={1}>
+                {t(p.nameKey)}
+              </Text>
+              <Text style={styles.presetSub} numberOfLines={1}>
+                {t(p.subtitleKey)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
       <Text style={styles.stepHeading}>{t('export.step_format')}</Text>
       <View style={styles.cardList}>
         {formats.map((f) => (
@@ -985,19 +1131,33 @@ const cs = StyleSheet.create({
 function PreviewStep({
   config,
   imageCount,
+  presetId,
   t,
 }: {
   config: ReturnType<typeof useExportConfig>['config'];
   imageCount: number;
-  t: (k: string) => string;
+  presetId: string | null;
+  t: (k: string, opts?: Record<string, unknown>) => string;
 }) {
   const activeSections = Object.entries(config.sections)
     .filter(([, v]) => v)
     .map(([k]) => k);
 
+  const presetDef = presetId
+    ? EXPORT_PRESETS.find((p) => p.id === presetId)
+    : null;
+
   return (
     <ScrollView contentContainerStyle={styles.stepPad}>
       <Text style={styles.stepHeading}>{t('export.step_preview')}</Text>
+
+      {presetDef && (
+        <View style={styles.presetBanner}>
+          <Text style={styles.presetBannerText}>
+            {t('export.preset_banner', { name: t(presetDef.nameKey) })}
+          </Text>
+        </View>
+      )}
 
       {/* Simplified PDF preview diagram */}
       <View style={styles.previewPage}>
@@ -1560,6 +1720,60 @@ const styles = StyleSheet.create({
     ...typography.h3,
     color: colors.text,
     marginBottom: spacing.lg,
+  },
+  // ── Preset row ──
+  presetSectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: spacing.sm,
+  },
+  presetScroll: {
+    marginBottom: spacing.xl,
+    marginHorizontal: -spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  presetRow: {
+    gap: 10,
+    paddingRight: spacing.lg,
+  },
+  presetCard: {
+    width: 120,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    padding: spacing.md,
+    alignItems: 'flex-start',
+  },
+  presetCardPressed: {
+    backgroundColor: colors.surface,
+  },
+  presetName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+    marginTop: spacing.sm,
+  },
+  presetSub: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  presetBanner: {
+    backgroundColor: colors.infoLight,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  presetBannerText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.primary,
+    textAlign: 'center',
   },
   cardList: {
     gap: spacing.sm,

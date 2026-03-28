@@ -1,4 +1,6 @@
 import * as Location from 'expo-location';
+import * as Device from 'expo-device';
+import * as Application from 'expo-application';
 import { Platform } from 'react-native';
 
 export interface CaptureMetadata {
@@ -9,11 +11,12 @@ export interface CaptureMetadata {
   coordinateSource?: 'exif' | 'gps_hardware';
   timestamp?: string;
   deviceModel?: string;
+  deviceManufacturer?: string;
+  deviceId?: string;
+  osName?: string;
   osVersion?: string;
-  appVersion: string;
+  appVersion?: string;
 }
-
-const APP_VERSION = '0.1.0';
 
 /**
  * Extract metadata from EXIF data and, if GPS is missing, attempt a live
@@ -23,12 +26,28 @@ export async function extractMetadata(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   exif: Record<string, any> | null,
 ): Promise<CaptureMetadata> {
-  const meta: CaptureMetadata = {
-    appVersion: APP_VERSION,
-    deviceModel: `${Platform.OS} device`,
-    osVersion: `${Platform.OS} ${Platform.Version}`,
-  };
+  const meta: CaptureMetadata = {};
 
+  // ── Device info ──────────────────────────────────────────────────────────────
+  meta.deviceModel = Device.modelName ?? `${Platform.OS} device`;
+  meta.deviceManufacturer =
+    Device.manufacturer ?? (Platform.OS === 'ios' ? 'Apple' : undefined);
+  meta.osName = Device.osName ?? Platform.OS;
+  meta.osVersion = Device.osVersion ?? String(Platform.Version);
+  meta.appVersion = Application.nativeApplicationVersion ?? undefined;
+
+  // Device unique ID (IDFV on iOS, androidId on Android)
+  try {
+    if (Platform.OS === 'ios') {
+      meta.deviceId = (await Application.getIosIdForVendorAsync()) ?? undefined;
+    } else {
+      meta.deviceId = Application.getAndroidId() ?? undefined;
+    }
+  } catch {
+    // deviceId is optional — continue without it
+  }
+
+  // ── GPS / EXIF ────────────────────────────────────────────────────────────────
   // Try EXIF GPS first
   if (exif) {
     const lat = exif.GPSLatitude as number | undefined;

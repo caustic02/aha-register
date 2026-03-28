@@ -3,7 +3,8 @@ import * as Network from 'expo-network';
 import { supabase } from './supabase';
 import { getSetting, setSetting } from './settingsService';
 import { generateId } from '../utils/uuid';
-import type { SyncQueueItem } from '../db/types';
+import type { SyncQueueItem, Media } from '../db/types';
+import { uploadMediaToStorage } from './storage-upload';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -189,7 +190,21 @@ export class SyncTransport {
     }
 
     // INSERT or UPDATE — upsert for idempotency
-    const payload = item.payload ? JSON.parse(item.payload) : {};
+    let payload = item.payload ? JSON.parse(item.payload) : {};
+
+    // For media rows, read the FULL local record so all columns
+    // (view_type, view_dimensions, view_notes, storage_path) get pushed
+    if (table === 'media') {
+      const fullRow = await this.db.getFirstAsync<Record<string, unknown>>(
+        `SELECT * FROM media WHERE id = ?`,
+        [item.record_id],
+      );
+      if (fullRow) {
+        payload = { ...fullRow, ...payload };
+        // Strip local-only file_path (device path, not useful in cloud)
+        // but keep storage_path which is the cloud reference
+      }
+    }
 
     // Add cloud-only columns
     if (table === 'institutions' && institutionId) {
@@ -228,6 +243,37 @@ export class SyncTransport {
       .upsert(payload, { onConflict: 'id' });
 
     if (error) throw new Error(error.message);
+
+    // For media rows: upload the actual file to Supabase Storage if not yet uploaded
+    if (table === 'media' && (item.action === 'insert' || item.action === 'update')) {
+      const localPath = payload.file_path as string | undefined;
+      const existingStoragePath = payload.storage_path as string | undefined;
+      const objectId = payload.object_id as string | undefined;
+
+      if (localPath && !existingStoragePath && objectId && userId) {
+        const ext = (payload.mime_type as string)?.split('/')[1] ?? 'jpg';
+        const storagePath = await uploadMediaToStorage(
+          localPath,
+          userId,
+          objectId,
+          item.record_id,
+          ext,
+        );
+        if (storagePath) {
+          const now = new Date().toISOString();
+          // Update local SQLite
+          await this.db.runAsync(
+            `UPDATE media SET storage_path = ?, updated_at = ? WHERE id = ?`,
+            [storagePath, now, item.record_id],
+          );
+          // Update cloud record
+          await supabase
+            .from('media')
+            .update({ storage_path: storagePath, updated_at: now })
+            .eq('id', item.record_id);
+        }
+      }
+    }
   }
 
   // ── Pull ─────────────────────────────────────────────────────────────────

@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { File } from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
+import { Download, Share2 } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
@@ -100,6 +103,7 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
       setPhase('compare');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[BG-REMOVAL] UI caught error:', msg);
       if (msg === 'OFFLINE') {
         setErrorMsg(t('isolation.offlineError'));
       } else if (msg === 'QUOTA_EXHAUSTED') {
@@ -108,9 +112,10 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
         const parts = msg.split(':');
         const status = parts[1];
         const detail = parts.slice(2).join(':');
-        setErrorMsg(`${t('isolation.failed')} (${status}: ${detail})`);
+        console.error('[BG-REMOVAL] API error detail:', status, detail);
+        setErrorMsg(t('isolation.failedHint'));
       } else {
-        setErrorMsg(t('isolation.failed'));
+        setErrorMsg(t('isolation.failedHint'));
       }
       setPhase('error');
     }
@@ -170,6 +175,43 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
     Alert.alert(t('isolation.backgroundRemoved'));
     navigation.goBack();
   }, [navigation, t]);
+
+  // ── Save to device gallery ──────────────────────────────────────────────────
+
+  const handleSaveToDevice = useCallback(async () => {
+    if (!result) return;
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(t('isolation.permissionNeeded'));
+        return;
+      }
+      await MediaLibrary.saveToLibraryAsync(result.filePath);
+      Alert.alert(t('isolation.savedToGallery'));
+    } catch (err) {
+      console.error('[BG-REMOVAL] Save to gallery failed:', err);
+      Alert.alert(t('common.error'));
+    }
+  }, [result, t]);
+
+  // ── Share isolated image ────────────────────────────────────────────────────
+
+  const handleShare = useCallback(async () => {
+    if (!result) return;
+    try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert(t('common.error'));
+        return;
+      }
+      await Sharing.shareAsync(result.filePath, {
+        mimeType: 'image/png',
+        UTI: 'public.png',
+      });
+    } catch (err) {
+      console.error('[BG-REMOVAL] Share failed:', err);
+    }
+  }, [result, t]);
 
   // ── Processing phase ────────────────────────────────────────────────────────
 
@@ -273,6 +315,8 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
 
       {/* Image compare area */}
       <View style={styles.imageContainer}>
+        {/* White background visible behind the isolated (transparent) PNG */}
+        {activeTab === 'isolated' && <View style={styles.whiteBackdrop} />}
         {originalUri && (
           <Animated.Image
             source={{ uri: originalUri }}
@@ -330,6 +374,28 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
             >
               {t('isolation.isolated')}
             </Text>
+          </Pressable>
+        </View>
+
+        {/* Save / Share row */}
+        <View style={styles.utilRow}>
+          <Pressable
+            style={styles.utilBtn}
+            onPress={handleSaveToDevice}
+            accessibilityRole="button"
+            accessibilityLabel={t('isolation.saveToDevice')}
+          >
+            <Download size={18} color={colors.white} />
+            <Text style={styles.utilText}>{t('isolation.saveToDevice')}</Text>
+          </Pressable>
+          <Pressable
+            style={styles.utilBtn}
+            onPress={handleShare}
+            accessibilityRole="button"
+            accessibilityLabel={t('isolation.share')}
+          >
+            <Share2 size={18} color={colors.white} />
+            <Text style={styles.utilText}>{t('isolation.share')}</Text>
           </Pressable>
         </View>
 
@@ -400,6 +466,13 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  // White background behind isolated PNG for better viewing
+  whiteBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#FFFFFF',
+    margin: spacing.lg,
+    borderRadius: radii.lg,
+  },
   // Processing overlay
   // eslint-disable-next-line react-native/no-color-literals
   processingOverlay: {
@@ -449,7 +522,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay,
     borderRadius: radii.full,
     padding: 2,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   segmentBtn: {
     flex: 1,
@@ -469,6 +542,24 @@ const styles = StyleSheet.create({
   },
   segmentTextActive: {
     color: colors.text,
+  },
+  // Save / Share utility row
+  utilRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  utilBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  utilText: {
+    ...typography.bodySmall,
+    color: colors.white,
   },
   actionRow: {
     flexDirection: 'row',

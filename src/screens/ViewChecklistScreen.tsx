@@ -1,0 +1,404 @@
+import React, { useCallback, useState } from 'react';
+import {
+  Dimensions,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useDatabase } from '../contexts/DatabaseContext';
+import { useAppTranslation } from '../hooks/useAppTranslation';
+import { colors, spacing, radii, typography, shadows, touch } from '../theme';
+import { CheckIcon, BackIcon } from '../theme/icons';
+import {
+  Eye,
+  ChevronRight,
+  ChevronLeft,
+  ArrowLeft,
+  ArrowDown,
+  ArrowUp,
+  Search,
+  Camera,
+} from 'lucide-react-native';
+import { VIEW_TYPES, type ViewTypeDefinition } from '../constants/viewTypes';
+import type { RegisterViewType } from '../db/types';
+import type { RootStackParamList } from '../navigation/RootStack';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'ViewChecklist'>;
+
+interface CapturedView {
+  viewType: RegisterViewType;
+  mediaId: string;
+  filePath: string;
+}
+
+// Map icon names to components
+const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string; strokeWidth?: number }>> = {
+  'eye': Eye,
+  'chevron-right': ChevronRight,
+  'chevron-left': ChevronLeft,
+  'arrow-left': ArrowLeft,
+  'arrow-down': ArrowDown,
+  'arrow-up': ArrowUp,
+  'search': Search,
+};
+
+function ViewIcon({ iconName, size, color }: { iconName: string; size: number; color: string }) {
+  const Icon = ICON_MAP[iconName];
+  if (!Icon) return null;
+  return <Icon size={size} color={color} strokeWidth={1.5} />;
+}
+
+export function ViewChecklistScreen({ route, navigation }: Props) {
+  const { objectId } = route.params;
+  const db = useDatabase();
+  const { t } = useAppTranslation();
+  // No tab nav needed - single stack
+
+  const [objectTitle, setObjectTitle] = useState<string | null>(null);
+  const [capturedViews, setCapturedViews] = useState<CapturedView[]>([]);
+
+  // Load object title and captured views on focus
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+
+      (async () => {
+        // Get object title
+        const obj = await db.getFirstAsync<{ title: string }>(
+          `SELECT title FROM objects WHERE id = ?`,
+          [objectId],
+        );
+        if (!cancelled && obj) setObjectTitle(obj.title);
+
+        // Get captured views for this object
+        const rows = await db.getAllAsync<{
+          id: string;
+          view_type: string;
+          file_path: string;
+        }>(
+          `SELECT id, view_type, file_path FROM media WHERE object_id = ? AND view_type IS NOT NULL AND media_type = 'original'`,
+          [objectId],
+        );
+        if (!cancelled) {
+          setCapturedViews(
+            rows.map((r) => ({
+              viewType: r.view_type as RegisterViewType,
+              mediaId: r.id,
+              filePath: r.file_path,
+            })),
+          );
+        }
+      })();
+
+      return () => { cancelled = true; };
+    }, [db, objectId]),
+  );
+
+  const isCaptured = useCallback(
+    (key: RegisterViewType) => capturedViews.some((v) => v.viewType === key),
+    [capturedViews],
+  );
+
+  const getThumbnail = useCallback(
+    (key: RegisterViewType) => capturedViews.find((v) => v.viewType === key),
+    [capturedViews],
+  );
+
+  const handleCardPress = useCallback(
+    (viewDef: ViewTypeDefinition) => {
+      if (isCaptured(viewDef.key)) return; // Already captured, no action
+      // Navigate to CaptureScreen with viewType param
+      navigation.navigate('CaptureCamera', { viewType: viewDef.key, objectId });
+    },
+    [navigation, objectId, isCaptured],
+  );
+
+  const handleDone = useCallback(() => {
+    navigation.navigate('ObjectDetail', { objectId });
+  }, [navigation, objectId]);
+
+  const handleBack = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate('Home');
+    }
+  }, [navigation]);
+
+  const subtitle = objectTitle
+    ? t('view_checklist.subtitle_with_title', { title: objectTitle })
+    : t('view_checklist.subtitle_default');
+
+  // Only show the 6 standard views in the grid (exclude detail for now, show as separate button)
+  const standardViews = VIEW_TYPES.filter((v) => v.key !== 'detail');
+  const detailView = VIEW_TYPES.find((v) => v.key === 'detail')!;
+  const capturedCount = capturedViews.length;
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable
+          onPress={handleBack}
+          style={styles.backButton}
+          hitSlop={touch.hitSlop}
+          accessibilityLabel={t('common.back')}
+        >
+          <BackIcon size={24} color={colors.text} />
+        </Pressable>
+        <View style={styles.headerText}>
+          <Text style={styles.title}>{t('view_checklist.title')}</Text>
+          <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
+        </View>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Progress indicator */}
+        <View style={styles.progressRow}>
+          <Text style={styles.progressText}>
+            {capturedCount} / {VIEW_TYPES.length}
+          </Text>
+        </View>
+
+        {/* 6-view grid (2 columns, 3 rows) */}
+        <View style={styles.grid}>
+          {standardViews.map((viewDef) => {
+            const captured = isCaptured(viewDef.key);
+            const thumb = getThumbnail(viewDef.key);
+            return (
+              <Pressable
+                key={viewDef.key}
+                style={[styles.card, captured && styles.cardCaptured]}
+                onPress={() => handleCardPress(viewDef)}
+                accessibilityLabel={t(viewDef.labelKey)}
+                accessibilityHint={
+                  captured ? t('view_checklist.captured') : t('view_checklist.not_captured')
+                }
+              >
+                {captured && thumb ? (
+                  <Image source={{ uri: thumb.filePath }} style={styles.thumbnail} />
+                ) : (
+                  <View style={styles.iconContainer}>
+                    <ViewIcon iconName={viewDef.icon} size={28} color={colors.textSecondary} />
+                  </View>
+                )}
+                <View style={styles.cardLabel}>
+                  <Text
+                    style={[styles.cardLabelText, captured && styles.cardLabelTextCaptured]}
+                    numberOfLines={1}
+                  >
+                    {t(viewDef.labelKey)}
+                  </Text>
+                  {captured && (
+                    <CheckIcon size={16} color={colors.success} />
+                  )}
+                </View>
+                {!captured && (
+                  <View style={styles.cameraHint}>
+                    <Camera size={14} color={colors.textTertiary} />
+                  </View>
+                )}
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {/* Detail photo button */}
+        <Pressable
+          style={[styles.detailButton, isCaptured('detail') && styles.detailButtonCaptured]}
+          onPress={() => handleCardPress(detailView)}
+          accessibilityLabel={t('view_checklist.add_detail')}
+        >
+          <ViewIcon iconName="search" size={20} color={isCaptured('detail') ? colors.success : colors.textSecondary} />
+          <Text style={[styles.detailButtonText, isCaptured('detail') && styles.detailButtonTextCaptured]}>
+            {isCaptured('detail') ? t('view_types.detail') : t('view_checklist.add_detail')}
+          </Text>
+          {isCaptured('detail') && <CheckIcon size={16} color={colors.success} />}
+        </Pressable>
+      </ScrollView>
+
+      {/* Done button */}
+      <View style={styles.footer}>
+        <Pressable
+          style={styles.doneButton}
+          onPress={handleDone}
+          accessibilityLabel={t('view_checklist.done')}
+        >
+          <Text style={styles.doneButtonText}>{t('view_checklist.done')}</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+const CARD_GAP = spacing.md;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - CARD_GAP) / 2;
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  backButton: {
+    width: touch.minTarget,
+    height: touch.minTarget,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerText: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  title: {
+    ...typography.h3,
+    color: colors.text,
+  },
+  subtitle: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.lg,
+    paddingBottom: spacing['2xl'],
+  },
+  progressRow: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  progressText: {
+    ...typography.label,
+    color: colors.textSecondary,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: CARD_GAP,
+  },
+  card: {
+    width: CARD_WIDTH,
+    aspectRatio: 1,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radii.lg,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...shadows.sm,
+  },
+  cardCaptured: {
+    borderStyle: 'solid',
+    borderColor: colors.success,
+    borderWidth: 2,
+  },
+  thumbnail: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: radii.lg - 2,
+  },
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardLabel: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  cardLabelText: {
+    ...typography.bodySmall,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  cardLabelTextCaptured: {
+    color: colors.success,
+    fontWeight: typography.weight.semibold,
+  },
+  cameraHint: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+  },
+  detailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.surfaceElevated,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    minHeight: touch.minTarget,
+  },
+  detailButtonCaptured: {
+    borderStyle: 'solid',
+    borderColor: colors.success,
+  },
+  detailButtonText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  detailButtonTextCaptured: {
+    color: colors.success,
+    fontWeight: typography.weight.semibold,
+  },
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+  },
+  doneButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: touch.minTarget,
+  },
+  doneButtonText: {
+    ...typography.bodyMedium,
+    color: colors.textInverse,
+  },
+});

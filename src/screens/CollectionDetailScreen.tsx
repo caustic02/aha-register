@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+// Bottom tabs removed - using single stack
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { FieldInput } from '../components/FieldInput';
@@ -29,11 +29,10 @@ import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBa
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
 import { BackIcon } from '../theme/icons';
 import { CollectionPickerModal } from '../components/CollectionPickerModal';
-import type { CollectionStackParamList } from '../navigation/CollectionStack';
-import type { MainTabParamList } from '../navigation/MainTabs';
+import type { RootStackParamList } from '../navigation/RootStack';
 import { colors, typography, spacing, radii, layout, touch } from '../theme';
 
-type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionDetail'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'CollectionDetail'>;
 
 export function CollectionDetailScreen({ route, navigation }: Props) {
   const { collectionId } = route.params;
@@ -126,12 +125,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
 
   const navigateToObject = useCallback(
     (objectId: string) => {
-      const tabNav =
-        navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
-      tabNav?.navigate('Home', {
-        screen: 'ObjectDetail',
-        params: { objectId },
-      });
+      navigation.navigate('ObjectDetail', { objectId });
     },
     [navigation],
   );
