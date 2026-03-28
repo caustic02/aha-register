@@ -1,9 +1,24 @@
 # aha! Register — Navigation Architecture
 
-> Last updated: 2026-03-18
+> Last updated: 2026-03-28
 > Status: ACTIVE
 
-React Navigation v6 with a bottom-tab root and per-tab native stacks.
+React Navigation v6. Architecture is migrating from bottom-tab to single flat RootStack (see `src/navigation/RootStack.tsx`). Tab files still exist but RootStack is the active navigator.
+
+## Quick-ID Screen (added 2026-03-28)
+
+New screen in capture flow: `QuickIDScreen` sits between "Capture New Object" CTA and `CaptureScreen`. Museum workflow: identify object (title + accession number) before photographing.
+
+**Flow:** `Home` CTA → `QuickID` → `CaptureCamera` (with objectId) → AI/Review
+**Skip path:** `QuickID` skip link → `CaptureCamera` (no objectId, existing behavior)
+
+**Params:**
+- `QuickID: undefined` (no params)
+- `CaptureCamera: { viewType?: RegisterViewType; objectId?: string }` (objectId now also set by QuickID)
+
+**CaptureScreen changes:** When `objectId` is present, shows a green title pill in the top bar (instead of domain pill) so the user knows which object they are documenting.
+
+**ObjectDetailScreen changes:** Identification section (title, type, inventory number) moved to top of scroll body, above image gallery.
 
 ---
 

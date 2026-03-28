@@ -1,7 +1,15 @@
 # State of the Art: Capture System
 
-> Last updated: 2026-03-21
+> Last updated: 2026-03-28
 > Status: ACTIVE
+
+## Quick-ID Pre-Capture (added 2026-03-28)
+
+New `QuickIDScreen` (`src/screens/QuickIDScreen.tsx`) sits before `CaptureScreen` in the capture flow. Museum registrars enter title (Bezeichnung) and optional accession number (Inventarnummer) before photographing. The object record is created in SQLite with `status: 'draft'` before the camera opens.
+
+When `objectId` is passed to `CaptureScreen`, a green title pill replaces the domain pill in the camera top bar, confirming which object the user is documenting.
+
+Skip path preserved: users who prefer capture-first can skip QuickID and get the existing anonymous-capture behavior.
 
 ## What This Is
 The capture system is Register's core differentiator. It records objects/sites/incidents with SHA-256 tamper-evidence hashing at the moment of photo capture. This makes Register records legally admissible under the Berkeley Protocol and ICC standards.
