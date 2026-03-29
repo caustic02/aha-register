@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.semibold,
   },
   doneText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },

@@ -821,7 +821,7 @@ export function CaptureScreen() {
   if (phase === 'extracting') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.spinnerText}>{t('capture.securing')}</Text>
       </View>
     );
@@ -830,7 +830,7 @@ export function CaptureScreen() {
   if (phase === 'saving') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.spinnerText}>{t('capture.save_draft')}...</Text>
       </View>
     );
@@ -1746,12 +1746,12 @@ const styles = StyleSheet.create({
 
   // ── Spinners / done ──────────────────────────────────────────────────────────
   spinnerText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.md,
     marginTop: spacing.lg,
   },
   checkmark: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: spacing['4xl'],
     marginBottom: spacing.lg,
   },
@@ -1791,7 +1791,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   introBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.heroGreen,
     borderRadius: radii.md,
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.md,

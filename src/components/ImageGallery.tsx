@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     color: colors.border,
   },
   addText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
     marginTop: 12,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 32,
     left: 12,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.heroGreen,
     width: 36,
     height: 36,
     borderRadius: radii.xl,
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   dotActive: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.heroGreen,
     width: 8,
     height: 8,
     borderRadius: radii.sm,

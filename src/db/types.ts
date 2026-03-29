@@ -234,6 +234,51 @@ export interface RegisterObject {
   location_room?: string | null;
   location_shelf?: string | null;
   location_notes?: string | null;
+  // Registerbogen fields (companion app parity)
+  mediaId?: string | null;
+  alte_inventarnummer?: string | null;
+  klassifikation?: string | null;
+  material?: string | null;
+  technik?: string | null;
+  masse_hoehe?: string | null;
+  masse_breite?: string | null;
+  masse_tiefe?: string | null;
+  masse_einheit?: string | null;
+  gewicht?: string | null;
+  gewicht_einheit?: string | null;
+  inschriften?: string | null;
+  markierungen?: string | null;
+  schlagworte?: string | null;
+  erhaltungszustand?: string | null;
+  zustandsbeschreibung?: string | null;
+  letzter_zustandsbericht?: string | null;
+  restaurierungsbedarf?: string | null;
+  erwerbungsart?: string | null;
+  erwerbungsdatum?: string | null;
+  veraeusserer?: string | null;
+  provenienzangaben?: string | null;
+  belastete_provenienz?: number;
+  belastete_provenienz_notizen?: string | null;
+  erwerbungspreis?: string | null;
+  erwerbungspreis_waehrung?: string | null;
+  standort_gebaeude?: string | null;
+  standort_etage?: string | null;
+  standort_raum?: string | null;
+  standort_regal?: string | null;
+  standort_hinweise?: string | null;
+  aktueller_status?: string | null;
+  versicherungswert?: string | null;
+  versicherungswert_waehrung?: string | null;
+  versicherungspolice?: string | null;
+  leihgabe?: number;
+  leihgabe_nehmer?: string | null;
+  leihgabe_von?: string | null;
+  leihgabe_bis?: string | null;
+  ausfuhrgenehmigung?: number;
+  ausfuhrgenehmigung_referenz?: string | null;
+  datensatz_sprache?: string | null;
+  verwahrende_einrichtung?: string | null;
+  nutzungsrechte_metadaten?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -276,6 +321,8 @@ export interface Media {
   license_type?: LicenseType | null;
   license_uri?: string | null;
   usage_restrictions?: string | null;
+  // Companion app parity
+  alt_text?: string | null;
 }
 
 export interface Annotation {

@@ -62,8 +62,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   badgeActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.heroGreen,
+    borderColor: colors.heroGreen,
   },
   badgeText: {
     color: colors.textSecondary,

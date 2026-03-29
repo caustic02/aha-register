@@ -5,8 +5,8 @@
  * Every component imports from here. No hardcoded colors, font sizes,
  * spacing, or radii in component files. If a value isn't here, it doesn't exist.
  *
- * Updated: 2026-03-19
- * Palette: Navy / Brass / Parchment
+ * Updated: 2026-03-29
+ * Palette: Navy / Green accent / Parchment
  * Spec: docs/state-of-the-art/DESIGN-SYSTEM.md
  */
 
@@ -17,7 +17,7 @@ import { Platform } from 'react-native';
 export const brand = {
   colors: {
     primary: '#1E2D3D',      // navy — buttons, headers, tab bar, primary actions
-    accent: '#C4975A',        // brass — active tab, trust badges, verified indicators
+    accent: '#2D5A27',        // primary interactive green (canonical)
     background: '#F5F2EB',    // parchment — screen backgrounds
     surface: '#EDEAE3',       // input fields, card backgrounds
     secondaryText: '#6B7B8D', // slate — muted labels, captions
@@ -46,9 +46,11 @@ export const colors = {
   primaryContainer: 'rgba(30, 45, 61, 0.10)',
 
   // ── Accent (active tab, trust badges, verified indicators) ────────────────
+  // accent = primary interactive color (buttons, links, active states). Must be green.
   accent: brand.colors.accent,
-  accentLight: '#F5EDE0',
-  accentDark: '#9A7642',
+  accentLight: '#E8F0E6',
+  accentDark: '#1F3F1C',
+  heroGreen: brand.colors.accent, // alias — canonical interactive green is `accent`
 
   // ── Secondary (tags, filters, less prominent UI) ─────────────────────────
   secondary: brand.colors.secondaryText,
@@ -109,16 +111,18 @@ export const colors = {
   ctaBorder: 'rgba(30, 45, 61, 0.18)',
 
   // ── Home V2 palette ────────────────────────────────────────────────────
-  heroGreen: '#2D5A27',
   surfaceMuted: '#F2F2EE',
-  amber: '#D4A017',
+  amber: '#D4A017', // AI Review / warning-adjacent UI only (pencil icon); not the primary accent
   borderCard: '#E8E8E4',
   purpleLight: '#EDE9FE',
   purple: '#5B21B6',
   greenLight: '#D1FAE5',
   greenDark: '#065F46',
-  brownDark: '#92400E',
+  brownDark: '#92400E', // AI Review muted label text; not primary accent
   blueDark: '#1E40AF',
+
+  // ── Header ──────────────────────────────────────────────────────────────
+  headerBg: '#1E3E1B',
 
   // ── Utility ──────────────────────────────────────────────────────────────
   white: '#FFFFFF',

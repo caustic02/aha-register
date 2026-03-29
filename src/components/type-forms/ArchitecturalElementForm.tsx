@@ -96,7 +96,7 @@ export default function ArchitecturalElementForm({ data, onChange, t }: TypeForm
             setLoadBearing(val);
             save({ load_bearing: val });
           }}
-          trackColor={{ false: colors.border, true: colors.accent }}
+          trackColor={{ false: colors.border, true: colors.heroGreen }}
           thumbColor={colors.white}
         />
       </View>

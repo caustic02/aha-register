@@ -74,7 +74,7 @@ const secStyles = StyleSheet.create({
     gap: 8,
   },
   badge: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.heroGreen,
     borderRadius: radii.md,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -380,7 +380,7 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               setDimensionsVerified(v);
               onChange({ ...data, dimensions_verified: v });
             }}
-            trackColor={{ false: colors.border, true: colors.accent }}
+            trackColor={{ false: colors.border, true: colors.heroGreen }}
             thumbColor={colors.white}
           />
         </View>
@@ -491,7 +491,7 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               setPermanentLoan(v);
               onChange({ ...data, permanent_loan: v });
             }}
-            trackColor={{ false: colors.border, true: colors.accent }}
+            trackColor={{ false: colors.border, true: colors.heroGreen }}
             thumbColor={colors.white}
           />
         </View>

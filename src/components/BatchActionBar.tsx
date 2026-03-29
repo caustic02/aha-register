@@ -56,7 +56,7 @@ const hStyles = StyleSheet.create({
     fontWeight: typography.weight.semibold,
   },
   selectAllText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.md,
     fontWeight: typography.weight.medium,
   },
@@ -95,7 +95,7 @@ export function BatchActionButtons({
         disabled={disabled || exporting}
       >
         {exporting ? (
-          <ActivityIndicator size="small" color={colors.accent} />
+          <ActivityIndicator size="small" color={colors.heroGreen} />
         ) : (
           <Text style={aStyles.actionIcon}>{'\u2197'}</Text>
         )}
@@ -137,11 +137,11 @@ const aStyles = StyleSheet.create({
     opacity: 0.4,
   },
   actionIcon: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.lg,
   },
   actionText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
     textAlign: 'center',

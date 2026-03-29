@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   cardRecommended: {
-    borderColor: colors.accent,
+    borderColor: colors.heroGreen,
     borderWidth: 2,
   },
   cardPressed: {
@@ -171,14 +171,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   recommendedBadge: {
-    backgroundColor: colors.accentLight,
+    backgroundColor: colors.successLight,
     borderRadius: radii.sm,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
   },
   recommendedText: {
     ...typography.caption,
-    color: colors.accentDark,
+    color: colors.success,
     fontWeight: typography.weight.semibold,
   },
   cardDesc: {

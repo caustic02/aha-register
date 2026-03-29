@@ -124,7 +124,7 @@ export function CollectionsScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.accent}
+            tintColor={colors.heroGreen}
           />
         }
       />
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radii.xl,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.heroGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   typeBadgeText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },

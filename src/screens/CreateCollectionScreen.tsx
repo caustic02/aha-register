@@ -230,8 +230,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   typeBadgeActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.heroGreen,
+    borderColor: colors.heroGreen,
   },
   typeBadgeText: {
     color: colors.textSecondary,

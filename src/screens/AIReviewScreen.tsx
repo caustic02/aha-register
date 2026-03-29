@@ -333,7 +333,7 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
             accessibilityRole="button"
             hitSlop={touch.hitSlop}
           >
-            <ChevronLeft size={20} color="#1A1A1A" />
+            <ChevronLeft size={20} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>{t('aiReview.title')}</Text>
           <View style={{ width: 40 }} />
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#1A1A1A',
+    color: colors.text,
   },
 
   // Photo
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   fieldsSectionTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#999999',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: spacing.sm,
@@ -626,20 +626,20 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#999999',
+    color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.44,
   },
   fieldValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1A1A1A',
+    color: colors.text,
     marginTop: 2,
   },
   fieldInput: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1A1A1A',
+    color: colors.text,
     marginTop: 2,
     padding: 0,
     borderBottomWidth: 1,

@@ -85,7 +85,7 @@ export default function IncidentForm({ data, onChange, t }: TypeFormProps) {
             setLawEnforcement(val);
             save({ law_enforcement_notified: val });
           }}
-          trackColor={{ false: colors.border, true: colors.accent }}
+          trackColor={{ false: colors.border, true: colors.heroGreen }}
           thumbColor={colors.white}
         />
       </View>

@@ -214,7 +214,7 @@ export function VideoRecordScreen({ route, navigation }: Props) {
   if (!camPerm?.granted || !micPerm?.granted) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.permText}>{t('capture.permission_title')}</Text>
       </View>
     );
@@ -223,7 +223,7 @@ export function VideoRecordScreen({ route, navigation }: Props) {
   if (saving) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.permText}>{t('common.loading')}</Text>
       </View>
     );

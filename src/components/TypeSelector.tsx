@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     padding: 18,
   },
   cardHighlighted: {
-    borderColor: colors.accent,
+    borderColor: colors.heroGreen,
     backgroundColor: colors.border,
   },
   cardHeader: {
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
   },
   defaultBadgeText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
   skipBtn: {
     borderWidth: 1,
-    borderColor: colors.accent,
+    borderColor: colors.heroGreen,
     marginHorizontal: 20,
     marginBottom: 40,
     borderRadius: radii.lg,
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   skipBtnText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },

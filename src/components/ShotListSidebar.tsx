@@ -17,7 +17,7 @@ import {
 import { X } from 'lucide-react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { CaptureProtocol } from '../config/protocols';
-import { typography, spacing, radii, touch } from '../theme';
+import { colors, typography, spacing, radii, touch } from '../theme';
 
 // ── Camera-safe overlay colours ──────────────────────────────────────────────
 const SIDEBAR_BG = 'rgba(0,0,0,0.85)';
@@ -27,9 +27,9 @@ const ITEM_ACTIVE = 'rgba(255,255,255,0.18)';
 const ITEM_TRANSPARENT = 'rgba(0,0,0,0)';
 const TEXT_WHITE = '#FFFFFF';
 const TEXT_DIM = 'rgba(255,255,255,0.6)';
-const BADGE_DONE = '#2E7D32';
-const BADGE_SKIPPED = '#E65100';
-const BADGE_REQUIRED = '#A32D2D';
+const BADGE_DONE = colors.success;
+const BADGE_SKIPPED = colors.textSecondary;
+const BADGE_REQUIRED = colors.error;
 const BADGE_OPTIONAL = 'rgba(255,255,255,0.3)';
 
 const SIDEBAR_WIDTH = 280;

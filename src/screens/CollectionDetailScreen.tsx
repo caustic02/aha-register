@@ -543,7 +543,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exportBtnText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },
@@ -558,13 +558,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   typeBadge: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceContainer,
     paddingHorizontal: 10,
     paddingVertical: spacing.xs,
     borderRadius: radii.md,
   },
   typeBadgeText: {
-    color: colors.accent,
+    color: colors.textSecondary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold,
   },
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   addObjectsHeaderBtnText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },
@@ -635,8 +635,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   filterChipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.heroGreen,
+    borderColor: colors.heroGreen,
   },
   filterChipText: {
     color: colors.textSecondary,
@@ -663,13 +663,13 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: radii.lg,
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: colors.heroGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.heroGreen,
+    borderColor: colors.heroGreen,
   },
   checkMark: {
     color: colors.background,
@@ -709,13 +709,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   objectBadge: {
-    backgroundColor: colors.border,
+    backgroundColor: colors.surfaceContainer,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.sm,
   },
   objectBadgeText: {
-    color: colors.accent,
+    color: colors.textSecondary,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   addObjectsBtnText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },

@@ -216,13 +216,13 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: radii.sm,
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: colors.heroGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: colors.heroGreen,
+    borderColor: colors.heroGreen,
   },
   checkmark: {
     color: colors.white,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   badgeText: {
-    color: colors.accent,
+    color: colors.heroGreen,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   addBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.heroGreen,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
     alignItems: 'center',

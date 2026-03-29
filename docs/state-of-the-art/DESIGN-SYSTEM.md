@@ -21,6 +21,16 @@ All values live in `src/theme/index.ts`. No hardcoded colors, font sizes, or rad
 | Tertiary / AI | `tertiary` | `#5C6BC0` | 4.6:1 | AI-assisted actions, processing indicators |
 | Tertiary Container | `tertiaryContainer` | `rgba(92,107,192,0.12)` | — | AI section backgrounds |
 
+### Header
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `headerBg` | `#1E3E1B` | Dark forest green header bar background |
+
+Logo: horizontal SVG wordmark (`assets/brand/register-wordmark-white.svg`), rendered as inline `<Svg>` component at 130px width. White paths on dark green header.
+
+The square badge logo is for the app icon and splash screen ONLY — never used in-app UI.
+
 ### Surface Hierarchy
 
 | Token | Hex | Usage |
@@ -440,8 +450,32 @@ Layout: Library (left) | Shutter (center) | Document Scan (right). Visible in bo
 ### Bottom Sheets
 Via `@gorhom/bottom-sheet`. Background: `colors.surface`. Handle indicator: `colors.border`, 36dp wide. Snap points vary by content (e.g., FilterSheet: 40%, 80%). Backdrop: 40% opacity overlay.
 
-### Badges
-Small rounded indicators. Use `accent` bg + white text for counts, `accentLight` bg + accent text for labels.
+### Badges & Status Pills
+
+**Color rule:** NO amber, brass, brown, or orange tones. Only design system tokens.
+
+| Variant | Background | Text | Usage |
+|---------|-----------|------|-------|
+| Neutral (type badge) | `surfaceContainer` (#E6E3DC) | `textSecondary` (#6B7B8D) | Object type labels (Painting, Museum Object, etc.) |
+| Attention (needs work) | `surfaceContainer` (#E6E3DC) | `textSecondary` (#6B7B8D) | "No AI", "5 views missing", unfiled indicators |
+| Success (complete) | `successLight` (#CCFBF1) | `success` (#0F766E) | "AI done", "All views", "Synced" |
+| Danger (error) | `errorLight` (#FADCDC) | `error` (#A32D2D) | Failed sync, required items |
+| Count badge | `warning` (#B45309) bg | white text | Numeric counts (needs attention badge) |
+
+All badges use the same shape: `borderRadius: full`, `paddingHorizontal: 6-10`, `paddingVertical: 2-4`, `fontSize: 10`.
+
+**Forbidden colors in badges/chips:** #FFF8E8, #854F0B, #C4975A, #E65100, #D4A017, or any warm amber/orange/brown tone.
+
+### Filter Chips
+
+| State | Background | Text | Border |
+|-------|-----------|------|--------|
+| Active | `primaryContainer` | `primary` | none |
+| Inactive | `surface` | `textSecondary` | `border` |
+
+### Tool Icons
+
+All tool icons use a single color: `textSecondary` (#6B7B8D) on `surfaceContainer` (#E6E3DC) background. No per-tool distinct colors.
 
 ### Action Bars
 Fixed bottom bars for batch actions. `surface` background, `accent` primary buttons, `danger` destructive buttons.

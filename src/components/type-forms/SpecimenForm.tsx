@@ -64,7 +64,7 @@ export default function SpecimenForm({ data, onChange, t }: TypeFormProps) {
             setGeneticData(val);
             save({ genetic_data_available: val });
           }}
-          trackColor={{ false: colors.border, true: colors.accent }}
+          trackColor={{ false: colors.border, true: colors.heroGreen }}
           thumbColor={colors.white}
         />
       </View>

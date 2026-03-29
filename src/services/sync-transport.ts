@@ -32,11 +32,11 @@ const SYNCABLE_TABLES = [
   'institutions',
   'sites',
   'users',
+  'collections',
   'objects',
   'media',
   'annotations',
   'vocabulary_terms',
-  'collections',
   'object_collections',
   'locations',
   'documents',
@@ -89,7 +89,20 @@ const LOCAL_HAS_USER_ID = new Set([
 // ── Transport ────────────────────────────────────────────────────────────────
 
 export class SyncTransport {
+  private columnCache = new Map<string, Set<string>>();
+
   constructor(private db: SQLiteDatabase) {}
+
+  /** Get the set of column names for a local SQLite table (cached). */
+  private async getLocalColumns(table: string): Promise<Set<string>> {
+    if (this.columnCache.has(table)) return this.columnCache.get(table)!;
+    const rows = await this.db.getAllAsync<{ name: string }>(
+      `PRAGMA table_info(${table})`,
+    );
+    const cols = new Set(rows.map((r) => r.name));
+    this.columnCache.set(table, cols);
+    return cols;
+  }
 
   async isOnline(): Promise<boolean> {
     try {
@@ -110,15 +123,23 @@ export class SyncTransport {
 
   /** Verify session is valid; refresh if expired. Returns user id or null. */
   async ensureSession(): Promise<string | null> {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) return session.user.id;
+    // getUser() forces a server check and triggers token refresh if needed.
+    // getSession() only returns the cached session which may have an expired JWT.
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (user) {
+      if (__DEV__) console.log(`[sync] session verified: user=${user.id.slice(0, 8)}`);
+      return user.id;
+    }
 
-    // Try refresh
+    if (__DEV__) console.warn(`[sync] getUser failed: ${userError?.message ?? 'no user'}, trying refresh`);
+
+    // Explicit refresh as fallback
     const { data, error } = await supabase.auth.refreshSession();
     if (error || !data.session) {
       if (__DEV__) console.warn('[sync] session expired, cannot refresh');
       return null;
     }
+    if (__DEV__) console.log(`[sync] session refreshed: user=${data.session.user.id.slice(0, 8)}`);
     return data.session.user.id;
   }
 
@@ -281,9 +302,16 @@ export class SyncTransport {
   async pullChanges(since: string): Promise<PullResult> {
     const result: PullResult = { inserted: 0, updated: 0, skipped: 0, conflicts: 0 };
 
+    // Ensure we have a valid session — RLS returns 0 rows without auth
+    const userId = await this.ensureSession();
+    if (!userId) {
+      if (__DEV__) console.warn('[sync] pull: no valid session, aborting');
+      return result;
+    }
+    if (__DEV__) console.log(`[sync] pull: session OK (user=${userId.slice(0, 8)}), since=${since}`);
+
     for (const table of SYNCABLE_TABLES) {
       if (table === 'audit_trail') {
-        // Audit trail is append-only, only pull new records
         await this.pullTable(table, since, result, true);
       } else {
         await this.pullTable(table, since, result, false);
@@ -308,17 +336,18 @@ export class SyncTransport {
       query = query.gt('updated_at', since);
     }
 
-    const { data: rows, error } = await query;
+    const { data: rows, error, status, statusText } = await query;
     if (error) {
-      if (__DEV__) console.warn(`[sync] pull ${table} error: ${error.message}`);
+      if (__DEV__) console.warn(`[sync] pull ${table} error: ${error.message} (HTTP ${status})`);
       return;
     }
+    if (__DEV__) console.log(`[sync] pull ${table}: ${rows?.length ?? 0} rows (HTTP ${status} ${statusText ?? ''}, since=${since})`);
     if (!rows || rows.length === 0) return;
 
-    if (__DEV__) console.log(`[sync] pulled ${rows.length} rows from ${table}`);
-
-    for (const remoteRow of rows) {
+    for (let ri = 0; ri < rows.length; ri++) {
+      const remoteRow = rows[ri];
       try {
+        if (__DEV__ && ri < 3) console.log(`[sync] merging ${table}/${(remoteRow.id as string).slice(0, 8)} title=${(remoteRow as Record<string, unknown>).title ?? '—'}`);
         await this.mergeRemoteRow(table, remoteRow, result, appendOnly);
       } catch (err) {
         if (__DEV__) console.warn(`[sync] merge error ${table}/${remoteRow.id}: ${err}`);
@@ -348,10 +377,41 @@ export class SyncTransport {
     if ('legal_hold' in localRow) localRow.legal_hold = localRow.legal_hold ? 1 : 0;
     if ('is_primary' in localRow) localRow.is_primary = localRow.is_primary ? 1 : 0;
 
+    // Provide defaults for NOT NULL columns that might be null in remote data
+    if (table === 'media') {
+      if (!localRow.sha256_hash) localRow.sha256_hash = 'remote';
+      if (!localRow.file_name) localRow.file_name = 'unknown';
+      if (!localRow.file_type) localRow.file_type = 'image';
+      if (!localRow.mime_type) localRow.mime_type = 'image/jpeg';
+      if (!localRow.privacy_tier) localRow.privacy_tier = 'public';
+      if (!localRow.ocr_source) localRow.ocr_source = 'none';
+      if (!localRow.media_type) localRow.media_type = 'original';
+    }
+    if (table === 'objects') {
+      if (!localRow.object_type) localRow.object_type = 'museum_object';
+      if (!localRow.status) localRow.status = 'draft';
+      if (!localRow.title) localRow.title = 'Untitled';
+      if (!localRow.privacy_tier) localRow.privacy_tier = 'public';
+      if (!localRow.review_status) localRow.review_status = 'complete';
+    }
+
     // Stringify jsonb columns for SQLite TEXT storage
     for (const col of ['type_specific_data', 'contact_info', 'device_info', 'evidence_context', 'old_values', 'new_values', 'settings']) {
       if (col in localRow && localRow[col] !== null && typeof localRow[col] === 'object') {
         localRow[col] = JSON.stringify(localRow[col]);
+      }
+    }
+
+    // Filter to only columns that exist in the local SQLite table
+    const localCols = await this.getLocalColumns(table);
+    if (localCols.size > 0) {
+      for (const key of Object.keys(localRow)) {
+        if (!localCols.has(key)) {
+          if (__DEV__ && key !== 'institution_id' && key !== 'user_id') {
+            console.log(`[sync] skipping unknown column ${table}.${key}`);
+          }
+          delete localRow[key];
+        }
       }
     }
 
@@ -372,6 +432,11 @@ export class SyncTransport {
         values,
       );
       result.inserted++;
+
+      // For media: ensure file_path is displayable
+      if (table === 'media') {
+        await this.ensureMediaDisplayPath(id, localRow);
+      }
       return;
     }
 
@@ -380,7 +445,19 @@ export class SyncTransport {
       return;
     }
 
-    // Conflict resolution: last-write-wins by updated_at
+    // Conflict resolution: if local record has a pending push, skip remote
+    const pendingLocal = await this.db.getFirstAsync<{ id: string }>(
+      `SELECT id FROM sync_queue WHERE table_name = ? AND record_id = ? AND status IN ('pending', 'syncing')`,
+      [table, id],
+    );
+    if (pendingLocal) {
+      result.skipped++;
+      result.conflicts++;
+      if (__DEV__) console.log(`[sync] skipping ${table}/${id}: pending local push`);
+      return;
+    }
+
+    // No pending local changes — remote wins if newer
     const remoteUpdated = remoteRow.updated_at as string;
     const localUpdated = existing.updated_at ?? '';
 
@@ -397,6 +474,11 @@ export class SyncTransport {
       );
       result.updated++;
 
+      // For media: ensure file_path is displayable
+      if (table === 'media') {
+        await this.ensureMediaDisplayPath(id, localRow);
+      }
+
       // Log conflict if timestamps differ meaningfully
       if (localUpdated && localUpdated !== remoteUpdated) {
         result.conflicts++;
@@ -409,6 +491,46 @@ export class SyncTransport {
         result.conflicts++;
         await this.logConflict(table, id, 'local_wins', localUpdated, remoteUpdated);
       }
+    }
+  }
+
+  /**
+   * After pulling a media record, ensure file_path is displayable.
+   * - If file_path is already an http(s) URL (e.g. Met CDN), keep it
+   * - If file_path is a local device path from another device, replace
+   *   with Supabase Storage URL from storage_path
+   * - If storage_path exists but file_path is a dead local path, fix it
+   */
+  private async ensureMediaDisplayPath(
+    mediaId: string,
+    row: Record<string, unknown>,
+  ): Promise<void> {
+    const filePath = row.file_path as string | null;
+    const storagePath = row.storage_path as string | null;
+
+    // Already a remote URL — nothing to do
+    if (filePath?.startsWith('http://') || filePath?.startsWith('https://')) {
+      return;
+    }
+
+    // Has a Supabase Storage path — construct the authenticated URL
+    if (storagePath) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data } = supabase.storage.from('media').getPublicUrl(storagePath);
+        if (data?.publicUrl) {
+          await this.db.runAsync(
+            `UPDATE media SET file_path = ? WHERE id = ?`,
+            [data.publicUrl, mediaId],
+          );
+          return;
+        }
+      }
+    }
+
+    // file_path is a dead local path from another device — clear it
+    if (filePath && (filePath.startsWith('/data/') || filePath.startsWith('file://'))) {
+      // Leave as-is; the app handles missing files with placeholders
     }
   }
 

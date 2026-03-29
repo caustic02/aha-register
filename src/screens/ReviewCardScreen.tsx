@@ -454,7 +454,7 @@ export function ReviewCardScreen({
             accessibilityLabel="Captured photograph"
           />
           <View style={styles.capturedBadge}>
-            <CheckIcon size={13} color={colors.accent} />
+            <CheckIcon size={13} color={colors.heroGreen} />
             <Text style={styles.capturedBadgeText}>{t('reviewCard.photoCaptured')}</Text>
           </View>
         </Card>
@@ -921,7 +921,7 @@ const styles = StyleSheet.create({
   },
   capturedBadgeText: {
     ...typography.caption,
-    color: colors.accent,
+    color: colors.heroGreen,
   },
   // Sections
   section: {
