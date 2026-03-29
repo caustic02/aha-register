@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles, react-native/no-color-literals */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import {
@@ -10,8 +11,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-// LinearGradient replaced with pure JS overlay (no native module needed)
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
@@ -302,12 +303,16 @@ export function HomeScreen({ navigation }: Props) {
   const { t } = useAppTranslation();
   const syncStatus = useSyncStatus();
 
+  const insets = useSafeAreaInsets();
+  const HEADER_H = insets.top + 56; // safe area + header content
+
   const [stats, setStats] = useState<Stats>({ totalObjects: 0, totalPhotos: 0, storageBytes: 0 });
   const [objects, setObjects] = useState<DashboardObject[]>([]);
   const [collections, setCollections] = useState<CollectionWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportSource, setExportSource] = useState<ExportSource | null>(null);
   const [showExport, setShowExport] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_mapPinCount, setMapPinCount] = useState(0);
 
   const viewTypeList = STANDARD_VIEW_KEYS.map((k) => `'${k}'`).join(',');
@@ -364,21 +369,26 @@ export function HomeScreen({ navigation }: Props) {
   const syncActive = syncStatus.pendingCount === 0;
 
   return (
-    <SafeAreaView style={st.safe} edges={['top']}>
-      {/* ── Header ── */}
-      <View style={st.header}>
-        <WordmarkLogo width={110} />
-        <View style={st.headerActions}>
-          <Pressable style={st.headerBtn} onPress={() => navigation.navigate('ObjectList')} accessibilityLabel={t('common.search')} hitSlop={touch.hitSlop}>
-            <SearchIcon size={18} color={HEADER_TEXT} />
-          </Pressable>
-          <Pressable style={st.headerBtn} onPress={() => navigation.navigate('Settings')} accessibilityLabel="Settings" hitSlop={touch.hitSlop}>
-            <SettingsTabIcon size={18} color={HEADER_TEXT} />
-          </Pressable>
+    <View style={st.safe}>
+      {/* ── Glassmorphism header (absolute, content scrolls underneath) ── */}
+      <BlurView intensity={80} tint="dark" style={[st.headerBlur, { height: HEADER_H, paddingTop: insets.top }]}>
+        <View style={st.headerInner}>
+          <View>
+            <WordmarkLogo width={110} />
+            <Text style={st.headerSubtitle}>Museum Collections</Text>
+          </View>
+          <View style={st.headerActions}>
+            <Pressable style={st.headerBtn} onPress={() => navigation.navigate('ObjectList')} accessibilityLabel={t('common.search')} hitSlop={touch.hitSlop}>
+              <SearchIcon size={18} color={HEADER_TEXT} />
+            </Pressable>
+            <Pressable style={st.headerBtn} onPress={() => navigation.navigate('Settings')} accessibilityLabel="Settings" hitSlop={touch.hitSlop}>
+              <SettingsTabIcon size={18} color={HEADER_TEXT} />
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </BlurView>
 
-      <ScrollView style={st.scroll} contentContainerStyle={st.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={st.scroll} contentContainerStyle={[st.scrollContent, { paddingTop: HEADER_H + 16 }]} showsVerticalScrollIndicator={false}>
 
         {/* ═══ 1. CAPTURE CTA ═══ */}
         <View style={st.section}>
@@ -409,28 +419,29 @@ export function HomeScreen({ navigation }: Props) {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: PX, gap: ITEM_GAP }}>
               {collections.map((col) => (
                 <PressScale key={col.id} style={st.colCard} onPress={() => navigation.navigate('CollectionDetail', { collectionId: col.id })}>
-                  <View>
-                    <Text style={st.colName} numberOfLines={1}>{col.name}</Text>
-                    <Text style={st.colSub}>{col.objectCount} objects</Text>
-                  </View>
-                  <View>
-                    <View style={{ flexDirection: 'row', gap: 1 }}>
-                      {Array.from({ length: 8 }, (_, i) => (
-                        <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i < Math.min(col.objectCount, 8) ? colors.textMuted : colors.border }} />
-                      ))}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={st.colName} numberOfLines={1}>{col.name}</Text>
+                      <Text style={st.colSub}>{col.objectCount} objects</Text>
                     </View>
+                    <View style={{ backgroundColor: '#2A2A2A', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                      <Text style={{ fontSize: 12, fontWeight: typography.weight.medium, color: colors.textMuted }}>{Math.round(Math.min((col.objectCount / 8) * 100, 100))}%</Text>
+                    </View>
+                  </View>
+                  <View style={{ height: 2, borderRadius: 1, backgroundColor: '#2A2A2A' }}>
+                    <View style={{ height: 2, borderRadius: 1, backgroundColor: '#666666', width: `${Math.min((col.objectCount / 8) * 100, 100)}%` }} />
                   </View>
                 </PressScale>
               ))}
             </ScrollView>
             {/* Quick actions below collections */}
-            <View style={[st.quickRow, { paddingHorizontal: PX, marginTop: ITEM_GAP }]}>
+            <View style={[st.quickRow, { paddingHorizontal: PX, marginTop: 24 }]}>
               <PressScale style={st.quickBtn} onPress={() => navigation.navigate('CreateCollection')}>
-                <View style={[st.quickBtnIcon, { backgroundColor: colors.surfaceContainer }]}><FolderPlus size={16} color={colors.textSecondary} /></View>
+                <View style={st.quickBtnIcon}><FolderPlus size={24} color={colors.textSecondary} /></View>
                 <Text style={st.quickBtnText}>New collection</Text>
               </PressScale>
               <PressScale style={st.quickBtn} onPress={() => navigation.navigate('CollectionList')}>
-                <View style={[st.quickBtnIcon, { backgroundColor: colors.surfaceContainer }]}><FolderOpen size={16} color={colors.textSecondary} /></View>
+                <View style={st.quickBtnIcon}><FolderOpen size={24} color={colors.textSecondary} /></View>
                 <Text style={st.quickBtnText}>Add to existing</Text>
               </PressScale>
             </View>
@@ -553,7 +564,7 @@ export function HomeScreen({ navigation }: Props) {
       </ScrollView>
 
       <ExportStepperModal visible={showExport} onClose={() => { setShowExport(false); setExportSource(null); }} source={exportSource} />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -564,11 +575,17 @@ const st = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { paddingTop: 16, paddingBottom: 40 },
 
-  // Header — dark forest green
-  header: {
+  // Header — glassmorphism blur
+  headerBlur: {
+    position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+    backgroundColor: 'rgba(10, 10, 10, 0.75)',
+  },
+  headerInner: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: PX, paddingTop: 8, paddingBottom: 12,
-    backgroundColor: colors.headerBg,
+    paddingHorizontal: PX, paddingBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 12, fontWeight: typography.weight.regular, color: colors.textSecondary, marginTop: 2,
   },
   headerActions: { flexDirection: 'row', gap: 10 },
   headerBtn: {
@@ -594,19 +611,19 @@ const st = StyleSheet.create({
   ctaTitle: { fontSize: 20, fontWeight: typography.weight.bold, color: colors.white },
   ctaSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
 
-  // Quick buttons (64px)
+  // Quick buttons (100px, vertical layout)
   quickRow: { flexDirection: 'row', gap: ITEM_GAP },
   quickBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
+    flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 0.5,
-    borderColor: colors.border, paddingHorizontal: 14, height: 64,
+    borderColor: colors.border, height: 100,
   },
-  quickBtnIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  quickBtnText: { fontSize: 15, fontWeight: typography.weight.semibold, color: colors.text },
+  quickBtnIcon: { alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  quickBtnText: { fontSize: 14, fontWeight: typography.weight.medium, color: colors.text, textAlign: 'center' },
 
-  // Collection cards (180x110 with progress)
+  // Collection cards (170x100 with progress)
   colCard: {
-    width: 180, height: 110, backgroundColor: colors.surfaceElevated, borderRadius: R,
+    width: 220, height: 100, backgroundColor: colors.surfaceElevated, borderRadius: R,
     borderWidth: 0.5, borderColor: colors.border, padding: 14, justifyContent: 'space-between',
   },
   colName: { fontSize: 16, fontWeight: typography.weight.bold, color: colors.text },
