@@ -71,7 +71,7 @@ const TOTAL_STANDARD_VIEWS = STANDARD_VIEW_KEYS.length;
 const SCREEN_W = Dimensions.get('window').width;
 const PX = 20; // horizontal padding
 const ITEM_GAP = 12;
-const SEC_GAP = 24;
+const SEC_GAP = 40;
 const R = 14; // border radius
 const CARD_W = (SCREEN_W - PX * 2 - ITEM_GAP) / 2; // exact half-width for 2-col grid
 const TOOL_W = (SCREEN_W - PX * 2 - ITEM_GAP * 3) / 4; // exact quarter-width for 4-col grid
@@ -388,7 +388,7 @@ export function HomeScreen({ navigation }: Props) {
         </View>
       </BlurView>
 
-      <ScrollView style={st.scroll} contentContainerStyle={[st.scrollContent, { paddingTop: HEADER_H + 16 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView style={st.scroll} contentContainerStyle={[st.scrollContent, { paddingTop: HEADER_H + 20 }]} showsVerticalScrollIndicator={false}>
 
         {/* ═══ 1. CAPTURE CTA ═══ */}
         <View style={st.section}>
@@ -435,15 +435,19 @@ export function HomeScreen({ navigation }: Props) {
               ))}
             </ScrollView>
             {/* Quick actions below collections */}
-            <View style={[st.quickRow, { paddingHorizontal: PX, marginTop: 24 }]}>
-              <PressScale style={st.quickBtn} onPress={() => navigation.navigate('CreateCollection')}>
-                <View style={st.quickBtnIcon}><FolderPlus size={24} color={colors.textSecondary} /></View>
-                <Text style={st.quickBtnText}>New collection</Text>
-              </PressScale>
-              <PressScale style={st.quickBtn} onPress={() => navigation.navigate('CollectionList')}>
-                <View style={st.quickBtnIcon}><FolderOpen size={24} color={colors.textSecondary} /></View>
-                <Text style={st.quickBtnText}>Add to existing</Text>
-              </PressScale>
+            <View style={{ flexDirection: 'row', gap: ITEM_GAP, paddingHorizontal: PX, marginTop: 40 }}>
+              <View style={{ flex: 1 }}>
+                <PressScale style={st.quickBtn} onPress={() => navigation.navigate('CreateCollection')}>
+                  <View style={st.quickBtnIcon}><FolderPlus size={24} color={colors.textSecondary} /></View>
+                  <Text style={st.quickBtnText}>New collection</Text>
+                </PressScale>
+              </View>
+              <View style={{ flex: 1 }}>
+                <PressScale style={st.quickBtn} onPress={() => navigation.navigate('CollectionList')}>
+                  <View style={st.quickBtnIcon}><FolderOpen size={24} color={colors.textSecondary} /></View>
+                  <Text style={st.quickBtnText}>Add to existing</Text>
+                </PressScale>
+              </View>
             </View>
           </View>
         )}
@@ -604,7 +608,7 @@ const st = StyleSheet.create({
   // CTA (96px)
   cta: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-    height: 96, backgroundColor: colors.heroGreen, borderRadius: R, marginBottom: ITEM_GAP,
+    height: 96, backgroundColor: colors.heroGreen, borderRadius: R, borderWidth: 1, borderColor: '#3D7A35', marginBottom: ITEM_GAP,
   },
   ctaIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
   ctaText: { flex: 1, marginLeft: 14 },
@@ -614,9 +618,9 @@ const st = StyleSheet.create({
   // Quick buttons (100px, vertical layout)
   quickRow: { flexDirection: 'row', gap: ITEM_GAP },
   quickBtn: {
-    flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 0.5,
-    borderColor: colors.border, height: 100,
+    width: '100%', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1,
+    borderColor: '#3A3A3A', height: 100,
   },
   quickBtnIcon: { alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   quickBtnText: { fontSize: 14, fontWeight: typography.weight.medium, color: colors.text, textAlign: 'center' },
@@ -624,7 +628,7 @@ const st = StyleSheet.create({
   // Collection cards (170x100 with progress)
   colCard: {
     width: 220, height: 100, backgroundColor: colors.surfaceElevated, borderRadius: R,
-    borderWidth: 0.5, borderColor: colors.border, padding: 14, justifyContent: 'space-between',
+    borderWidth: 1, borderColor: '#3A3A3A', padding: 14, justifyContent: 'space-between',
   },
   colName: { fontSize: 16, fontWeight: typography.weight.bold, color: colors.text },
   colSub: { fontSize: 11, color: colors.textTertiary, marginTop: 2 },
