@@ -219,7 +219,7 @@ function AttentionRow({ obj, onPress }: { obj: DashboardObject; onPress: () => v
   return (
     <PressScale style={st.attentionRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
       {obj.file_path ? (
-        <View style={st.attentionThumb}><Image source={{ uri: obj.file_path }} style={[StyleSheet.absoluteFill, { borderRadius: 8 }]} resizeMode="cover" /></View>
+        <View style={st.attentionThumb}><Image source={{ uri: obj.file_path }} style={[StyleSheet.absoluteFill, { borderRadius: 10 }]} resizeMode="cover" /></View>
       ) : (
         <View style={[st.attentionThumb, st.thumbEmpty]}><CameraIcon size={16} color={colors.textTertiary} /></View>
       )}
@@ -627,11 +627,11 @@ const st = StyleSheet.create({
 
   // AttentionRow (vertical list)
   attentionRow: {
-    flexDirection: 'row', alignItems: 'center', height: 88,
+    flexDirection: 'row', alignItems: 'center', minHeight: 88,
     backgroundColor: colors.surface, borderWidth: 1, borderColor: '#3A3A3A',
     borderRadius: 12, paddingHorizontal: 12, marginBottom: 10,
   },
-  attentionThumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
+  attentionThumb: { width: 72, height: 72, borderRadius: 10, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
   attentionInfo: { flex: 1, marginLeft: 12 },
   attentionTitle: { fontSize: 15, fontWeight: typography.weight.semibold, color: colors.text },
   attentionReasonRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
