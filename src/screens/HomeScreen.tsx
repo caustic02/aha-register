@@ -29,6 +29,7 @@ import {
   ChevronRight,
   FolderPlus,
   FolderOpen,
+  AlertCircle,
 } from 'lucide-react-native';
 import Svg, { Path, Rect, Circle, Polyline, Line } from 'react-native-svg';
 import { colors, radii, spacing, touch, typography } from '../theme';
@@ -38,7 +39,6 @@ import { useSyncStatus } from '../hooks/useSyncStatus';
 import { STANDARD_VIEW_TYPES } from '../constants/viewTypes';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
-import type { RegisterObject, Media } from '../db/types';
 import {
   getAllCollections,
   type CollectionWithCount,
@@ -73,7 +73,6 @@ const PX = 20; // horizontal padding
 const ITEM_GAP = 12;
 const SEC_GAP = 40;
 const R = 14; // border radius
-const CARD_W = (SCREEN_W - PX * 2 - ITEM_GAP) / 2; // exact half-width for 2-col grid
 const TOOL_W = (SCREEN_W - PX * 2 - ITEM_GAP * 3) / 4; // exact quarter-width for 4-col grid
 
 // Tool definitions — all use textSecondary for uniform professional look
@@ -170,12 +169,18 @@ function PressScale({ children, onPress, style, ...rest }: React.ComponentProps<
 
 // ── SectionLabel ────────────────────────────────────────────────────────────
 
-function SectionLabel({ text, extra, right }: { text: string; extra?: string; right?: React.ReactNode }) {
+function SectionLabel({ text, extra, badge, right }: { text: string; extra?: string; badge?: number; right?: React.ReactNode }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Text style={st.secLabel}>{text}</Text>
         {extra && <Text style={st.secLabelExtra}>{extra}</Text>}
+        {badge != null && (
+          <View style={st.sectionBadge}>
+            <AlertCircle size={14} color="#FFFFFF" />
+            <Text style={st.sectionBadgeText}>{badge}</Text>
+          </View>
+        )}
       </View>
       {right}
     </View>
@@ -199,38 +204,36 @@ function ViewProgressBar({ count, total = TOTAL_STANDARD_VIEWS, size = 'normal' 
   );
 }
 
-// ── StatusPill ───────────────────────────────────────────────────────────────
+// ── AttentionRow (vertical list card for Needs Attention) ────────────────────
 
-function StatusPill({ label, variant }: { label: string; variant: 'amber' | 'green' }) {
-  return (
-    <View style={[st.pill, variant === 'amber' ? st.pillAmber : st.pillGreen]}>
-      <Text style={[st.pillText, variant === 'amber' ? st.pillTextAmber : st.pillTextGreen]}>{label}</Text>
-    </View>
-  );
+function getAttentionInfo(obj: DashboardObject): { reason: string; urgency: number } {
+  if (obj.view_count < 3) return { reason: 'Needs photography', urgency: 3 };
+  if (!obj.description) return { reason: 'Incomplete documentation', urgency: 2 };
+  if (obj.has_ai === 0) return { reason: 'Needs review', urgency: 2 };
+  return { reason: 'Needs review', urgency: 2 };
 }
 
-// ── ActionCard (vertical, for 2-column grid) ────────────────────────────────
-
-function ActionCard({ obj, onDetail }: { obj: DashboardObject; onDetail: () => void; onAddViews: () => void; onRunAI: () => void; onExport: () => void }) {
-  const viewsMissing = TOTAL_STANDARD_VIEWS - obj.view_count;
-  const noAI = obj.has_ai === 0;
+function AttentionRow({ obj, onPress }: { obj: DashboardObject; onPress: () => void }) {
+  const { reason, urgency } = getAttentionInfo(obj);
   return (
-    <PressScale style={[st.actionCard, { width: CARD_W }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onDetail(); }} accessibilityRole="button" accessibilityLabel={obj.title}>
+    <PressScale style={st.attentionRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
       {obj.file_path ? (
-        <View style={st.actionPhotoTop}><Image source={{ uri: obj.file_path }} style={[StyleSheet.absoluteFill, { borderTopLeftRadius: R, borderTopRightRadius: R }]} resizeMode="cover" /></View>
+        <View style={st.attentionThumb}><Image source={{ uri: obj.file_path }} style={[StyleSheet.absoluteFill, { borderRadius: 8 }]} resizeMode="cover" /></View>
       ) : (
-        <View style={[st.actionPhotoTop, st.thumbEmpty]}><CameraIcon size={24} color={colors.textTertiary} /></View>
+        <View style={[st.attentionThumb, st.thumbEmpty]}><CameraIcon size={16} color={colors.textTertiary} /></View>
       )}
-      <View style={st.actionInfo}>
-        <Text style={st.actionTitle} numberOfLines={1}>{obj.title || 'Untitled'}</Text>
-        {/* Progress segments — flex: 1 per segment */}
-        <View style={{ flexDirection: 'row', gap: 2 }}>
-          {Array.from({ length: TOTAL_STANDARD_VIEWS }, (_, i) => (
-            <View key={i} style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: i < obj.view_count ? colors.textMuted : colors.border }} />
-          ))}
+      <View style={st.attentionInfo}>
+        <Text style={st.attentionTitle} numberOfLines={1}>{obj.title || 'Untitled'}</Text>
+        <View style={st.attentionReasonRow}>
+          <View style={st.attentionDots}>
+            {[1, 2, 3].map((i) => (
+              <View key={i} style={[st.attentionDot, i > urgency && st.attentionDotEmpty]} />
+            ))}
+          </View>
+          <Text style={st.attentionReasonText}>{reason}</Text>
         </View>
-        {(noAI || viewsMissing > 0) && <StatusPill label={noAI ? 'No AI' : `${viewsMissing} views`} variant="amber" />}
       </View>
+      <AlertCircle size={20} color="#D97706" />
     </PressScale>
   );
 }
@@ -355,17 +358,6 @@ export function HomeScreen({ navigation }: Props) {
 
   const unfiled = useMemo(() => objects.filter((o) => o.in_collection === 0), [objects]);
 
-  const handleExportObject = useCallback(async (objectId: string) => {
-    const obj = await db.getFirstAsync<RegisterObject>('SELECT * FROM objects WHERE id = ?', [objectId]);
-    const media = await db.getAllAsync<Media>('SELECT * FROM media WHERE object_id = ? ORDER BY sort_order', [objectId]);
-    if (obj) { setExportSource({ mode: 'object', data: { object: obj, media, persons: [] } }); setShowExport(true); }
-  }, [db]);
-
-  const handleRunAI = useCallback(async (objectId: string) => {
-    const pm = await db.getFirstAsync<{ file_path: string }>('SELECT file_path FROM media WHERE object_id = ? AND is_primary = 1', [objectId]);
-    if (pm) navigation.navigate('AIReview', { objectId, photoUri: pm.file_path });
-  }, [db, navigation]);
-
   const syncActive = syncStatus.pendingCount === 0;
 
   return (
@@ -487,21 +479,16 @@ export function HomeScreen({ navigation }: Props) {
           <>
             {needsAttention.length > 0 && (
               <View style={st.section}>
-                <SectionLabel text="Needs attention" right={
+                <SectionLabel text="Needs attention" badge={needsAttention.length} right={
                   needsAttention.length > 4 ? (
                     <Pressable onPress={() => navigation.navigate('ObjectList')} hitSlop={touch.hitSlop} style={st.viewAll}>
                       <Text style={st.viewAllText}>View all ({needsAttention.length})</Text>
                     </Pressable>
                   ) : undefined
                 } />
-                <View style={st.actionGrid}>
+                <View>
                   {needsAttention.slice(0, 4).map((obj) => (
-                    <ActionCard key={obj.id} obj={obj}
-                      onDetail={() => navigation.navigate('ObjectDetail', { objectId: obj.id })}
-                      onAddViews={() => navigation.navigate('ViewChecklist', { objectId: obj.id })}
-                      onRunAI={() => handleRunAI(obj.id)}
-                      onExport={() => handleExportObject(obj.id)}
-                    />
+                    <AttentionRow key={obj.id} obj={obj} onPress={() => navigation.navigate('ObjectDetail', { objectId: obj.id })} />
                   ))}
                 </View>
               </View>
@@ -602,6 +589,11 @@ const st = StyleSheet.create({
   section: { paddingHorizontal: PX, marginBottom: SEC_GAP },
   secLabel: { fontSize: 16, fontWeight: typography.weight.bold, color: colors.text },
   secLabelExtra: { fontSize: 13, color: colors.textTertiary },
+  sectionBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 8,
+    backgroundColor: '#B45309', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12,
+  },
+  sectionBadgeText: { fontSize: 12, fontWeight: typography.weight.semibold, color: '#FFFFFF' },
   viewAll: { minHeight: touch.minTarget, justifyContent: 'center' },
   viewAllText: { fontSize: 13, fontWeight: typography.weight.medium, color: colors.textSecondary },
 
@@ -636,7 +628,7 @@ const st = StyleSheet.create({
 
   // Recent (unfiled) — 140x140 square photo-fill
   recentCard: {
-    width: 140, height: 140, borderRadius: R, borderWidth: 0,
+    width: 140, height: 140, borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
     overflow: 'hidden', backgroundColor: colors.surface,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
@@ -645,16 +637,31 @@ const st = StyleSheet.create({
   // Empty
   emptyCard: {
     alignItems: 'center', paddingVertical: spacing.xl, paddingHorizontal: spacing.lg,
-    backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
   },
   emptyTitle: { fontSize: 14, fontWeight: typography.weight.medium, color: colors.text, marginTop: spacing.sm },
   emptyMsg: { fontSize: 12, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
+
+  // AttentionRow (vertical list)
+  attentionRow: {
+    flexDirection: 'row', alignItems: 'center', height: 88,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: '#3A3A3A',
+    borderRadius: 12, paddingHorizontal: 12, marginBottom: 10,
+  },
+  attentionThumb: { width: 48, height: 48, borderRadius: 8, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
+  attentionInfo: { flex: 1, marginLeft: 12 },
+  attentionTitle: { fontSize: 15, fontWeight: typography.weight.semibold, color: colors.text },
+  attentionReasonRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  attentionDots: { flexDirection: 'row', gap: 4 },
+  attentionDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D97706' },
+  attentionDotEmpty: { backgroundColor: '#3A3A3A' },
+  attentionReasonText: { fontSize: 12, color: colors.textSecondary, marginLeft: 8 },
 
   // ActionCard (2-col grid, photo 100px top)
   actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: ITEM_GAP },
   actionCard: {
     backgroundColor: colors.surfaceElevated, borderRadius: R,
-    borderWidth: 0.5, borderColor: colors.border, overflow: 'hidden',
+    borderWidth: 1, borderColor: '#3A3A3A', overflow: 'hidden',
   },
   actionPhotoTop: { width: '100%', height: 120, backgroundColor: colors.surface },
   actionInfo: { padding: 10, gap: 4 },
@@ -670,7 +677,7 @@ const st = StyleSheet.create({
   // CompactRow (52px)
   compactRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
-    borderWidth: 1, borderColor: colors.border, borderRadius: R,
+    borderWidth: 1, borderColor: '#3A3A3A', borderRadius: R,
     paddingHorizontal: 14, height: 52, marginBottom: 8, gap: 10,
   },
   compactThumb: { width: 36, height: 36, borderRadius: 8, backgroundColor: colors.surface },
@@ -684,7 +691,7 @@ const st = StyleSheet.create({
   toolCell: {
     height: 88, alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.surfaceElevated, borderRadius: R,
-    borderWidth: 0.5, borderColor: colors.border,
+    borderWidth: 1, borderColor: '#3A3A3A',
   },
   toolCellIcon: {
     width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
@@ -696,7 +703,7 @@ const st = StyleSheet.create({
   statsGrid: { flexDirection: 'row', gap: ITEM_GAP, marginBottom: ITEM_GAP },
   statCard: {
     flex: 1, alignItems: 'center', justifyContent: 'center', height: 52,
-    backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
   },
   statValue: { fontSize: 17, fontWeight: typography.weight.bold, color: colors.text },
   statLabel: { fontSize: 11, color: colors.textSecondary },
@@ -704,12 +711,12 @@ const st = StyleSheet.create({
   // Sync (44px)
   syncBar: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
-    borderRadius: R, borderWidth: 1, borderColor: colors.border,
-    height: 44, paddingHorizontal: 14, gap: 8,
+    borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
+    paddingHorizontal: 16, paddingVertical: 16, marginTop: 12, gap: 8,
   },
   syncDot: { width: 8, height: 8, borderRadius: 4 },
-  dotSynced: { backgroundColor: colors.success },
-  dotPending: { backgroundColor: colors.warning },
+  dotSynced: { backgroundColor: '#0F766E' },
+  dotPending: { backgroundColor: '#B45309' },
   syncText: { fontSize: 12, color: colors.textSecondary },
 
   // Badge (kept for compatibility)
