@@ -562,7 +562,7 @@ export function HomeScreen({ navigation }: Props) {
 const st = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { paddingTop: 16, paddingBottom: 40 },
 
   // Header — dark forest green
   header: {
@@ -615,8 +615,8 @@ const st = StyleSheet.create({
 
   // Recent (unfiled) — 140x140 square photo-fill
   recentCard: {
-    width: 140, height: 140, borderRadius: R, borderWidth: 2.5,
-    borderColor: colors.warning, overflow: 'hidden', backgroundColor: colors.surface,
+    width: 140, height: 140, borderRadius: R, borderWidth: 0,
+    overflow: 'hidden', backgroundColor: colors.surface,
   },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
   recentTitle: { position: 'absolute', bottom: 6, left: 8, right: 8, fontSize: 11, fontWeight: typography.weight.semibold, color: colors.white, zIndex: 2 },

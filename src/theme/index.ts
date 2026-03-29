@@ -6,7 +6,7 @@
  * spacing, or radii in component files. If a value isn't here, it doesn't exist.
  *
  * Updated: 2026-03-29
- * Palette: Navy / Green accent / Parchment
+ * Palette: Dark mode / Green accent
  * Spec: docs/state-of-the-art/DESIGN-SYSTEM.md
  */
 
@@ -18,12 +18,12 @@ export const brand = {
   colors: {
     primary: '#1E2D3D',      // navy — buttons, headers, tab bar, primary actions
     accent: '#2D5A27',        // primary interactive green (canonical)
-    background: '#F5F2EB',    // parchment — screen backgrounds
-    surface: '#EDEAE3',       // input fields, card backgrounds
-    secondaryText: '#6B7B8D', // slate — muted labels, captions
-    text: '#1A1A1A',          // primary text (near-black)
-    textOnPrimary: '#F5F2EB', // text on navy backgrounds
-    border: '#B8B3A8',        // subtle borders, inactive chips
+    background: '#0A0A0A',    // near-black — screen backgrounds
+    surface: '#1E1E1E',       // dark gray — card backgrounds
+    secondaryText: '#A0A0A0', // muted text on dark
+    text: '#E8E8E8',          // light text on dark
+    textOnPrimary: '#1A1A1A', // dark text for light surfaces
+    border: '#2A2A2A',        // subtle dark border
     danger: '#A32D2D',        // errors, destructive actions
   },
   radii: {
@@ -41,14 +41,14 @@ export const colors = {
   // ── Primary (main actions, headers, tab bar) ─────────────────────────────
   primary: brand.colors.primary,
   primaryDark: '#131E29',
-  primaryLight: '#E3E8ED',
-  primarySurface: '#EEF1F4',
+  primaryLight: '#1A2E18',
+  primarySurface: '#152414',
   primaryContainer: 'rgba(30, 45, 61, 0.10)',
 
   // ── Accent (active tab, trust badges, verified indicators) ────────────────
   // accent = primary interactive color (buttons, links, active states). Must be green.
   accent: brand.colors.accent,
-  accentLight: '#E8F0E6',
+  accentLight: '#1A2E18',
   accentDark: '#1F3F1C',
   heroGreen: brand.colors.accent, // alias — canonical interactive green is `accent`
 
@@ -63,29 +63,29 @@ export const colors = {
   // ── Text hierarchy ───────────────────────────────────────────────────────
   text: brand.colors.text,
   textSecondary: brand.colors.secondaryText,
-  textTertiary: '#8A95A0',
+  textTertiary: '#666666',
   textInverse: brand.colors.textOnPrimary,
 
   // ── Surfaces ─────────────────────────────────────────────────────────────
   background: brand.colors.background,
   surface: brand.colors.surface,
-  surfaceContainer: '#E6E3DC',
-  surfaceContainerHigh: '#DEDBD4',
-  surfaceElevated: '#FFFFFF',
+  surfaceContainer: '#1A1A1A',
+  surfaceContainerHigh: '#2A2A2A',
+  surfaceElevated: '#252525',
 
   // ── Borders ──────────────────────────────────────────────────────────────
   border: brand.colors.border,
-  borderFocused: brand.colors.primary,
+  borderFocused: '#2D5A27',
 
   // ── Semantic ─────────────────────────────────────────────────────────────
   error: brand.colors.danger,
-  errorLight: '#FADCDC',
+  errorLight: '#3D1515',
   warning: '#B45309',
-  warningLight: '#FEF3C7',
+  warningLight: '#3D2A08',
   success: '#0F766E',
-  successLight: '#CCFBF1',
+  successLight: '#0D2D2A',
   info: '#1D4ED8',
-  infoLight: '#DBEAFE',
+  infoLight: '#0D1B3D',
 
   // ── Status (sync, connectivity) ──────────────────────────────────────────
   statusSyncing: '#1976D2',
@@ -95,11 +95,11 @@ export const colors = {
   statusError: brand.colors.danger,
 
   // ── AI accent ────────────────────────────────────────────────────────────
-  ai: '#5C6BC0',
-  aiLight: '#E8EAF6',
-  aiSurface: 'rgba(92, 107, 192, 0.06)',
-  aiBorder: 'rgba(92, 107, 192, 0.25)',
-  aiText: '#5C6BC0',
+  ai: '#A16207',
+  aiLight: '#3D2A08',
+  aiSurface: '#2D1F06',
+  aiBorder: 'rgba(161, 98, 7, 0.25)',
+  aiText: '#A16207',
 
   // ── AI Confidence scale ──────────────────────────────────────────────────
   aiConfidenceHigh: '#2E7D32',
@@ -111,12 +111,12 @@ export const colors = {
   ctaBorder: 'rgba(30, 45, 61, 0.18)',
 
   // ── Home V2 palette ────────────────────────────────────────────────────
-  surfaceMuted: '#F2F2EE',
+  surfaceMuted: '#141414',
   amber: '#D4A017', // AI Review / warning-adjacent UI only (pencil icon); not the primary accent
-  borderCard: '#E8E8E4',
-  purpleLight: '#EDE9FE',
+  borderCard: '#2A2A2A',
+  purpleLight: '#1A1520',
   purple: '#5B21B6',
-  greenLight: '#D1FAE5',
+  greenLight: '#0D2D1A',
   greenDark: '#065F46',
   brownDark: '#92400E', // AI Review muted label text; not primary accent
   blueDark: '#1E40AF',
@@ -127,21 +127,21 @@ export const colors = {
   // ── Utility ──────────────────────────────────────────────────────────────
   white: '#FFFFFF',
   black: '#000000',
-  overlay: 'rgba(0, 0, 0, 0.5)',
-  overlayLight: 'rgba(0, 0, 0, 0.3)',
-  overlayDark: 'rgba(0, 0, 0, 0.7)',
-  skeleton: '#D6D3CC',
-  skeletonHighlight: brand.colors.surface,
+  overlay: 'rgba(0, 0, 0, 0.7)',
+  overlayLight: 'rgba(0, 0, 0, 0.5)',
+  overlayDark: 'rgba(0, 0, 0, 0.85)',
+  skeleton: '#2A2A2A',
+  skeletonHighlight: '#333333',
   transparent: 'transparent',
   camera: '#111111',
   cameraBg: '#0D0D0D',
 
   // ── Legacy aliases (all now derive from brand) ──
   textPrimary: brand.colors.text,
-  textMuted: '#8A95A0',
-  borderLight: '#E6E3DC',
+  textMuted: '#666666',
+  borderLight: '#2A2A2A',
   danger: brand.colors.danger,
-  dangerLight: '#FADCDC',
+  dangerLight: '#3D1515',
   chipActive: brand.colors.primary,
   chipInactive: brand.colors.surface,
 } as const;
