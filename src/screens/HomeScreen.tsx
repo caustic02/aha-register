@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles, react-native/no-color-literals */
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import * as Haptics from 'expo-haptics';
+import * as FileSystem from 'expo-file-system';
 import {
   Animated as RNAnimated,
   Dimensions,
@@ -177,7 +178,7 @@ function SectionLabel({ text, extra, badge, right }: { text: string; extra?: str
         {extra && <Text style={st.secLabelExtra}>{extra}</Text>}
         {badge != null && (
           <View style={st.sectionBadge}>
-            <AlertCircle size={14} color="#FFFFFF" />
+            <AlertCircle size={14} color="#D97706" />
             <Text style={st.sectionBadgeText}>{badge}</Text>
           </View>
         )}
@@ -260,45 +261,6 @@ function CompactRow({ obj, onPress }: { obj: DashboardObject; onPress: () => voi
   );
 }
 
-// ── Animated pulse dot ──────────────────────────────────────────────────────
-
-function PulseDot({ active }: { active: boolean }) {
-  const [pulseScale] = useState(() => new RNAnimated.Value(1));
-  const [pulseOpacity] = useState(() => new RNAnimated.Value(0));
-
-  useEffect(() => {
-    if (!active) return;
-    const anim = RNAnimated.loop(
-      RNAnimated.sequence([
-        RNAnimated.parallel([
-          RNAnimated.timing(pulseScale, { toValue: 2, duration: 1000, useNativeDriver: true }),
-          RNAnimated.timing(pulseOpacity, { toValue: 0, duration: 1000, useNativeDriver: true }),
-        ]),
-        RNAnimated.parallel([
-          RNAnimated.timing(pulseScale, { toValue: 1, duration: 0, useNativeDriver: true }),
-          RNAnimated.timing(pulseOpacity, { toValue: 0.4, duration: 0, useNativeDriver: true }),
-        ]),
-      ]),
-    );
-    pulseOpacity.setValue(0.4);
-    anim.start();
-    return () => anim.stop();
-  }, [active, pulseScale, pulseOpacity]);
-
-  return (
-    <View style={{ width: 12, height: 12, alignItems: 'center', justifyContent: 'center' }}>
-      {active && (
-        <RNAnimated.View style={{
-          position: 'absolute', width: 8, height: 8, borderRadius: 4,
-          backgroundColor: colors.success, opacity: pulseOpacity,
-          transform: [{ scale: pulseScale }],
-        }} />
-      )}
-      <View style={[st.syncDot, active ? st.dotSynced : st.dotPending]} />
-    </View>
-  );
-}
-
 // ── Main component ──────────────────────────────────────────────────────────
 
 export function HomeScreen({ navigation }: Props) {
@@ -317,6 +279,7 @@ export function HomeScreen({ navigation }: Props) {
   const [showExport, setShowExport] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_mapPinCount, setMapPinCount] = useState(0);
+  const [freeSpace, setFreeSpace] = useState<number | null>(null);
 
   const viewTypeList = STANDARD_VIEW_KEYS.map((k) => `'${k}'`).join(',');
 
@@ -348,7 +311,11 @@ export function HomeScreen({ navigation }: Props) {
     } catch { /* silently ignore */ } finally { setLoading(false); }
   }, [db, viewTypeList]);
 
-  useFocusEffect(useCallback(() => { setLoading(true); loadData(); }, [loadData]));
+  useFocusEffect(useCallback(() => {
+    setLoading(true);
+    loadData();
+    FileSystem.getFreeDiskStorageAsync().then((f) => setFreeSpace(f)).catch(() => {});
+  }, [loadData]));
 
   const { needsAttention, complete } = useMemo(() => {
     const needs: DashboardObject[] = []; const done: DashboardObject[] = [];
@@ -358,7 +325,24 @@ export function HomeScreen({ navigation }: Props) {
 
   const unfiled = useMemo(() => objects.filter((o) => o.in_collection === 0), [objects]);
 
-  const syncActive = syncStatus.pendingCount === 0;
+  // Sync status styling
+  const syncState = syncStatus.status; // 'idle' | 'syncing' | 'offline' | 'error'
+  const syncColor = syncState === 'error' || syncState === 'offline' ? '#C53030'
+    : syncState === 'syncing' ? '#D97706' : '#0F766E';
+  const syncBg = syncState === 'error' || syncState === 'offline' ? 'rgba(197, 48, 48, 0.1)'
+    : syncState === 'syncing' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(15, 118, 110, 0.1)';
+  const syncBorder = syncState === 'error' || syncState === 'offline' ? 'rgba(197, 48, 48, 0.3)'
+    : syncState === 'syncing' ? 'rgba(217, 119, 6, 0.3)' : 'rgba(15, 118, 110, 0.3)';
+  const syncLabel = syncState === 'syncing' ? 'Syncing...'
+    : syncState === 'offline' ? 'Offline'
+    : syncState === 'error' ? 'Sync failed'
+    : syncStatus.pendingCount > 0 ? `Sync: ${syncStatus.pendingCount} pending`
+    : 'Sync: all up to date';
+
+  // Storage warning level
+  const GB = 1024 * 1024 * 1024;
+  const storageWarn = freeSpace != null && freeSpace < 500 * 1024 * 1024 ? 'critical'
+    : freeSpace != null && freeSpace < GB ? 'warning' : 'normal';
 
   return (
     <View style={st.safe}>
@@ -538,16 +522,14 @@ export function HomeScreen({ navigation }: Props) {
               <Text style={st.statValue}>{stats.totalPhotos}</Text>
               <Text style={st.statLabel}>{t('home.statPhotos')}</Text>
             </View>
-            <View style={st.statCard}>
-              <Text style={st.statValue}>{formatStorageSize(stats.storageBytes)}</Text>
+            <View style={[st.statCard, storageWarn !== 'normal' && { borderColor: storageWarn === 'critical' ? '#C53030' : '#D97706' }]}>
+              <Text style={[st.statValue, storageWarn !== 'normal' && { color: storageWarn === 'critical' ? '#C53030' : '#D97706' }]}>{formatStorageSize(stats.storageBytes)}</Text>
               <Text style={st.statLabel}>{t('home.statStorage')}</Text>
             </View>
           </View>
-          <View style={st.syncBar}>
-            <PulseDot active={syncActive} />
-            <Text style={st.syncText}>
-              {syncStatus.pendingCount > 0 ? `Sync: ${syncStatus.pendingCount} pending` : 'Sync: all up to date'}
-            </Text>
+          <View style={[st.syncBar, { backgroundColor: syncBg, borderColor: syncBorder }]}>
+            <View style={[st.syncDot, { backgroundColor: syncColor }]} />
+            <Text style={[st.syncText, { color: syncColor }]}>{syncLabel}</Text>
           </View>
         </View>
 
@@ -591,9 +573,10 @@ const st = StyleSheet.create({
   secLabelExtra: { fontSize: 13, color: colors.textTertiary },
   sectionBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 8,
-    backgroundColor: '#B45309', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12,
+    backgroundColor: 'rgba(217, 119, 6, 0.15)', borderWidth: 1, borderColor: '#D97706',
+    paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12,
   },
-  sectionBadgeText: { fontSize: 12, fontWeight: typography.weight.semibold, color: '#FFFFFF' },
+  sectionBadgeText: { fontSize: 12, fontWeight: typography.weight.semibold, color: '#D97706' },
   viewAll: { minHeight: touch.minTarget, justifyContent: 'center' },
   viewAllText: { fontSize: 13, fontWeight: typography.weight.medium, color: colors.textSecondary },
 
@@ -715,8 +698,6 @@ const st = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 16, marginTop: 12, gap: 8,
   },
   syncDot: { width: 8, height: 8, borderRadius: 4 },
-  dotSynced: { backgroundColor: '#0F766E' },
-  dotPending: { backgroundColor: '#B45309' },
   syncText: { fontSize: 12, color: colors.textSecondary },
 
   // Badge (kept for compatibility)
