@@ -1,11 +1,9 @@
+/* eslint-disable react-native/no-inline-styles, react-native/no-color-literals */
 import React, { useCallback, useRef, useState } from 'react';
 import {
-  Alert,
-  Animated,
   Dimensions,
   Image,
   Modal,
-  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,8 +17,8 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { File, Paths } from 'expo-file-system';
-import { Map, Plus, X, Eye, Trash2, MapPin } from 'lucide-react-native';
-import { BackIcon, CameraIcon, PackageIcon } from '../theme/icons';
+import { Map, Plus, X, Eye, Trash2, MapPin, Upload, Camera, ChevronRight } from 'lucide-react-native';
+import { BackIcon, CameraIcon } from '../theme/icons';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { generateId } from '../utils/uuid';
 import { colors, radii, spacing, touch, typography } from '../theme';
@@ -216,6 +214,9 @@ export function FloorMapScreen({ route, navigation }: Props) {
   const [pendingImageW, setPendingImageW] = useState(0);
   const [pendingImageH, setPendingImageH] = useState(0);
 
+  // Source picker bottom sheet
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
+
   // Pin interaction
   const [selectedPin, setSelectedPin] = useState<PinWithObject | null>(null);
   const [showObjectPicker, setShowObjectPicker] = useState(false);
@@ -243,7 +244,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
       setActiveMapId((targetMap ?? rows[0]).id);
     }
     setLoading(false);
-  }, [db, activeMapId, route.params?.mapId]);
+  }, [db, activeMapId, route.params]);
 
   const loadPins = useCallback(async () => {
     if (!activeMapId) { setPins([]); return; }
@@ -299,15 +300,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
 
   // ── Add map flow ──────────────────────────────────────────────────────────
 
-  const pickImage = useCallback(async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (result.canceled || result.assets.length === 0) return;
-
-    const asset = result.assets[0];
-    // Copy to persistent storage
+  const processAsset = useCallback((asset: ImagePicker.ImagePickerAsset) => {
     const id = generateId();
     const ext = asset.uri.split('.').pop() ?? 'jpg';
     const destDir = `${Paths.document.uri}floor_maps/`;
@@ -324,6 +317,26 @@ export function FloorMapScreen({ route, navigation }: Props) {
     setPendingImageH(asset.height);
     setShowNameInput(true);
   }, []);
+
+  const pickImage = useCallback(async () => {
+    setShowSourcePicker(false);
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    processAsset(result.assets[0]);
+  }, [processAsset]);
+
+  const scanWithCamera = useCallback(async () => {
+    setShowSourcePicker(false);
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (result.canceled || result.assets.length === 0) return;
+    processAsset(result.assets[0]);
+  }, [processAsset]);
 
   const saveNewMap = useCallback(async () => {
     if (!pendingImageUri || !newName.trim()) return;
@@ -418,7 +431,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
             </Text>
           )}
         </View>
-        <Pressable onPress={pickImage} style={s.addBtn} hitSlop={touch.hitSlop} accessibilityLabel="Add map">
+        <Pressable onPress={() => setShowSourcePicker(true)} style={s.addBtn} hitSlop={touch.hitSlop} accessibilityLabel="Add map">
           <Plus size={20} color={colors.heroGreen} />
         </Pressable>
       </View>
@@ -449,7 +462,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
           <Text style={s.emptySub}>
             Upload a floor plan, building map, or room layout to pin object locations.
           </Text>
-          <Pressable style={s.emptyBtn} onPress={pickImage} accessibilityRole="button">
+          <Pressable style={s.emptyBtn} onPress={() => setShowSourcePicker(true)} accessibilityRole="button">
             <Plus size={18} color={colors.white} />
             <Text style={s.emptyBtnText}>Add Floor Plan</Text>
           </Pressable>
@@ -599,6 +612,34 @@ export function FloorMapScreen({ route, navigation }: Props) {
           onClose={() => setSelectedPin(null)}
         />
       )}
+      {/* ── Source picker bottom sheet ── */}
+      <Modal visible={showSourcePicker} transparent animationType="slide" onRequestClose={() => setShowSourcePicker(false)}>
+        <Pressable style={s.sourceOverlay} onPress={() => setShowSourcePicker(false)}>
+          <Pressable style={s.sourceSheet} onPress={(e) => e.stopPropagation()}>
+            <Pressable style={s.sourceRow} onPress={pickImage}>
+              <Upload size={24} color={colors.text} />
+              <View style={s.sourceTextCol}>
+                <Text style={s.sourceTitle}>Upload floor plan</Text>
+                <Text style={s.sourceSub}>PDF or image from your files</Text>
+              </View>
+              <ChevronRight size={18} color={colors.textTertiary} />
+            </Pressable>
+            <View style={s.sourceDivider} />
+            <Pressable style={s.sourceRow} onPress={scanWithCamera}>
+              <Camera size={24} color={colors.text} />
+              <View style={s.sourceTextCol}>
+                <Text style={s.sourceTitle}>Scan a map</Text>
+                <Text style={s.sourceSub}>Photograph a physical floor plan</Text>
+              </View>
+              <ChevronRight size={18} color={colors.textTertiary} />
+            </Pressable>
+            <View style={s.sourceDivider} />
+            <Pressable style={s.sourceCancel} onPress={() => setShowSourcePicker(false)}>
+              <Text style={s.sourceCancelText}>Cancel</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -831,4 +872,22 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   nameSaveText: { fontSize: 14, color: colors.white, fontWeight: typography.weight.semibold },
+
+  // Source picker bottom sheet
+  sourceOverlay: {
+    flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay,
+  },
+  sourceSheet: {
+    backgroundColor: colors.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16,
+    paddingBottom: 24,
+  },
+  sourceRow: {
+    flexDirection: 'row', alignItems: 'center', height: 72, paddingHorizontal: 20, gap: 14,
+  },
+  sourceTextCol: { flex: 1 },
+  sourceTitle: { fontSize: 15, fontWeight: typography.weight.semibold, color: colors.text },
+  sourceSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  sourceDivider: { height: 1, backgroundColor: '#3A3A3A', marginHorizontal: 20 },
+  sourceCancel: { alignItems: 'center', paddingVertical: 16 },
+  sourceCancelText: { fontSize: 15, fontWeight: typography.weight.medium, color: colors.textSecondary },
 });
