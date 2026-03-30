@@ -202,7 +202,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json()
-    const { image_base64, mime_type = 'image/jpeg', domain = 'general' } = body
+    const { image_base64, mime_type = 'image/jpeg', domain = 'general', locale = 'de' } = body
 
     if (!image_base64) {
       return new Response(JSON.stringify({ error: 'image_base64 is required' }), {
@@ -297,6 +297,8 @@ Deno.serve(async (req: Request) => {
             messages: [{
               role: 'user',
               content: `You are a museum registrar and art historian. Given this AI vision analysis of a museum object, produce an enriched documentation record with extended technical analysis.
+
+Output language for all text values (reasoning, descriptions, notes, overflow fields): ${locale === 'de' ? 'German (Museumsdeutsch)' : 'English'}. Exception: beschreibung is always German, beschreibung_en is always English.
 
 Vision analysis: ${JSON.stringify(geminiMetadata)}
 
