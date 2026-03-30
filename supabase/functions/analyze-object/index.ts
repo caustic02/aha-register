@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
-const GEMINI_MODEL = 'gemini-2.5-pro-latest'
+const GEMINI_MODEL = 'gemini-2.5-pro'
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
@@ -255,7 +255,7 @@ Deno.serve(async (req: Request) => {
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text()
       console.error('Gemini API error:', geminiResponse.status, errorText)
-      throw new Error(`Gemini API returned ${geminiResponse.status}`)
+      throw new Error(`Gemini API returned ${geminiResponse.status}: ${errorText.substring(0, 200)}`)
     }
 
     const geminiData = await geminiResponse.json()
