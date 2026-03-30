@@ -291,8 +291,7 @@ Deno.serve(async (req: Request) => {
         generationConfig: {
           temperature: 0.2,
           topP: 0.8,
-          maxOutputTokens: 8192,
-          responseMimeType: 'application/json',
+          maxOutputTokens: 4096,
         },
       }),
     })
@@ -313,8 +312,24 @@ Deno.serve(async (req: Request) => {
     try {
       geminiMetadata = JSON.parse(textContent)
     } catch {
-      const cleaned = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      geminiMetadata = JSON.parse(cleaned)
+      try {
+        // Strip markdown fences and any text before/after JSON
+        const stripped = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+        const firstBrace = stripped.indexOf('{')
+        const lastBrace = stripped.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          geminiMetadata = JSON.parse(stripped.substring(firstBrace, lastBrace + 1))
+        } else {
+          throw new Error('No JSON object found in response')
+        }
+      } catch {
+        console.error('Gemini JSON parse failed. Raw response:', textContent.substring(0, 500))
+        // Return minimal metadata so the function doesn't crash
+        geminiMetadata = {
+          description: { value: textContent.substring(0, 300), confidence: 30 },
+          keywords: { value: ['parse-error'], confidence: 0 },
+        }
+      }
     }
 
     const geminiMs = Date.now() - geminiStart
