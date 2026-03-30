@@ -2,7 +2,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent'
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
+const GEMINI_MODEL = 'gemini-2.5-pro-preview-05-06'
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
+const CLAUDE_MODEL = 'claude-sonnet-4-20250514'
 
 // ── Domain-specific system prompts ──────────────────────────────────────────
 
@@ -214,7 +217,9 @@ Deno.serve(async (req: Request) => {
 
     console.log(`analyze-object: user=${user.id} domain=${domain}`)
 
-    // Call Gemini API
+    // ── Stage 1: Gemini vision extraction ─────────────────────────────────
+    const geminiStart = Date.now()
+
     const geminiResponse = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -254,29 +259,115 @@ Deno.serve(async (req: Request) => {
     }
 
     const geminiData = await geminiResponse.json()
-
-    // Extract the text content from Gemini's response
     const textContent = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
     if (!textContent) {
       throw new Error('No content in Gemini response')
     }
 
-    // Parse the JSON response (Gemini with responseMimeType should return clean JSON)
-    let metadata
+    let geminiMetadata
     try {
-      metadata = JSON.parse(textContent)
+      geminiMetadata = JSON.parse(textContent)
     } catch {
-      // If JSON parse fails, try stripping markdown code fences
       const cleaned = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-      metadata = JSON.parse(cleaned)
+      geminiMetadata = JSON.parse(cleaned)
+    }
+
+    const geminiMs = Date.now() - geminiStart
+    console.log(`Stage 1 (Gemini): ${geminiMs}ms`)
+
+    // ── Stage 2: Claude enrichment ────────────────────────────────────────
+    let claudeEnrichment = null
+    let claudeSuccess = false
+    let claudeError: string | null = null
+    let claudeMs = 0
+
+    if (ANTHROPIC_API_KEY) {
+      const claudeStart = Date.now()
+      try {
+        const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: CLAUDE_MODEL,
+            max_tokens: 2000,
+            messages: [{
+              role: 'user',
+              content: `You are a museum registrar and art historian. Given this AI vision analysis of a museum object, produce an enriched documentation record.
+
+Vision analysis: ${JSON.stringify(geminiMetadata)}
+
+Respond ONLY with valid JSON, no markdown, no code fences, no preamble. Include these fields:
+- beschreibung: Museum-grade object description in German, 2-3 sentences. Professional Museumsdeutsch.
+- beschreibung_en: Same description in English
+- period_classification: { "period": string, "confidence": number 0-100, "reasoning": string }
+- aat_terms: Array of { "term": string, "aat_id": string or null, "field": "material"|"technique"|"object_type" }. Match to Getty AAT vocabulary where possible.
+- conservation_priority: { "level": "low"|"medium"|"high", "reasoning": string }
+- stylistic_notes: Brief art historical observations, or null if insufficient evidence
+- enriched_metadata: The original vision fields, corrected or expanded where you have better knowledge. Keep the same { value, confidence } structure.`
+            }],
+          }),
+        })
+
+        if (claudeResponse.ok) {
+          const claudeData = await claudeResponse.json()
+          const claudeText = claudeData.content?.[0]?.text
+          if (claudeText) {
+            try {
+              claudeEnrichment = JSON.parse(claudeText)
+              claudeSuccess = true
+            } catch {
+              const cleaned = claudeText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+              claudeEnrichment = JSON.parse(cleaned)
+              claudeSuccess = true
+            }
+          }
+        } else {
+          claudeError = `Claude API returned ${claudeResponse.status}`
+          console.error('Claude API error:', claudeResponse.status, await claudeResponse.text())
+        }
+      } catch (err) {
+        claudeError = err instanceof Error ? err.message : 'Claude enrichment failed'
+        console.error('Claude enrichment error:', err)
+      }
+      claudeMs = Date.now() - claudeStart
+      console.log(`Stage 2 (Claude): ${claudeMs}ms, success=${claudeSuccess}`)
+    } else {
+      console.log('Stage 2 skipped: ANTHROPIC_API_KEY not configured')
+      claudeError = 'ANTHROPIC_API_KEY not configured'
+    }
+
+    // ── Merge results ─────────────────────────────────────────────────────
+    const metadata = {
+      ...geminiMetadata,
+      ...(claudeEnrichment?.enriched_metadata ?? {}),
+      ...(claudeSuccess ? {
+        ai_beschreibung: claudeEnrichment.beschreibung,
+        ai_beschreibung_en: claudeEnrichment.beschreibung_en,
+        period_classification: claudeEnrichment.period_classification,
+        aat_terms: claudeEnrichment.aat_terms,
+        conservation_priority: claudeEnrichment.conservation_priority,
+        stylistic_notes: claudeEnrichment.stylistic_notes,
+      } : {}),
     }
 
     return new Response(JSON.stringify({
       success: true,
       metadata,
-      model: 'gemini-2.5-pro',
       domain,
       analyzed_at: new Date().toISOString(),
+      stages: {
+        gemini: { model: GEMINI_MODEL, success: true, duration_ms: geminiMs },
+        claude: {
+          model: CLAUDE_MODEL,
+          success: claudeSuccess,
+          duration_ms: claudeMs,
+          ...(claudeError ? { error: claudeError } : {}),
+        },
+      },
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
