@@ -21,51 +21,7 @@ const JSON_SCHEMA = `
   "culture_origin": { "value": "string - cultural or geographic origin", "confidence": number 0-100 },
   "condition_summary": { "value": "string - visible condition assessment", "confidence": number 0-100 },
   "suggested_artists": { "value": [{ "name": "string or null", "role": "string", "confidence": number 0-100 }] },
-  "keywords": { "value": ["string - 3-8 relevant keywords"], "confidence": number 0-100 },
-  "overflow": {
-    "physical": {
-      "dominant_colors": [{ "hex": "#hex", "name": "color name", "percentage": number }],
-      "surface_texture": { "value": "string", "confidence": number 0-100 },
-      "porosity": { "value": "string", "confidence": number 0-100 },
-      "opacity": { "value": "string", "confidence": number 0-100 },
-      "reflectance": { "value": "string", "confidence": number 0-100 },
-      "weight_estimate": { "value": "string", "reasoning": "string", "confidence": number 0-100 },
-      "volume_estimate": { "value": "string", "confidence": number 0-100 },
-      "symmetry": { "type": "string", "axis": "string", "confidence": number 0-100 }
-    },
-    "conservation": {
-      "crack_mapping": { "count": number, "severity": "string", "locations": ["string"], "confidence": number 0-100 },
-      "aging_signatures": [{ "type": "string", "location": "string", "severity": "string", "confidence": number 0-100 }],
-      "restoration_traces": { "detected": boolean, "details": "string or null", "confidence": number 0-100 },
-      "structural_risk": { "level": "string", "reasoning": "string", "confidence": number 0-100 },
-      "contamination": { "detected": boolean, "type": "string or null", "confidence": number 0-100 }
-    },
-    "fabrication": {
-      "tool_marks": [{ "type": "string", "location": "string", "confidence": number 0-100 }],
-      "firing_evidence": { "kiln_type": "string", "temp_estimate": "string", "confidence": number 0-100 },
-      "join_methods": [{ "type": "string", "location": "string", "confidence": number 0-100 }],
-      "layer_analysis": { "layers": ["string"], "confidence": number 0-100 },
-      "production_method": { "value": "string", "confidence": number 0-100 }
-    },
-    "comparative": {
-      "stylistic_influences": ["string"],
-      "workshop_indicators": { "value": "string", "confidence": number 0-100 },
-      "forgery_risk": { "level": "string", "reasoning": "string", "confidence": number 0-100 },
-      "similar_typologies": ["string"]
-    },
-    "environmental": {
-      "light_sensitivity": { "level": "string", "reasoning": "string", "confidence": number 0-100 },
-      "humidity_sensitivity": { "level": "string", "reasoning": "string", "confidence": number 0-100 },
-      "storage_recommendations": "string",
-      "pest_vulnerability": { "level": "string", "reasoning": "string", "confidence": number 0-100 }
-    },
-    "display": {
-      "mounting_recommendation": { "type": "string", "reasoning": "string" },
-      "lighting": { "lux": "string", "color_temp": "string", "angle": "string" },
-      "viewing_distance": "string",
-      "companion_suggestions": ["string"]
-    }
-  }
+  "keywords": { "value": ["string - 3-8 relevant keywords"], "confidence": number 0-100 }
 }`
 
 const SHARED_RULES = `
@@ -80,7 +36,6 @@ Rules:
 - For medium/materials, list the actual materials visible (e.g., "plastic, metal, glass LCD screen") — not abstract material categories
 - For condition, describe what you can see (e.g., "good condition, minor scratches on casing") — not a single-word rating
 - If uncertain about a field, say so honestly and give a low confidence score
-- IMPORTANT: Populate the "overflow" object with ALL observable physical, conservation, fabrication, comparative, environmental, and display properties. Use null for properties that cannot be determined. Include confidence scores 0-100 for each determination.
 - Respond ONLY with valid JSON matching the schema above`
 
 const DOMAIN_PROMPTS: Record<string, string> = {
@@ -260,46 +215,41 @@ Deno.serve(async (req: Request) => {
     const systemPrompt = DOMAIN_PROMPTS[domain] ?? DOMAIN_PROMPTS.general
     const userPrompt = DOMAIN_USER_PROMPTS[domain] ?? DOMAIN_USER_PROMPTS.general
 
-    console.log(`analyze-object v17 invoked: user=${user.id} domain=${domain} image_size=${image_base64.length} mime=${mime_type}`)
-    console.log(`Gemini URL: ${GEMINI_URL}?key=REDACTED`)
-    console.log(`System prompt length: ${systemPrompt.length} chars`)
+    console.log(`analyze-object: user=${user.id} domain=${domain}`)
 
     // ── Stage 1: Gemini vision extraction ─────────────────────────────────
     const geminiStart = Date.now()
 
-    const geminiRequestBody = JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            {
-              inlineData: {
-                mimeType: mime_type,
-                data: image_base64,
-              },
-            },
-            {
-              text: userPrompt,
-            },
-          ],
-        },
-      ],
-      systemInstruction: {
-        parts: [{ text: systemPrompt }],
-      },
-      generationConfig: {
-        temperature: 0.2,
-        topP: 0.8,
-        maxOutputTokens: 4096,
-      },
-    })
-    console.log(`Gemini request body size: ${geminiRequestBody.length} bytes`)
-    console.log(`Gemini request body preview: ${geminiRequestBody.substring(0, 200)}...`)
-
     const geminiResponse = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: geminiRequestBody,
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                inlineData: {
+                  mimeType: mime_type,
+                  data: image_base64,
+                },
+              },
+              {
+                text: userPrompt,
+              },
+            ],
+          },
+        ],
+        systemInstruction: {
+          parts: [{ text: systemPrompt }],
+        },
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.8,
+          maxOutputTokens: 2048,
+          responseMimeType: 'application/json',
+        },
+      }),
     })
 
     if (!geminiResponse.ok) {
@@ -318,24 +268,8 @@ Deno.serve(async (req: Request) => {
     try {
       geminiMetadata = JSON.parse(textContent)
     } catch {
-      try {
-        // Strip markdown fences and any text before/after JSON
-        const stripped = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-        const firstBrace = stripped.indexOf('{')
-        const lastBrace = stripped.lastIndexOf('}')
-        if (firstBrace !== -1 && lastBrace > firstBrace) {
-          geminiMetadata = JSON.parse(stripped.substring(firstBrace, lastBrace + 1))
-        } else {
-          throw new Error('No JSON object found in response')
-        }
-      } catch {
-        console.error('Gemini JSON parse failed. Raw response:', textContent.substring(0, 500))
-        // Return minimal metadata so the function doesn't crash
-        geminiMetadata = {
-          description: { value: textContent.substring(0, 300), confidence: 30 },
-          keywords: { value: ['parse-error'], confidence: 0 },
-        }
-      }
+      const cleaned = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+      geminiMetadata = JSON.parse(cleaned)
     }
 
     const geminiMs = Date.now() - geminiStart
@@ -362,7 +296,7 @@ Deno.serve(async (req: Request) => {
             max_tokens: 4096,
             messages: [{
               role: 'user',
-              content: `You are a museum registrar and art historian. Given this AI vision analysis of a museum object (including detailed overflow data), produce an enriched documentation record.
+              content: `You are a museum registrar and art historian. Given this AI vision analysis of a museum object, produce an enriched documentation record with extended technical analysis.
 
 Vision analysis: ${JSON.stringify(geminiMetadata)}
 
@@ -370,11 +304,17 @@ Respond ONLY with valid JSON, no markdown, no code fences, no preamble. Include 
 - beschreibung: Museum-grade object description in German, 2-3 sentences. Professional Museumsdeutsch.
 - beschreibung_en: Same description in English
 - period_classification: { "period": string, "confidence": number 0-100, "reasoning": string }
-- aat_terms: Array of { "term": string, "aat_id": string or null, "field": "material"|"technique"|"object_type"|"style"|"culture" }. Match to Getty AAT vocabulary where possible. Include terms for overflow fields too.
+- aat_terms: Array of { "term": string, "aat_id": string or null, "field": "material"|"technique"|"object_type"|"style"|"culture" }. Match to Getty AAT vocabulary where possible.
 - conservation_priority: { "level": "low"|"medium"|"high", "reasoning": string }
 - stylistic_notes: Brief art historical observations, or null if insufficient evidence
-- enriched_metadata: The original top-level vision fields, corrected or expanded where you have better knowledge. Keep the same { value, confidence } structure.
-- enriched_overflow: Corrections or expansions to the overflow categories (physical, conservation, fabrication, comparative, environmental, display). Only include categories where you can add value. Keep the same nested structure.`
+- enriched_metadata: The original vision fields, corrected or expanded where you have better knowledge. Keep the same { value, confidence } structure.
+- overflow: Extended analysis organized by category. Include ONLY categories where you can make informed assessments. Each field uses { "value": string, "confidence": number 0-100 } unless noted. Categories:
+  - physical: { dominant_colors: [{ hex, name, percentage }], surface_texture, porosity, opacity, reflectance, weight_estimate: { value, reasoning, confidence }, volume_estimate, symmetry: { type, axis, confidence } }
+  - conservation: { crack_mapping: { count, severity, locations: [], confidence }, aging_signatures: [{ type, location, severity, confidence }], restoration_traces: { detected: bool, details, confidence }, structural_risk: { level, reasoning, confidence }, contamination: { detected: bool, type, confidence } }
+  - fabrication: { tool_marks: [{ type, location, confidence }], firing_evidence: { kiln_type, temp_estimate, confidence }, join_methods: [{ type, location, confidence }], layer_analysis: { layers: [], confidence }, production_method }
+  - comparative: { stylistic_influences: [], workshop_indicators, forgery_risk: { level, reasoning, confidence }, similar_typologies: [] }
+  - environmental: { light_sensitivity: { level, reasoning, confidence }, humidity_sensitivity: { level, reasoning, confidence }, storage_recommendations: string, pest_vulnerability: { level, reasoning, confidence } }
+  - display: { mounting_recommendation: { type, reasoning }, lighting: { lux, color_temp, angle }, viewing_distance: string, companion_suggestions: [] }`
             }],
           }),
         })
@@ -408,24 +348,9 @@ Respond ONLY with valid JSON, no markdown, no code fences, no preamble. Include 
     }
 
     // ── Merge results ─────────────────────────────────────────────────────
-    // Deep-merge overflow: Claude's enriched_overflow overwrites matching keys
-    const geminiOverflow = geminiMetadata.overflow ?? {}
-    const claudeOverflow = claudeEnrichment?.enriched_overflow ?? {}
-    const mergedOverflow: Record<string, unknown> = {}
-    for (const cat of ['physical', 'conservation', 'fabrication', 'comparative', 'environmental', 'display']) {
-      const g = (geminiOverflow as Record<string, unknown>)[cat]
-      const c = (claudeOverflow as Record<string, unknown>)[cat]
-      if (g || c) {
-        mergedOverflow[cat] = { ...(g && typeof g === 'object' ? g : {}), ...(c && typeof c === 'object' ? c : {}) }
-      }
-    }
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { overflow: _omit, ...geminiTopLevel } = geminiMetadata
     const metadata = {
-      ...geminiTopLevel,
+      ...geminiMetadata,
       ...(claudeEnrichment?.enriched_metadata ?? {}),
-      overflow: mergedOverflow,
       ...(claudeSuccess ? {
         ai_beschreibung: claudeEnrichment.beschreibung,
         ai_beschreibung_en: claudeEnrichment.beschreibung_en,
@@ -433,6 +358,7 @@ Respond ONLY with valid JSON, no markdown, no code fences, no preamble. Include 
         aat_terms: claudeEnrichment.aat_terms,
         conservation_priority: claudeEnrichment.conservation_priority,
         stylistic_notes: claudeEnrichment.stylistic_notes,
+        overflow: claudeEnrichment.overflow ?? {},
       } : {}),
     }
 
@@ -456,14 +382,10 @@ Respond ONLY with valid JSON, no markdown, no code fences, no preamble. Include 
     })
 
   } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error)
-    const stack = error instanceof Error ? error.stack?.split('\n').slice(0, 5) : []
-    console.error('analyze-object CRASH:', msg)
-    console.error('Stack:', stack)
+    console.error('analyze-object error:', error)
     return new Response(JSON.stringify({
       success: false,
-      error: msg,
-      stack,
+      error: error instanceof Error ? error.message : 'Unknown error',
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
