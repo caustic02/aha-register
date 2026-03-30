@@ -260,40 +260,46 @@ Deno.serve(async (req: Request) => {
     const systemPrompt = DOMAIN_PROMPTS[domain] ?? DOMAIN_PROMPTS.general
     const userPrompt = DOMAIN_USER_PROMPTS[domain] ?? DOMAIN_USER_PROMPTS.general
 
-    console.log(`analyze-object: user=${user.id} domain=${domain}`)
+    console.log(`analyze-object v17 invoked: user=${user.id} domain=${domain} image_size=${image_base64.length} mime=${mime_type}`)
+    console.log(`Gemini URL: ${GEMINI_URL}?key=REDACTED`)
+    console.log(`System prompt length: ${systemPrompt.length} chars`)
 
     // ── Stage 1: Gemini vision extraction ─────────────────────────────────
     const geminiStart = Date.now()
 
+    const geminiRequestBody = JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              inlineData: {
+                mimeType: mime_type,
+                data: image_base64,
+              },
+            },
+            {
+              text: userPrompt,
+            },
+          ],
+        },
+      ],
+      systemInstruction: {
+        parts: [{ text: systemPrompt }],
+      },
+      generationConfig: {
+        temperature: 0.2,
+        topP: 0.8,
+        maxOutputTokens: 4096,
+      },
+    })
+    console.log(`Gemini request body size: ${geminiRequestBody.length} bytes`)
+    console.log(`Gemini request body preview: ${geminiRequestBody.substring(0, 200)}...`)
+
     const geminiResponse = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                inlineData: {
-                  mimeType: mime_type,
-                  data: image_base64,
-                },
-              },
-              {
-                text: userPrompt,
-              },
-            ],
-          },
-        ],
-        systemInstruction: {
-          parts: [{ text: systemPrompt }],
-        },
-        generationConfig: {
-          temperature: 0.2,
-          topP: 0.8,
-          maxOutputTokens: 4096,
-        },
-      }),
+      body: geminiRequestBody,
     })
 
     if (!geminiResponse.ok) {
@@ -450,10 +456,14 @@ Respond ONLY with valid JSON, no markdown, no code fences, no preamble. Include 
     })
 
   } catch (error) {
-    console.error('analyze-object error:', error)
+    const msg = error instanceof Error ? error.message : String(error)
+    const stack = error instanceof Error ? error.stack?.split('\n').slice(0, 5) : []
+    console.error('analyze-object CRASH:', msg)
+    console.error('Stack:', stack)
     return new Response(JSON.stringify({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: msg,
+      stack,
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
