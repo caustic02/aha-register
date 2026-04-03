@@ -521,24 +521,19 @@ export class SyncTransport {
       return;
     }
 
-    // Has a Supabase Storage path — construct the authenticated URL
+    // Has a Supabase Storage path — construct the public URL
     if (storagePath) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data } = supabase.storage.from('media').getPublicUrl(storagePath);
-        if (data?.publicUrl) {
-          await this.db.runAsync(
-            `UPDATE media SET file_path = ? WHERE id = ?`,
-            [data.publicUrl, mediaId],
-          );
-          return;
-        }
+      // seed-media bucket is public; media bucket is private (needs signed URL)
+      const isUserUpload = /^[0-9a-f]{8}-/i.test(storagePath);
+      const bucket = isUserUpload ? 'media' : 'seed-media';
+      const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
+      if (data?.publicUrl) {
+        await this.db.runAsync(
+          `UPDATE media SET file_path = ? WHERE id = ?`,
+          [data.publicUrl, mediaId],
+        );
+        return;
       }
-    }
-
-    // file_path is a dead local path from another device — clear it
-    if (filePath && (filePath.startsWith('/data/') || filePath.startsWith('file://'))) {
-      // Leave as-is; the app handles missing files with placeholders
     }
   }
 
