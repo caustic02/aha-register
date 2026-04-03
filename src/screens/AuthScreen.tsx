@@ -72,13 +72,14 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
       onAuthenticated();
     } else {
       const raw = (result.error ?? '').toLowerCase();
+      console.error('[Auth error]', JSON.stringify(result.error, null, 2));
       let friendly: string;
       if (raw.includes('row-level security') || raw.includes('policy')) {
         friendly = t('auth.error_rls');
       } else if (raw.includes('already registered') || raw.includes('already been registered')) {
         friendly = t('auth.error_email_taken');
       } else {
-        friendly = t('auth.error_generic');
+        friendly = result.error || t('auth.error_generic');
       }
       setError(friendly);
     }

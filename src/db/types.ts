@@ -175,6 +175,7 @@ export interface Institution {
   institution_type: string | null;
   address: string | null;
   contact_info: string | null; // JSON
+  settings: string | null; // JSON
   created_at: string;
   updated_at: string;
 }
@@ -279,6 +280,10 @@ export interface RegisterObject {
   datensatz_sprache?: string | null;
   verwahrende_einrichtung?: string | null;
   nutzungsrechte_metadaten?: string | null;
+  durchmesser?: string | null;
+  format?: string | null;
+  condition_status?: string | null;
+  condition_note?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -323,6 +328,10 @@ export interface Media {
   usage_restrictions?: string | null;
   // Companion app parity
   alt_text?: string | null;
+  // Original file tracking (Supabase parity)
+  original_file_path?: string | null;
+  original_mime_type?: string | null;
+  original_file_size?: number | null;
 }
 
 export interface Annotation {

@@ -360,6 +360,17 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE media ADD COLUMN alt_text TEXT`,
   // object_collections: updated_at (companion app parity)
   `ALTER TABLE object_collections ADD COLUMN updated_at TEXT`,
+  // objects: additional Supabase parity columns
+  `ALTER TABLE objects ADD COLUMN durchmesser TEXT`,
+  `ALTER TABLE objects ADD COLUMN format TEXT`,
+  `ALTER TABLE objects ADD COLUMN condition_status TEXT`,
+  `ALTER TABLE objects ADD COLUMN condition_note TEXT`,
+  // media: original file tracking (Supabase parity)
+  `ALTER TABLE media ADD COLUMN original_file_path TEXT`,
+  `ALTER TABLE media ADD COLUMN original_mime_type TEXT`,
+  `ALTER TABLE media ADD COLUMN original_file_size INTEGER`,
+  // institutions: settings (Supabase parity)
+  `ALTER TABLE institutions ADD COLUMN settings TEXT`, // JSON
 ];
 
 /**

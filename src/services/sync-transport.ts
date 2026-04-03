@@ -3,7 +3,7 @@ import * as Network from 'expo-network';
 import { supabase } from './supabase';
 import { getSetting, setSetting } from './settingsService';
 import { generateId } from '../utils/uuid';
-import type { SyncQueueItem, Media } from '../db/types';
+import type { SyncQueueItem } from '../db/types';
 import { uploadMediaToStorage } from './storage-upload';
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -251,6 +251,10 @@ export class SyncTransport {
     // Convert SQLite boolean integers to real booleans for Postgres
     if ('legal_hold' in payload) payload.legal_hold = Boolean(payload.legal_hold);
     if ('is_primary' in payload) payload.is_primary = Boolean(payload.is_primary);
+    if ('protocol_complete' in payload) payload.protocol_complete = Boolean(payload.protocol_complete);
+    if ('belastete_provenienz' in payload) payload.belastete_provenienz = Boolean(payload.belastete_provenienz);
+    if ('leihgabe' in payload) payload.leihgabe = Boolean(payload.leihgabe);
+    if ('ausfuhrgenehmigung' in payload) payload.ausfuhrgenehmigung = Boolean(payload.ausfuhrgenehmigung);
 
     // Parse JSON text fields into objects for jsonb columns
     for (const col of ['type_specific_data', 'contact_info', 'device_info', 'evidence_context', 'old_values', 'new_values']) {
@@ -376,6 +380,10 @@ export class SyncTransport {
     // Convert Postgres booleans back to SQLite integers
     if ('legal_hold' in localRow) localRow.legal_hold = localRow.legal_hold ? 1 : 0;
     if ('is_primary' in localRow) localRow.is_primary = localRow.is_primary ? 1 : 0;
+    if ('protocol_complete' in localRow) localRow.protocol_complete = localRow.protocol_complete ? 1 : 0;
+    if ('belastete_provenienz' in localRow) localRow.belastete_provenienz = localRow.belastete_provenienz ? 1 : 0;
+    if ('leihgabe' in localRow) localRow.leihgabe = localRow.leihgabe ? 1 : 0;
+    if ('ausfuhrgenehmigung' in localRow) localRow.ausfuhrgenehmigung = localRow.ausfuhrgenehmigung ? 1 : 0;
 
     // Provide defaults for NOT NULL columns that might be null in remote data
     if (table === 'media') {
@@ -396,7 +404,7 @@ export class SyncTransport {
     }
 
     // Stringify jsonb columns for SQLite TEXT storage
-    for (const col of ['type_specific_data', 'contact_info', 'device_info', 'evidence_context', 'old_values', 'new_values', 'settings']) {
+    for (const col of ['type_specific_data', 'contact_info', 'device_info', 'evidence_context', 'old_values', 'new_values', 'settings', 'shots_completed', 'shots_remaining']) {
       if (col in localRow && localRow[col] !== null && typeof localRow[col] === 'object') {
         localRow[col] = JSON.stringify(localRow[col]);
       }
