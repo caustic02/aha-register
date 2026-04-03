@@ -29,7 +29,6 @@ import {
   Badge,
   Button,
   Card,
-  Divider,
   IconButton,
   MetadataRow,
   SectionHeader,
@@ -68,7 +67,7 @@ import type { RootStackParamList } from '../navigation/RootStack';
 import { LocationPicker } from '../components/LocationPicker';
 import { ObjectChecklist } from '../components/ObjectChecklist';
 import { Map as MapIcon } from 'lucide-react-native';
-import type { MapPin as MapPinType, FloorMap } from '../db/types';
+import Svg, { Circle } from 'react-native-svg';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -78,6 +77,22 @@ interface PersonRow extends ObjectPerson {
   name: string;
   birth_year: number | null;
   death_year: number | null;
+}
+
+interface AnnotationRow {
+  id: string;
+  annotation_type: string;
+  content: string;
+  user_id: string | null;
+  created_at: string;
+}
+
+interface AuditRow {
+  id: string;
+  action: string;
+  old_values: string | null;
+  new_values: string | null;
+  created_at: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -119,6 +134,135 @@ function lifespan(birth?: number | null, death?: number | null): string {
 const ACTION_BAR_HEIGHT = 64;
 const GALLERY_IMG_SIZE = 220;
 
+const EDITABLE_FIELDS = new Set([
+  'title', 'description', 'inventory_number', 'alte_inventarnummer',
+  'klassifikation', 'material', 'technik', 'masse_hoehe', 'masse_breite',
+  'masse_tiefe', 'masse_einheit', 'gewicht', 'gewicht_einheit',
+  'durchmesser', 'format', 'inschriften', 'markierungen', 'schlagworte',
+  'erhaltungszustand', 'zustandsbeschreibung', 'restaurierungsbedarf',
+  'provenienzangaben', 'erwerbungsart', 'erwerbungsdatum', 'veraeusserer',
+  'standort_gebaeude', 'standort_etage', 'standort_raum', 'standort_regal',
+  'standort_hinweise', 'aktueller_status', 'condition_status', 'condition_note',
+]);
+
+// ── Inner Components ──────────────────────────────────────────────────────────
+
+function CollapsibleSection({ title, defaultOpen = true, children }: {
+  title: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <View style={sec.section}>
+      <Pressable style={sec.sectionHeader} onPress={() => setOpen(!open)} hitSlop={8}>
+        <Text style={sec.sectionTitle}>{title}</Text>
+        {open ? <CollapseIcon size={18} color={colors.textSecondary} /> : <ExpandIcon size={18} color={colors.textSecondary} />}
+      </Pressable>
+      {open && <View style={sec.sectionBody}>{children}</View>}
+    </View>
+  );
+}
+
+function CompletionRing({ percent }: { percent: number }) {
+  const size = 48;
+  const strokeWidth = 4;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const filled = (percent / 100) * circumference;
+
+  return (
+    <View style={sec.ringContainer}>
+      <Svg width={size} height={size}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={colors.border}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke={colors.accent}
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={`${filled} ${circumference - filled}`}
+          strokeDashoffset={circumference / 4}
+          strokeLinecap="round"
+        />
+      </Svg>
+      <Text style={sec.ringText}>{percent}%</Text>
+    </View>
+  );
+}
+
+function EditableField({ label, value, onSave, multiline }: {
+  label: string;
+  value: string | null;
+  onSave: (val: string | null) => void;
+  multiline?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value ?? '');
+
+  const handlePress = useCallback(() => {
+    setDraft(value ?? '');
+    setEditing(true);
+  }, [value]);
+
+  const handleSubmit = useCallback(() => {
+    setEditing(false);
+    const trimmed = draft.trim();
+    const newVal = trimmed.length > 0 ? trimmed : null;
+    if (newVal !== value) {
+      onSave(newVal);
+    }
+  }, [draft, value, onSave]);
+
+  if (editing) {
+    return (
+      <View style={sec.editableContainer}>
+        <Text style={sec.fieldLabel}>{label}</Text>
+        <TextInput
+          style={[sec.fieldInput, multiline === true && sec.fieldInputMultiline]}
+          value={draft}
+          onChangeText={setDraft}
+          onBlur={handleSubmit}
+          onSubmitEditing={multiline === true ? undefined : handleSubmit}
+          multiline={multiline}
+          autoFocus
+          blurOnSubmit={multiline !== true}
+          returnKeyType={multiline === true ? 'default' : 'done'}
+        />
+      </View>
+    );
+  }
+
+  return (
+    <Pressable style={sec.editableContainer} onPress={handlePress} hitSlop={4}>
+      <Text style={sec.fieldLabel}>{label}</Text>
+      <Text style={value ? sec.fieldValue : sec.fieldEmpty} numberOfLines={multiline === true ? 6 : 1}>
+        {value || '\u2014'}
+      </Text>
+    </Pressable>
+  );
+}
+
+function ConditionBadge({ status }: { status: string | null | undefined }) {
+  if (!status) return null;
+  const lower = status.toLowerCase();
+  const bg = lower === 'good' ? colors.success : lower === 'fair' ? colors.warning : lower === 'poor' ? colors.error : colors.border;
+
+  return (
+    <View style={[sec.conditionPill, { backgroundColor: bg }]}>
+      <Text style={sec.conditionPillText}>{status}</Text>
+    </View>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ObjectDetailScreen({ route, navigation }: Props) {
@@ -137,6 +281,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [viewerUri, setViewerUri] = useState<string | null>(null);
   const [videoPlayerUri, setVideoPlayerUri] = useState<string | null>(null);
   const [showTechnical, setShowTechnical] = useState(false);
+  const [annotations, setAnnotations] = useState<AnnotationRow[]>([]);
+  const [auditTrail, setAuditTrail] = useState<AuditRow[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
 
   // Tab navigation for multi-view capture
   // Single stack - no tab nav needed
@@ -185,6 +332,28 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       setObject(obj ?? null);
       setMedia(mediaRows);
       setPersons(personRows);
+
+      // Load annotations (best-effort)
+      try {
+        const annotationRows = await db.getAllAsync<AnnotationRow>(
+          'SELECT id, annotation_type, content, user_id, created_at FROM annotations WHERE object_id = ? ORDER BY created_at DESC',
+          [objectId],
+        );
+        setAnnotations(annotationRows);
+      } catch {
+        setAnnotations([]);
+      }
+
+      // Load audit trail (best-effort)
+      try {
+        const auditRows = await db.getAllAsync<AuditRow>(
+          'SELECT id, action, old_values, new_values, created_at FROM audit_trail WHERE record_id = ? ORDER BY created_at DESC LIMIT 50',
+          [objectId],
+        );
+        setAuditTrail(auditRows);
+      } catch {
+        setAuditTrail([]);
+      }
 
       // Check for map pin (best-effort, don't fail if table doesn't exist yet)
       try {
@@ -405,6 +574,76 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     }
   }, [db, objectId, t, refreshDocuments, collectionDomain]);
 
+  // ── Inline editing handler ──────────────────────────────────────────────────
+
+  const handleFieldSave = useCallback(async (fieldName: string, value: string | null) => {
+    if (!object || !EDITABLE_FIELDS.has(fieldName)) return;
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `UPDATE objects SET "${fieldName}" = ?, updated_at = ? WHERE id = ?`,
+      [value, now, objectId],
+    );
+    setObject(prev => prev ? { ...prev, [fieldName]: value, updated_at: now } as RegisterObject : prev);
+    import('../sync/engine').then(({ SyncEngine: SE }) => {
+      new SE(db).queueChange('objects', objectId, 'update', { [fieldName]: value });
+    }).catch(() => {});
+  }, [object, db, objectId]);
+
+  // ── AI Analysis handler ─────────────────────────────────────────────────────
+
+  const handleRunAI = useCallback(async () => {
+    const pm = media.find(m => m.is_primary === 1) ?? media[0];
+    if (!pm) return;
+    setAiLoading(true);
+    try {
+      const file = new File(pm.file_path);
+      const base64 = await file.base64();
+      const { analyzeObject } = await import('../services/ai-analysis');
+      const currentExtras: Record<string, unknown> = (() => {
+        try {
+          return object?.type_specific_data
+            ? (JSON.parse(object.type_specific_data) as Record<string, unknown>)
+            : {};
+        } catch {
+          return {};
+        }
+      })();
+      const result = await analyzeObject(base64, pm.mime_type, collectionDomain);
+      if (result.success && result.metadata) {
+        const tsd = { ...currentExtras, ...result.metadata };
+        const now = new Date().toISOString();
+        await db.runAsync(
+          'UPDATE objects SET type_specific_data = ?, updated_at = ? WHERE id = ?',
+          [JSON.stringify(tsd), now, objectId],
+        );
+        await loadData();
+        Alert.alert(t('detail.ai_success'));
+      } else {
+        Alert.alert(t('detail.ai_error'), result.error ?? '');
+      }
+    } catch (err) {
+      Alert.alert(t('detail.ai_error'), err instanceof Error ? err.message : '');
+    } finally {
+      setAiLoading(false);
+    }
+  }, [media, db, objectId, object, collectionDomain, loadData, t]);
+
+  // ── Completeness calculation ────────────────────────────────────────────────
+
+  const completeness = useMemo(() => {
+    if (!object) return 0;
+    const fields = [
+      object.title, object.inventory_number, object.alte_inventarnummer,
+      object.klassifikation, object.material, object.technik,
+      object.description, object.masse_hoehe, object.masse_breite,
+      object.masse_tiefe, object.gewicht, object.durchmesser,
+      object.format, object.provenienzangaben, object.erwerbungsart,
+      object.erwerbungsdatum, object.veraeusserer,
+    ];
+    const filled = fields.filter(f => f != null && String(f).trim() !== '' && f !== 'Untitled').length;
+    return Math.round((filled / fields.length) * 100);
+  }, [object]);
+
   // ── Derived data for export (must be before early returns) ──────────────────
 
   const exportData: ExportableObject | null = useMemo(() => {
@@ -514,9 +753,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   // ── Derived values ───────────────────────────────────────────────────────────
 
   const typeLabel = t(`object_types.${object.object_type}`);
-  const dateRange = [object.event_start, object.event_end]
-    .filter(Boolean)
-    .join('\u2013');
   const coordString = formatCoords(
     object.latitude,
     object.longitude,
@@ -544,7 +780,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       return {};
     }
   })();
-  const aiDateCreated = typeof extras.dateCreated === 'string' ? extras.dateCreated : null;
   const aiMedium = typeof extras.medium === 'string' ? extras.medium : null;
   const aiDimensions = typeof extras.dimensions === 'string' ? extras.dimensions : null;
   const aiStylePeriod = typeof extras.stylePeriod === 'string' ? extras.stylePeriod : null;
@@ -565,7 +800,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const captureAppVersion = deviceData?.appVersion ?? null;
   const captureDeviceId =
     deviceData?.deviceId != null
-      ? `${deviceData.deviceId.slice(0, 8)}…`
+      ? `${deviceData.deviceId.slice(0, 8)}\u2026`
       : null;
 
   // Protocol data (fields added in Phase 1 as optional on RegisterObject)
@@ -582,6 +817,26 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const shotsRemainingArr: string[] = (() => {
     try { return shotsRemainingRaw ? JSON.parse(shotsRemainingRaw) : []; }
     catch { return []; }
+  })();
+
+  // AI field entries from type_specific_data for rendering in AI section
+  const aiFieldEntries: { key: string; value: string; confidence?: number }[] = (() => {
+    const result: { key: string; value: string; confidence?: number }[] = [];
+    for (const [k, v] of Object.entries(extras)) {
+      if (k === 'device') continue;
+      if (v != null && typeof v === 'object' && !Array.isArray(v)) {
+        const rec = v as Record<string, unknown>;
+        if ('value' in rec && 'confidence' in rec) {
+          const displayVal = Array.isArray(rec.value) ? (rec.value as string[]).join(', ') : String(rec.value ?? '');
+          if (displayVal) {
+            result.push({ key: k, value: displayVal, confidence: typeof rec.confidence === 'number' ? rec.confidence : undefined });
+          }
+        }
+      } else if (typeof v === 'string' && v.trim()) {
+        result.push({ key: k, value: v });
+      }
+    }
+    return result;
   })();
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -630,233 +885,17 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── IDENTIFICATION (top, per museum workflow) ─────────────────── */}
-        <Card style={styles.card}>
-          <SectionHeader title={t('quickId.title')} />
-          <MetadataRow label={t('objects.title')} value={object.title} />
-          <MetadataRow
-            label={t('objects.object_type')}
-            value={typeLabel}
-          />
-          {object.inventory_number != null && (
-            <MetadataRow
-              label={t('objects.inventory_number')}
-              value={object.inventory_number}
-            />
-          )}
-        </Card>
-
-        {/* ── 2. IMAGE GALLERY ─────────────────────────────────────────────── */}
-        {media.length > 0 && mediaGrouped ? (
-          /* Grouped gallery for protocol objects */
-          <View style={styles.gallerySection}>
-            {mediaGrouped.map((group, gi) => (
-              <View key={gi} style={styles.galleryGroup}>
-                <Text style={styles.galleryGroupLabel}>{group.label}</Text>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.galleryContent}
-                >
-                  {group.items.map((m, idx) => (
-                    <Pressable
-                      key={m.id}
-                      style={styles.galleryItem}
-                      onPress={() => handleMediaTap(m)}
-                      accessibilityRole="button"
-                      accessibilityLabel={
-                        m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
-                      }
-                    >
-                      <Image
-                        source={{ uri: m.file_path }}
-                        style={styles.galleryImage}
-                        resizeMode="cover"
-                      />
-                      {isVideoMedia(m) && (
-                        <View style={styles.videoPlayOverlay}>
-                          <Play size={18} color={colors.white} fill={colors.white} />
-                        </View>
-                      )}
-                      {m.is_primary === 1 && (
-                        <View style={styles.primaryPip} />
-                      )}
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
-            ))}
-          </View>
-        ) : media.length > 0 ? (
-          /* Flat gallery for freeform objects */
-          <View style={styles.gallerySection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.galleryContent}
-            >
-              {media.map((m, idx) => (
-                <Pressable
-                  key={m.id}
-                  style={styles.galleryItem}
-                  onPress={() => handleMediaTap(m)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
-                  }
-                >
-                  <Image
-                    source={{ uri: m.file_path }}
-                    style={styles.galleryImage}
-                    resizeMode="cover"
-                  />
-                  {isVideoMedia(m) && (
-                    <View style={styles.videoPlayOverlay}>
-                      <Play size={18} color={colors.white} fill={colors.white} />
-                    </View>
-                  )}
-                  {m.is_primary === 1 && (
-                    <View style={styles.primaryPip} />
-                  )}
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
-
-        {/* ── MULTI-VIEW GALLERY (Registerbogen) ──────────────────────────── */}
-        <View style={styles.viewGallerySection}>
-          <SectionHeader title={t('view_checklist.title')} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.viewGalleryContent}
-          >
-            {VIEW_TYPES.map((viewDef) => {
-              const captured = media.find(
-                (m) => m.view_type === viewDef.key && m.media_type !== 'derivative_isolated',
-              );
-              return (
-                <Pressable
-                  key={viewDef.key}
-                  style={[
-                    styles.viewGalleryItem,
-                    captured ? styles.viewGalleryItemCaptured : styles.viewGalleryItemEmpty,
-                  ]}
-                  onPress={() => {
-                    if (captured) {
-                      setViewerUri(captured.file_path);
-                    } else {
-                      navigation.navigate('CaptureCamera', {
-                        viewType: viewDef.key as RegisterViewType,
-                        objectId: object.id,
-                      });
-                    }
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel={t(viewDef.labelKey)}
-                >
-                  {captured ? (
-                    <>
-                      <Image
-                        source={{ uri: captured.file_path }}
-                        style={styles.viewGalleryImage}
-                        resizeMode="cover"
-                      />
-                      <View style={styles.viewGalleryCheck}>
-                        <CheckIcon size={12} color={colors.white} />
-                      </View>
-                    </>
-                  ) : (
-                    <Camera size={20} color={colors.textTertiary} />
-                  )}
-                  <Text
-                    style={[
-                      styles.viewGalleryLabel,
-                      captured && styles.viewGalleryLabelCaptured,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {t(viewDef.labelKey)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-
-          {/* Per-view dimension inputs for captured views */}
-          {media
-            .filter((m) => m.view_type && VIEW_TYPES.some((v) => v.key === m.view_type))
-            .map((m) => (
-              <View key={m.id} style={styles.viewDimensionRow}>
-                <Text style={styles.viewDimensionLabel}>
-                  {t(`view_types.${m.view_type}`)} - {t('view_checklist.dimensions_label')}
-                </Text>
-                <TextInput
-                  style={styles.viewDimensionInput}
-                  placeholder={t('view_checklist.dimensions_placeholder')}
-                  placeholderTextColor={colors.textTertiary}
-                  defaultValue={m.view_dimensions ?? ''}
-                  onEndEditing={(e) => {
-                    const val = e.nativeEvent.text.trim();
-                    db.runAsync(
-                      `UPDATE media SET view_dimensions = ?, updated_at = ? WHERE id = ?`,
-                      [val || null, new Date().toISOString(), m.id],
-                    ).then(() => {
-                      import('../sync/engine').then(({ SyncEngine: SE }) => {
-                        new SE(db).queueChange('media', m.id, 'update', { view_dimensions: val || null });
-                      });
-                    }).catch(() => {});
-                  }}
-                />
-                {m.view_type === 'detail' && (
-                  <>
-                    <Text style={[styles.viewDimensionLabel, { marginTop: spacing.sm }]}>
-                      {t('view_checklist.notes_label')}
-                    </Text>
-                    <TextInput
-                      style={styles.viewDimensionInput}
-                      placeholder={t('view_checklist.notes_placeholder')}
-                      placeholderTextColor={colors.textTertiary}
-                      defaultValue={m.view_notes ?? ''}
-                      multiline
-                      onEndEditing={(e) => {
-                        const val = e.nativeEvent.text.trim();
-                        db.runAsync(
-                          `UPDATE media SET view_notes = ?, updated_at = ? WHERE id = ?`,
-                          [val || null, new Date().toISOString(), m.id],
-                        ).then(() => {
-                          import('../sync/engine').then(({ SyncEngine: SE }) => {
-                            new SE(db).queueChange('media', m.id, 'update', { view_notes: val || null });
-                          });
-                        }).catch(() => {});
-                      }}
-                    />
-                  </>
-                )}
-              </View>
-            ))}
+        {/* ── COMPLETION RING + SYNC ────────────────────────────────────────── */}
+        <View style={sec.completionRow}>
+          <CompletionRing percent={completeness} />
+          <Text style={sec.completionText}>{t('detail.completeness', { percent: completeness })}</Text>
         </View>
 
-        {/* ── ADD VIDEO BUTTON ─────────────────────────────────────────────── */}
-        <Pressable
-          style={styles.addVideoBtn}
-          onPress={() => navigation.navigate('VideoRecord', { objectId: object.id })}
-          accessibilityRole="button"
-          accessibilityLabel={t('objectDetail.addVideo')}
-        >
-          <Play size={18} color={colors.heroGreen} />
-          <Text style={styles.addVideoBtnText}>{t('objectDetail.addVideo')}</Text>
-        </Pressable>
-
-        <Divider />
-
-        {/* ── SYNC STATUS ──────────────────────────────────────────────────── */}
         <View style={styles.syncBadgeRow}>
           <SyncBadge status={objectSyncStatus} size="md" />
         </View>
 
-        {/* ── REVIEW BANNER (needs_review or in_review) ────────────────────── */}
+        {/* ── REVIEW BANNER ─────────────────────────────────────────────────── */}
         {object.review_status !== 'complete' && (
           <View style={styles.reviewBanner}>
             <View style={styles.reviewBannerHeader}>
@@ -878,108 +917,36 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           </View>
         )}
 
-        {/* ── PROTOCOL STATUS ──────────────────────────────────────────────── */}
-        {protocolDef && (
-          <Card style={styles.card}>
-            <SectionHeader title={t('protocols.documentation_protocol')} />
-            <MetadataRow
-              label={isGerman ? protocolDef.name_de : protocolDef.name}
-              value={
-                protocolComplete === 1
-                  ? t('protocols.status_complete')
-                  : shotsRemainingArr.length > 0
-                    ? t('protocols.missing_required', { count: shotsRemainingArr.length })
-                    : t('protocols.status_incomplete')
-              }
-            />
-            {protocolDef.shots
-              .sort((a, b) => a.order - b.order)
-              .map((shot) => {
-                const isDone = shotsCompletedArr.includes(shot.id);
-                const shotLabel = isGerman ? shot.label_de : shot.label;
-                return (
-                  <View key={shot.id} style={styles.protocolShotRow}>
-                    {isDone ? (
-                      <CheckIcon size={14} color={colors.success} />
-                    ) : (
-                      <View style={styles.protocolShotDot} />
-                    )}
-                    <Text
-                      style={[
-                        styles.protocolShotLabel,
-                        isDone && styles.protocolShotDone,
-                      ]}
-                    >
-                      {shotLabel}
-                    </Text>
-                    {shot.required && !isDone && (
-                      <Badge variant="warning" label={t('protocols.required_badge')} size="sm" />
-                    )}
-                  </View>
-                );
-              })}
-          </Card>
-        )}
-
-        {/* ── 3. BASIC INFORMATION ─────────────────────────────────────────── */}
-        <Card style={styles.card}>
-          <SectionHeader title={t('objectDetail.basicInfo')} />
+        {/* ── IDENTIFICATION ────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_identification')}>
+          <EditableField
+            label={t('objects.title')}
+            value={object.title === 'Untitled' ? null : object.title}
+            onSave={(v) => handleFieldSave('title', v ?? 'Untitled')}
+          />
+          <EditableField
+            label={t('objects.inventory_number')}
+            value={object.inventory_number ?? null}
+            onSave={(v) => handleFieldSave('inventory_number', v)}
+          />
+          <EditableField
+            label={t('detail.old_inv_number')}
+            value={object.alte_inventarnummer ?? null}
+            onSave={(v) => handleFieldSave('alte_inventarnummer', v)}
+          />
+          <EditableField
+            label={t('detail.classification')}
+            value={object.klassifikation ?? null}
+            onSave={(v) => handleFieldSave('klassifikation', v)}
+          />
           <MetadataRow
             label={t('objects.object_type')}
             value={typeLabel}
           />
-          {object.inventory_number != null && (
-            <MetadataRow
-              label={t('objects.inventory_number')}
-              value={object.inventory_number}
-            />
-          )}
-          {aiDateCreated != null && (
-            <MetadataRow
-              label={t('objectDetail.estimatedCreationDate')}
-              value={`${aiDateCreated}  (${t('objectDetail.aiEstimate')})`}
-            />
-          )}
-          {dateRange.length > 0 && (
-            <MetadataRow label={t('objects.date')} value={dateRange} />
-          )}
-          {aiMedium != null && (
-            <MetadataRow label={t('objectDetail.medium')} value={aiMedium} />
-          )}
-          {aiStylePeriod != null && (
-            <MetadataRow label={t('objectDetail.stylePeriod')} value={aiStylePeriod} />
-          )}
-          {aiCultureOrigin != null && (
-            <MetadataRow label={t('objectDetail.cultureOrigin')} value={aiCultureOrigin} />
-          )}
-          {aiCondition != null && (
-            <MetadataRow label={t('objectDetail.condition')} value={aiCondition} />
-          )}
-          {aiKeywords != null && (
-            <MetadataRow label={t('objectDetail.keywords')} value={aiKeywords} />
-          )}
-        </Card>
 
-        {/* ── 4. DESCRIPTION ───────────────────────────────────────────────── */}
-        {object.description != null &&
-          object.description.trim().length > 0 && (
-            <>
-              <Divider />
-              <Card style={styles.card}>
-                <SectionHeader title={t('objects.description')} />
-                <Text style={styles.descriptionText}>
-                  {object.description}
-                </Text>
-              </Card>
-            </>
-          )}
-
-        {/* ── 5. PERSONS ───────────────────────────────────────────────────── */}
-        {persons.length > 0 && (
-          <>
-            <Divider />
-            <Card style={styles.card}>
-              <SectionHeader title={t('objectDetail.associatedPersons')} />
+          {/* Persons list */}
+          {persons.length > 0 && (
+            <View style={sec.personsBlock}>
               {persons.map((p) => {
                 const years = lifespan(p.birth_year, p.death_year);
                 const nameDisplay = years ? `${p.name} (${years})` : p.name;
@@ -991,22 +958,516 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                   />
                 );
               })}
-            </Card>
-          </>
-        )}
+            </View>
+          )}
 
-        {/* ── 6. DOCUMENTS ────────────────────────────────────────────────── */}
-        <Divider />
-        <Card style={styles.card}>
-          <SectionHeader
-            title={t('objects.documents')}
-            action={
-              documents.length > 0
-                ? t('objects.document_count', { count: documents.length })
-                : undefined
-            }
+          <EditableField
+            label={t('detail.dating')}
+            value={object.event_start ?? null}
+            onSave={(v) => handleFieldSave('event_start' as string, v)}
+          />
+          {aiStylePeriod != null && (
+            <MetadataRow label={t('detail.epoch')} value={aiStylePeriod} aiGenerated />
+          )}
+          {aiCultureOrigin != null && (
+            <MetadataRow label={t('detail.culture')} value={aiCultureOrigin} aiGenerated />
+          )}
+        </CollapsibleSection>
+
+        {/* ── DESCRIPTION ───────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_description')}>
+          <EditableField
+            label={t('detail.material')}
+            value={object.material ?? null}
+            onSave={(v) => handleFieldSave('material', v)}
+          />
+          <EditableField
+            label={t('detail.technique')}
+            value={object.technik ?? null}
+            onSave={(v) => handleFieldSave('technik', v)}
+          />
+          <EditableField
+            label={t('objects.description')}
+            value={object.description}
+            onSave={(v) => handleFieldSave('description', v)}
+            multiline
+          />
+          <View style={sec.dimensionGrid}>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.height')}
+                value={object.masse_hoehe ?? null}
+                onSave={(v) => handleFieldSave('masse_hoehe', v)}
+              />
+            </View>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.width')}
+                value={object.masse_breite ?? null}
+                onSave={(v) => handleFieldSave('masse_breite', v)}
+              />
+            </View>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.depth')}
+                value={object.masse_tiefe ?? null}
+                onSave={(v) => handleFieldSave('masse_tiefe', v)}
+              />
+            </View>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.unit')}
+                value={object.masse_einheit ?? null}
+                onSave={(v) => handleFieldSave('masse_einheit', v)}
+              />
+            </View>
+          </View>
+          <View style={sec.dimensionGrid}>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.weight')}
+                value={object.gewicht ?? null}
+                onSave={(v) => handleFieldSave('gewicht', v)}
+              />
+            </View>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.weight_unit')}
+                value={object.gewicht_einheit ?? null}
+                onSave={(v) => handleFieldSave('gewicht_einheit', v)}
+              />
+            </View>
+          </View>
+          <EditableField
+            label={t('detail.diameter')}
+            value={object.durchmesser ?? null}
+            onSave={(v) => handleFieldSave('durchmesser', v)}
+          />
+          <EditableField
+            label={t('detail.format')}
+            value={object.format ?? null}
+            onSave={(v) => handleFieldSave('format', v)}
+          />
+        </CollapsibleSection>
+
+        {/* ── PROVENANCE ────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_provenance')} defaultOpen={false}>
+          <EditableField
+            label={t('detail.provenance_chain')}
+            value={object.provenienzangaben ?? null}
+            onSave={(v) => handleFieldSave('provenienzangaben', v)}
+            multiline
+          />
+          <EditableField
+            label={t('detail.acquisition_method')}
+            value={object.erwerbungsart ?? null}
+            onSave={(v) => handleFieldSave('erwerbungsart', v)}
+          />
+          <EditableField
+            label={t('detail.acquisition_date')}
+            value={object.erwerbungsdatum ?? null}
+            onSave={(v) => handleFieldSave('erwerbungsdatum', v)}
+          />
+          <EditableField
+            label={t('detail.source_seller')}
+            value={object.veraeusserer ?? null}
+            onSave={(v) => handleFieldSave('veraeusserer', v)}
+          />
+          <EditableField
+            label={t('detail.problematic_provenance')}
+            value={object.belastete_provenienz_notizen ?? null}
+            onSave={(v) => handleFieldSave('belastete_provenienz_notizen' as string, v)}
+            multiline
+          />
+          <EditableField
+            label={t('detail.inscriptions')}
+            value={object.inschriften ?? null}
+            onSave={(v) => handleFieldSave('inschriften', v)}
+          />
+          <EditableField
+            label={t('objectDetail.keywords')}
+            value={object.markierungen ?? null}
+            onSave={(v) => handleFieldSave('markierungen', v)}
+          />
+        </CollapsibleSection>
+
+        {/* ── LOCATION ──────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_location')} defaultOpen={false}>
+          <EditableField
+            label={t('detail.building')}
+            value={object.standort_gebaeude ?? null}
+            onSave={(v) => handleFieldSave('standort_gebaeude', v)}
+          />
+          <EditableField
+            label={t('detail.floor')}
+            value={object.standort_etage ?? null}
+            onSave={(v) => handleFieldSave('standort_etage', v)}
+          />
+          <EditableField
+            label={t('detail.room')}
+            value={object.standort_raum ?? null}
+            onSave={(v) => handleFieldSave('standort_raum', v)}
+          />
+          <EditableField
+            label={t('detail.shelf')}
+            value={object.standort_regal ?? null}
+            onSave={(v) => handleFieldSave('standort_regal', v)}
+          />
+          <EditableField
+            label={t('detail.location_notes')}
+            value={object.standort_hinweise ?? null}
+            onSave={(v) => handleFieldSave('standort_hinweise', v)}
+            multiline
+          />
+          <EditableField
+            label={t('detail.current_status')}
+            value={object.aktueller_status ?? null}
+            onSave={(v) => handleFieldSave('aktueller_status', v)}
           />
 
+          {/* LocationPicker */}
+          <View style={sec.locationPickerWrap}>
+            <LocationPicker
+              objectId={object.id}
+              initialBuilding={object.location_building}
+              initialFloor={object.location_floor}
+              initialRoom={object.location_room}
+              initialShelf={object.location_shelf}
+              initialNotes={object.location_notes}
+            />
+          </View>
+
+          {/* Map link card */}
+          <Pressable
+            style={styles.mapLinkCard}
+            onPress={() =>
+              navigation.navigate('FloorMap', mapPinInfo
+                ? { objectId: object.id, mapId: mapPinInfo.mapId }
+                : { objectId: object.id })
+            }
+            accessibilityRole="button"
+            accessibilityLabel={mapPinInfo ? 'View on map' : 'Place on map'}
+          >
+            <MapIcon size={18} color={colors.heroGreen} />
+            <View style={sec.mapLinkFlex}>
+              <Text style={styles.mapLinkTitle}>
+                {mapPinInfo ? `Placed on ${mapPinInfo.mapName}` : 'Place on map'}
+              </Text>
+              <Text style={styles.mapLinkSub}>
+                {mapPinInfo ? 'View on floor map' : 'Pin this object to a floor plan'}
+              </Text>
+            </View>
+            <ForwardIcon size={16} color={colors.textTertiary} />
+          </Pressable>
+        </CollapsibleSection>
+
+        {/* ── CONDITION ─────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_condition')} defaultOpen={false}>
+          <ConditionBadge status={object.condition_status} />
+          <EditableField
+            label={t('detail.current_status')}
+            value={object.condition_status ?? null}
+            onSave={(v) => handleFieldSave('condition_status', v)}
+          />
+          <EditableField
+            label={t('detail.condition_notes')}
+            value={object.condition_note ?? null}
+            onSave={(v) => handleFieldSave('condition_note', v)}
+            multiline
+          />
+          <EditableField
+            label={t('detail.condition_desc')}
+            value={object.erhaltungszustand ?? null}
+            onSave={(v) => handleFieldSave('erhaltungszustand', v)}
+          />
+          <EditableField
+            label={t('detail.condition_desc')}
+            value={object.zustandsbeschreibung ?? null}
+            onSave={(v) => handleFieldSave('zustandsbeschreibung', v)}
+            multiline
+          />
+          <EditableField
+            label={t('detail.conservation_needs')}
+            value={object.restaurierungsbedarf ?? null}
+            onSave={(v) => handleFieldSave('restaurierungsbedarf', v)}
+            multiline
+          />
+        </CollapsibleSection>
+
+        {/* ── AI ANALYSIS ───────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_ai')} defaultOpen={false}>
+          {aiFieldEntries.length > 0 ? (
+            aiFieldEntries.map((entry) => (
+              <View key={entry.key} style={sec.aiFieldRow}>
+                <View style={sec.aiFieldHeader}>
+                  <Text style={sec.fieldLabel}>{entry.key}</Text>
+                  {entry.confidence != null && (
+                    <AIFieldBadge visible confidence={entry.confidence} />
+                  )}
+                </View>
+                <Text style={sec.fieldValue}>{entry.value}</Text>
+                {entry.confidence != null && (
+                  <View style={sec.confidenceTrack}>
+                    <View style={[sec.confidenceFill, { width: `${Math.min(entry.confidence, 100)}%` }]} />
+                  </View>
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={sec.emptyText}>{t('detail.no_annotations')}</Text>
+          )}
+
+          {/* Enrichment data from AI */}
+          {aiMedium != null && (
+            <MetadataRow label={t('objectDetail.medium')} value={aiMedium} aiGenerated />
+          )}
+          {aiCondition != null && (
+            <MetadataRow label={t('objectDetail.condition')} value={aiCondition} aiGenerated />
+          )}
+          {aiKeywords != null && (
+            <MetadataRow label={t('objectDetail.keywords')} value={aiKeywords} aiGenerated />
+          )}
+          {aiDimensions != null && (
+            <MetadataRow label={t('objectDetail.dimensions')} value={aiDimensions} aiGenerated />
+          )}
+
+          <Pressable
+            style={[sec.aiButton, aiLoading && sec.aiButtonDisabled]}
+            onPress={handleRunAI}
+            disabled={aiLoading}
+            accessibilityRole="button"
+            accessibilityLabel={t('detail.run_ai')}
+          >
+            {aiLoading ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Text style={sec.aiButtonText}>{t('detail.run_ai')}</Text>
+            )}
+          </Pressable>
+        </CollapsibleSection>
+
+        {/* ── MEDIA ─────────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_media')}>
+          {/* Grouped gallery for protocol objects */}
+          {media.length > 0 && mediaGrouped ? (
+            <View style={styles.gallerySection}>
+              {mediaGrouped.map((group, gi) => (
+                <View key={gi} style={styles.galleryGroup}>
+                  <Text style={styles.galleryGroupLabel}>{group.label}</Text>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.galleryContent}
+                  >
+                    {group.items.map((m, idx) => (
+                      <Pressable
+                        key={m.id}
+                        style={styles.galleryItem}
+                        onPress={() => handleMediaTap(m)}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
+                        }
+                      >
+                        <Image
+                          source={{ uri: m.file_path }}
+                          style={styles.galleryImage}
+                          resizeMode="cover"
+                        />
+                        {isVideoMedia(m) && (
+                          <View style={styles.videoPlayOverlay}>
+                            <Play size={18} color={colors.white} fill={colors.white} />
+                          </View>
+                        )}
+                        {m.is_primary === 1 && (
+                          <View style={styles.primaryPip} />
+                        )}
+                      </Pressable>
+                    ))}
+                  </ScrollView>
+                </View>
+              ))}
+            </View>
+          ) : media.length > 0 ? (
+            /* Flat gallery for freeform objects */
+            <View style={styles.gallerySection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.galleryContent}
+              >
+                {media.map((m, idx) => (
+                  <Pressable
+                    key={m.id}
+                    style={styles.galleryItem}
+                    onPress={() => handleMediaTap(m)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
+                    }
+                  >
+                    <Image
+                      source={{ uri: m.file_path }}
+                      style={styles.galleryImage}
+                      resizeMode="cover"
+                    />
+                    {isVideoMedia(m) && (
+                      <View style={styles.videoPlayOverlay}>
+                        <Play size={18} color={colors.white} fill={colors.white} />
+                      </View>
+                    )}
+                    {m.is_primary === 1 && (
+                      <View style={styles.primaryPip} />
+                    )}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+          ) : null}
+
+          {/* ── MULTI-VIEW GALLERY (Registerbogen) ──────────────────────────── */}
+          <View style={styles.viewGallerySection}>
+            <SectionHeader title={t('view_checklist.title')} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.viewGalleryContent}
+            >
+              {VIEW_TYPES.map((viewDef) => {
+                const captured = media.find(
+                  (m) => m.view_type === viewDef.key && m.media_type !== 'derivative_isolated',
+                );
+                return (
+                  <Pressable
+                    key={viewDef.key}
+                    style={[
+                      styles.viewGalleryItem,
+                      captured ? styles.viewGalleryItemCaptured : styles.viewGalleryItemEmpty,
+                    ]}
+                    onPress={() => {
+                      if (captured) {
+                        setViewerUri(captured.file_path);
+                      } else {
+                        navigation.navigate('CaptureCamera', {
+                          viewType: viewDef.key as RegisterViewType,
+                          objectId: object.id,
+                        });
+                      }
+                    }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t(viewDef.labelKey)}
+                  >
+                    {captured ? (
+                      <>
+                        <Image
+                          source={{ uri: captured.file_path }}
+                          style={styles.viewGalleryImage}
+                          resizeMode="cover"
+                        />
+                        <View style={styles.viewGalleryCheck}>
+                          <CheckIcon size={12} color={colors.white} />
+                        </View>
+                      </>
+                    ) : (
+                      <Camera size={20} color={colors.textTertiary} />
+                    )}
+                    <Text
+                      style={[
+                        styles.viewGalleryLabel,
+                        captured && styles.viewGalleryLabelCaptured,
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {t(viewDef.labelKey)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            {/* Per-view dimension inputs for captured views */}
+            {media
+              .filter((m) => m.view_type && VIEW_TYPES.some((v) => v.key === m.view_type))
+              .map((m) => (
+                <View key={m.id} style={styles.viewDimensionRow}>
+                  <Text style={styles.viewDimensionLabel}>
+                    {t(`view_types.${m.view_type}`)} - {t('view_checklist.dimensions_label')}
+                  </Text>
+                  <TextInput
+                    style={styles.viewDimensionInput}
+                    placeholder={t('view_checklist.dimensions_placeholder')}
+                    placeholderTextColor={colors.textTertiary}
+                    defaultValue={m.view_dimensions ?? ''}
+                    onEndEditing={(e) => {
+                      const val = e.nativeEvent.text.trim();
+                      db.runAsync(
+                        `UPDATE media SET view_dimensions = ?, updated_at = ? WHERE id = ?`,
+                        [val || null, new Date().toISOString(), m.id],
+                      ).then(() => {
+                        import('../sync/engine').then(({ SyncEngine: SE }) => {
+                          new SE(db).queueChange('media', m.id, 'update', { view_dimensions: val || null });
+                        });
+                      }).catch(() => {});
+                    }}
+                  />
+                  {m.view_type === 'detail' && (
+                    <>
+                      <Text style={[styles.viewDimensionLabel, { marginTop: spacing.sm }]}>
+                        {t('view_checklist.notes_label')}
+                      </Text>
+                      <TextInput
+                        style={styles.viewDimensionInput}
+                        placeholder={t('view_checklist.notes_placeholder')}
+                        placeholderTextColor={colors.textTertiary}
+                        defaultValue={m.view_notes ?? ''}
+                        multiline
+                        onEndEditing={(e) => {
+                          const val = e.nativeEvent.text.trim();
+                          db.runAsync(
+                            `UPDATE media SET view_notes = ?, updated_at = ? WHERE id = ?`,
+                            [val || null, new Date().toISOString(), m.id],
+                          ).then(() => {
+                            import('../sync/engine').then(({ SyncEngine: SE }) => {
+                              new SE(db).queueChange('media', m.id, 'update', { view_notes: val || null });
+                            });
+                          }).catch(() => {});
+                        }}
+                      />
+                    </>
+                  )}
+                </View>
+              ))}
+          </View>
+
+          {/* ── ADD VIDEO BUTTON ─────────────────────────────────────────────── */}
+          <Pressable
+            style={styles.addVideoBtn}
+            onPress={() => navigation.navigate('VideoRecord', { objectId: object.id })}
+            accessibilityRole="button"
+            accessibilityLabel={t('objectDetail.addVideo')}
+          >
+            <Play size={18} color={colors.heroGreen} />
+            <Text style={styles.addVideoBtnText}>{t('objectDetail.addVideo')}</Text>
+          </Pressable>
+        </CollapsibleSection>
+
+        {/* ── ANNOTATIONS ───────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_annotations')} defaultOpen={false}>
+          {annotations.length > 0 ? (
+            annotations.map((ann) => (
+              <View key={ann.id} style={sec.annotationItem}>
+                <Badge variant="neutral" label={ann.annotation_type} size="sm" />
+                <Text style={sec.annotationContent}>{ann.content}</Text>
+                <Text style={sec.annotationDate}>{formatDate(ann.created_at)}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={sec.emptyText}>{t('detail.no_annotations')}</Text>
+          )}
+        </CollapsibleSection>
+
+        {/* ── DOCUMENTS ─────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_documents')}>
           {documents.length === 0 && !scanning && (
             <Text style={styles.emptyDocumentsText}>
               {t('objects.no_documents')}
@@ -1100,10 +1561,74 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                 : t('objects.scan_document')}
             </Text>
           </Pressable>
-        </Card>
+        </CollapsibleSection>
 
-        {/* ── 7. CAPTURE METADATA ──────────────────────────────────────────── */}
-        <Divider />
+        {/* ── HISTORY ───────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_history')} defaultOpen={false}>
+          {auditTrail.length > 0 ? (
+            auditTrail.map((entry) => {
+              const actionColor: string = entry.action === 'insert' ? colors.success : entry.action === 'update' ? colors.info : entry.action === 'delete' ? colors.error : colors.textSecondary;
+              const actionLabel = entry.action === 'insert' ? t('detail.action_insert') : entry.action === 'update' ? t('detail.action_update') : entry.action === 'delete' ? t('detail.action_delete') : entry.action;
+
+              return (
+                <View key={entry.id} style={sec.auditItem}>
+                  <View style={[sec.auditDot, { backgroundColor: actionColor }]} />
+                  <View style={sec.auditContent}>
+                    <Text style={sec.auditAction}>{actionLabel}</Text>
+                    <Text style={sec.auditDate}>{formatDate(entry.created_at)}</Text>
+                  </View>
+                </View>
+              );
+            })
+          ) : (
+            <Text style={sec.emptyText}>{t('detail.no_history')}</Text>
+          )}
+        </CollapsibleSection>
+
+        {/* ── PROTOCOL STATUS ────────────────────────────────────────────────── */}
+        {protocolDef && (
+          <Card style={styles.card}>
+            <SectionHeader title={t('protocols.documentation_protocol')} />
+            <MetadataRow
+              label={isGerman ? protocolDef.name_de : protocolDef.name}
+              value={
+                protocolComplete === 1
+                  ? t('protocols.status_complete')
+                  : shotsRemainingArr.length > 0
+                    ? t('protocols.missing_required', { count: shotsRemainingArr.length })
+                    : t('protocols.status_incomplete')
+              }
+            />
+            {protocolDef.shots
+              .sort((a, b) => a.order - b.order)
+              .map((shot) => {
+                const isDone = shotsCompletedArr.includes(shot.id);
+                const shotLabel = isGerman ? shot.label_de : shot.label;
+                return (
+                  <View key={shot.id} style={styles.protocolShotRow}>
+                    {isDone ? (
+                      <CheckIcon size={14} color={colors.success} />
+                    ) : (
+                      <View style={styles.protocolShotDot} />
+                    )}
+                    <Text
+                      style={[
+                        styles.protocolShotLabel,
+                        isDone && styles.protocolShotDone,
+                      ]}
+                    >
+                      {shotLabel}
+                    </Text>
+                    {shot.required && !isDone && (
+                      <Badge variant="warning" label={t('protocols.required_badge')} size="sm" />
+                    )}
+                  </View>
+                );
+              })}
+          </Card>
+        )}
+
+        {/* ── CAPTURE METADATA ───────────────────────────────────────────────── */}
         <Card style={styles.card}>
           <SectionHeader title={t('objectDetail.captureData')} />
           <MetadataRow
@@ -1185,46 +1710,8 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           )}
         </Card>
 
-        {/* ── 8. LOCATION ──────────────────────────────────────────────────── */}
-        <Divider />
-        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
-          <LocationPicker
-            objectId={object.id}
-            initialBuilding={object.location_building}
-            initialFloor={object.location_floor}
-            initialRoom={object.location_room}
-            initialShelf={object.location_shelf}
-            initialNotes={object.location_notes}
-          />
-        </View>
-
-        {/* ── 8b. LOCATION ON MAP ─────────────────────────────────────────── */}
-        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
-          <Pressable
-            style={styles.mapLinkCard}
-            onPress={() =>
-              navigation.navigate('FloorMap', mapPinInfo
-                ? { objectId: object.id, mapId: mapPinInfo.mapId }
-                : { objectId: object.id })
-            }
-            accessibilityRole="button"
-            accessibilityLabel={mapPinInfo ? 'View on map' : 'Place on map'}
-          >
-            <MapIcon size={18} color={colors.heroGreen} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.mapLinkTitle}>
-                {mapPinInfo ? `Placed on ${mapPinInfo.mapName}` : 'Place on map'}
-              </Text>
-              <Text style={styles.mapLinkSub}>
-                {mapPinInfo ? 'View on floor map' : 'Pin this object to a floor plan'}
-              </Text>
-            </View>
-            <ForwardIcon size={16} color={colors.textTertiary} />
-          </Pressable>
-        </View>
-
-        {/* ── 9. CHECKLIST ───────────────────────────────────────────────────── */}
-        <View style={{ paddingHorizontal: spacing.lg, paddingVertical: spacing.sm }}>
+        {/* ── CHECKLIST ─────────────────────────────────────────────────────── */}
+        <View style={sec.paddedSection}>
           <ObjectChecklist
             objectId={object.id}
             viewCount={media.filter((m) => m.view_type && STANDARD_VIEW_TYPES.some((v) => v.key === m.view_type)).length}
@@ -1236,7 +1723,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         <View style={{ height: ACTION_BAR_HEIGHT + spacing.xl }} />
       </ScrollView>
 
-      {/* ── 7. FIXED ACTION BAR ──────────────────────────────────────────────── */}
+      {/* ── FIXED ACTION BAR ────────────────────────────────────────────────── */}
       <View style={styles.actionBar}>
         <IconButton
           icon={<EditIcon size={22} color={colors.text} />}
@@ -1289,6 +1776,215 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     </SafeAreaView>
   );
 }
+
+// ── Section styles (sec namespace) ────────────────────────────────────────────
+
+const sec = StyleSheet.create({
+  section: {
+    paddingHorizontal: spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sectionTitle: {
+    fontSize: typography.size.lg,
+    fontWeight: typography.weight.semibold,
+    color: colors.text,
+  },
+  sectionBody: {
+    paddingTop: 8,
+    paddingBottom: spacing.md,
+  },
+  // CompletionRing
+  ringContainer: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringText: {
+    position: 'absolute',
+    fontSize: typography.size.xs,
+    fontWeight: typography.weight.semibold,
+    color: colors.text,
+  },
+  completionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  completionText: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
+    color: colors.textSecondary,
+  },
+  // EditableField
+  editableContainer: {
+    marginTop: 12,
+    minHeight: touch.minTarget,
+    justifyContent: 'center',
+  },
+  fieldLabel: {
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  fieldValue: {
+    fontSize: typography.size.md,
+    color: colors.text,
+  },
+  fieldEmpty: {
+    fontSize: typography.size.md,
+    color: colors.textMuted,
+  },
+  fieldInput: {
+    fontSize: typography.size.md,
+    color: colors.text,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderFocused,
+    borderRadius: radii.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  fieldInputMultiline: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  // ConditionBadge
+  conditionPill: {
+    alignSelf: 'flex-start',
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  conditionPillText: {
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+  },
+  // Dimensions grid
+  dimensionGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  dimensionCol: {
+    flex: 1,
+  },
+  // Persons block
+  personsBlock: {
+    marginTop: spacing.sm,
+  },
+  // Location picker wrap
+  locationPickerWrap: {
+    marginTop: spacing.sm,
+  },
+  mapLinkFlex: {
+    flex: 1,
+  },
+  // AI section
+  aiFieldRow: {
+    marginTop: spacing.md,
+  },
+  aiFieldHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  confidenceTrack: {
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.border,
+    marginTop: 4,
+  },
+  confidenceFill: {
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.accent,
+  },
+  aiButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+    paddingVertical: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    borderRadius: radii.md,
+    minHeight: touch.minTarget,
+  },
+  aiButtonDisabled: {
+    opacity: 0.5,
+  },
+  aiButtonText: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.semibold,
+    color: colors.accent,
+  },
+  // Annotations
+  annotationItem: {
+    paddingVertical: spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+    gap: spacing.xs,
+  },
+  annotationContent: {
+    fontSize: typography.size.base,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  annotationDate: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+  },
+  // Audit trail
+  auditItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
+  auditDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginTop: 4,
+  },
+  auditContent: {
+    flex: 1,
+  },
+  auditAction: {
+    fontSize: typography.size.base,
+    fontWeight: typography.weight.medium,
+    color: colors.text,
+  },
+  auditDate: {
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  // Empty state text
+  emptyText: {
+    fontSize: typography.size.base,
+    color: colors.textSecondary,
+    paddingVertical: spacing.md,
+  },
+  // Padded section wrapper
+  paddedSection: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+});
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
@@ -1477,6 +2173,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     minHeight: touch.minTarget,
+    marginTop: spacing.sm,
   },
   mapLinkTitle: {
     fontSize: 13,
@@ -1538,12 +2235,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
-  },
-  // Description
-  descriptionText: {
-    ...typography.body,
-    color: colors.text,
-    lineHeight: 22,
   },
   // Skeleton loading state
   skeletonHeaderTitle: {
