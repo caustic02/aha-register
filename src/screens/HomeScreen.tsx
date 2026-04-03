@@ -46,13 +46,27 @@ import {
   type CollectionWithCount,
 } from '../services/collectionService';
 
+// ── Thumbnail URL resolution ─────────────────────────────────────────────────
+
+const UUID_PREFIX = /^[0-9a-f]{8}-/i;
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+
+/** Construct a public Supabase Storage URL from a storage_path.
+ *  UUID-prefixed paths (user uploads) → 'media' bucket.
+ *  All other prefixes (seed data: vera/, stadtmuseum/, etc.) → 'seed-media' bucket.
+ */
+function storagePathToUrl(storagePath: string): string {
+  const bucket = UUID_PREFIX.test(storagePath) ? 'media' : 'seed-media';
+  return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${storagePath}`;
+}
+
 // ── Resilient thumbnail ──────────────────────────────────────────────────────
 
 /** Image with onError fallback — shows camera icon when URL fails to load. */
 function Thumb({ uri, style, iconSize = 16 }: { uri: string; style: ImageStyle; iconSize?: number }) {
   const [failed, setFailed] = useState(false);
   if (failed) return <CameraIcon size={iconSize} color={colors.textTertiary} />;
-  return <Image source={{ uri }} style={style} resizeMode="cover" onError={() => setFailed(true)} />;
+  return <Image source={{ uri }} style={style} resizeMode="cover" onError={(e) => { if (__DEV__) console.warn('[thumb] onError uri=' + uri + ' err=' + JSON.stringify(e.nativeEvent)); setFailed(true); }} />;
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -66,6 +80,7 @@ interface DashboardObject {
   object_type: string;
   created_at: string;
   file_path: string | null;
+  storage_path: string | null;
   view_count: number;
   has_ai: number;
   sync_pending: number;
@@ -304,7 +319,7 @@ export function HomeScreen({ navigation }: Props) {
         db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM media'),
         db.getFirstAsync<{ total: number }>('SELECT COALESCE(SUM(file_size), 0) as total FROM media'),
         db.getAllAsync<DashboardObject>(
-          `SELECT o.id, o.title, o.description, o.object_type, o.created_at, pm.file_path,
+          `SELECT o.id, o.title, o.description, o.object_type, o.created_at, pm.file_path, pm.storage_path,
              COALESCE(vc.view_count, 0) as view_count,
              CASE WHEN o.description IS NOT NULL AND o.description != '' AND o.title IS NOT NULL AND o.title != 'Untitled' AND o.title != '' THEN 1 ELSE 0 END as has_ai,
              CASE WHEN sq.id IS NOT NULL THEN 1 ELSE 0 END as sync_pending,
@@ -318,16 +333,29 @@ export function HomeScreen({ navigation }: Props) {
         ),
         getAllCollections(db),
       ]);
+      // Resolve dead local file_path → Supabase Storage URL via storage_path fallback
+      for (const obj of objRows) {
+        if (!obj.file_path?.startsWith('http') && obj.storage_path) {
+          obj.file_path = storagePathToUrl(obj.storage_path);
+        }
+      }
+
       if (__DEV__) {
         const withThumb = objRows.filter((o) => o.file_path).length;
         console.log(`[home] ${objRows.length} objects, ${withThumb} with thumbnail, ${photoRow?.count ?? 0} media total`);
-        if (objRows.length > 0 && withThumb === 0) {
-          console.warn('[home] No thumbnails! Checking media table...');
-          const mediaCheck = await db.getAllAsync<{ id: string; object_id: string; file_path: string; is_primary: number }>(
-            'SELECT id, object_id, file_path, is_primary FROM media LIMIT 5',
-          );
-          console.log('[home] media sample:', JSON.stringify(mediaCheck, null, 2));
-        }
+        console.log('[home] thumbnail URL sample:', objRows.slice(0, 3).map((o) => o.file_path));
+        // Detailed media column diagnostic — shows which column has usable data
+        const mediaRows = await db.getAllAsync<{
+          id: string; object_id: string | null;
+          file_path: string | null; storage_path: string | null; original_file_path: string | null; is_primary: number;
+        }>('SELECT id, object_id, file_path, storage_path, original_file_path, is_primary FROM media WHERE object_id IS NOT NULL LIMIT 5');
+        console.log('[home] media columns sample:', JSON.stringify(mediaRows.map((m) => ({
+          id: m.id?.substring(0, 8),
+          file_path: m.file_path,
+          storage_path: m.storage_path,
+          original_file_path: m.original_file_path,
+          is_primary: m.is_primary,
+        })), null, 2));
       }
       setStats({ totalObjects: totalRow?.count ?? 0, totalPhotos: photoRow?.count ?? 0, storageBytes: storageRow?.total ?? 0 });
       setObjects(objRows);
