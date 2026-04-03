@@ -6,6 +6,7 @@ import {
   Animated as RNAnimated,
   Dimensions,
   Image,
+  type ImageStyle,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -44,6 +45,15 @@ import {
   getAllCollections,
   type CollectionWithCount,
 } from '../services/collectionService';
+
+// ── Resilient thumbnail ──────────────────────────────────────────────────────
+
+/** Image with onError fallback — shows camera icon when URL fails to load. */
+function Thumb({ uri, style, iconSize = 16 }: { uri: string; style: ImageStyle; iconSize?: number }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <CameraIcon size={iconSize} color={colors.textTertiary} />;
+  return <Image source={{ uri }} style={style} resizeMode="cover" onError={() => setFailed(true)} />;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -218,11 +228,13 @@ function AttentionRow({ obj, onPress }: { obj: DashboardObject; onPress: () => v
   const { reason, urgency } = getAttentionInfo(obj);
   return (
     <PressScale style={st.attentionRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
-      {obj.file_path ? (
-        <View style={st.attentionThumb}><Image source={{ uri: obj.file_path }} style={[StyleSheet.absoluteFill, { borderRadius: 10 }]} resizeMode="cover" /></View>
-      ) : (
-        <View style={[st.attentionThumb, st.thumbEmpty]}><CameraIcon size={16} color={colors.textTertiary} /></View>
-      )}
+      <View style={obj.file_path ? st.attentionThumb : [st.attentionThumb, st.thumbEmpty]}>
+        {obj.file_path ? (
+          <Thumb uri={obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 10 }] as ImageStyle} iconSize={16} />
+        ) : (
+          <CameraIcon size={16} color={colors.textTertiary} />
+        )}
+      </View>
       <View style={st.attentionInfo}>
         <Text style={st.attentionTitle} numberOfLines={1}>{obj.title || 'Untitled'}</Text>
         <View style={st.attentionReasonRow}>
@@ -244,11 +256,13 @@ function AttentionRow({ obj, onPress }: { obj: DashboardObject; onPress: () => v
 function CompactRow({ obj, onPress }: { obj: DashboardObject; onPress: () => void }) {
   return (
     <PressScale style={st.compactRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
-      {obj.file_path ? (
-        <View style={st.compactThumb}><Image source={{ uri: obj.file_path }} style={[StyleSheet.absoluteFill, { borderRadius: 8 }]} resizeMode="cover" /></View>
-      ) : (
-        <View style={[st.compactThumb, st.thumbEmpty]}><CameraIcon size={14} color={colors.textTertiary} /></View>
-      )}
+      <View style={obj.file_path ? st.compactThumb : [st.compactThumb, st.thumbEmpty]}>
+        {obj.file_path ? (
+          <Thumb uri={obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 8 }] as ImageStyle} iconSize={14} />
+        ) : (
+          <CameraIcon size={14} color={colors.textTertiary} />
+        )}
+      </View>
       <View style={st.compactInfo}>
         <Text style={st.compactTitle} numberOfLines={1}>{obj.title || 'Untitled'}</Text>
         <View style={st.compactMeta}>
@@ -304,6 +318,17 @@ export function HomeScreen({ navigation }: Props) {
         ),
         getAllCollections(db),
       ]);
+      if (__DEV__) {
+        const withThumb = objRows.filter((o) => o.file_path).length;
+        console.log(`[home] ${objRows.length} objects, ${withThumb} with thumbnail, ${photoRow?.count ?? 0} media total`);
+        if (objRows.length > 0 && withThumb === 0) {
+          console.warn('[home] No thumbnails! Checking media table...');
+          const mediaCheck = await db.getAllAsync<{ id: string; object_id: string; file_path: string; is_primary: number }>(
+            'SELECT id, object_id, file_path, is_primary FROM media LIMIT 5',
+          );
+          console.log('[home] media sample:', JSON.stringify(mediaCheck, null, 2));
+        }
+      }
       setStats({ totalObjects: totalRow?.count ?? 0, totalPhotos: photoRow?.count ?? 0, storageBytes: storageRow?.total ?? 0 });
       setObjects(objRows);
       setCollections(collRows);
@@ -436,7 +461,7 @@ export function HomeScreen({ navigation }: Props) {
               {unfiled.slice(0, 10).map((item) => (
                 <PressScale key={item.id} style={st.recentCard} onPress={() => navigation.navigate('ObjectDetail', { objectId: item.id })} accessibilityLabel={item.title || 'Untitled'}>
                   {item.file_path ? (
-                    <Image source={{ uri: item.file_path }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                    <Thumb uri={item.file_path} style={{ width: '100%', height: '100%' } as ImageStyle} iconSize={22} />
                   ) : (
                     <View style={[StyleSheet.absoluteFill, st.thumbEmpty]}><CameraIcon size={22} color={colors.textTertiary} /></View>
                   )}
@@ -663,7 +688,7 @@ const st = StyleSheet.create({
     borderWidth: 1, borderColor: '#3A3A3A', borderRadius: R,
     paddingHorizontal: 14, height: 52, marginBottom: 8, gap: 10,
   },
-  compactThumb: { width: 36, height: 36, borderRadius: 8, backgroundColor: colors.surface },
+  compactThumb: { width: 36, height: 36, borderRadius: 8, backgroundColor: colors.surface, overflow: 'hidden' },
   compactInfo: { flex: 1 },
   compactTitle: { fontSize: 13, fontWeight: typography.weight.medium, color: colors.text },
   compactMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
