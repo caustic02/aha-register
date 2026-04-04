@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   LayoutAnimation,
@@ -47,7 +47,9 @@ import {
   SpecimenIcon,
   ConservationRecordIcon,
 } from '../theme/icons';
-import { colors, spacing, touch, typography } from '../theme';
+import { spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme, type ThemePreference } from '../theme/ThemeContext';
 import type { PrivacyTier, ObjectType } from '../db/types';
 import type { CollectionDomain } from '../hooks/useSettings';
 
@@ -77,37 +79,23 @@ const LANGUAGES = [
   { code: 'de', label: 'Deutsch', flag: '\uD83C\uDDE9\uD83C\uDDEA' },
 ] as const;
 
-interface DomainOption {
-  value: CollectionDomain;
-  icon: React.ReactNode;
-}
-
-const DOMAIN_OPTIONS: DomainOption[] = [
-  {
-    value: 'museum_collection',
-    icon: <MuseumObjectIcon size={22} color={colors.primary} />,
-  },
-  {
-    value: 'archaeological_site',
-    icon: <SiteIcon size={22} color={colors.primary} />,
-  },
-  {
-    value: 'conservation_lab',
-    icon: <ConservationRecordIcon size={22} color={colors.primary} />,
-  },
-  {
-    value: 'natural_history',
-    icon: <SpecimenIcon size={22} color={colors.primary} />,
-  },
-  {
-    value: 'human_rights',
-    icon: <IncidentIcon size={22} color={colors.primary} />,
-  },
-  {
-    value: 'general',
-    icon: <ObjectsTabIcon size={22} color={colors.primary} />,
-  },
+const DOMAIN_VALUES: CollectionDomain[] = [
+  'museum_collection',
+  'archaeological_site',
+  'conservation_lab',
+  'natural_history',
+  'human_rights',
+  'general',
 ];
+
+const DOMAIN_ICON_MAP: Record<CollectionDomain, React.ComponentType<{ size: number; color: string }>> = {
+  museum_collection: MuseumObjectIcon,
+  archaeological_site: SiteIcon,
+  conservation_lab: ConservationRecordIcon,
+  natural_history: SpecimenIcon,
+  human_rights: IncidentIcon,
+  general: ObjectsTabIcon,
+};
 
 // ── Storage size calculation ──────────────────────────────────────────────────
 
@@ -145,9 +133,17 @@ async function computeStorageSize(
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const THEME_OPTIONS: { key: ThemePreference; labelKey: string }[] = [
+  { key: 'system', labelKey: 'settings.theme_system' },
+  { key: 'light', labelKey: 'settings.theme_light' },
+  { key: 'dark', labelKey: 'settings.theme_dark' },
+];
+
 export function SettingsScreen() {
   const db = useDatabase();
   const { t } = useAppTranslation();
+  const { colors, preference: themePref, setPreference: setThemePref } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // AsyncStorage settings (AI, domain)
   const {
@@ -449,9 +445,7 @@ export function SettingsScreen() {
 
           {/* Collapsed: show selected domain + Change button */}
           {!domainExpanded && collectionDomain ? (() => {
-            const selected = DOMAIN_OPTIONS.find(
-              (o) => o.value === collectionDomain,
-            );
+            const SelectedIcon = DOMAIN_ICON_MAP[collectionDomain];
             return (
               <Pressable
                 style={styles.domainCollapsed}
@@ -464,8 +458,10 @@ export function SettingsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={t('settings.change_domain')}
               >
-                {selected && (
-                  <View style={styles.domainIcon}>{selected.icon}</View>
+                {SelectedIcon && (
+                  <View style={styles.domainIcon}>
+                    <SelectedIcon size={22} color={colors.primary} />
+                  </View>
                 )}
                 <View style={styles.domainContent}>
                   <Text style={styles.domainLabelSelected}>
@@ -483,20 +479,21 @@ export function SettingsScreen() {
             );
           })() : (
             <View style={styles.domainList}>
-              {DOMAIN_OPTIONS.map((option) => {
-                const isSelected = collectionDomain === option.value;
+              {DOMAIN_VALUES.map((domainValue) => {
+                const isSelected = collectionDomain === domainValue;
+                const DomainIcon = DOMAIN_ICON_MAP[domainValue];
                 return (
                   <Pressable
-                    key={option.value}
+                    key={domainValue}
                     onPress={() => {
                       LayoutAnimation.configureNext(
                         LayoutAnimation.Presets.easeInEaseOut,
                       );
-                      setCollectionDomain(option.value);
+                      setCollectionDomain(domainValue);
                       setDomainExpanded(false);
                     }}
                     accessibilityRole="radio"
-                    accessibilityLabel={t(`settings.domain.${option.value}`)}
+                    accessibilityLabel={t(`settings.domain.${domainValue}`)}
                     accessibilityState={{ checked: isSelected }}
                     style={({ pressed }) => [
                       styles.domainRow,
@@ -504,7 +501,9 @@ export function SettingsScreen() {
                       pressed && styles.pressed,
                     ]}
                   >
-                    <View style={styles.domainIcon}>{option.icon}</View>
+                    <View style={styles.domainIcon}>
+                      <DomainIcon size={22} color={colors.primary} />
+                    </View>
                     <View style={styles.domainContent}>
                       <Text
                         style={[
@@ -512,10 +511,10 @@ export function SettingsScreen() {
                           isSelected && styles.domainLabelSelected,
                         ]}
                       >
-                        {t(`settings.domain.${option.value}`)}
+                        {t(`settings.domain.${domainValue}`)}
                       </Text>
                       <Text style={styles.domainDescription}>
-                        {t(`settings.domain.${option.value}_desc`)}
+                        {t(`settings.domain.${domainValue}_desc`)}
                       </Text>
                     </View>
                     {isSelected && (
@@ -538,6 +537,21 @@ export function SettingsScreen() {
                 onPress={() => handleLanguageSelect(lang.code)}
               />
               {idx < LANGUAGES.length - 1 && <Divider />}
+            </View>
+          ))}
+
+          <Divider />
+
+          {/* Theme */}
+          <SectionHeader title={t('settings.theme')} />
+          {THEME_OPTIONS.map((opt, idx) => (
+            <View key={opt.key}>
+              <MetadataRow
+                label={t(opt.labelKey)}
+                value={themePref === opt.key ? '\u2713' : undefined}
+                onPress={() => setThemePref(opt.key)}
+              />
+              {idx < THEME_OPTIONS.length - 1 && <Divider />}
             </View>
           ))}
         </Card>
@@ -789,154 +803,156 @@ export function SettingsScreen() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.sm,
-  },
-  headerTitle: {
-    ...typography.h1,
-    color: colors.text,
-  },
-  scroll: { flex: 1 },
-  scrollContent: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: 100,
-  },
-  // Card gap for TextInput spacing
-  cardGap: {
-    height: spacing.sm,
-  },
-  // Picker
-  pickerList: {
-    marginTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  pickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    minHeight: touch.minTarget,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  pickerRowActive: {
-    backgroundColor: colors.primarySurface,
-  },
-  pickerText: {
-    ...typography.bodySmall,
-    color: colors.text,
-    flex: 1,
-  },
-  pickerTextActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  pickerContent: {
-    flex: 1,
-  },
-  pickerSubtext: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  // Toggle rows
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: touch.minTarget,
-    paddingVertical: spacing.sm,
-    gap: spacing.md,
-  },
-  toggleText: {
-    flex: 1,
-  },
-  toggleTitle: {
-    ...typography.bodyMedium,
-    color: colors.text,
-  },
-  toggleSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-  // Domain selector
-  sectionDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  domainCollapsed: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: touch.minTarget,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: spacing.sm,
-    backgroundColor: colors.primarySurface,
-    gap: spacing.md,
-  },
-  changeText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  domainList: {
-    gap: spacing.xs,
-  },
-  domainRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: touch.minTarget,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    borderRadius: spacing.sm,
-    gap: spacing.md,
-  },
-  domainRowSelected: {
-    backgroundColor: colors.primarySurface,
-  },
-  domainIcon: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  domainContent: {
-    flex: 1,
-  },
-  domainLabel: {
-    ...typography.bodyMedium,
-    color: colors.text,
-  },
-  domainLabelSelected: {
-    color: colors.primary,
-  },
-  domainDescription: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  // Danger action rows
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: touch.minTarget,
-    paddingVertical: spacing.sm,
-  },
-  dangerText: {
-    ...typography.bodyMedium,
-    color: colors.error,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: spacing.sm,
+    },
+    headerTitle: {
+      ...typography.h1,
+      color: c.text,
+    },
+    scroll: { flex: 1 },
+    scrollContent: {
+      paddingHorizontal: spacing.xl,
+      paddingBottom: 100,
+    },
+    // Card gap for TextInput spacing
+    cardGap: {
+      height: spacing.sm,
+    },
+    // Picker
+    pickerList: {
+      marginTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    pickerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      minHeight: touch.minTarget,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    pickerRowActive: {
+      backgroundColor: c.primarySurface,
+    },
+    pickerText: {
+      ...typography.bodySmall,
+      color: c.text,
+      flex: 1,
+    },
+    pickerTextActive: {
+      color: c.primary,
+      fontWeight: '600',
+    },
+    pickerContent: {
+      flex: 1,
+    },
+    pickerSubtext: {
+      ...typography.caption,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    // Toggle rows
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: touch.minTarget,
+      paddingVertical: spacing.sm,
+      gap: spacing.md,
+    },
+    toggleText: {
+      flex: 1,
+    },
+    toggleTitle: {
+      ...typography.bodyMedium,
+      color: c.text,
+    },
+    toggleSubtitle: {
+      ...typography.caption,
+      color: c.textSecondary,
+      marginTop: spacing.xs,
+    },
+    // Domain selector
+    sectionDescription: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      marginBottom: spacing.md,
+    },
+    domainCollapsed: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: touch.minTarget,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      borderRadius: spacing.sm,
+      backgroundColor: c.primarySurface,
+      gap: spacing.md,
+    },
+    changeText: {
+      ...typography.caption,
+      color: c.primary,
+      fontWeight: '600',
+    },
+    domainList: {
+      gap: spacing.xs,
+    },
+    domainRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: touch.minTarget,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.sm,
+      borderRadius: spacing.sm,
+      gap: spacing.md,
+    },
+    domainRowSelected: {
+      backgroundColor: c.primarySurface,
+    },
+    domainIcon: {
+      width: 32,
+      height: 32,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    domainContent: {
+      flex: 1,
+    },
+    domainLabel: {
+      ...typography.bodyMedium,
+      color: c.text,
+    },
+    domainLabelSelected: {
+      color: c.primary,
+    },
+    domainDescription: {
+      ...typography.caption,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    // Danger action rows
+    actionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      minHeight: touch.minTarget,
+      paddingVertical: spacing.sm,
+    },
+    dangerText: {
+      ...typography.bodyMedium,
+      color: c.error,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -12,7 +12,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { createDraftObject } from '../services/draftObject';
-import { colors, typography, spacing, radii, touch } from '../theme';
+import { typography, spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { VIEW_TYPES, DEFAULT_FIRST_VIEW } from '../constants/viewTypes';
 import { ChevronDown, Check } from 'lucide-react-native';
 import type { RegisterViewType } from '../db/types';
@@ -24,6 +26,8 @@ export function CaptureReviewScreen({ route, navigation }: Props) {
   const { imageUri, mimeType, metadata } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
 
   const [selectedView, setSelectedView] = useState<RegisterViewType>(DEFAULT_FIRST_VIEW);
   const [showPicker, setShowPicker] = useState(false);
@@ -129,103 +133,105 @@ export function CaptureReviewScreen({ route, navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.black },
-  preview: { flex: 1 },
-  // Bottom bar
-  bar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-    backgroundColor: colors.background,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  retakeBtn: {
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  retakeText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
-  },
-  viewBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    minHeight: touch.minTarget,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-  },
-  viewBtnText: {
-    color: colors.text,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.medium,
-  },
-  useBtn: {
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-  },
-  useBtnDisabled: { opacity: 0.5 },
-  useText: {
-    color: colors.white,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.bold,
-  },
-  // Picker overlay
-  pickerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
-    zIndex: 100,
-  },
-  pickerBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay,
-  },
-  pickerSheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    maxHeight: '60%',
-  },
-  pickerTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.bold,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  pickerScroll: { paddingHorizontal: spacing.lg },
-  pickerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    minHeight: touch.minTarget,
-    borderRadius: radii.md,
-  },
-  pickerItemActive: { backgroundColor: colors.surfaceElevated },
-  pickerItemText: {
-    fontSize: typography.size.md,
-    color: colors.text,
-  },
-  pickerItemTextActive: {
-    color: colors.accent,
-    fontWeight: typography.weight.semibold,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.black },
+    preview: { flex: 1 },
+    // Bottom bar
+    bar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+      backgroundColor: c.background,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+    },
+    retakeBtn: {
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    retakeText: {
+      color: c.textSecondary,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.semibold,
+    },
+    viewBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.xs,
+      minHeight: touch.minTarget,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+    },
+    viewBtnText: {
+      color: c.text,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.medium,
+    },
+    useBtn: {
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xl,
+      backgroundColor: c.accent,
+      borderRadius: radii.md,
+    },
+    useBtnDisabled: { opacity: 0.5 },
+    useText: {
+      color: c.white,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.bold,
+    },
+    // Picker overlay
+    pickerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'flex-end',
+      zIndex: 100,
+    },
+    pickerBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: c.overlay,
+    },
+    pickerSheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingTop: spacing.lg,
+      paddingBottom: spacing.xl,
+      maxHeight: '60%',
+    },
+    pickerTitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.bold,
+      color: c.text,
+      textAlign: 'center',
+      marginBottom: spacing.md,
+    },
+    pickerScroll: { paddingHorizontal: spacing.lg },
+    pickerItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.md,
+      minHeight: touch.minTarget,
+      borderRadius: radii.md,
+    },
+    pickerItemActive: { backgroundColor: c.surfaceElevated },
+    pickerItemText: {
+      fontSize: typography.size.md,
+      color: c.text,
+    },
+    pickerItemTextActive: {
+      color: c.accent,
+      fontWeight: typography.weight.semibold,
+    },
+  });
+}

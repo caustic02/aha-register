@@ -10,6 +10,7 @@ import * as Updates from 'expo-updates';
 import { useTranslation } from 'react-i18next';
 import AppShell from './src/app/AppShell';
 import { captureError } from './src/utils/sentry';
+import { ThemeProvider } from './src/theme/ThemeContext';
 import { colors, typography, spacing, radii } from './src/theme';
 
 Sentry.init({
@@ -67,10 +68,12 @@ function App() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={styles.root}>
+        <ThemeProvider>
         <AppErrorBoundary>
-          <StatusBar style="light" />
+          <StatusBar style="auto" />
           <AppShell />
         </AppErrorBoundary>
+        </ThemeProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );

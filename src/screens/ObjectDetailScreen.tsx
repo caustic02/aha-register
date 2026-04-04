@@ -45,7 +45,9 @@ import {
   ScanIcon,
   WarningIcon,
 } from '../theme/icons';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { ImageViewer } from '../components/ImageViewer';
 import { VideoPlayer } from '../components/VideoPlayer';
@@ -152,6 +154,8 @@ function CollapsibleSection({ title, defaultOpen = true, children }: {
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
+  const { colors } = useTheme();
+  const sec = useMemo(() => makeSec(colors), [colors]);
   const [open, setOpen] = useState(defaultOpen);
   return (
     <View style={sec.section}>
@@ -165,6 +169,8 @@ function CollapsibleSection({ title, defaultOpen = true, children }: {
 }
 
 function CompletionRing({ percent }: { percent: number }) {
+  const { colors } = useTheme();
+  const sec = useMemo(() => makeSec(colors), [colors]);
   const size = 48;
   const strokeWidth = 4;
   const radius = (size - strokeWidth) / 2;
@@ -205,6 +211,8 @@ function EditableField({ label, value, onSave, multiline }: {
   onSave: (val: string | null) => void;
   multiline?: boolean;
 }) {
+  const { colors } = useTheme();
+  const sec = useMemo(() => makeSec(colors), [colors]);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? '');
 
@@ -252,6 +260,8 @@ function EditableField({ label, value, onSave, multiline }: {
 }
 
 function ConditionBadge({ status }: { status: string | null | undefined }) {
+  const { colors } = useTheme();
+  const sec = useMemo(() => makeSec(colors), [colors]);
   if (!status) return null;
   const lower = status.toLowerCase();
   const bg = lower === 'good' ? colors.success : lower === 'fair' ? colors.warning : lower === 'poor' ? colors.error : colors.border;
@@ -270,6 +280,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const db = useDatabase();
   const { t } = useAppTranslation();
   const { collectionDomain } = useSettings();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const sec = useMemo(() => makeSec(colors), [colors]);
 
   const [object, setObject] = useState<RegisterObject | null>(null);
   const [media, setMedia] = useState<Media[]>([]);
@@ -1779,603 +1792,607 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
 // ── Section styles (sec namespace) ────────────────────────────────────────────
 
-const sec = StyleSheet.create({
-  section: {
-    paddingHorizontal: spacing.lg,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  sectionTitle: {
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text,
-  },
-  sectionBody: {
-    paddingTop: 8,
-    paddingBottom: spacing.md,
-  },
-  // CompletionRing
-  ringContainer: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringText: {
-    position: 'absolute',
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
-    color: colors.text,
-  },
-  completionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  completionText: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.medium,
-    color: colors.textSecondary,
-  },
-  // EditableField
-  editableContainer: {
-    marginTop: 12,
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-  },
-  fieldLabel: {
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  fieldValue: {
-    fontSize: typography.size.md,
-    color: colors.text,
-  },
-  fieldEmpty: {
-    fontSize: typography.size.md,
-    color: colors.textMuted,
-  },
-  fieldInput: {
-    fontSize: typography.size.md,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderFocused,
-    borderRadius: radii.sm,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  fieldInputMultiline: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  // ConditionBadge
-  conditionPill: {
-    alignSelf: 'flex-start',
-    borderRadius: radii.full,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    marginTop: spacing.sm,
-  },
-  conditionPillText: {
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-  },
-  // Dimensions grid
-  dimensionGrid: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  dimensionCol: {
-    flex: 1,
-  },
-  // Persons block
-  personsBlock: {
-    marginTop: spacing.sm,
-  },
-  // Location picker wrap
-  locationPickerWrap: {
-    marginTop: spacing.sm,
-  },
-  mapLinkFlex: {
-    flex: 1,
-  },
-  // AI section
-  aiFieldRow: {
-    marginTop: spacing.md,
-  },
-  aiFieldHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  confidenceTrack: {
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.border,
-    marginTop: 4,
-  },
-  confidenceFill: {
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.accent,
-  },
-  aiButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.lg,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    borderRadius: radii.md,
-    minHeight: touch.minTarget,
-  },
-  aiButtonDisabled: {
-    opacity: 0.5,
-  },
-  aiButtonText: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-    color: colors.accent,
-  },
-  // Annotations
-  annotationItem: {
-    paddingVertical: spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    gap: spacing.xs,
-  },
-  annotationContent: {
-    fontSize: typography.size.base,
-    color: colors.text,
-    lineHeight: 20,
-  },
-  annotationDate: {
-    fontSize: typography.size.sm,
-    color: colors.textSecondary,
-  },
-  // Audit trail
-  auditItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  auditDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginTop: 4,
-  },
-  auditContent: {
-    flex: 1,
-  },
-  auditAction: {
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.medium,
-    color: colors.text,
-  },
-  auditDate: {
-    fontSize: typography.size.sm,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  // Empty state text
-  emptyText: {
-    fontSize: typography.size.base,
-    color: colors.textSecondary,
-    paddingVertical: spacing.md,
-  },
-  // Padded section wrapper
-  paddedSection: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-});
+function makeSec(c: ColorPalette) {
+  return StyleSheet.create({
+    section: {
+      paddingHorizontal: spacing.lg,
+    },
+    sectionHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    sectionTitle: {
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: c.text,
+    },
+    sectionBody: {
+      paddingTop: 8,
+      paddingBottom: spacing.md,
+    },
+    // CompletionRing
+    ringContainer: {
+      width: 48,
+      height: 48,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ringText: {
+      position: 'absolute',
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.semibold,
+      color: c.text,
+    },
+    completionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    completionText: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.medium,
+      color: c.textSecondary,
+    },
+    // EditableField
+    editableContainer: {
+      marginTop: 12,
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+    },
+    fieldLabel: {
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      color: c.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      marginBottom: 4,
+    },
+    fieldValue: {
+      fontSize: typography.size.md,
+      color: c.text,
+    },
+    fieldEmpty: {
+      fontSize: typography.size.md,
+      color: c.textMuted,
+    },
+    fieldInput: {
+      fontSize: typography.size.md,
+      color: c.text,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderFocused,
+      borderRadius: radii.sm,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    fieldInputMultiline: {
+      minHeight: 80,
+      textAlignVertical: 'top',
+    },
+    // ConditionBadge
+    conditionPill: {
+      alignSelf: 'flex-start',
+      borderRadius: radii.full,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      marginTop: spacing.sm,
+    },
+    conditionPillText: {
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+    },
+    // Dimensions grid
+    dimensionGrid: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    dimensionCol: {
+      flex: 1,
+    },
+    // Persons block
+    personsBlock: {
+      marginTop: spacing.sm,
+    },
+    // Location picker wrap
+    locationPickerWrap: {
+      marginTop: spacing.sm,
+    },
+    mapLinkFlex: {
+      flex: 1,
+    },
+    // AI section
+    aiFieldRow: {
+      marginTop: spacing.md,
+    },
+    aiFieldHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 4,
+    },
+    confidenceTrack: {
+      height: 3,
+      borderRadius: 1.5,
+      backgroundColor: c.border,
+      marginTop: 4,
+    },
+    confidenceFill: {
+      height: 3,
+      borderRadius: 1.5,
+      backgroundColor: c.accent,
+    },
+    aiButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.lg,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: c.accent,
+      borderRadius: radii.md,
+      minHeight: touch.minTarget,
+    },
+    aiButtonDisabled: {
+      opacity: 0.5,
+    },
+    aiButtonText: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+      color: c.accent,
+    },
+    // Annotations
+    annotationItem: {
+      paddingVertical: spacing.sm,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+      gap: spacing.xs,
+    },
+    annotationContent: {
+      fontSize: typography.size.base,
+      color: c.text,
+      lineHeight: 20,
+    },
+    annotationDate: {
+      fontSize: typography.size.sm,
+      color: c.textSecondary,
+    },
+    // Audit trail
+    auditItem: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    auditDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginTop: 4,
+    },
+    auditContent: {
+      flex: 1,
+    },
+    auditAction: {
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.medium,
+      color: c.text,
+    },
+    auditDate: {
+      fontSize: typography.size.sm,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    // Empty state text
+    emptyText: {
+      fontSize: typography.size.base,
+      color: c.textSecondary,
+      paddingVertical: spacing.md,
+    },
+    // Padded section wrapper
+    paddedSection: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+  });
+}
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  // Header
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  headerTitle: {
-    ...typography.h4,
-    color: colors.text,
-    flex: 1,
-    marginHorizontal: spacing.sm,
-  },
-  // Breadcrumb
-  breadcrumbScroll: {
-    flexGrow: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  breadcrumbContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  breadcrumbLink: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  breadcrumbSep: {
-    marginHorizontal: spacing.xs,
-  },
-  breadcrumbCurrent: {
-    ...typography.caption,
-    color: colors.text,
-    fontWeight: '600',
-    flexShrink: 1,
-  },
-  // Scroll
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingTop: spacing.sm,
-    paddingBottom: 100,
-  },
-  // Gallery
-  gallerySection: {
-    marginBottom: spacing.xs,
-  },
-  galleryContent: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-  },
-  galleryItem: {
-    position: 'relative',
-    borderRadius: radii.md,
-    overflow: 'hidden',
-  },
-  galleryImage: {
-    width: GALLERY_IMG_SIZE,
-    height: GALLERY_IMG_SIZE,
-  },
-  primaryPip: {
-    position: 'absolute',
-    bottom: spacing.sm,
-    right: spacing.sm,
-    width: 8,
-    height: 8,
-    borderRadius: radii.full,
-    backgroundColor: colors.primary,
-  },
-  // ── Multi-view gallery (Registerbogen) ──────────────────────────────────────
-  viewGallerySection: {
-    marginBottom: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  viewGalleryContent: {
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
-  viewGalleryItem: {
-    width: 88,
-    height: 104,
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  viewGalleryItemCaptured: {
-    borderWidth: 2,
-    borderColor: colors.success,
-  },
-  viewGalleryItemEmpty: {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderStyle: 'dashed',
-  },
-  viewGalleryImage: {
-    width: '100%',
-    height: 76,
-  },
-  viewGalleryCheck: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    backgroundColor: colors.success,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewGalleryLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 2,
-    paddingHorizontal: 2,
-  },
-  viewGalleryLabelCaptured: {
-    color: colors.success,
-    fontWeight: typography.weight.semibold,
-  },
-  viewDimensionRow: {
-    paddingHorizontal: spacing.lg,
-    marginTop: spacing.sm,
-  },
-  viewDimensionLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  viewDimensionInput: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    ...typography.bodySmall,
-    color: colors.text,
-    minHeight: touch.minTargetSmall,
-  },
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    safe: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    // Header
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      backgroundColor: c.background,
+    },
+    headerTitle: {
+      ...typography.h4,
+      color: c.text,
+      flex: 1,
+      marginHorizontal: spacing.sm,
+    },
+    // Breadcrumb
+    breadcrumbScroll: {
+      flexGrow: 0,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    breadcrumbContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    breadcrumbLink: {
+      ...typography.caption,
+      color: c.textMuted,
+    },
+    breadcrumbSep: {
+      marginHorizontal: spacing.xs,
+    },
+    breadcrumbCurrent: {
+      ...typography.caption,
+      color: c.text,
+      fontWeight: '600',
+      flexShrink: 1,
+    },
+    // Scroll
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingTop: spacing.sm,
+      paddingBottom: 100,
+    },
+    // Gallery
+    gallerySection: {
+      marginBottom: spacing.xs,
+    },
+    galleryContent: {
+      paddingHorizontal: spacing.lg,
+      gap: spacing.sm,
+    },
+    galleryItem: {
+      position: 'relative',
+      borderRadius: radii.md,
+      overflow: 'hidden',
+    },
+    galleryImage: {
+      width: GALLERY_IMG_SIZE,
+      height: GALLERY_IMG_SIZE,
+    },
+    primaryPip: {
+      position: 'absolute',
+      bottom: spacing.sm,
+      right: spacing.sm,
+      width: 8,
+      height: 8,
+      borderRadius: radii.full,
+      backgroundColor: c.primary,
+    },
+    // ── Multi-view gallery (Registerbogen) ──────────────────────────────────────
+    viewGallerySection: {
+      marginBottom: spacing.lg,
+      paddingTop: spacing.sm,
+    },
+    viewGalleryContent: {
+      paddingHorizontal: spacing.lg,
+      gap: spacing.sm,
+      paddingBottom: spacing.sm,
+    },
+    viewGalleryItem: {
+      width: 88,
+      height: 104,
+      borderRadius: radii.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    viewGalleryItemCaptured: {
+      borderWidth: 2,
+      borderColor: c.success,
+    },
+    viewGalleryItemEmpty: {
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+    },
+    viewGalleryImage: {
+      width: '100%',
+      height: 76,
+    },
+    viewGalleryCheck: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: c.success,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    viewGalleryLabel: {
+      ...typography.caption,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: 2,
+      paddingHorizontal: 2,
+    },
+    viewGalleryLabelCaptured: {
+      color: c.success,
+      fontWeight: typography.weight.semibold,
+    },
+    viewDimensionRow: {
+      paddingHorizontal: spacing.lg,
+      marginTop: spacing.sm,
+    },
+    viewDimensionLabel: {
+      ...typography.caption,
+      color: c.textSecondary,
+      marginBottom: 4,
+    },
+    viewDimensionInput: {
+      backgroundColor: c.surface,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      ...typography.bodySmall,
+      color: c.text,
+      minHeight: touch.minTargetSmall,
+    },
 
-  addVideoBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: spacing.sm,
-    marginHorizontal: spacing.lg,
-    marginVertical: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderWidth: 1.5,
-    borderColor: colors.heroGreen,
-    borderRadius: radii.lg,
-    minHeight: touch.minTarget,
-  },
-  addVideoBtnText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.heroGreen,
-  },
-  // Map link card
-  mapLinkCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: touch.minTarget,
-    marginTop: spacing.sm,
-  },
-  mapLinkTitle: {
-    fontSize: 13,
-    fontWeight: typography.weight.semibold,
-    color: colors.text,
-  },
-  mapLinkSub: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    marginTop: 1,
-  },
-  // eslint-disable-next-line react-native/no-color-literals
-  videoPlayOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Sync status row
-  syncBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-  },
-  // Review banner
-  reviewBanner: {
-    marginHorizontal: spacing.lg,
-    marginVertical: spacing.md,
-    padding: spacing.lg,
-    backgroundColor: colors.warningLight,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.warning,
-  },
-  reviewBannerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  reviewBannerTitle: {
-    ...typography.bodyMedium,
-    color: colors.statusWarning,
-  },
-  reviewBannerText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.md,
-  },
-  // Cards
-  card: {
-    borderRadius: 0,
-    borderWidth: 0,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  // Skeleton loading state
-  skeletonHeaderTitle: {
-    flex: 1,
-    marginHorizontal: spacing.sm,
-  },
-  skeletonBody: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    gap: spacing.md,
-  },
-  skeletonRows: {
-    gap: spacing.md,
-    paddingTop: spacing.lg,
-  },
-  // Error state
-  centred: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing['2xl'],
-  },
-  errorText: {
-    ...typography.body,
-    color: colors.error,
-    textAlign: 'center',
-  },
-  // Action bar
-  actionBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: ACTION_BAR_HEIGHT,
-    paddingHorizontal: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
-  },
-  actionSpacer: {
-    flex: 1,
-  },
-  // Documents section
-  emptyDocumentsText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    paddingVertical: spacing.sm,
-  },
-  documentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    minHeight: touch.minTarget,
-  },
-  documentThumb: {
-    width: 56,
-    height: 56,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-  },
-  documentInfo: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  documentOcrPreview: {
-    ...typography.bodySmall,
-    color: colors.text,
-  },
-  documentNoText: {
-    ...typography.bodySmall,
-    color: colors.textTertiary,
-    fontStyle: 'italic',
-  },
-  documentBadges: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  scanButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingVertical: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radii.md,
-    minHeight: touch.minTarget,
-  },
-  scanButtonDisabled: {
-    opacity: 0.5,
-  },
-  scanButtonText: {
-    ...typography.bodyMedium,
-    color: colors.primary,
-  },
-  // Gallery groups (protocol objects)
-  galleryGroup: {
-    marginBottom: spacing.md,
-  },
-  galleryGroupLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xs,
-  },
-  // Protocol status section
-  protocolShotRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  protocolShotDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  protocolShotLabel: {
-    ...typography.bodySmall,
-    color: colors.text,
-    flex: 1,
-  },
-  protocolShotDone: {
-    color: colors.textSecondary,
-  },
-  // Technical details collapsible
-  technicalToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    marginTop: spacing.xs,
-  },
-  technicalToggleText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontWeight: typography.weight.medium,
-  },
-});
+    addVideoBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: spacing.sm,
+      marginHorizontal: spacing.lg,
+      marginVertical: spacing.md,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.lg,
+      borderWidth: 1.5,
+      borderColor: c.heroGreen,
+      borderRadius: radii.lg,
+      minHeight: touch.minTarget,
+    },
+    addVideoBtnText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: c.heroGreen,
+    },
+    // Map link card
+    mapLinkCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      backgroundColor: c.surfaceElevated,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: touch.minTarget,
+      marginTop: spacing.sm,
+    },
+    mapLinkTitle: {
+      fontSize: 13,
+      fontWeight: typography.weight.semibold,
+      color: c.text,
+    },
+    mapLinkSub: {
+      fontSize: 11,
+      color: c.textSecondary,
+      marginTop: 1,
+    },
+    // eslint-disable-next-line react-native/no-color-literals
+    videoPlayOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // Sync status row
+    syncBadgeRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    // Review banner
+    reviewBanner: {
+      marginHorizontal: spacing.lg,
+      marginVertical: spacing.md,
+      padding: spacing.lg,
+      backgroundColor: c.warningLight,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: c.warning,
+    },
+    reviewBannerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginBottom: spacing.xs,
+    },
+    reviewBannerTitle: {
+      ...typography.bodyMedium,
+      color: c.statusWarning,
+    },
+    reviewBannerText: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      marginBottom: spacing.md,
+    },
+    // Cards
+    card: {
+      borderRadius: 0,
+      borderWidth: 0,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+    },
+    // Skeleton loading state
+    skeletonHeaderTitle: {
+      flex: 1,
+      marginHorizontal: spacing.sm,
+    },
+    skeletonBody: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      gap: spacing.md,
+    },
+    skeletonRows: {
+      gap: spacing.md,
+      paddingTop: spacing.lg,
+    },
+    // Error state
+    centred: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing['2xl'],
+    },
+    errorText: {
+      ...typography.body,
+      color: c.error,
+      textAlign: 'center',
+    },
+    // Action bar
+    actionBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      height: ACTION_BAR_HEIGHT,
+      paddingHorizontal: spacing.md,
+      borderTopWidth: 1,
+      borderTopColor: c.border,
+      backgroundColor: c.background,
+    },
+    actionSpacer: {
+      flex: 1,
+    },
+    // Documents section
+    emptyDocumentsText: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      paddingVertical: spacing.sm,
+    },
+    documentCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+      minHeight: touch.minTarget,
+    },
+    documentThumb: {
+      width: 56,
+      height: 56,
+      borderRadius: radii.sm,
+      backgroundColor: c.surface,
+    },
+    documentInfo: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    documentOcrPreview: {
+      ...typography.bodySmall,
+      color: c.text,
+    },
+    documentNoText: {
+      ...typography.bodySmall,
+      color: c.textTertiary,
+      fontStyle: 'italic',
+    },
+    documentBadges: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    scanButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+      marginTop: spacing.md,
+      paddingVertical: spacing.md,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: radii.md,
+      minHeight: touch.minTarget,
+    },
+    scanButtonDisabled: {
+      opacity: 0.5,
+    },
+    scanButtonText: {
+      ...typography.bodyMedium,
+      color: c.primary,
+    },
+    // Gallery groups (protocol objects)
+    galleryGroup: {
+      marginBottom: spacing.md,
+    },
+    galleryGroupLabel: {
+      ...typography.label,
+      color: c.textSecondary,
+      paddingHorizontal: spacing.lg,
+      marginBottom: spacing.xs,
+    },
+    // Protocol status section
+    protocolShotRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    protocolShotDot: {
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 1.5,
+      borderColor: c.border,
+    },
+    protocolShotLabel: {
+      ...typography.bodySmall,
+      color: c.text,
+      flex: 1,
+    },
+    protocolShotDone: {
+      color: c.textSecondary,
+    },
+    // Technical details collapsible
+    technicalToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: spacing.sm,
+      marginTop: spacing.xs,
+    },
+    technicalToggleText: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      fontWeight: typography.weight.medium,
+    },
+  });
+}
