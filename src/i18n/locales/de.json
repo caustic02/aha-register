@@ -1051,6 +1051,7 @@
     "weight": "Gewicht",
     "weight_unit": "Gewichtseinheit",
     "diameter": "Durchmesser",
+    "diameter_unit": "Durchmesser-Einheit",
     "format": "Format",
     "provenance_chain": "Provenienzangaben",
     "acquisition_method": "Erwerbungsart",

@@ -16,6 +16,9 @@ const JSON_SCHEMA = `
   "date_created": { "value": "string - date or range, e.g. 'ca. 1650', '1920-1925'", "confidence": number 0-100 },
   "medium": { "value": "string - materials and techniques", "confidence": number 0-100 },
   "dimensions_description": { "value": "string - estimated dimensions if discernible", "confidence": number 0-100 },
+  "diameter": { "value": "number or null - diameter in mm if object is round/circular, null otherwise", "confidence": number 0-100 },
+  "diameter_unit": { "value": "string or null - unit of diameter measurement (e.g. 'mm', 'cm'), null if no diameter", "confidence": number 0-100 },
+  "weight_estimated": { "value": "string or null - estimated weight with unit and reasoning, e.g. '~250g (ceramic vessel, approx. 15cm diameter)'", "confidence": number 0-100 },
   "description": { "value": "string - 2-3 sentence objective description", "confidence": number 0-100 },
   "style_period": { "value": "string - period or style classification", "confidence": number 0-100 },
   "culture_origin": { "value": "string - cultural or geographic origin", "confidence": number 0-100 },
@@ -30,7 +33,10 @@ Rules:
 - Return plain, human-readable descriptions — do NOT return taxonomy codes, classification hierarchies, or vocabulary identifiers
 - If you cannot determine a field, set value to null and confidence to 0
 - Confidence: 90+ = highly confident, 70-89 = probable, 40-69 = possible, below 40 = speculative
-- For dimensions, only estimate if there are visual cues (hand for scale, standard frame sizes)
+- SCALE REFERENCE CARD: If the photograph contains a small card with color squares (black, white, red, blue, gray), a ruler strip, and the text "aha! Register / Messreferenz", that is the aha! Register scale reference card (85.6 × 53.98 mm, standard credit card). Use it to calculate actual dimensions of the object. Mention the reference card in dimensions_description.
+- For dimensions, only estimate if there are visual cues (scale reference card, hand for scale, standard frame sizes, known objects for comparison)
+- ROUND OBJECTS: If the object is circular or cylindrical (bowl, plate, vessel, coin, disc, cylinder), provide diameter in the "diameter" field (numeric value in mm if a scale reference is visible, or null with low confidence if not). Set diameter_unit to "mm" or "cm" as appropriate.
+- WEIGHT: For weight_estimated, use visible size, material, and form to estimate. Always include reasoning and mark as estimated (e.g., "~300g (ceramic bowl, approx. 18cm diameter, typical wall thickness)"). Low confidence is acceptable — honest estimation is more useful than null.
 - Do NOT guess historical art periods for modern manufactured objects — use "contemporary" or "modern"
 - For object_type, use a single clear term describing what the object IS (e.g., "calculator", "ceramic vase", "oil painting") — not a taxonomy category
 - For medium/materials, list the actual materials visible (e.g., "plastic, metal, glass LCD screen") — not abstract material categories

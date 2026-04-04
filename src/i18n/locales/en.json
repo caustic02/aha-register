@@ -1051,6 +1051,7 @@
     "weight": "Weight",
     "weight_unit": "Weight unit",
     "diameter": "Diameter",
+    "diameter_unit": "Diameter unit",
     "format": "Format",
     "provenance_chain": "Provenance chain",
     "acquisition_method": "Acquisition method",
