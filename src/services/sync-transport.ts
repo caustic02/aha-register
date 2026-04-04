@@ -211,20 +211,19 @@ export class SyncTransport {
     }
 
     // INSERT or UPDATE — upsert for idempotency
-    let payload = item.payload ? JSON.parse(item.payload) : {};
-
-    // For media rows, read the FULL local record so all columns
-    // (view_type, view_dimensions, view_notes, storage_path) get pushed
-    if (table === 'media') {
-      const fullRow = await this.db.getFirstAsync<Record<string, unknown>>(
-        `SELECT * FROM media WHERE id = ?`,
-        [item.record_id],
-      );
-      if (fullRow) {
-        payload = { ...fullRow, ...payload };
-        // Strip local-only file_path (device path, not useful in cloud)
-        // but keep storage_path which is the cloud reference
-      }
+    // Always read the FULL local record so all current column values get pushed.
+    // The queue payload is metadata only; actual column values come from SQLite.
+    let payload: Record<string, unknown> = {};
+    const fullRow = await this.db.getFirstAsync<Record<string, unknown>>(
+      `SELECT * FROM ${table} WHERE id = ?`,
+      [item.record_id],
+    );
+    if (fullRow) {
+      payload = { ...fullRow };
+    } else {
+      // Record was deleted locally between queuing and pushing — skip
+      if (__DEV__) console.warn(`[sync] push: local record gone for ${table}/${item.record_id}`);
+      return;
     }
 
     // Add cloud-only columns

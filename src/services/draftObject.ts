@@ -7,6 +7,8 @@ import { SyncEngine } from '../sync/engine';
 import type { CaptureMetadata } from './metadata';
 import { getSetting, SETTING_KEYS } from './settingsService';
 import { copyToMediaStorage, buildStorageName, normalizeFileType } from './captureHelpers';
+import { uploadAndRecordStoragePath } from './storage-upload';
+import { supabase } from './supabase';
 
 export interface CreateDraftParams {
   imageUri: string;
@@ -116,13 +118,21 @@ export async function createDraftObject(
       },
     });
 
-    // 6. Queue sync
+    // 6. Queue sync — both object AND media
     const syncEngine = new SyncEngine(db);
-    await syncEngine.queueChange('objects', objectId, 'insert', {
-      objectId,
-      mediaId,
-    });
+    await syncEngine.queueChange('objects', objectId, 'insert', {});
+    await syncEngine.queueChange('media', mediaId, 'insert', {});
   });
+
+  // Fire-and-forget: upload to Supabase Storage in background
+  const ext = params.mimeType.split('/')[1] ?? 'jpg';
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user?.id) {
+      uploadAndRecordStoragePath(
+        db, mediaId, destUri, session.user.id, objectId, ext,
+      ).catch(() => {});
+    }
+  }).catch(() => {});
 
   return objectId;
 }

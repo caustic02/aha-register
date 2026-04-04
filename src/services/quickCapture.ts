@@ -119,12 +119,10 @@ export async function quickCapture(
       },
     });
 
-    // Sync queue
+    // Sync queue — both object AND media
     const syncEngine = new SyncEngine(db);
-    await syncEngine.queueChange('objects', objectId, 'insert', {
-      objectId,
-      mediaId,
-    });
+    await syncEngine.queueChange('objects', objectId, 'insert', {});
+    await syncEngine.queueChange('media', mediaId, 'insert', {});
   });
 
   // Fire-and-forget: upload to Supabase Storage in background
