@@ -628,6 +628,10 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           'UPDATE objects SET type_specific_data = ?, updated_at = ? WHERE id = ?',
           [JSON.stringify(tsd), now, objectId],
         );
+        // Queue sync so AI results are pushed to Supabase on next cycle
+        import('../sync/engine').then(({ SyncEngine: SE }) => {
+          new SE(db).queueChange('objects', objectId, 'update', { type_specific_data: JSON.stringify(tsd) });
+        }).catch(() => {});
         await loadData();
         Alert.alert(t('detail.ai_success'));
       } else {
