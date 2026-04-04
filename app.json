@@ -67,7 +67,8 @@
       "expo-secure-store",
       "react-native-document-scanner-plugin",
       "rn-mlkit-ocr",
-      "expo-video"
+      "expo-video",
+      "expo-localization"
     ],
     "runtimeVersion": "0.4.0",
     "updates": {
