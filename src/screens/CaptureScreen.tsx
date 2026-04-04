@@ -420,12 +420,30 @@ export function CaptureScreen() {
               `UPDATE media SET shot_type = ?, protocol_id = ?, shot_order = ?, updated_at = ? WHERE id = ?`,
               [currentShotId, currentProtocolId, currentShotOrder, now, newMediaId],
             );
+            // Queue media update for sync
+            const { SyncEngine: SE } = await import('../sync/engine');
+            await new SE(db).queueChange('media', newMediaId, 'update', {});
           } else {
             // First shot: tag primary media
             await db.runAsync(
               `UPDATE media SET shot_type = ?, protocol_id = ?, shot_order = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
               [currentShotId, currentProtocolId, currentShotOrder, now, objectId],
             );
+            // Queue media update for sync (first shot — find primary media ID)
+            const pRow = await db.getFirstAsync<{ id: string }>(
+              `SELECT id FROM media WHERE object_id = ? AND is_primary = 1`,
+              [objectId],
+            );
+            if (pRow) {
+              const { SyncEngine: SE } = await import('../sync/engine');
+              await new SE(db).queueChange('media', pRow.id, 'update', {});
+            }
+          }
+
+          // Queue object protocol metadata update for sync
+          {
+            const { SyncEngine: SE } = await import('../sync/engine');
+            await new SE(db).queueChange('objects', objectId, 'update', {});
           }
 
           // Advance the protocol hook
