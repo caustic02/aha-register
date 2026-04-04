@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles, react-native/no-color-literals */
-import React, { useCallback, useMemo, useState, type JSX } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import * as Haptics from 'expo-haptics';
 import * as FileSystem from 'expo-file-system';
 import {
@@ -360,23 +360,47 @@ export function HomeScreen({ navigation }: Props) {
 
   const unfiled = useMemo(() => objects.filter((o) => o.in_collection === 0), [objects]);
 
-  // Sync status styling
+  // Sync status — fading "Synced ✓" when a cycle completes
   const syncState = syncStatus.status; // 'idle' | 'syncing' | 'offline' | 'error'
-  const syncColor = syncState === 'error' || syncState === 'offline' ? colors.statusError
+  const prevSyncStateRef = useRef(syncState);
+  const [justSynced, setJustSynced] = useState(false);
+
+  useEffect(() => {
+    if (prevSyncStateRef.current === 'syncing' && syncState === 'idle') {
+      setJustSynced(true);
+      const t = setTimeout(() => setJustSynced(false), 3000);
+      return () => clearTimeout(t);
+    }
+    prevSyncStateRef.current = syncState;
+  }, [syncState]);
+
+  const showSyncBar = syncState !== 'idle'
+    || justSynced
+    || syncStatus.failedCount > 0
+    || syncStatus.pendingCount > 0;
+
+  const syncColor = justSynced ? colors.statusSuccess
+    : syncState === 'error' || syncState === 'offline' ? colors.statusError
     : syncState === 'syncing' ? colors.statusWarning : colors.statusSuccess;
-  const syncBg = syncState === 'error' || syncState === 'offline' ? colors.errorLight
+  const syncBg = justSynced ? colors.successLight
+    : syncState === 'error' || syncState === 'offline' ? colors.errorLight
     : syncState === 'syncing' ? colors.warningLight : colors.successLight;
-  const syncBorder = syncState === 'error' || syncState === 'offline' ? colors.error
+  const syncBorder = justSynced ? colors.success
+    : syncState === 'error' || syncState === 'offline' ? colors.error
     : syncState === 'syncing' ? colors.warning : colors.success;
-  const SyncIcon = syncState === 'error' ? AlertCircle
+  const SyncIcon = justSynced ? CheckCircle2
+    : syncState === 'error' ? AlertCircle
     : syncState === 'offline' ? WifiOff
     : syncState === 'syncing' ? RefreshCw
     : CheckCircle2;
-  const syncLabel = syncState === 'syncing' ? 'Syncing...'
+  const syncLabel = justSynced ? 'Synced'
+    : syncState === 'syncing'
+      ? (syncStatus.pendingCount > 0 ? `Syncing ${syncStatus.pendingCount} items...` : 'Syncing...')
     : syncState === 'offline' ? 'Offline'
-    : syncState === 'error' ? 'Sync failed'
-    : syncStatus.pendingCount > 0 ? `Sync: ${syncStatus.pendingCount} pending`
-    : 'Sync: all up to date';
+    : syncState === 'error'
+      ? (syncStatus.failedCount > 0 ? `${syncStatus.failedCount} items failed to sync` : 'Sync error')
+    : syncStatus.pendingCount > 0 ? `${syncStatus.pendingCount} pending`
+    : '';
 
   // Storage warning level
   const GB = 1024 * 1024 * 1024;
@@ -566,10 +590,12 @@ export function HomeScreen({ navigation }: Props) {
               <Text style={st.statLabel}>{t('home.statStorage')}</Text>
             </View>
           </View>
-          <View style={[st.syncBar, { backgroundColor: syncBg, borderColor: syncBorder }]}>
-            <SyncIcon size={14} color={syncColor} />
-            <Text style={[st.syncText, { color: syncColor }]}>{syncLabel}</Text>
-          </View>
+          {showSyncBar && (
+            <View style={[st.syncBar, { backgroundColor: syncBg, borderColor: syncBorder }]} accessibilityLabel={syncLabel} accessibilityLiveRegion="polite">
+              <SyncIcon size={14} color={syncColor} />
+              <Text style={[st.syncText, { color: syncColor }]}>{syncLabel}</Text>
+            </View>
+          )}
         </View>
 
         <View style={{ height: spacing.xl }} />
