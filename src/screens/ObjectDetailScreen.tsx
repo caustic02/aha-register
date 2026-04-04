@@ -51,7 +51,6 @@ import { useTheme } from '../theme/ThemeContext';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { ImageViewer } from '../components/ImageViewer';
 import { VideoPlayer } from '../components/VideoPlayer';
-import { Play } from 'lucide-react-native';
 import { AIFieldBadge } from '../components/AIFieldBadge';
 import type { RegisterObject, Media, ObjectPerson } from '../db/types';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
@@ -680,7 +679,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
   // Group media by shot_type for protocol objects (must be before early returns)
   const isGerman = t('pdf.html_lang') === 'de';
-  const mediaGrouped = useMemo(() => {
+  const _mediaGrouped = useMemo(() => {
     if (!object) return null;
     const pId = object.protocol_id;
     if (!pId) return null;
@@ -1003,6 +1002,58 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           </View>
         )}
 
+        {/* ── AI ANALYSIS ───────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_ai')} defaultOpen={false}>
+          {aiFieldEntries.length > 0 ? (
+            aiFieldEntries.map((entry) => (
+              <View key={entry.key} style={sec.aiFieldRow}>
+                <View style={sec.aiFieldHeader}>
+                  <Text style={sec.fieldLabel}>{entry.key}</Text>
+                  {entry.confidence != null && (
+                    <AIFieldBadge visible confidence={entry.confidence} />
+                  )}
+                </View>
+                <Text style={sec.fieldValue}>{entry.value}</Text>
+                {entry.confidence != null && (
+                  <View style={sec.confidenceTrack}>
+                    <View style={[sec.confidenceFill, { width: `${Math.min(entry.confidence, 100)}%` }]} />
+                  </View>
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={sec.emptyText}>{t('detail.no_annotations')}</Text>
+          )}
+
+          {/* Enrichment data from AI */}
+          {aiMedium != null && (
+            <MetadataRow label={t('objectDetail.medium')} value={aiMedium} aiGenerated />
+          )}
+          {aiCondition != null && (
+            <MetadataRow label={t('objectDetail.condition')} value={aiCondition} aiGenerated />
+          )}
+          {aiKeywords != null && (
+            <MetadataRow label={t('objectDetail.keywords')} value={aiKeywords} aiGenerated />
+          )}
+          {aiDimensions != null && (
+            <MetadataRow label={t('objectDetail.dimensions')} value={aiDimensions} aiGenerated />
+          )}
+
+          <Pressable
+            style={[sec.aiButton, aiLoading && sec.aiButtonDisabled]}
+            onPress={handleRunAI}
+            disabled={aiLoading}
+            accessibilityRole="button"
+            accessibilityLabel={t('detail.run_ai')}
+          >
+            {aiLoading ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <Text style={sec.aiButtonText}>{t('detail.run_ai')}</Text>
+            )}
+          </Pressable>
+        </CollapsibleSection>
+
         {/* ── IDENTIFICATION ────────────────────────────────────────────────── */}
         <CollapsibleSection title={t('detail.section_identification')}>
           <EditableField
@@ -1136,6 +1187,39 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           />
         </CollapsibleSection>
 
+        {/* ── CONDITION ─────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_condition')} defaultOpen={false}>
+          <ConditionBadge status={object.condition_status} />
+          <EditableField
+            label={t('detail.current_status')}
+            value={object.condition_status ?? null}
+            onSave={(v) => handleFieldSave('condition_status', v)}
+          />
+          <EditableField
+            label={t('detail.condition_notes')}
+            value={object.condition_note ?? null}
+            onSave={(v) => handleFieldSave('condition_note', v)}
+            multiline
+          />
+          <EditableField
+            label={t('detail.condition_desc')}
+            value={object.erhaltungszustand ?? null}
+            onSave={(v) => handleFieldSave('erhaltungszustand', v)}
+          />
+          <EditableField
+            label={t('detail.condition_desc')}
+            value={object.zustandsbeschreibung ?? null}
+            onSave={(v) => handleFieldSave('zustandsbeschreibung', v)}
+            multiline
+          />
+          <EditableField
+            label={t('detail.conservation_needs')}
+            value={object.restaurierungsbedarf ?? null}
+            onSave={(v) => handleFieldSave('restaurierungsbedarf', v)}
+            multiline
+          />
+        </CollapsibleSection>
+
         {/* ── PROVENANCE ────────────────────────────────────────────────────── */}
         <CollapsibleSection title={t('detail.section_provenance')} defaultOpen={false}>
           <EditableField
@@ -1247,180 +1331,26 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           </Pressable>
         </CollapsibleSection>
 
-        {/* ── CONDITION ─────────────────────────────────────────────────────── */}
-        <CollapsibleSection title={t('detail.section_condition')} defaultOpen={false}>
-          <ConditionBadge status={object.condition_status} />
-          <EditableField
-            label={t('detail.current_status')}
-            value={object.condition_status ?? null}
-            onSave={(v) => handleFieldSave('condition_status', v)}
-          />
-          <EditableField
-            label={t('detail.condition_notes')}
-            value={object.condition_note ?? null}
-            onSave={(v) => handleFieldSave('condition_note', v)}
-            multiline
-          />
-          <EditableField
-            label={t('detail.condition_desc')}
-            value={object.erhaltungszustand ?? null}
-            onSave={(v) => handleFieldSave('erhaltungszustand', v)}
-          />
-          <EditableField
-            label={t('detail.condition_desc')}
-            value={object.zustandsbeschreibung ?? null}
-            onSave={(v) => handleFieldSave('zustandsbeschreibung', v)}
-            multiline
-          />
-          <EditableField
-            label={t('detail.conservation_needs')}
-            value={object.restaurierungsbedarf ?? null}
-            onSave={(v) => handleFieldSave('restaurierungsbedarf', v)}
-            multiline
-          />
-        </CollapsibleSection>
+        {/* ── HISTORY ───────────────────────────────────────────────────────── */}
+        <CollapsibleSection title={t('detail.section_history')} defaultOpen={false}>
+          {auditTrail.length > 0 ? (
+            auditTrail.map((entry) => {
+              const actionColor: string = entry.action === 'insert' ? colors.success : entry.action === 'update' ? colors.info : entry.action === 'delete' ? colors.error : colors.textSecondary;
+              const actionLabel = entry.action === 'insert' ? t('detail.action_insert') : entry.action === 'update' ? t('detail.action_update') : entry.action === 'delete' ? t('detail.action_delete') : entry.action;
 
-        {/* ── AI ANALYSIS ───────────────────────────────────────────────────── */}
-        <CollapsibleSection title={t('detail.section_ai')} defaultOpen={false}>
-          {aiFieldEntries.length > 0 ? (
-            aiFieldEntries.map((entry) => (
-              <View key={entry.key} style={sec.aiFieldRow}>
-                <View style={sec.aiFieldHeader}>
-                  <Text style={sec.fieldLabel}>{entry.key}</Text>
-                  {entry.confidence != null && (
-                    <AIFieldBadge visible confidence={entry.confidence} />
-                  )}
-                </View>
-                <Text style={sec.fieldValue}>{entry.value}</Text>
-                {entry.confidence != null && (
-                  <View style={sec.confidenceTrack}>
-                    <View style={[sec.confidenceFill, { width: `${Math.min(entry.confidence, 100)}%` }]} />
+              return (
+                <View key={entry.id} style={sec.auditItem}>
+                  <View style={[sec.auditDot, { backgroundColor: actionColor }]} />
+                  <View style={sec.auditContent}>
+                    <Text style={sec.auditAction}>{actionLabel}</Text>
+                    <Text style={sec.auditDate}>{formatDate(entry.created_at)}</Text>
                   </View>
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={sec.emptyText}>{t('detail.no_annotations')}</Text>
-          )}
-
-          {/* Enrichment data from AI */}
-          {aiMedium != null && (
-            <MetadataRow label={t('objectDetail.medium')} value={aiMedium} aiGenerated />
-          )}
-          {aiCondition != null && (
-            <MetadataRow label={t('objectDetail.condition')} value={aiCondition} aiGenerated />
-          )}
-          {aiKeywords != null && (
-            <MetadataRow label={t('objectDetail.keywords')} value={aiKeywords} aiGenerated />
-          )}
-          {aiDimensions != null && (
-            <MetadataRow label={t('objectDetail.dimensions')} value={aiDimensions} aiGenerated />
-          )}
-
-          <Pressable
-            style={[sec.aiButton, aiLoading && sec.aiButtonDisabled]}
-            onPress={handleRunAI}
-            disabled={aiLoading}
-            accessibilityRole="button"
-            accessibilityLabel={t('detail.run_ai')}
-          >
-            {aiLoading ? (
-              <ActivityIndicator size="small" color={colors.accent} />
-            ) : (
-              <Text style={sec.aiButtonText}>{t('detail.run_ai')}</Text>
-            )}
-          </Pressable>
-        </CollapsibleSection>
-
-        {/* ── MEDIA ─────────────────────────────────────────────────────────── */}
-        <CollapsibleSection title={t('detail.section_media')}>
-          {/* Grouped gallery for protocol objects */}
-          {media.length > 0 && mediaGrouped ? (
-            <View style={styles.gallerySection}>
-              {mediaGrouped.map((group, gi) => (
-                <View key={gi} style={styles.galleryGroup}>
-                  <Text style={styles.galleryGroupLabel}>{group.label}</Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.galleryContent}
-                  >
-                    {group.items.map((m, idx) => (
-                      <Pressable
-                        key={m.id}
-                        style={styles.galleryItem}
-                        onPress={() => handleMediaTap(m)}
-                        accessibilityRole="button"
-                        accessibilityLabel={
-                          m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
-                        }
-                      >
-                        <Image
-                          source={{ uri: m.file_path }}
-                          style={styles.galleryImage}
-                          resizeMode="cover"
-                        />
-                        {isVideoMedia(m) && (
-                          <View style={styles.videoPlayOverlay}>
-                            <Play size={18} color={colors.white} fill={colors.white} />
-                          </View>
-                        )}
-                        {m.is_primary === 1 && (
-                          <View style={styles.primaryPip} />
-                        )}
-                      </Pressable>
-                    ))}
-                  </ScrollView>
                 </View>
-              ))}
-            </View>
-          ) : media.length > 0 ? (
-            /* Flat gallery for freeform objects */
-            <View style={styles.gallerySection}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.galleryContent}
-              >
-                {media.map((m, idx) => (
-                  <Pressable
-                    key={m.id}
-                    style={styles.galleryItem}
-                    onPress={() => handleMediaTap(m)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      m.caption ?? `${t('objectDetail.photo')} ${idx + 1}`
-                    }
-                  >
-                    <Image
-                      source={{ uri: m.file_path }}
-                      style={styles.galleryImage}
-                      resizeMode="cover"
-                    />
-                    {isVideoMedia(m) && (
-                      <View style={styles.videoPlayOverlay}>
-                        <Play size={18} color={colors.white} fill={colors.white} />
-                      </View>
-                    )}
-                    {m.is_primary === 1 && (
-                      <View style={styles.primaryPip} />
-                    )}
-                  </Pressable>
-                ))}
-              </ScrollView>
-            </View>
-          ) : null}
-
-          {/* ── ADD VIDEO BUTTON ─────────────────────────────────────────────── */}
-          <Pressable
-            style={styles.addVideoBtn}
-            onPress={() => navigation.navigate('VideoRecord', { objectId: object.id })}
-            accessibilityRole="button"
-            accessibilityLabel={t('objectDetail.addVideo')}
-          >
-            <Play size={18} color={colors.heroGreen} />
-            <Text style={styles.addVideoBtnText}>{t('objectDetail.addVideo')}</Text>
-          </Pressable>
+              );
+            })
+          ) : (
+            <Text style={sec.emptyText}>{t('detail.no_history')}</Text>
+          )}
         </CollapsibleSection>
 
         {/* ── ANNOTATIONS ───────────────────────────────────────────────────── */}
@@ -1533,28 +1463,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                 : t('objects.scan_document')}
             </Text>
           </Pressable>
-        </CollapsibleSection>
-
-        {/* ── HISTORY ───────────────────────────────────────────────────────── */}
-        <CollapsibleSection title={t('detail.section_history')} defaultOpen={false}>
-          {auditTrail.length > 0 ? (
-            auditTrail.map((entry) => {
-              const actionColor: string = entry.action === 'insert' ? colors.success : entry.action === 'update' ? colors.info : entry.action === 'delete' ? colors.error : colors.textSecondary;
-              const actionLabel = entry.action === 'insert' ? t('detail.action_insert') : entry.action === 'update' ? t('detail.action_update') : entry.action === 'delete' ? t('detail.action_delete') : entry.action;
-
-              return (
-                <View key={entry.id} style={sec.auditItem}>
-                  <View style={[sec.auditDot, { backgroundColor: actionColor }]} />
-                  <View style={sec.auditContent}>
-                    <Text style={sec.auditAction}>{actionLabel}</Text>
-                    <Text style={sec.auditDate}>{formatDate(entry.created_at)}</Text>
-                  </View>
-                </View>
-              );
-            })
-          ) : (
-            <Text style={sec.emptyText}>{t('detail.no_history')}</Text>
-          )}
         </CollapsibleSection>
 
         {/* ── PROTOCOL STATUS ────────────────────────────────────────────────── */}
