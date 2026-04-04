@@ -47,6 +47,7 @@ import {
   SpecimenIcon,
   ConservationRecordIcon,
 } from '../theme/icons';
+import { AlertCircle } from 'lucide-react-native';
 import { spacing, touch, typography } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme, type ThemePreference } from '../theme/ThemeContext';
@@ -456,7 +457,10 @@ export function SettingsScreen() {
           />
           {syncLastError != null && (
             <View style={styles.syncErrorBox}>
-              <Text style={styles.syncErrorLabel}>Error</Text>
+              <View style={styles.syncErrorHeader}>
+                <AlertCircle size={14} color={colors.error} />
+                <Text style={styles.syncErrorLabel}>Error</Text>
+              </View>
               <Text style={styles.syncErrorText} selectable>{syncLastError}</Text>
             </View>
           )}
@@ -471,7 +475,7 @@ export function SettingsScreen() {
               pressed && styles.pressed,
             ]}
           >
-            <ExportIcon size={20} color={syncRunning ? colors.textMuted : colors.primary} />
+            <ExportIcon size={20} color={syncRunning ? colors.textMuted : colors.accent} />
             <Text style={[styles.syncNowText, syncRunning && { color: colors.textMuted }]}>
               {syncRunning ? 'Syncing...' : 'Sync Now'}
             </Text>
@@ -1052,16 +1056,21 @@ function makeStyles(c: ColorPalette) {
     syncErrorBox: {
       padding: spacing.sm,
       marginTop: spacing.xs,
-      backgroundColor: c.surface,
+      backgroundColor: c.errorLight,
       borderRadius: spacing.xs,
       borderLeftWidth: 3,
       borderLeftColor: c.error,
+    },
+    syncErrorHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+      marginBottom: spacing.xs,
     },
     syncErrorLabel: {
       ...typography.caption,
       color: c.error,
       fontWeight: '700',
-      marginBottom: spacing.xs,
     },
     syncErrorText: {
       ...typography.bodySmall,
@@ -1069,7 +1078,7 @@ function makeStyles(c: ColorPalette) {
     },
     syncNowText: {
       ...typography.bodyMedium,
-      color: c.primary,
+      color: c.accent,
     },
   });
 }

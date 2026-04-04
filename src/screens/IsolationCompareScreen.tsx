@@ -471,10 +471,9 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     bottom: 0,
   },
   // White background behind isolated PNG for better viewing
-  // eslint-disable-next-line react-native/no-color-literals
   whiteBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: c.white,
     margin: spacing.lg,
     borderRadius: radii.lg,
   },

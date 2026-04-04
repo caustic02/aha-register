@@ -27,7 +27,7 @@ const BACKDROP_BG = 'rgba(0,0,0,0.4)';
 const ITEM_BG = 'rgba(255,255,255,0.08)';
 const ITEM_ACTIVE = 'rgba(255,255,255,0.18)';
 const ITEM_TRANSPARENT = 'rgba(0,0,0,0)';
-const TEXT_WHITE = '#FFFFFF';
+// TEXT_WHITE replaced with c.white / colors.white from theme tokens below
 const TEXT_DIM = 'rgba(255,255,255,0.6)';
 const BADGE_OPTIONAL = 'rgba(255,255,255,0.3)';
 
@@ -113,7 +113,7 @@ export function ShotListSidebar({
             accessibilityRole="button"
             accessibilityLabel="Close"
           >
-            <X size={24} color={TEXT_WHITE} />
+            <X size={24} color={colors.white} />
           </Pressable>
         </View>
 
@@ -155,7 +155,7 @@ export function ShotListSidebar({
   );
 }
 
-function makeStyles(_c: ColorPalette) {
+function makeStyles(c: ColorPalette) {
   return StyleSheet.create({
     backdrop: {
       ...StyleSheet.absoluteFillObject,
@@ -181,7 +181,7 @@ function makeStyles(_c: ColorPalette) {
       borderBottomColor: ITEM_BG,
     },
     headerTitle: {
-      color: TEXT_WHITE,
+      color: c.white,
       fontSize: typography.size.lg,
       fontWeight: typography.weight.bold,
     },
@@ -218,7 +218,7 @@ function makeStyles(_c: ColorPalette) {
       gap: spacing.xs,
     },
     itemLabel: {
-      color: TEXT_WHITE,
+      color: c.white,
       fontSize: typography.size.base,
       fontWeight: typography.weight.medium,
     },
@@ -229,7 +229,7 @@ function makeStyles(_c: ColorPalette) {
       paddingVertical: 1,
     },
     badgeText: {
-      color: TEXT_WHITE,
+      color: c.white,
       fontSize: typography.size.xs,
       fontWeight: typography.weight.semibold,
     },

@@ -1610,7 +1610,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   pvToggleTextActive: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0D0D0D',
+    color: c.camera,
   },
   pvToggleBtn: {
     paddingHorizontal: 20,
@@ -1700,7 +1700,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: '#FF3B30',
+    backgroundColor: c.danger,
   },
   // ── Recording timer ──
   recordingTimerWrap: {
@@ -1720,7 +1720,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#FF3B30',
+    backgroundColor: c.danger,
   },
   recordingTimerText: {
     fontSize: 16,

@@ -371,7 +371,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 16,
     paddingHorizontal: 12, paddingVertical: 6, gap: 8, zIndex: 20,
   },
-  timerDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30' },
+  timerDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.danger },
   timerText: { fontSize: 16, fontWeight: '700', color: c.white, fontVariant: ['tabular-nums'] },
   // Top bar
   topBar: { position: 'absolute', top: 56, left: spacing.lg, zIndex: 25 },
@@ -394,6 +394,6 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     borderColor: c.white, alignItems: 'center', justifyContent: 'center',
     backgroundColor: c.transparent,
   },
-  shutterRecord: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#FF3B30' },
-  shutterStop: { width: 28, height: 28, borderRadius: 6, backgroundColor: '#FF3B30' },
+  shutterRecord: { width: 58, height: 58, borderRadius: 29, backgroundColor: c.danger },
+  shutterStop: { width: 28, height: 28, borderRadius: 6, backgroundColor: c.danger },
 }); }
