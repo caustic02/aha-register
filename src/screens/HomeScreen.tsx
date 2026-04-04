@@ -377,8 +377,8 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <View style={st.safe}>
       {/* ── Glassmorphism header (absolute, content scrolls underneath) ── */}
-      <BlurView intensity={80} tint="dark" style={[st.headerBlur, { height: HEADER_H, paddingTop: insets.top }]}>
-        <View style={st.headerInner}>
+      <BlurView intensity={80} tint="dark" style={[st.headerBlur, { height: HEADER_H, paddingTop: insets.top }]} pointerEvents="box-none">
+        <View style={st.headerInner} pointerEvents="box-none">
           <View>
             <WordmarkLogo width={110} fill={colors.white} />
             <Text style={st.headerSubtitle}>Museum Collections</Text>
@@ -583,7 +583,6 @@ function makeStyles(colors: ColorPalette) {
     headerBlur: {
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
       backgroundColor: 'rgba(10, 10, 10, 0.75)',
-      overflow: 'visible',
     },
     headerInner: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
