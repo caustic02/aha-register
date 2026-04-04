@@ -146,6 +146,8 @@
     "dimensions": "Dimensions",
     "sha256": "SHA-256",
     "retake": "Retake",
+    "use_photo": "Use photo",
+    "select_view": "Select view",
     "flash_off": "Flash Off",
     "flash_on": "Flash On",
     "flash_auto": "Flash Auto",

@@ -9,7 +9,9 @@ import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { CommonActions, useNavigation } from '@react-navigation/native';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type { NavigationProp } from '@react-navigation/native';
 
 // ── Screen imports ──────────────────────────────────────────────────────────
@@ -35,6 +37,7 @@ import { QRCodeScreen } from '../screens/QRCodeScreen';
 import { FloorMapScreen } from '../screens/FloorMapScreen';
 import { Scan3DScreen } from '../screens/Scan3DScreen';
 import { ChecklistOverviewScreen } from '../screens/ChecklistOverviewScreen';
+import { CaptureReviewScreen } from '../screens/CaptureReviewScreen';
 
 // ── Service imports ─────────────────────────────────────────────────────────
 
@@ -60,6 +63,12 @@ export type RootStackParamList = {
   // Capture
   QuickID: undefined;
   CaptureCamera: { viewType?: RegisterViewType; objectId?: string } | undefined;
+  CaptureReview: {
+    imageUri: string;
+    mimeType: string;
+    metadata: CaptureMetadata;
+    sha256Hash: string;
+  };
   AIProcessing: {
     imageUri: string;
     imageBase64: string;
@@ -280,6 +289,7 @@ export function RootStack() {
       {/* Capture */}
       <Stack.Screen name="QuickID" component={QuickIDScreen} />
       <Stack.Screen name="CaptureCamera" component={CaptureScreen} />
+      <Stack.Screen name="CaptureReview" component={CaptureReviewScreen} />
       <Stack.Screen name="AIProcessing" component={AIProcessingWrapper} />
       <Stack.Screen name="ReviewCard" component={ReviewCardWrapper} />
       <Stack.Screen name="AIReview" component={AIReviewWrapper} />

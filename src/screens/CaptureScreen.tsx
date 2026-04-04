@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-color-literals, react-native/no-inline-styles */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
@@ -38,6 +39,7 @@ import {
 import { TypeSelector } from '../components/TypeSelector';
 import { ScanIcon, AddPhotoIcon } from '../theme/icons';
 import { X, ChevronDown, Zap, RefreshCw } from 'lucide-react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Path } from 'react-native-svg';
 import type { ObjectType, RegisterObject, RegisterViewType } from '../db/types';
 import { DEFAULT_FIRST_VIEW } from '../constants/viewTypes';
@@ -78,6 +80,7 @@ const FLASH_CYCLE: FlashMode[] = ['off', 'on', 'auto'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function flashIcon(mode: FlashMode): string {
   if (mode === 'on') return '\u26A1'; // ⚡ bright
   if (mode === 'auto') return '\u26A1\u1D2C'; // ⚡ᴬ  (superscript A)
@@ -153,6 +156,18 @@ export function CaptureScreen() {
   const [hash, setHash] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [defaultObjectType, setDefaultObjectType] = useState<ObjectType | null>(null);
+
+  // Pinch-to-zoom
+  const [zoom, setZoom] = useState(0);
+  const zoomRef = useRef(0);
+  const baseZoomRef = useRef(0);
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      const z = Math.min(1, Math.max(0, baseZoomRef.current + (e.scale - 1) * 0.3));
+      zoomRef.current = z;
+      setZoom(z);
+    })
+    .onEnd(() => { baseZoomRef.current = zoomRef.current; });
 
   // Grid overlay
   const [gridEnabled, setGridEnabled] = useState(false);
@@ -296,6 +311,7 @@ export function CaptureScreen() {
     setFacing((prev) => (prev === 'back' ? 'front' : 'back'));
   }, []);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleModeToggle = useCallback((mode: CaptureMode) => {
     setCaptureMode(mode);
     AsyncStorage.setItem(CAPTURE_MODE_KEY, mode);
@@ -546,20 +562,22 @@ export function CaptureScreen() {
         exif: true,
       });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-      const result: CaptureResult = {
-        uri: pic.uri,
-        width: pic.width,
-        height: pic.height,
-        fileName: null,
-        fileSize: null,
+      triggerShutterFlash();
+
+      // Extract metadata + hash, then navigate to review screen
+      const meta = await extractMetadata(pic.exif ?? null);
+      const fileHash = await computeSHA256(pic.uri);
+
+      navigation.navigate('CaptureReview', {
+        imageUri: pic.uri,
         mimeType: 'image/jpeg',
-        exif: pic.exif ?? null,
-      };
-      await processCapture(result);
+        metadata: meta,
+        sha256Hash: fileHash,
+      });
     } catch {
       // Camera not ready or other error — ignore silently
     }
-  }, [cameraReady, processCapture]);
+  }, [cameraReady, navigation, triggerShutterFlash]);
 
   const handleLibrary = useCallback(async () => {
     const results = await pickFromLibrary();
@@ -954,12 +972,14 @@ export function CaptureScreen() {
   return (
     <View style={styles.cameraContainer}>
       {/* Camera preview with aspect-ratio wrapper for bracket positioning */}
+      <GestureDetector gesture={pinchGesture}>
       <View style={styles.cameraPreview}>
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
           facing={facing}
           flash={flashMode}
+          zoom={zoom}
           ratio={androidRatio}
           onCameraReady={() => setCameraReady(true)}
         />
@@ -990,7 +1010,15 @@ export function CaptureScreen() {
             </Text>
           </View>
         )}
+
+        {/* Zoom level label */}
+        {zoom > 0.01 && (
+          <View style={styles.zoomLabel} pointerEvents="none">
+            <Text style={styles.zoomLabelText}>{(1 + zoom * 9).toFixed(1)}x</Text>
+          </View>
+        )}
       </View>
+      </GestureDetector>
 
       {/* ── Grid overlay (pointerEvents="none" so touches pass through) */}
       {gridEnabled && (
@@ -1478,6 +1506,21 @@ const styles = StyleSheet.create({
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
     textAlign: 'center',
+  },
+  // Zoom label
+  zoomLabel: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    backgroundColor: OVERLAY_COUNT_BG,
+    borderRadius: radii.full,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  zoomLabelText: {
+    color: colors.white,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
   },
   // ── Bottom area (V0 design) ─────────────────────────────────────────────────
   bottomArea: {

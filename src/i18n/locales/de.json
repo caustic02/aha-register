@@ -146,6 +146,8 @@
     "dimensions": "Abmessungen",
     "sha256": "SHA-256",
     "retake": "Neu aufnehmen",
+    "use_photo": "Foto verwenden",
+    "select_view": "Ansicht w\u00e4hlen",
     "flash_off": "Blitz aus",
     "flash_on": "Blitz ein",
     "flash_auto": "Blitz Auto",
