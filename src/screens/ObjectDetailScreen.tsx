@@ -505,6 +505,82 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     });
   }, [media, navigation, objectId]);
 
+  // ── View type reassignment ──────────────────────────────────────────────────
+
+  const handleReassignViewType = useCallback(async (
+    mediaId: string,
+    currentViewType: string,
+    targetViewType: string,
+  ) => {
+    if (currentViewType === targetViewType) return;
+    const now = new Date().toISOString();
+    const occupant = media.find(
+      (m) => m.view_type === targetViewType && m.media_type !== 'derivative_isolated',
+    );
+
+    const doSwap = async () => {
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          'UPDATE media SET view_type = ?, updated_at = ? WHERE id = ?',
+          [targetViewType, now, mediaId],
+        );
+        if (occupant) {
+          await db.runAsync(
+            'UPDATE media SET view_type = ?, updated_at = ? WHERE id = ?',
+            [currentViewType, now, occupant.id],
+          );
+        }
+      });
+      import('../sync/engine').then(({ SyncEngine: SE }) => {
+        const se = new SE(db);
+        se.queueChange('media', mediaId, 'update', { view_type: targetViewType });
+        if (occupant) {
+          se.queueChange('media', occupant.id, 'update', { view_type: currentViewType });
+        }
+      }).catch(() => {});
+      await loadData();
+    };
+
+    if (occupant) {
+      Alert.alert(
+        t('view_types.reassign_title'),
+        t('view_types.reassign_occupied', { viewType: t(`view_types.${targetViewType}`) }),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('view_types.reassign_swap_confirm'), onPress: doSwap },
+        ],
+      );
+    } else {
+      await doSwap();
+    }
+  }, [db, media, t, loadData]);
+
+  const handleViewTypeLongPress = useCallback((mediaId: string, currentViewType: string) => {
+    const buttons = STANDARD_VIEW_TYPES.map((vd) => ({
+      text: t(vd.labelKey),
+      onPress: () => handleReassignViewType(mediaId, currentViewType, vd.key),
+    }));
+    Alert.alert(
+      t('view_types.reassign_title'),
+      undefined,
+      [
+        ...buttons,
+        { text: t('view_types.unassign'), onPress: async () => {
+          const now = new Date().toISOString();
+          await db.runAsync(
+            'UPDATE media SET view_type = NULL, updated_at = ? WHERE id = ?',
+            [now, mediaId],
+          );
+          import('../sync/engine').then(({ SyncEngine: SE }) => {
+            new SE(db).queueChange('media', mediaId, 'update', { view_type: null });
+          }).catch(() => {});
+          await loadData();
+        }},
+        { text: t('common.cancel'), style: 'cancel' },
+      ],
+    );
+  }, [db, handleReassignViewType, loadData, t]);
+
   // ── Document scan handler ───────────────────────────────────────────────────
 
   const handleScanDocument = useCallback(async () => {
@@ -942,6 +1018,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                       });
                     }
                   }}
+                  onLongPress={captured ? () => handleViewTypeLongPress(captured.id, viewDef.key) : undefined}
                   accessibilityRole="button"
                   accessibilityLabel={t(viewDef.labelKey)}
                 >

@@ -51,6 +51,11 @@ export async function addMediaToObject(
     parentDir.create({ intermediates: true, idempotent: true });
   }
   srcFile.copy(destFile);
+  // Validate copy succeeded — expo-file-system File.copy() silently discards
+  // the Kotlin copyRecursively() return value, so an I/O failure won't throw.
+  if (!destFile.exists) {
+    throw new Error('FILE_COPY_FAILED: destination file missing after copy');
+  }
 
   // 2. Compute SHA-256 hash on raw bytes
   const sha256 = await computeSHA256(destUri);
