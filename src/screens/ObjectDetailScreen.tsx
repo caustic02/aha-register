@@ -898,6 +898,68 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* ── HERO IMAGE ───────────────────────────────────────────────────── */}
+        {primaryMedia && (
+          <Pressable
+            style={styles.heroContainer}
+            onPress={() => handleMediaTap(primaryMedia)}
+            accessibilityRole="image"
+            accessibilityLabel={primaryMedia.caption ?? object.title}
+          >
+            <Image
+              source={{ uri: primaryMedia.file_path }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          </Pressable>
+        )}
+
+        {/* ── CAPTURE MORE VIEWS ───────────────────────────────────────────── */}
+        <View style={styles.heroViewGallery}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.heroViewGalleryContent}
+          >
+            {STANDARD_VIEW_TYPES.map((viewDef) => {
+              const captured = media.find(
+                (m) => m.view_type === viewDef.key && m.media_type !== 'derivative_isolated',
+              );
+              return (
+                <Pressable
+                  key={viewDef.key}
+                  style={[
+                    styles.heroViewItem,
+                    captured ? styles.heroViewItemCaptured : styles.heroViewItemEmpty,
+                  ]}
+                  onPress={() => {
+                    if (captured) {
+                      setViewerUri(captured.file_path);
+                    } else {
+                      navigation.navigate('CaptureCamera', {
+                        viewType: viewDef.key as RegisterViewType,
+                        objectId: object.id,
+                      });
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(viewDef.labelKey)}
+                >
+                  {captured ? (
+                    <Image
+                      source={{ uri: captured.file_path }}
+                      style={styles.heroViewThumb}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <Camera size={16} color={colors.textTertiary} />
+                  )}
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* ── COMPLETION RING + SYNC ────────────────────────────────────────── */}
         <View style={sec.completionRow}>
           <CompletionRing percent={completeness} />
@@ -2055,8 +2117,50 @@ function makeStyles(c: ColorPalette) {
       flex: 1,
     },
     scrollContent: {
-      paddingTop: spacing.sm,
+      paddingTop: 0,
       paddingBottom: 100,
+    },
+    // Hero image
+    heroContainer: {
+      width: '100%',
+      maxHeight: 300,
+      backgroundColor: c.surface,
+      overflow: 'hidden',
+    },
+    heroImage: {
+      width: '100%',
+      height: 300,
+    },
+    // Hero view gallery (thumbnails below hero)
+    heroViewGallery: {
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    heroViewGalleryContent: {
+      paddingHorizontal: spacing.lg,
+      gap: spacing.sm,
+    },
+    heroViewItem: {
+      width: 48,
+      height: 48,
+      borderRadius: radii.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    heroViewItemCaptured: {
+      borderWidth: 2,
+      borderColor: c.success,
+    },
+    heroViewItemEmpty: {
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+    },
+    heroViewThumb: {
+      width: '100%',
+      height: '100%',
     },
     // Gallery
     gallerySection: {
