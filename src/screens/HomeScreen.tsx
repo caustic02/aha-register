@@ -14,7 +14,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
@@ -203,7 +202,6 @@ export function HomeScreen({ navigation }: Props) {
   const syncStatus = useSyncStatus();
 
   const insets = useSafeAreaInsets();
-  const HEADER_H = insets.top + 64; // safe area + header content (48dp buttons + padding)
 
   // ── Sub-components (need access to theme-derived `st` and `colors`) ──
 
@@ -376,9 +374,9 @@ export function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={st.safe}>
-      {/* ── Glassmorphism header (absolute, content scrolls underneath) ── */}
-      <BlurView intensity={80} tint="dark" style={[st.headerBlur, { height: HEADER_H, paddingTop: insets.top }]} pointerEvents="box-none">
-        <View style={st.headerInner} pointerEvents="box-none">
+      {/* ── Fixed header (normal flow, not absolute) ── */}
+      <View style={[st.header, { paddingTop: insets.top }]}>
+        <View style={st.headerInner}>
           <View>
             <WordmarkLogo width={110} fill={colors.white} />
             <Text style={st.headerSubtitle}>Museum Collections</Text>
@@ -392,9 +390,9 @@ export function HomeScreen({ navigation }: Props) {
             </Pressable>
           </View>
         </View>
-      </BlurView>
+      </View>
 
-      <ScrollView style={st.scroll} contentContainerStyle={[st.scrollContent, { paddingTop: HEADER_H + 20 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView style={st.scroll} contentContainerStyle={st.scrollContent} showsVerticalScrollIndicator={false}>
 
         {/* ═══ 1. CAPTURE CTA ═══ */}
         <View style={st.section}>
@@ -579,10 +577,11 @@ function makeStyles(colors: ColorPalette) {
     scroll: { flex: 1 },
     scrollContent: { paddingTop: 16, paddingBottom: 40 },
 
-    // Header — glassmorphism blur
-    headerBlur: {
-      position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-      backgroundColor: 'rgba(10, 10, 10, 0.75)',
+    // Header — fixed at top in normal flow
+    header: {
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
     },
     headerInner: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
