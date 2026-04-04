@@ -9,7 +9,9 @@
 
 import React, { useEffect, useMemo } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
-import { colors, radii, spacing } from '../theme';
+import { radii, spacing } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 // ── Base primitive ─────────────────────────────────────────────────────────────
 
@@ -25,6 +27,8 @@ export function SkeletonLoader({
   height,
   borderRadius = radii.sm,
 }: SkeletonLoaderProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   // useMemo avoids the react-hooks/refs lint rule that forbids .current access during render
   const opacity = useMemo(() => new Animated.Value(0.3), []);
 
@@ -63,6 +67,9 @@ export function SkeletonLoader({
 // ── Card skeleton (list item: thumbnail + 2 text lines) ───────────────────────
 
 export function SkeletonCard() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <View style={styles.card}>
       <SkeletonLoader width={48} height={48} borderRadius={radii.sm} />
@@ -92,21 +99,23 @@ export function SkeletonList({ count = 4 }: SkeletonListProps) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  base: {
-    backgroundColor: colors.surfaceContainer,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  cardLines: {
-    flex: 1,
-    gap: spacing.sm,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    base: {
+      backgroundColor: c.surfaceContainer,
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    cardLines: {
+      flex: 1,
+      gap: spacing.sm,
+    },
+  });
+}

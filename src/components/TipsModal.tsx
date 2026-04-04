@@ -3,7 +3,7 @@
  * Uses standard theme colors (not camera overlay colours).
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Modal,
   Pressable,
@@ -16,7 +16,9 @@ import { CheckCircle2 } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { ProtocolShot } from '../config/protocols';
-import { colors, typography, spacing, radii, touch } from '../theme';
+import { typography, spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface TipsModalProps {
   visible: boolean;
@@ -27,6 +29,8 @@ interface TipsModalProps {
 export function TipsModal({ visible, shot, onClose }: TipsModalProps) {
   const { i18n } = useAppTranslation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const isGerman = i18n.language.startsWith('de');
 
   const label = isGerman ? shot.label_de : shot.label;
@@ -61,55 +65,57 @@ export function TipsModal({ visible, shot, onClose }: TipsModalProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  card: {
-    backgroundColor: colors.background,
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
-    width: '100%',
-    maxWidth: 360,
-    maxHeight: '60%',
-  },
-  title: {
-    ...typography.h3,
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  tipsList: {
-    flexShrink: 1,
-    marginBottom: spacing.lg,
-  },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-  tipText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  dismissBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.md,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-  },
-  dismissBtnText: {
-    color: colors.white,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.bold,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.xl,
+    },
+    card: {
+      backgroundColor: c.background,
+      borderRadius: radii.lg,
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.xl,
+      paddingBottom: spacing.lg,
+      width: '100%',
+      maxWidth: 360,
+      maxHeight: '60%',
+    },
+    title: {
+      ...typography.h3,
+      color: c.text,
+      marginBottom: spacing.lg,
+    },
+    tipsList: {
+      flexShrink: 1,
+      marginBottom: spacing.lg,
+    },
+    tipRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      marginBottom: spacing.md,
+    },
+    tipText: {
+      ...typography.body,
+      color: c.textSecondary,
+      flex: 1,
+    },
+    dismissBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radii.md,
+      paddingVertical: spacing.md,
+      alignItems: 'center',
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+    },
+    dismissBtnText: {
+      color: c.white,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.bold,
+    },
+  });
+}

@@ -4,7 +4,7 @@
  * Trim is deferred until native module linking is fixed post-Berlin.
  * The trim button is shown as disabled with "coming soon" label.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Modal,
@@ -19,7 +19,9 @@ import { useVideoPlayer, VideoView } from 'expo-video';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { Download, Share2, Scissors, X } from 'lucide-react-native';
-import { colors, spacing, radii, touch } from '../theme';
+import { spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -39,6 +41,8 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const insets = useSafeAreaInsets();
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const player = useVideoPlayer(videoUri, (p) => {
     p.loop = false;
@@ -46,7 +50,7 @@ export function VideoPlayer({
   });
 
   // Duration from player (seconds) — shown in future trim UI
-  const [duration, setDuration] = useState(0);
+  const [_duration, setDuration] = useState(0);
 
   useEffect(() => {
     if (!player) return;
@@ -146,44 +150,46 @@ export function VideoPlayer({
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  backdrop: { flex: 1, backgroundColor: colors.black },
-  video: { flex: 1 },
-  closeBtn: {
-    position: 'absolute',
-    right: spacing.lg,
-    width: 36,
-    height: 36,
-    borderRadius: radii.full,
-    backgroundColor: colors.overlay,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing['3xl'],
-    paddingTop: spacing.lg,
-    backgroundColor: colors.overlay,
-  },
-  actionBtn: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  actionBtnDisabled: {
-    opacity: 0.4,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.white,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    root: { flex: 1 },
+    backdrop: { flex: 1, backgroundColor: c.black },
+    video: { flex: 1 },
+    closeBtn: {
+      position: 'absolute',
+      right: spacing.lg,
+      width: 36,
+      height: 36,
+      borderRadius: radii.full,
+      backgroundColor: c.overlay,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+    },
+    bottomBar: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing['3xl'],
+      paddingTop: spacing.lg,
+      backgroundColor: c.overlay,
+    },
+    actionBtn: {
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    actionBtnDisabled: {
+      opacity: 0.4,
+    },
+    actionText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: c.white,
+    },
+  });
+}

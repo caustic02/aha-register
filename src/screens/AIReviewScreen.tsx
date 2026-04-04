@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -21,7 +21,9 @@ import {
   type AIAnalysisResult,
   type AIFieldResult,
 } from '../services/ai-analysis';
-import { colors, spacing, radii, touch } from '../theme';
+import { spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -92,6 +94,8 @@ const FIELD_MAP: Array<{
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
   const { collectionDomain } = useSettings();
@@ -102,7 +106,7 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
   const [objectType, setObjectType] = useState<string | null>(null);
   const [objectConfidence, setObjectConfidence] = useState(0);
   const [fields, setFields] = useState<FieldState[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [_editingIndex, setEditingIndex] = useState<number | null>(null);
   const editValueRef = useRef('');
 
   // Pulse animation for loading
@@ -223,7 +227,7 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
     return () => {
       cancelled = true;
     };
-  }, [photoUri, collectionDomain, db, t]);
+  }, [photoUri, collectionDomain, db, t, objectId]);
 
   // ── Field interactions ─────────────────────────────────────────────────────
 
@@ -336,6 +340,7 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
             <ChevronLeft size={20} color={colors.text} />
           </Pressable>
           <Text style={styles.headerTitle}>{t('aiReview.title')}</Text>
+          {/* eslint-disable-next-line react-native/no-inline-styles */}
           <View style={{ width: 40 }} />
         </View>
 
@@ -457,6 +462,7 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
         )}
 
         {/* Bottom spacer for CTA */}
+        {/* eslint-disable-next-line react-native/no-inline-styles */}
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -487,10 +493,10 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   scroll: { flex: 1 },
   scrollContent: {
@@ -509,14 +515,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: colors.text,
+    color: c.text,
   },
 
   // Photo
@@ -525,7 +531,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 14,
     overflow: 'hidden',
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   photo: {
     width: '100%',
@@ -533,7 +539,7 @@ const styles = StyleSheet.create({
   },
   pulseOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
   },
   boundingBox: {
     position: 'absolute',
@@ -542,14 +548,14 @@ const styles = StyleSheet.create({
     right: '12%',
     bottom: '12%',
     borderWidth: 2.5,
-    borderColor: colors.heroGreen,
+    borderColor: c.heroGreen,
     borderRadius: 6,
   },
   labelPill: {
     position: 'absolute',
     top: -12,
     left: 8,
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -557,7 +563,7 @@ const styles = StyleSheet.create({
   labelPillText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.white,
+    color: c.white,
   },
 
   // Loading
@@ -571,20 +577,20 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
 
   // Error
   errorWrap: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.lg,
-    backgroundColor: colors.warningLight,
+    backgroundColor: c.warningLight,
     borderRadius: radii.md,
     padding: spacing.lg,
   },
   errorText: {
     fontSize: 14,
-    color: colors.brownDark,
+    color: c.brownDark,
     textAlign: 'center',
   },
 
@@ -596,7 +602,7 @@ const styles = StyleSheet.create({
   fieldsSectionTitle: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.textMuted,
+    color: c.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     marginBottom: spacing.sm,
@@ -606,9 +612,9 @@ const styles = StyleSheet.create({
   fieldCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
     borderWidth: 1,
-    borderColor: colors.borderCard,
+    borderColor: c.borderCard,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
@@ -617,7 +623,7 @@ const styles = StyleSheet.create({
   },
   fieldCardEditing: {
     borderLeftWidth: 2,
-    borderLeftColor: colors.heroGreen,
+    borderLeftColor: c.heroGreen,
   },
   fieldLeft: {
     flex: 1,
@@ -626,24 +632,24 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 11,
     fontWeight: '500',
-    color: colors.textMuted,
+    color: c.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.44,
   },
   fieldValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
+    color: c.text,
     marginTop: 2,
   },
   fieldInput: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
+    color: c.text,
     marginTop: 2,
     padding: 0,
     borderBottomWidth: 1,
-    borderBottomColor: colors.heroGreen,
+    borderBottomColor: c.heroGreen,
     minHeight: 24,
   },
 
@@ -656,10 +662,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   fieldActionAccepted: {
-    backgroundColor: colors.greenLight,
+    backgroundColor: c.greenLight,
   },
   fieldActionEdit: {
-    backgroundColor: colors.warningLight,
+    backgroundColor: c.warningLight,
   },
 
   // Bottom CTA
@@ -671,10 +677,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: 34,
     paddingTop: spacing.md,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   ctaBtn: {
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderRadius: 14,
     height: 56,
     alignItems: 'center',
@@ -683,6 +689,6 @@ const styles = StyleSheet.create({
   ctaBtnText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.white,
+    color: c.white,
   },
-});
+}); }

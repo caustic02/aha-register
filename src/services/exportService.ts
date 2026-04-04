@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import QRCode from 'qrcode';
 
 import type { AuditTrailEntry, RegisterObject } from '../db/types';
-import { colors } from '../theme';
+import type { ColorPalette } from '../theme';
 import i18n from '../i18n';
 import { getMediaForObject } from './mediaService';
 import { getCollectionsForObject, getCollectionById } from './collectionService';
@@ -17,7 +17,7 @@ import {
 import { generateObjectReportHTML } from '../templates/object-report';
 import { generateCollectionReportHTML } from '../templates/collection-report';
 
-async function generateQrSvg(objectId: string): Promise<string | undefined> {
+async function generateQrSvg(objectId: string, colors: ColorPalette): Promise<string | undefined> {
   try {
     return await QRCode.toString(
       `https://aharegister.com/verify/${objectId}`,
@@ -37,6 +37,7 @@ async function loadObjectExportData(
   db: SQLiteDatabase,
   objectId: string,
   institutionName: string | null,
+  colors: ColorPalette,
 ): Promise<ObjectExportData | null> {
   const obj = await db.getFirstAsync<RegisterObject>(
     'SELECT * FROM objects WHERE id = ?',
@@ -51,7 +52,7 @@ async function loadObjectExportData(
       [objectId],
     ),
     getCollectionsForObject(db, objectId),
-    generateQrSvg(objectId),
+    generateQrSvg(objectId, colors),
   ]);
 
   // Convert media files to base64 for embedding in HTML
@@ -75,13 +76,14 @@ async function loadObjectExportData(
 export async function exportObjectToPDF(
   db: SQLiteDatabase,
   objectId: string,
+  colors: ColorPalette,
 ): Promise<string> {
   const institutionName = await getSetting(db, SETTING_KEYS.INSTITUTION_NAME);
-  const data = await loadObjectExportData(db, objectId, institutionName);
+  const data = await loadObjectExportData(db, objectId, institutionName, colors);
   if (!data) throw new Error('Object not found');
 
   const t = i18n.getFixedT(i18n.language);
-  const html = generateObjectReportHTML(data, t);
+  const html = generateObjectReportHTML(data, t, colors);
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
 }
@@ -93,6 +95,7 @@ export async function exportObjectToPDF(
 export async function exportCollectionToPDF(
   db: SQLiteDatabase,
   collectionId: string,
+  colors: ColorPalette,
 ): Promise<string> {
   const result = await getCollectionById(db, collectionId);
   if (!result) throw new Error('Collection not found');
@@ -101,7 +104,7 @@ export async function exportCollectionToPDF(
 
   const objectsData: ObjectExportData[] = [];
   for (const obj of result.objects) {
-    const data = await loadObjectExportData(db, obj.id, institutionName);
+    const data = await loadObjectExportData(db, obj.id, institutionName, colors);
     if (data) objectsData.push(data);
   }
 
@@ -112,6 +115,7 @@ export async function exportCollectionToPDF(
     institutionName,
     t,
     result.collection.description,
+    colors,
   );
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
@@ -124,17 +128,18 @@ export async function exportBatchToPDF(
   db: SQLiteDatabase,
   objectIds: string[],
   title: string,
+  colors: ColorPalette,
 ): Promise<string> {
   const institutionName = await getSetting(db, SETTING_KEYS.INSTITUTION_NAME);
 
   const objectsData: ObjectExportData[] = [];
   for (const id of objectIds) {
-    const data = await loadObjectExportData(db, id, institutionName);
+    const data = await loadObjectExportData(db, id, institutionName, colors);
     if (data) objectsData.push(data);
   }
 
   const t = i18n.getFixedT(i18n.language);
-  const html = generateCollectionReportHTML(title, objectsData, institutionName, t);
+  const html = generateCollectionReportHTML(title, objectsData, institutionName, t, undefined, colors);
   const { uri } = await Print.printToFileAsync({ html });
   return uri;
 }

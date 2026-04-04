@@ -7,7 +7,6 @@ import { IsolationCompareScreen } from '../screens/IsolationCompareScreen';
 import { DocumentReviewScreen } from '../screens/DocumentReviewScreen';
 import { VideoRecordScreen } from '../screens/VideoRecordScreen';
 import { ViewChecklistScreen } from '../screens/ViewChecklistScreen';
-import type { RegisterViewType } from '../db/types';
 
 export type HomeStackParamList = {
   Home: undefined;

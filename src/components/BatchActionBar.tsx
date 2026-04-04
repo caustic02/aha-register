@@ -1,5 +1,8 @@
+import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, typography, radii, spacing } from '../theme';
+import { typography, radii, spacing } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface SelectionHeaderProps {
   selectedCount: number;
@@ -16,6 +19,9 @@ export function SelectionHeader({
   onCancel,
   t,
 }: SelectionHeaderProps) {
+  const { colors } = useTheme();
+  const hStyles = useMemo(() => makeHeaderStyles(colors), [colors]);
+
   return (
     <View style={hStyles.container}>
       <Pressable onPress={onCancel} hitSlop={8}>
@@ -33,34 +39,36 @@ export function SelectionHeader({
   );
 }
 
-const hStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: spacing.sm,
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  cancelText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.medium,
-  },
-  countText: {
-    color: colors.white,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
-  },
-  selectAllText: {
-    color: colors.heroGreen,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.medium,
-  },
-});
+function makeHeaderStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: spacing.sm,
+      paddingHorizontal: 20,
+      paddingBottom: 12,
+      backgroundColor: c.surface,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    cancelText: {
+      color: c.textSecondary,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.medium,
+    },
+    countText: {
+      color: c.white,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.semibold,
+    },
+    selectAllText: {
+      color: c.heroGreen,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.medium,
+    },
+  });
+}
 
 interface ActionBarProps {
   onAddToCollection: () => void;
@@ -79,6 +87,9 @@ export function BatchActionButtons({
   exporting,
   t,
 }: ActionBarProps) {
+  const { colors } = useTheme();
+  const aStyles = useMemo(() => makeActionStyles(colors), [colors]);
+
   return (
     <View style={aStyles.container}>
       <Pressable
@@ -113,56 +124,58 @@ export function BatchActionButtons({
   );
 }
 
-const aStyles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    paddingBottom: 36,
-    backgroundColor: colors.surface,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    gap: 8,
-  },
-  actionBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: radii.md,
-    backgroundColor: colors.border,
-    gap: 4,
-  },
-  disabledBtn: {
-    opacity: 0.4,
-  },
-  actionIcon: {
-    color: colors.heroGreen,
-    fontSize: typography.size.lg,
-  },
-  actionText: {
-    color: colors.heroGreen,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
-    textAlign: 'center',
-  },
-  deleteBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    borderRadius: radii.md,
-    backgroundColor: colors.dangerLight,
-    gap: 4,
-  },
-  deleteIcon: {
-    color: colors.danger,
-    fontSize: typography.size.lg,
-  },
-  deleteText: {
-    color: colors.danger,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
-    textAlign: 'center',
-  },
-});
+function makeActionStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      paddingBottom: 36,
+      backgroundColor: c.surface,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      gap: 8,
+    },
+    actionBtn: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      borderRadius: radii.md,
+      backgroundColor: c.border,
+      gap: 4,
+    },
+    disabledBtn: {
+      opacity: 0.4,
+    },
+    actionIcon: {
+      color: c.heroGreen,
+      fontSize: typography.size.lg,
+    },
+    actionText: {
+      color: c.heroGreen,
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.semibold,
+      textAlign: 'center',
+    },
+    deleteBtn: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 12,
+      borderRadius: radii.md,
+      backgroundColor: c.dangerLight,
+      gap: 4,
+    },
+    deleteIcon: {
+      color: c.danger,
+      fontSize: typography.size.lg,
+    },
+    deleteText: {
+      color: c.danger,
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.semibold,
+      textAlign: 'center',
+    },
+  });
+}

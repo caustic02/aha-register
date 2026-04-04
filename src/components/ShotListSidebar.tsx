@@ -3,7 +3,7 @@
  * with completion status and small thumbnails.
  */
 
-import React, { useEffect, useState as useReactState } from 'react';
+import React, { useEffect, useMemo, useState as useReactState } from 'react';
 import {
   Animated,
   Image,
@@ -17,7 +17,9 @@ import {
 import { X } from 'lucide-react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { CaptureProtocol } from '../config/protocols';
-import { colors, typography, spacing, radii, touch } from '../theme';
+import { typography, spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 // ── Camera-safe overlay colours ──────────────────────────────────────────────
 const SIDEBAR_BG = 'rgba(0,0,0,0.85)';
@@ -27,9 +29,6 @@ const ITEM_ACTIVE = 'rgba(255,255,255,0.18)';
 const ITEM_TRANSPARENT = 'rgba(0,0,0,0)';
 const TEXT_WHITE = '#FFFFFF';
 const TEXT_DIM = 'rgba(255,255,255,0.6)';
-const BADGE_DONE = colors.success;
-const BADGE_SKIPPED = colors.textSecondary;
-const BADGE_REQUIRED = colors.error;
 const BADGE_OPTIONAL = 'rgba(255,255,255,0.3)';
 
 const SIDEBAR_WIDTH = 280;
@@ -54,9 +53,15 @@ export function ShotListSidebar({
   onClose,
 }: ShotListSidebarProps) {
   const { t, i18n } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { width: screenWidth } = useWindowDimensions();
   const isGerman = i18n.language.startsWith('de');
   const [translateX] = useReactState(() => new Animated.Value(SIDEBAR_WIDTH));
+
+  const BADGE_DONE = colors.success;
+  const BADGE_SKIPPED = colors.textSecondary;
+  const BADGE_REQUIRED = colors.error;
 
   useEffect(() => {
     Animated.timing(translateX, {
@@ -150,86 +155,88 @@ export function ShotListSidebar({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-    zIndex: 30,
-  },
-  backdropTouch: {
-    flex: 1,
-    backgroundColor: BACKDROP_BG,
-  },
-  sidebar: {
-    width: SIDEBAR_WIDTH,
-    backgroundColor: SIDEBAR_BG,
-    paddingTop: spacing.xl,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: ITEM_BG,
-  },
-  headerTitle: {
-    color: TEXT_WHITE,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.bold,
-  },
-  list: {
-    flex: 1,
-    paddingTop: spacing.sm,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    gap: spacing.md,
-    backgroundColor: ITEM_TRANSPARENT,
-  },
-  itemCurrent: {
-    backgroundColor: ITEM_ACTIVE,
-  },
-  orderCircle: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: ITEM_BG,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  orderText: {
-    color: TEXT_DIM,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-  },
-  itemContent: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  itemLabel: {
-    color: TEXT_WHITE,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.medium,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 1,
-  },
-  badgeText: {
-    color: TEXT_WHITE,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
-  },
-  thumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: radii.sm,
-  },
-});
+function makeStyles(_c: ColorPalette) {
+  return StyleSheet.create({
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      flexDirection: 'row',
+      zIndex: 30,
+    },
+    backdropTouch: {
+      flex: 1,
+      backgroundColor: BACKDROP_BG,
+    },
+    sidebar: {
+      width: SIDEBAR_WIDTH,
+      backgroundColor: SIDEBAR_BG,
+      paddingTop: spacing.xl,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: ITEM_BG,
+    },
+    headerTitle: {
+      color: TEXT_WHITE,
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.bold,
+    },
+    list: {
+      flex: 1,
+      paddingTop: spacing.sm,
+    },
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+      backgroundColor: ITEM_TRANSPARENT,
+    },
+    itemCurrent: {
+      backgroundColor: ITEM_ACTIVE,
+    },
+    orderCircle: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: ITEM_BG,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    orderText: {
+      color: TEXT_DIM,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+    },
+    itemContent: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    itemLabel: {
+      color: TEXT_WHITE,
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.medium,
+    },
+    badge: {
+      alignSelf: 'flex-start',
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 1,
+    },
+    badgeText: {
+      color: TEXT_WHITE,
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.semibold,
+    },
+    thumbnail: {
+      width: 40,
+      height: 40,
+      borderRadius: radii.sm,
+    },
+  });
+}

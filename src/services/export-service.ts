@@ -4,7 +4,7 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 import type { RegisterObject, Media, PersonRole } from '../db/types';
 import type { ExportConfig, ExportSections, ExportFields } from '../hooks/useExportConfig';
-import { colors } from '../theme';
+import type { ColorPalette } from '../theme';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -205,7 +205,8 @@ const VIEW_LABELS: Record<string, string> = {
   document_scan: 'Document scan',
 };
 
-const PDF_CSS = `
+function buildPdfCSS(colors: ColorPalette): string {
+  return `
   *{margin:0;padding:0;box-sizing:border-box}
   @page{size:A4;margin:20mm 18mm 22mm 18mm}
   body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:10pt;color:${colors.text};line-height:1.45;background:#fff}
@@ -258,6 +259,7 @@ const PDF_CSS = `
   /* ── Page break utility ── */
   .page-break{page-break-before:always;margin-top:0}
 `;
+}
 
 // ── Image loading helper ────────────────────────────────────────────────────
 
@@ -323,7 +325,7 @@ function formatDimensions(tsd: Record<string, unknown>): string | null {
 
 // ── Table row builder ───────────────────────────────────────────────────────
 
-function row(label: string, value: string | null | undefined, aiBadge?: boolean): string {
+function _row(label: string, value: string | null | undefined, aiBadge?: boolean): string {
   if (value == null || value.trim().length === 0) return '';
   const badge = aiBadge ? '<span class="ai-badge">AI</span>' : '';
   return `<tr><td class="lbl">${escapeHtml(label)}</td><td class="val">${escapeHtml(value)}${badge}</td></tr>`;
@@ -384,7 +386,8 @@ function buildSectionHtml(
 
 export async function exportAsPDF(
   data: ExportableObject,
-  config?: ExportConfig,
+  config: ExportConfig | undefined,
+  colors: ColorPalette,
 ): Promise<string> {
   const safe = stripAnonymous(data);
   const obj = safe.object;
@@ -739,7 +742,7 @@ export async function exportAsPDF(
 
   const html = `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><style>${PDF_CSS}</style></head>
+<head><meta charset="utf-8"><style>${buildPdfCSS(colors)}</style></head>
 <body>
   ${headerHtml}
   ${imagesHtml}

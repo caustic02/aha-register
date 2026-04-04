@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useMemo, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -7,7 +7,9 @@ import QRCode from 'react-native-qrcode-svg';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { BackIcon } from '../theme/icons';
 import { Share2, Printer } from 'lucide-react-native';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { RootStackParamList } from '../navigation/RootStack';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QRCode'>;
@@ -15,6 +17,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'QRCode'>;
 const QR_BASE_URL = 'https://register.arthausauction.com/objects';
 
 export function QRCodeScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const { objectId } = route.params;
   const db = useDatabase();
   const [title, setTitle] = useState<string>('');
@@ -117,8 +121,8 @@ export function QRCodeScreen({ route, navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: c.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -135,7 +139,7 @@ const s = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: typography.weight.semibold,
-    color: colors.text,
+    color: c.text,
   },
   content: {
     flex: 1,
@@ -144,10 +148,10 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   card: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.xl,
     alignItems: 'center',
     width: '100%',
@@ -155,24 +159,24 @@ const s = StyleSheet.create({
   },
   qrWrap: {
     padding: spacing.lg,
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
     borderRadius: radii.md,
     marginBottom: spacing.lg,
   },
   objectTitle: {
     fontSize: 16,
     fontWeight: typography.weight.semibold,
-    color: colors.text,
+    color: c.text,
     textAlign: 'center',
   },
   inventoryNum: {
     fontSize: 13,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginTop: 4,
   },
   url: {
     fontSize: 11,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     marginTop: spacing.sm,
     fontFamily: 'monospace',
   },
@@ -180,7 +184,7 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     marginTop: spacing.xl,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
     width: '100%',
   },
   actionBtn: {
@@ -195,10 +199,10 @@ const s = StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: typography.weight.semibold,
-    color: colors.heroGreen,
+    color: c.heroGreen,
   },
   divider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
   },
-});
+}); }

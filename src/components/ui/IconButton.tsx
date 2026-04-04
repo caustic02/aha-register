@@ -1,6 +1,9 @@
-import React, { ReactNode } from 'react';
+import React, { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
-import { colors, radii, touch } from '../../theme';
+import { radii, touch } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Variant = 'default' | 'filled' | 'tinted';
 
@@ -12,6 +15,34 @@ interface IconButtonProps {
   disabled?: boolean;
 }
 
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    base: {
+      width: touch.minTarget,
+      height: touch.minTarget,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    default: {
+      backgroundColor: c.transparent,
+    },
+    filled: {
+      backgroundColor: c.primary,
+      borderRadius: radii.full,
+    },
+    tinted: {
+      backgroundColor: c.primaryLight,
+      borderRadius: radii.full,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+  });
+}
+
 export function IconButton({
   icon,
   onPress,
@@ -19,6 +50,9 @@ export function IconButton({
   variant = 'default',
   disabled = false,
 }: IconButtonProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <Pressable
       onPress={disabled ? undefined : onPress}
@@ -36,29 +70,3 @@ export function IconButton({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    width: touch.minTarget,
-    height: touch.minTarget,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  default: {
-    backgroundColor: colors.transparent,
-  },
-  filled: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.full,
-  },
-  tinted: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radii.full,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-});

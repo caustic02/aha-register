@@ -18,11 +18,15 @@ import {
   type PickerObject,
 } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import { typography, spacing, radii, layout } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'AddObjects'>;
 
 export function AddObjectsScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { collectionId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
@@ -101,7 +105,7 @@ export function AddObjectsScreen({ route, navigation }: Props) {
         </Pressable>
       );
     },
-    [selected, t, toggleSelect],
+    [selected, t, toggleSelect, styles],
   );
 
   return (
@@ -162,10 +166,10 @@ export function AddObjectsScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   header: {
     paddingHorizontal: layout.screenPadding,
@@ -174,29 +178,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   headerTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
   },
   headerSpacer: {
     width: 60,
   },
   cancelText: {
     ...typography.bodyMedium,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   searchContainer: {
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.md,
   },
   searchInput: {
-    backgroundColor: colors.borderLight,
+    backgroundColor: c.borderLight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
-    color: colors.textPrimary,
+    color: c.textPrimary,
     fontSize: typography.size.md,
     padding: spacing.md,
   },
@@ -208,7 +212,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: c.borderLight,
     gap: spacing.md,
   },
   checkbox: {
@@ -216,16 +220,16 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: radii.sm,
     borderWidth: 2,
-    borderColor: colors.heroGreen,
+    borderColor: c.heroGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxActive: {
-    backgroundColor: colors.heroGreen,
-    borderColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
+    borderColor: c.heroGreen,
   },
   checkmark: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.base,
     fontWeight: typography.weight.bold,
   },
@@ -233,38 +237,38 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
   },
   thumbPlaceholder: {
     width: 44,
     height: 44,
     borderRadius: radii.md,
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   thumbPlaceholderText: {
     fontSize: typography.size.lg,
-    color: colors.border,
+    color: c.border,
   },
   info: {
     flex: 1,
     gap: spacing.xs,
   },
   itemTitle: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.medium,
   },
   badge: {
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.sm,
     alignSelf: 'flex-start',
   },
   badgeText: {
-    color: colors.heroGreen,
+    color: c.heroGreen,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
@@ -274,17 +278,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.md,
   },
   footer: {
     padding: layout.screenPadding,
     borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-    backgroundColor: colors.surface,
+    borderTopColor: c.borderLight,
+    backgroundColor: c.surface,
   },
   addBtn: {
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
     alignItems: 'center',
@@ -293,8 +297,8 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   addBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.bold,
   },
-});
+}); }

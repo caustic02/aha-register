@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -13,7 +13,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
-import { colors, spacing, radii, typography, shadows, touch } from '../theme';
+import { spacing, radii, typography, shadows, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { CheckIcon, BackIcon } from '../theme/icons';
 import {
   Eye,
@@ -55,6 +57,8 @@ function ViewIcon({ iconName, size, color }: { iconName: string; size: number; c
 }
 
 export function ViewChecklistScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { objectId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
@@ -245,10 +249,10 @@ const CARD_GAP = spacing.md;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CARD_WIDTH = (SCREEN_WIDTH - spacing.lg * 2 - CARD_GAP) / 2;
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   header: {
     flexDirection: 'row',
@@ -256,8 +260,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    borderBottomColor: c.border,
+    backgroundColor: c.background,
   },
   backButton: {
     width: touch.minTarget,
@@ -271,11 +275,11 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.h3,
-    color: colors.text,
+    color: c.text,
   },
   subtitle: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginTop: 2,
   },
   scroll: {
@@ -291,7 +295,7 @@ const styles = StyleSheet.create({
   },
   progressText: {
     ...typography.label,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   grid: {
     flexDirection: 'row',
@@ -301,10 +305,10 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     aspectRatio: 1,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderRadius: radii.lg,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderStyle: 'dashed',
     overflow: 'hidden',
     justifyContent: 'center',
@@ -313,7 +317,7 @@ const styles = StyleSheet.create({
   },
   cardCaptured: {
     borderStyle: 'solid',
-    borderColor: colors.success,
+    borderColor: c.success,
     borderWidth: 2,
   },
   thumbnail: {
@@ -324,10 +328,11 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // eslint-disable-next-line react-native/no-color-literals
   cardLabel: {
     position: 'absolute',
     bottom: 0,
@@ -343,11 +348,11 @@ const styles = StyleSheet.create({
   },
   cardLabelText: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
   },
   cardLabelTextCaptured: {
-    color: colors.success,
+    color: c.success,
     fontWeight: typography.weight.semibold,
   },
   cameraHint: {
@@ -362,35 +367,35 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderStyle: 'dashed',
     minHeight: touch.minTarget,
   },
   detailButtonCaptured: {
     borderStyle: 'solid',
-    borderColor: colors.success,
+    borderColor: c.success,
   },
   detailButtonText: {
     ...typography.body,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     flex: 1,
   },
   detailButtonTextCaptured: {
-    color: colors.success,
+    color: c.success,
     fontWeight: typography.weight.semibold,
   },
   footer: {
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
+    borderTopColor: c.border,
+    backgroundColor: c.background,
   },
   doneButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radii.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
@@ -399,6 +404,6 @@ const styles = StyleSheet.create({
   },
   doneButtonText: {
     ...typography.bodyMedium,
-    color: colors.textInverse,
+    color: c.textInverse,
   },
-});
+}); }

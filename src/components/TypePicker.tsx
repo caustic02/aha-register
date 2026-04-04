@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { ObjectType } from '../db/types';
-import { colors, typography, radii } from '../theme';
+import { typography, radii } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 const OBJECT_TYPES: ObjectType[] = [
   'museum_object',
@@ -21,6 +23,8 @@ interface TypePickerProps {
 
 export function TypePicker({ selected, onChange }: TypePickerProps) {
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   return (
     <ScrollView
@@ -46,32 +50,34 @@ export function TypePicker({ selected, onChange }: TypePickerProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingVertical: 4,
-  },
-  // eslint-disable-next-line react-native/no-color-literals
-  badge: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: 'transparent',
-  },
-  badgeActive: {
-    backgroundColor: colors.heroGreen,
-    borderColor: colors.heroGreen,
-  },
-  badgeText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.medium,
-  },
-  badgeTextActive: {
-    color: colors.white,
-    fontWeight: typography.weight.semibold,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      gap: 8,
+      paddingVertical: 4,
+    },
+    // eslint-disable-next-line react-native/no-color-literals
+    badge: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: radii.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+      backgroundColor: 'transparent',
+    },
+    badgeActive: {
+      backgroundColor: c.heroGreen,
+      borderColor: c.heroGreen,
+    },
+    badgeText: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.medium,
+    },
+    badgeTextActive: {
+      color: c.white,
+      fontWeight: typography.weight.semibold,
+    },
+  });
+}

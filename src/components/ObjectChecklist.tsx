@@ -1,9 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CheckSquare, Square, Plus, ListChecks } from 'lucide-react-native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { generateId } from '../utils/uuid';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { ObjectTask } from '../db/types';
 
 const DEFAULT_TASKS = [
@@ -22,6 +24,8 @@ interface Props {
 
 export function ObjectChecklist({ objectId, viewCount = 0, hasAI = false }: Props) {
   const db = useDatabase();
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const [tasks, setTasks] = useState<ObjectTask[]>([]);
   const [newTitle, setNewTitle] = useState('');
   const [loading, setLoading] = useState(true);
@@ -145,12 +149,14 @@ export function ObjectChecklist({ objectId, viewCount = 0, hasAI = false }: Prop
 
       {/* Progress bar */}
       <View style={s.progressBar}>
+        {/* eslint-disable react-native/no-inline-styles */}
         <View
           style={[
             s.progressFill,
             { width: tasks.length > 0 ? `${(completedCount / tasks.length) * 100}%` : '0%' },
           ]}
         />
+        {/* eslint-enable react-native/no-inline-styles */}
       </View>
 
       {/* Task list */}
@@ -206,93 +212,95 @@ export function ObjectChecklist({ objectId, viewCount = 0, hasAI = false }: Prop
   );
 }
 
-const s = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  headerTitle: {
-    fontSize: 14,
-    fontWeight: typography.weight.semibold,
-    color: colors.text,
-  },
-  progress: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: typography.weight.medium,
-  },
-  progressBar: {
-    height: 3,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.lg,
-    borderRadius: 2,
-    marginBottom: spacing.sm,
-  },
-  progressFill: {
-    height: 3,
-    backgroundColor: colors.heroGreen,
-    borderRadius: 2,
-  },
-  list: {
-    paddingHorizontal: spacing.md,
-  },
-  taskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.sm,
-    minHeight: 40,
-  },
-  taskTitle: {
-    fontSize: 13,
-    color: colors.text,
-    flex: 1,
-  },
-  taskCompleted: {
-    textDecorationLine: 'line-through',
-    color: colors.textTertiary,
-  },
-  addRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    marginTop: spacing.xs,
-    paddingHorizontal: spacing.lg,
-  },
-  addInput: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.text,
-    paddingVertical: 10,
-    minHeight: touch.minTarget,
-  },
-  addBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: touch.minTarget,
-    minHeight: touch.minTarget,
-  },
-  addBtnDisabled: {
-    opacity: 0.4,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.surfaceElevated,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    headerTitle: {
+      fontSize: 14,
+      fontWeight: typography.weight.semibold,
+      color: c.text,
+    },
+    progress: {
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: typography.weight.medium,
+    },
+    progressBar: {
+      height: 3,
+      backgroundColor: c.border,
+      marginHorizontal: spacing.lg,
+      borderRadius: 2,
+      marginBottom: spacing.sm,
+    },
+    progressFill: {
+      height: 3,
+      backgroundColor: c.heroGreen,
+      borderRadius: 2,
+    },
+    list: {
+      paddingHorizontal: spacing.md,
+    },
+    taskRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      paddingVertical: 8,
+      paddingHorizontal: spacing.sm,
+      minHeight: 40,
+    },
+    taskTitle: {
+      fontSize: 13,
+      color: c.text,
+      flex: 1,
+    },
+    taskCompleted: {
+      textDecorationLine: 'line-through',
+      color: c.textTertiary,
+    },
+    addRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      marginTop: spacing.xs,
+      paddingHorizontal: spacing.lg,
+    },
+    addInput: {
+      flex: 1,
+      fontSize: 13,
+      color: c.text,
+      paddingVertical: 10,
+      minHeight: touch.minTarget,
+    },
+    addBtn: {
+      width: 36,
+      height: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: touch.minTarget,
+      minHeight: touch.minTarget,
+    },
+    addBtnDisabled: {
+      opacity: 0.4,
+    },
+  });
+}

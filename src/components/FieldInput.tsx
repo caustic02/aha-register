@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { colors, typography, radii } from '../theme';
+import { typography, radii } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface FieldInputProps {
   label: string;
@@ -21,6 +23,9 @@ export function FieldInput({
   readonly = false,
   placeholder,
 }: FieldInputProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -42,33 +47,35 @@ export function FieldInput({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: colors.borderLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  multiline: {
-    minHeight: 80,
-    paddingTop: 12,
-  },
-  readonlyValue: {
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    label: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+      marginBottom: 6,
+    },
+    input: {
+      backgroundColor: c.borderLight,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.md,
+      color: c.textPrimary,
+      fontSize: typography.size.md,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    multiline: {
+      minHeight: 80,
+      paddingTop: 12,
+    },
+    readonlyValue: {
+      color: c.textPrimary,
+      fontSize: typography.size.md,
+    },
+  });
+}

@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import type { NativeSyntheticEvent } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { colors, typography, radii } from '../theme';
+import { typography, radii } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -58,6 +60,8 @@ interface SpinnerProps {
 }
 
 function SpinnerColumn({ data, initialIndex, onChange }: SpinnerProps) {
+  const { colors } = useTheme();
+  const spinStyles = useMemo(() => makeSpinStyles(colors), [colors]);
   const ref = useRef<ScrollView>(null);
   const [localIdx, setLocalIdx] = useState(initialIndex);
 
@@ -127,40 +131,42 @@ function SpinnerColumn({ data, initialIndex, onChange }: SpinnerProps) {
   );
 }
 
-const spinStyles = StyleSheet.create({
-  col: {
-    flex: 1,
-    height: VISIBLE * ITEM_H,
-    overflow: 'hidden',
-  },
-  highlight: {
-    position: 'absolute',
-    top: PAD * ITEM_H,
-    left: 4,
-    right: 4,
-    height: ITEM_H,
-    backgroundColor: colors.border,
-    borderRadius: radii.sm,
-    zIndex: 1,
-  },
-  content: {
-    paddingVertical: PAD * ITEM_H,
-  },
-  item: {
-    height: ITEM_H,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  itemText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.lg,
-  },
-  itemTextSelected: {
-    color: colors.white,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-  },
-});
+function makeSpinStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    col: {
+      flex: 1,
+      height: VISIBLE * ITEM_H,
+      overflow: 'hidden',
+    },
+    highlight: {
+      position: 'absolute',
+      top: PAD * ITEM_H,
+      left: 4,
+      right: 4,
+      height: ITEM_H,
+      backgroundColor: c.border,
+      borderRadius: radii.sm,
+      zIndex: 1,
+    },
+    content: {
+      paddingVertical: PAD * ITEM_H,
+    },
+    item: {
+      height: ITEM_H,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    itemText: {
+      color: c.textSecondary,
+      fontSize: typography.size.lg,
+    },
+    itemTextSelected: {
+      color: c.white,
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+    },
+  });
+}
 
 // ── DateField ─────────────────────────────────────────────────────────────────
 
@@ -173,6 +179,8 @@ interface DateFieldProps {
 
 export function DateField({ label, value, onChange, t }: DateFieldProps) {
   const { i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [showModal, setShowModal] = useState(false);
   // Incrementing this key remounts all spinners when the modal opens with new values
   const [pickerKey, setPickerKey] = useState(0);
@@ -308,102 +316,104 @@ export function DateField({ label, value, onChange, t }: DateFieldProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  valueBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.borderLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  valueText: {
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-  },
-  placeholderText: {
-    color: colors.textMuted,
-  },
-  calIcon: {
-    fontSize: typography.size.md,
-  },
-  clearBtn: {
-    padding: 8,
-  },
-  clearText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.md,
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    paddingBottom: 40,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
-  },
-  cancelText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.md,
-  },
-  modalTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
-  },
-  doneText: {
-    color: colors.heroGreen,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.semibold,
-  },
-  colLabels: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 4,
-  },
-  colLabel: {
-    flex: 1,
-    textAlign: 'center',
-    color: colors.textSecondary,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-  },
-  pickersRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 16,
+    },
+    label: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    valueBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: c.borderLight,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.md,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    valueText: {
+      color: c.textPrimary,
+      fontSize: typography.size.md,
+    },
+    placeholderText: {
+      color: c.textMuted,
+    },
+    calIcon: {
+      fontSize: typography.size.md,
+    },
+    clearBtn: {
+      padding: 8,
+    },
+    clearText: {
+      color: c.textSecondary,
+      fontSize: typography.size.md,
+    },
+    overlay: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      paddingBottom: 40,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borderLight,
+    },
+    cancelText: {
+      color: c.textSecondary,
+      fontSize: typography.size.md,
+    },
+    modalTitle: {
+      color: c.textPrimary,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.semibold,
+    },
+    doneText: {
+      color: c.heroGreen,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.semibold,
+    },
+    colLabels: {
+      flexDirection: 'row',
+      paddingHorizontal: 16,
+      paddingTop: 12,
+      paddingBottom: 4,
+    },
+    colLabel: {
+      flex: 1,
+      textAlign: 'center',
+      color: c.textSecondary,
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+    },
+    pickersRow: {
+      flexDirection: 'row',
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+    },
+  });
+}

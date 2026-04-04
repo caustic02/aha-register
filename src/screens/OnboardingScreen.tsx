@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   Pressable,
@@ -13,7 +13,9 @@ import type { NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { Button } from '../components/ui';
 import { CaptureTabIcon, OfflineIcon, ViewIcon } from '../theme/icons';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,6 +33,8 @@ const SLIDE_COUNT = 3;
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function OnboardingScreen({ onFinish, onSkip }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useAppTranslation();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
@@ -159,10 +163,10 @@ export function OnboardingScreen({ onFinish, onSkip }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   // Pager
   pager: {
@@ -187,13 +191,13 @@ const styles = StyleSheet.create({
   },
   slideTitle: {
     ...typography.h2,
-    color: colors.text,
+    color: c.text,
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
   slideBody: {
     ...typography.body,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
     lineHeight: 26,
     maxWidth: 320,
@@ -205,7 +209,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['3xl'],
     gap: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   // Dots
   dots: {
@@ -220,11 +224,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: radii.full,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
   },
   dotActive: {
     width: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   // Skip
   skipWrapper: {
@@ -234,10 +238,10 @@ const styles = StyleSheet.create({
   },
   skipText: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textDecorationLine: 'underline',
   },
   pressed: {
     opacity: 0.6,
   },
-});
+}); }

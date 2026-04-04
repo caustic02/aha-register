@@ -1,11 +1,15 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Switch, Text, View } from 'react-native';
 import { FieldInput } from '../FieldInput';
 import type { TypeFormProps } from './index';
 import type { SpecimenData } from '../../db/types';
-import { colors, typography } from '../../theme';
+import { typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 export default function SpecimenForm({ data, onChange, t }: TypeFormProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const d = data as SpecimenData;
 
   const [taxon, setTaxon] = useState(d.taxon ?? '');
@@ -72,20 +76,22 @@ export default function SpecimenForm({ data, onChange, t }: TypeFormProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  fieldLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 16,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    fieldLabel: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+      marginTop: 4,
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 4,
+      marginBottom: 16,
+    },
+  });
+}

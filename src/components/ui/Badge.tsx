@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Variant = 'info' | 'success' | 'warning' | 'error' | 'ai' | 'neutral';
 type Size = 'sm' | 'md';
@@ -11,16 +13,20 @@ interface BadgeProps {
   size?: Size;
 }
 
-const VARIANT_COLORS: Record<Variant, { bg: string; text: string }> = {
-  info: { bg: colors.infoLight, text: colors.info },
-  success: { bg: colors.successLight, text: colors.success },
-  warning: { bg: colors.warningLight, text: colors.warning },
-  error: { bg: colors.errorLight, text: colors.error },
-  ai: { bg: colors.aiLight, text: colors.ai },
-  neutral: { bg: colors.surface, text: colors.textSecondary },
-};
+function getVariantColors(colors: ColorPalette): Record<Variant, { bg: string; text: string }> {
+  return {
+    info: { bg: colors.infoLight, text: colors.info },
+    success: { bg: colors.successLight, text: colors.success },
+    warning: { bg: colors.warningLight, text: colors.warning },
+    error: { bg: colors.errorLight, text: colors.error },
+    ai: { bg: colors.aiLight, text: colors.ai },
+    neutral: { bg: colors.surface, text: colors.textSecondary },
+  };
+}
 
 export function Badge({ label, variant = 'neutral', size = 'md' }: BadgeProps) {
+  const { colors } = useTheme();
+  const VARIANT_COLORS = useMemo(() => getVariantColors(colors), [colors]);
   const { bg, text } = VARIANT_COLORS[variant];
 
   return (

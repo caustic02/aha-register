@@ -1,8 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-// import { useColorScheme } from 'react-native'; // re-enable when light mode is ready
+import { useColorScheme } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-// lightColors kept in index.ts for future use — not imported until light mode is enabled
-import { colors as darkColors, type ColorPalette } from './index';
+import { colors as darkColors, lightColors, type ColorPalette } from './index';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,7 +29,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 // ── Provider ─────────────────────────────────────────────────────────────────
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // const systemScheme = useColorScheme(); // re-enable when light mode is ready
+  const systemScheme = useColorScheme();
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
 
   // Load saved preference (non-blocking — app renders immediately with default)
@@ -49,13 +48,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     SecureStore.setItemAsync(STORAGE_KEY, pref).catch(() => {});
   }, []);
 
-  // Force dark mode until all screens are converted to useTheme()
-  const mode: ThemeMode = 'dark';
+  const mode: ThemeMode = useMemo(() => {
+    if (preference === 'system') return systemScheme === 'light' ? 'light' : 'dark';
+    return preference;
+  }, [preference, systemScheme]);
 
   const resolvedColors = useMemo(
-    () => darkColors,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+    () => (mode === 'light' ? lightColors : darkColors),
+    [mode],
   );
 
   const value = useMemo<ThemeContextValue>(

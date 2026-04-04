@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -16,7 +16,9 @@ import {
   UserIcon,
   ViewIcon,
 } from '../theme/icons';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -34,6 +36,8 @@ interface CommitmentCardProps {
 }
 
 function CommitmentCard({ icon, title, description }: CommitmentCardProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Card style={styles.commitmentCard}>
       <View style={styles.commitmentRow}>
@@ -52,6 +56,8 @@ function CommitmentCard({ icon, title, description }: CommitmentCardProps) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export default function TrustScreen({ onContinue, onSkip }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useAppTranslation();
 
   const advance = onContinue ?? onSkip ?? (() => undefined);
@@ -127,10 +133,10 @@ export default function TrustScreen({ onContinue, onSkip }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   scroll: { flex: 1 },
   scrollContent: {
@@ -143,12 +149,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...typography.h2,
-    color: colors.text,
+    color: c.text,
     marginBottom: spacing.sm,
   },
   headerSubtitle: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     lineHeight: 20,
   },
   // Commitment cards
@@ -179,12 +185,12 @@ const styles = StyleSheet.create({
   },
   commitmentTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     marginBottom: spacing.xs,
   },
   commitmentDescription: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     lineHeight: 20,
   },
   // Actions
@@ -202,7 +208,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     ...typography.caption,
-    color: colors.textMuted,
+    color: c.textMuted,
     textDecorationLine: 'underline',
   },
-});
+}); }

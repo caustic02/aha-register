@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -6,7 +6,9 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ListChecks } from 'lucide-react-native';
 import { BackIcon } from '../theme/icons';
 import { useDatabase } from '../contexts/DatabaseContext';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { RootStackParamList } from '../navigation/RootStack';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ChecklistOverview'>;
@@ -19,6 +21,8 @@ interface ObjectTaskSummary {
 }
 
 export function ChecklistOverviewScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const [items, setItems] = useState<ObjectTaskSummary[]>([]);
 
@@ -82,29 +86,29 @@ export function ChecklistOverviewScreen({ navigation }: Props) {
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: c.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   back: { width: touch.minTarget, height: touch.minTarget, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: colors.text },
+  headerTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: c.text },
   content: { padding: spacing.lg, gap: spacing.sm },
   empty: { alignItems: 'center', paddingVertical: spacing['3xl'] },
-  emptyText: { fontSize: 16, fontWeight: typography.weight.medium, color: colors.text, marginTop: spacing.md },
-  emptySub: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
+  emptyText: { fontSize: 16, fontWeight: typography.weight.medium, color: c.text, marginTop: spacing.md },
+  emptySub: { fontSize: 13, color: c.textSecondary, marginTop: 4 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.md,
     minHeight: touch.minTarget,
   },
   rowInfo: { flex: 1 },
-  rowTitle: { fontSize: 14, fontWeight: typography.weight.medium, color: colors.text },
-  rowSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  rowTitle: { fontSize: 14, fontWeight: typography.weight.medium, color: c.text },
+  rowSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   pctWrap: { marginLeft: spacing.md },
-  pct: { fontSize: 16, fontWeight: typography.weight.bold, color: colors.textSecondary },
-  pctDone: { color: colors.heroGreen },
-});
+  pct: { fontSize: 16, fontWeight: typography.weight.bold, color: c.textSecondary },
+  pctDone: { color: c.heroGreen },
+}); }

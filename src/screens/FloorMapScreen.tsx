@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles, react-native/no-color-literals */
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
   Image,
@@ -21,7 +21,9 @@ import { Map, Plus, X, Eye, Trash2, MapPin, Upload, Camera, ChevronRight } from 
 import { BackIcon, CameraIcon } from '../theme/icons';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { generateId } from '../utils/uuid';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { FloorMap, MapPin as MapPinType } from '../db/types';
 import type { RootStackParamList } from '../navigation/RootStack';
 
@@ -56,6 +58,8 @@ function PinDot({
   imageH: number;
   onPress: (p: PinWithObject) => void;
 }) {
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const left = (pin.x_percent / 100) * imageW - PIN_SIZE / 2;
   const top = (pin.y_percent / 100) * imageH - PIN_SIZE / 2;
 
@@ -87,6 +91,8 @@ function ObjectPickerModal({
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const [search, setSearch] = useState('');
   const filtered = search
     ? objects.filter((o) => o.title.toLowerCase().includes(search.toLowerCase()))
@@ -154,6 +160,8 @@ function PinDetailPopup({
   onRemove: () => void;
   onClose: () => void;
 }) {
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Modal visible transparent animationType="fade">
       <Pressable style={s.popupOverlay} onPress={onClose}>
@@ -197,6 +205,8 @@ function PinDetailPopup({
 // ── Main screen ──────────────────────────────────────────────────────────────
 
 export function FloorMapScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const targetObjectId = route.params?.objectId;
 
@@ -646,8 +656,8 @@ export function FloorMapScreen({ route, navigation }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
+  safe: { flex: 1, backgroundColor: c.background },
 
   // Header
   header: {
@@ -659,43 +669,43 @@ const s = StyleSheet.create({
   },
   backBtn: { width: touch.minTarget, height: touch.minTarget, alignItems: 'center', justifyContent: 'center' },
   headerCenter: { flex: 1 },
-  headerTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: colors.text },
-  headerSub: { fontSize: 12, color: colors.textSecondary },
+  headerTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: c.text },
+  headerSub: { fontSize: 12, color: c.textSecondary },
   addBtn: { width: touch.minTarget, height: touch.minTarget, alignItems: 'center', justifyContent: 'center' },
 
   // Tab bar
-  tabBar: { maxHeight: 44, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  tabBar: { maxHeight: 44, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   tabBarContent: { paddingHorizontal: spacing.lg, gap: spacing.sm, alignItems: 'center' },
   tab: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     minHeight: 32,
     justifyContent: 'center',
   },
-  tabActive: { backgroundColor: colors.heroGreen, borderColor: colors.heroGreen },
-  tabText: { fontSize: 12, fontWeight: typography.weight.medium, color: colors.textSecondary },
-  tabTextActive: { color: colors.white },
+  tabActive: { backgroundColor: c.heroGreen, borderColor: c.heroGreen },
+  tabText: { fontSize: 12, fontWeight: typography.weight.medium, color: c.textSecondary },
+  tabTextActive: { color: c.white },
 
   // Empty state
   emptyCenter: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  emptyTitle: { fontSize: 20, fontWeight: typography.weight.bold, color: colors.text, marginTop: spacing.lg },
-  emptySub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.sm, lineHeight: 20 },
+  emptyTitle: { fontSize: 20, fontWeight: typography.weight.bold, color: c.text, marginTop: spacing.lg },
+  emptySub: { fontSize: 14, color: c.textSecondary, textAlign: 'center', marginTop: spacing.sm, lineHeight: 20 },
   emptyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderRadius: radii.md,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     marginTop: spacing.xl,
     minHeight: touch.minTarget,
   },
-  emptyBtnText: { fontSize: 14, fontWeight: typography.weight.semibold, color: colors.white },
+  emptyBtnText: { fontSize: 14, fontWeight: typography.weight.semibold, color: c.white },
 
   // Map viewer
   mapContainer: { flex: 1 },
@@ -713,13 +723,13 @@ const s = StyleSheet.create({
     width: PIN_SIZE,
     height: PIN_SIZE,
     borderRadius: PIN_SIZE / 2,
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderWidth: 2,
-    borderColor: colors.white,
+    borderColor: c.white,
     alignItems: 'center',
     justifyContent: 'center',
     // shadow
-    shadowColor: colors.black,
+    shadowColor: c.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -737,12 +747,12 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surfaceElevated,
+    borderTopColor: c.border,
+    backgroundColor: c.surfaceElevated,
   },
   bottomStats: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  bottomText: { fontSize: 12, color: colors.textSecondary, fontWeight: typography.weight.medium },
-  bottomLink: { fontSize: 12, color: colors.heroGreen, fontWeight: typography.weight.semibold },
+  bottomText: { fontSize: 12, color: c.textSecondary, fontWeight: typography.weight.medium },
+  bottomLink: { fontSize: 12, color: c.heroGreen, fontWeight: typography.weight.semibold },
 
   // Hint overlay
   hint: {
@@ -754,7 +764,7 @@ const s = StyleSheet.create({
   },
   hintText: {
     fontSize: 13,
-    color: colors.white,
+    color: c.white,
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
@@ -765,7 +775,7 @@ const s = StyleSheet.create({
   // Modal shared
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalSheet: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '70%',
@@ -779,52 +789,52 @@ const s = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.sm,
   },
-  modalTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: colors.text },
+  modalTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: c.text },
   modalClose: { width: touch.minTarget, height: touch.minTarget, alignItems: 'center', justifyContent: 'center' },
   modalSearch: {
     marginHorizontal: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: 14,
-    color: colors.text,
-    backgroundColor: colors.surface,
+    color: c.text,
+    backgroundColor: c.surface,
     minHeight: 40,
   },
   modalList: { paddingHorizontal: spacing.lg, marginTop: spacing.sm },
-  modalEmpty: { textAlign: 'center', color: colors.textSecondary, fontSize: 14, paddingVertical: spacing.xl },
+  modalEmpty: { textAlign: 'center', color: c.textSecondary, fontSize: 14, paddingVertical: spacing.xl },
   modalRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
     minHeight: touch.minTarget,
   },
-  modalThumb: { width: 36, height: 36, borderRadius: 6, backgroundColor: colors.surface },
+  modalThumb: { width: 36, height: 36, borderRadius: 6, backgroundColor: c.surface },
   thumbEmpty: { alignItems: 'center', justifyContent: 'center' },
-  modalObjTitle: { fontSize: 14, color: colors.text, flex: 1, fontWeight: typography.weight.medium },
+  modalObjTitle: { fontSize: 14, color: c.text, flex: 1, fontWeight: typography.weight.medium },
 
   // Pin detail popup
   popupOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
   popupCard: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderRadius: radii.lg,
     width: 280,
     overflow: 'hidden',
   },
   popupTop: { flexDirection: 'row', padding: spacing.lg, gap: spacing.md },
-  popupThumb: { width: 56, height: 56, borderRadius: 8, backgroundColor: colors.surface },
+  popupThumb: { width: 56, height: 56, borderRadius: 8, backgroundColor: c.surface },
   popupInfo: { flex: 1, justifyContent: 'center' },
-  popupTitle: { fontSize: 14, fontWeight: typography.weight.semibold, color: colors.text },
-  popupSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  popupTitle: { fontSize: 14, fontWeight: typography.weight.semibold, color: c.text },
+  popupSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   popupActions: {
     flexDirection: 'row',
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   popupBtn: {
     flex: 1,
@@ -835,59 +845,59 @@ const s = StyleSheet.create({
     paddingVertical: spacing.md,
     minHeight: touch.minTarget,
   },
-  popupBtnText: { fontSize: 13, fontWeight: typography.weight.semibold, color: colors.heroGreen },
-  popupDivider: { width: StyleSheet.hairlineWidth, backgroundColor: colors.border },
+  popupBtnText: { fontSize: 13, fontWeight: typography.weight.semibold, color: c.heroGreen },
+  popupDivider: { width: StyleSheet.hairlineWidth, backgroundColor: c.border },
 
   // Name input card
   nameCard: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderRadius: radii.lg,
     marginHorizontal: spacing.xl,
     marginBottom: '30%',
     padding: spacing.lg,
   },
-  nameCardTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: colors.text, marginBottom: spacing.md },
+  nameCardTitle: { fontSize: 16, fontWeight: typography.weight.semibold, color: c.text, marginBottom: spacing.md },
   nameInput: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: 14,
-    color: colors.text,
-    backgroundColor: colors.surface,
+    color: c.text,
+    backgroundColor: c.surface,
     marginBottom: spacing.sm,
     minHeight: 40,
   },
   nameRow: { flexDirection: 'row', gap: spacing.sm },
   nameActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.sm, marginTop: spacing.md },
   nameCancelBtn: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, minHeight: touch.minTarget, justifyContent: 'center' },
-  nameCancelText: { fontSize: 14, color: colors.textSecondary, fontWeight: typography.weight.medium },
+  nameCancelText: { fontSize: 14, color: c.textSecondary, fontWeight: typography.weight.medium },
   nameSaveBtn: {
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderRadius: radii.md,
     minHeight: touch.minTarget,
     justifyContent: 'center',
   },
-  nameSaveText: { fontSize: 14, color: colors.white, fontWeight: typography.weight.semibold },
+  nameSaveText: { fontSize: 14, color: c.white, fontWeight: typography.weight.semibold },
 
   // Source picker bottom sheet
   sourceOverlay: {
-    flex: 1, justifyContent: 'flex-end', backgroundColor: colors.overlay,
+    flex: 1, justifyContent: 'flex-end', backgroundColor: c.overlay,
   },
   sourceSheet: {
-    backgroundColor: colors.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16,
+    backgroundColor: c.surface, borderTopLeftRadius: 16, borderTopRightRadius: 16,
     paddingBottom: 24,
   },
   sourceRow: {
     flexDirection: 'row', alignItems: 'center', height: 72, paddingHorizontal: 20, gap: 14,
   },
   sourceTextCol: { flex: 1 },
-  sourceTitle: { fontSize: 15, fontWeight: typography.weight.semibold, color: colors.text },
-  sourceSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  sourceTitle: { fontSize: 15, fontWeight: typography.weight.semibold, color: c.text },
+  sourceSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   sourceDivider: { height: 1, backgroundColor: '#3A3A3A', marginHorizontal: 20 },
   sourceCancel: { alignItems: 'center', paddingVertical: 16 },
-  sourceCancelText: { fontSize: 15, fontWeight: typography.weight.medium, color: colors.textSecondary },
-});
+  sourceCancelText: { fontSize: 15, fontWeight: typography.weight.medium, color: c.textSecondary },
+}); }

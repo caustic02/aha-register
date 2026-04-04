@@ -5,7 +5,7 @@
  *   const [viewerUri, setViewerUri] = useState<string | null>(null);
  *   <ImageViewer visible={!!viewerUri} imageUri={viewerUri ?? ''} onClose={() => setViewerUri(null)} />
  */
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -15,11 +15,10 @@ import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { Download, Share2 } from 'lucide-react-native';
 import { CloseIcon } from '../theme/icons';
-import { colors, spacing, radii } from '../theme';
+import { spacing } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
-
-const VIEWER_BG = colors.camera; // full-black for image viewing
-const CLOSE_BTN_BG = colors.overlay; // semi-transparent dark
 
 interface ImageViewerProps {
   visible: boolean;
@@ -30,6 +29,11 @@ interface ImageViewerProps {
 export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
   const insets = useSafeAreaInsets();
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  const VIEWER_BG = colors.camera; // full-black for image viewing
+  const CLOSE_BTN_BG = colors.overlay; // semi-transparent dark
 
   const handleSave = useCallback(async () => {
     if (!imageUri) return;
@@ -69,7 +73,7 @@ export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
       onRequestClose={onClose}
     >
       <GestureHandlerRootView style={styles.root}>
-      <View style={styles.backdrop}>
+      <View style={[styles.backdrop, { backgroundColor: VIEWER_BG }]}>
         <Zoomable
           minScale={1}
           maxScale={5}
@@ -85,7 +89,7 @@ export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
         </Zoomable>
 
         <Pressable
-          style={[styles.closeBtn, { top: insets.top + 12 }]}
+          style={[styles.closeBtn, { top: insets.top + 12, backgroundColor: CLOSE_BTN_BG }]}
           onPress={onClose}
           hitSlop={12}
           accessibilityRole="button"
@@ -121,53 +125,53 @@ export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  backdrop: {
-    flex: 1,
-    backgroundColor: VIEWER_BG,
-  },
-  zoomable: {
-    flex: 1,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  closeBtn: {
-    position: 'absolute',
-    right: 16,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: CLOSE_BTN_BG,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing['3xl'],
-    paddingTop: spacing.lg,
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    root: {
+      flex: 1,
+    },
+    backdrop: {
+      flex: 1,
+    },
+    zoomable: {
+      flex: 1,
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+    },
+    closeBtn: {
+      position: 'absolute',
+      right: 16,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+    },
     // eslint-disable-next-line react-native/no-color-literals
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  actionBtn: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  actionText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: colors.white,
-  },
-});
+    bottomBar: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing['3xl'],
+      paddingTop: spacing.lg,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    actionBtn: {
+      alignItems: 'center',
+      gap: spacing.xs,
+      paddingVertical: spacing.sm,
+      paddingHorizontal: spacing.md,
+    },
+    actionText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: c.white,
+    },
+  });
+}

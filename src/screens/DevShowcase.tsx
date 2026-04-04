@@ -3,7 +3,7 @@
  * Remove this file and the route in AppShell.tsx after verification.
  */
 import { Camera, PackageOpen, Plus, Settings } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   Badge,
@@ -19,9 +19,13 @@ import {
   SectionHeader,
   TextInput,
 } from '../components/ui';
-import { colors, typography } from '../theme';
+import { typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 export function DevShowcase() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [titleValue, setTitleValue] = useState('');
   const [invNumValue, setInvNumValue] = useState('SM-2024-0847');
   const [artistValue, setArtistValue] = useState('');
@@ -211,10 +215,10 @@ export function DevShowcase() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   scroll: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -225,7 +229,7 @@ const styles = StyleSheet.create({
     fontSize: typography.h3.fontSize,
     marginTop: 32,
     marginBottom: 12,
-    color: colors.text,
+    color: c.text,
   },
   gap12: {
     height: 12,
@@ -249,4 +253,4 @@ const styles = StyleSheet.create({
   bottomPad: {
     height: 40,
   },
-});
+}); }

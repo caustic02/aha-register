@@ -49,7 +49,7 @@ import {
 } from '../theme/icons';
 import { spacing, touch, typography } from '../theme';
 import type { ColorPalette } from '../theme';
-import { useTheme } from '../theme/ThemeContext';
+import { useTheme, type ThemePreference } from '../theme/ThemeContext';
 import type { PrivacyTier, ObjectType } from '../db/types';
 import type { CollectionDomain } from '../hooks/useSettings';
 
@@ -133,10 +133,16 @@ async function computeStorageSize(
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
+const THEME_OPTIONS: { key: ThemePreference; labelKey: string }[] = [
+  { key: 'system', labelKey: 'settings.theme_system' },
+  { key: 'light', labelKey: 'settings.theme_light' },
+  { key: 'dark', labelKey: 'settings.theme_dark' },
+];
+
 export function SettingsScreen() {
   const db = useDatabase();
   const { t } = useAppTranslation();
-  const { colors } = useTheme();
+  const { colors, preference: themePref, setPreference: setThemePref } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
   // AsyncStorage settings (AI, domain)
@@ -534,6 +540,20 @@ export function SettingsScreen() {
             </View>
           ))}
 
+          <Divider />
+
+          {/* Theme */}
+          <SectionHeader title={t('settings.theme')} />
+          {THEME_OPTIONS.map((opt, idx) => (
+            <View key={opt.key}>
+              <MetadataRow
+                label={t(opt.labelKey)}
+                value={themePref === opt.key ? '\u2713' : undefined}
+                onPress={() => setThemePref(opt.key)}
+              />
+              {idx < THEME_OPTIONS.length - 1 && <Divider />}
+            </View>
+          ))}
         </Card>
 
         {/* ── Capture ──────────────────────────────────────────────────────── */}

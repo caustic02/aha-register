@@ -1,7 +1,9 @@
 import { ChevronRight } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, spacing, touch, typography } from '../../theme';
+import { spacing, touch, typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 import { Badge } from './Badge';
 
 interface MetadataRowProps {
@@ -14,6 +16,69 @@ interface MetadataRowProps {
   placeholder?: string;
 }
 
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    base: {
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+      paddingVertical: spacing.sm,
+    },
+    pressed: {
+      opacity: 0.7,
+    },
+    // Inline
+    inlineRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    inlineLabel: {
+      flex: 0.4,
+      ...typography.bodySmall,
+      color: c.textSecondary,
+    },
+    inlineValueArea: {
+      flex: 0.6,
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    },
+    inlineValue: {
+      ...typography.body,
+      color: c.text,
+      textAlign: 'right',
+      flexShrink: 1,
+    },
+    // Stacked
+    stackedContainer: {
+      flexDirection: 'column',
+    },
+    stackedLabel: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      marginBottom: spacing.xs,
+    },
+    stackedValueRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    stackedValue: {
+      ...typography.body,
+      color: c.text,
+      flexShrink: 1,
+    },
+    // Shared
+    placeholder: {
+      color: c.textTertiary,
+    },
+    badgeGap: {
+      marginLeft: spacing.sm,
+    },
+    chevron: {
+      marginLeft: spacing.xs,
+    },
+  });
+}
+
 export function MetadataRow({
   label,
   value,
@@ -22,6 +87,8 @@ export function MetadataRow({
   onPress,
   placeholder = '-',
 }: MetadataRowProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const displayValue = value && value.trim().length > 0 ? value : undefined;
   const a11yLabel = `${label}: ${displayValue || placeholder}`;
 
@@ -33,6 +100,8 @@ export function MetadataRow({
         placeholder={placeholder}
         aiGenerated={aiGenerated}
         hasPress={!!onPress}
+        colors={colors}
+        styles={styles}
       />
     ) : (
       <InlineContent
@@ -41,6 +110,8 @@ export function MetadataRow({
         placeholder={placeholder}
         aiGenerated={aiGenerated}
         hasPress={!!onPress}
+        colors={colors}
+        styles={styles}
       />
     );
 
@@ -70,12 +141,16 @@ function InlineContent({
   placeholder,
   aiGenerated,
   hasPress,
+  colors,
+  styles,
 }: {
   label: string;
   value?: string;
   placeholder: string;
   aiGenerated: boolean;
   hasPress: boolean;
+  colors: ColorPalette;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   return (
     <View style={styles.inlineRow}>
@@ -113,12 +188,16 @@ function StackedContent({
   placeholder,
   aiGenerated,
   hasPress,
+  colors,
+  styles,
 }: {
   label: string;
   value?: string;
   placeholder: string;
   aiGenerated: boolean;
   hasPress: boolean;
+  colors: ColorPalette;
+  styles: ReturnType<typeof makeStyles>;
 }) {
   return (
     <View style={styles.stackedContainer}>
@@ -144,64 +223,3 @@ function StackedContent({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-    paddingVertical: spacing.sm,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  // Inline
-  inlineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  inlineLabel: {
-    flex: 0.4,
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  inlineValueArea: {
-    flex: 0.6,
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  inlineValue: {
-    ...typography.body,
-    color: colors.text,
-    textAlign: 'right',
-    flexShrink: 1,
-  },
-  // Stacked
-  stackedContainer: {
-    flexDirection: 'column',
-  },
-  stackedLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  stackedValueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stackedValue: {
-    ...typography.body,
-    color: colors.text,
-    flexShrink: 1,
-  },
-  // Shared
-  placeholder: {
-    color: colors.textTertiary,
-  },
-  badgeGap: {
-    marginLeft: spacing.sm,
-  },
-  chevron: {
-    marginLeft: spacing.xs,
-  },
-});

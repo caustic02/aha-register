@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MapPin, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useDatabase } from '../contexts/DatabaseContext';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface Props {
   objectId: string;
@@ -19,14 +21,17 @@ function LocationField({
   field,
   objectId,
   db,
+  colors,
 }: {
   label: string;
   value: string | null;
   field: string;
   objectId: string;
   db: ReturnType<typeof useDatabase>;
+  colors: ColorPalette;
 }) {
   const [current, setCurrent] = useState(value ?? '');
+  const s = useMemo(() => makeStyles(colors), [colors]);
 
   const handleSave = useCallback(() => {
     const trimmed = current.trim();
@@ -61,6 +66,8 @@ export function LocationPicker({
   initialNotes,
 }: Props) {
   const db = useDatabase();
+  const { colors } = useTheme();
+  const s = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
 
   const hasAny = [initialBuilding, initialFloor, initialRoom, initialShelf, initialNotes]
@@ -92,72 +99,74 @@ export function LocationPicker({
 
       {expanded && (
         <View style={s.fields}>
-          <LocationField label="Building" value={initialBuilding ?? null} field="location_building" objectId={objectId} db={db} />
-          <LocationField label="Floor" value={initialFloor ?? null} field="location_floor" objectId={objectId} db={db} />
-          <LocationField label="Room" value={initialRoom ?? null} field="location_room" objectId={objectId} db={db} />
-          <LocationField label="Shelf / Position" value={initialShelf ?? null} field="location_shelf" objectId={objectId} db={db} />
-          <LocationField label="Notes" value={initialNotes ?? null} field="location_notes" objectId={objectId} db={db} />
+          <LocationField label="Building" value={initialBuilding ?? null} field="location_building" objectId={objectId} db={db} colors={colors} />
+          <LocationField label="Floor" value={initialFloor ?? null} field="location_floor" objectId={objectId} db={db} colors={colors} />
+          <LocationField label="Room" value={initialRoom ?? null} field="location_room" objectId={objectId} db={db} colors={colors} />
+          <LocationField label="Shelf / Position" value={initialShelf ?? null} field="location_shelf" objectId={objectId} db={db} colors={colors} />
+          <LocationField label="Notes" value={initialNotes ?? null} field="location_notes" objectId={objectId} db={db} colors={colors} />
         </View>
       )}
     </View>
   );
 }
 
-const s = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surfaceElevated,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: touch.minTarget,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 14,
-    fontWeight: typography.weight.semibold,
-    color: colors.text,
-  },
-  headerHint: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    flex: 1,
-    marginLeft: spacing.sm,
-  },
-  fields: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
-    gap: spacing.sm,
-  },
-  fieldRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fieldLabel: {
-    width: 100,
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: typography.weight.medium,
-  },
-  fieldInput: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.text,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    paddingVertical: 6,
-    minHeight: 36,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.surfaceElevated,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: c.border,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: touch.minTarget,
+    },
+    headerLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      flex: 1,
+    },
+    headerTitle: {
+      fontSize: 14,
+      fontWeight: typography.weight.semibold,
+      color: c.text,
+    },
+    headerHint: {
+      fontSize: 12,
+      color: c.textSecondary,
+      flex: 1,
+      marginLeft: spacing.sm,
+    },
+    fields: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.md,
+      gap: spacing.sm,
+    },
+    fieldRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    fieldLabel: {
+      width: 100,
+      fontSize: 12,
+      color: c.textSecondary,
+      fontWeight: typography.weight.medium,
+    },
+    fieldInput: {
+      flex: 1,
+      fontSize: 13,
+      color: c.text,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+      paddingVertical: 6,
+      minHeight: 36,
+    },
+  });
+}

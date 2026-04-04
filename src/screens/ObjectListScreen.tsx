@@ -42,7 +42,9 @@ import {
   ObjectsTabIcon,
   SearchIcon,
 } from '../theme/icons';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { formatRelativeDate } from '../utils/format-date';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 import type { ObjectType } from '../db/types';
@@ -86,6 +88,8 @@ function buildOrderClause(sortBy: SortOption): string {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ObjectListScreen({ navigation, route }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
   const filterSheetRef = useRef<BottomSheet>(null);
@@ -314,7 +318,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         />
       );
     },
-    [navigation, t, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode],
+    [navigation, t, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode, colors, styles],
   );
 
   const renderGridItem = useCallback(
@@ -370,7 +374,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         </Pressable>
       );
     },
-    [navigation, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode],
+    [navigation, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode, colors, styles],
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -576,10 +580,10 @@ export function ObjectListScreen({ navigation, route }: Props) {
 const FOOTER_PAD = { height: 100 };
 const ListFooterSpacer = () => <View style={FOOTER_PAD} />;
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   // Header
   headerRow: {
@@ -588,12 +592,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    borderBottomColor: c.border,
+    backgroundColor: c.background,
   },
   headerTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     flex: 1,
     marginHorizontal: spacing.sm,
   },
@@ -605,10 +609,10 @@ const styles = StyleSheet.create({
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.md,
     minHeight: touch.minTarget,
   },
@@ -618,7 +622,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...typography.body,
-    color: colors.text,
+    color: c.text,
     paddingVertical: spacing.sm,
   },
   clearButton: {
@@ -629,7 +633,7 @@ const styles = StyleSheet.create({
   activeChipsScroll: {
     flexGrow: 0,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   activeChipsContent: {
     paddingHorizontal: spacing.lg,
@@ -643,11 +647,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
-    backgroundColor: colors.primaryContainer,
+    backgroundColor: c.primaryContainer,
   },
   activeChipText: {
     ...typography.bodySmall,
-    color: colors.primary,
+    color: c.primary,
     fontWeight: '500',
   },
   // Empty state
@@ -664,20 +668,20 @@ const styles = StyleSheet.create({
     margin: 2,
     borderRadius: radii.sm,
     overflow: 'hidden',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
   gridImage: {
     width: '100%',
     aspectRatio: 1,
   },
   gridPlaceholder: {
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     justifyContent: 'center',
     alignItems: 'center',
   },
   gridTitle: {
     ...typography.caption,
-    color: colors.text,
+    color: c.text,
     paddingHorizontal: spacing.xs,
     paddingVertical: spacing.xs,
   },
@@ -691,4 +695,4 @@ const styles = StyleSheet.create({
     top: spacing.xs,
     right: spacing.xs,
   },
-});
+}); }

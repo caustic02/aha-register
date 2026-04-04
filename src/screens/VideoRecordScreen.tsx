@@ -1,8 +1,9 @@
+/* eslint-disable react-native/no-color-literals, react-native/no-inline-styles */
 /**
  * Video recording screen — records a supplementary video and attaches it
  * to an EXISTING object (passed via route params).
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,7 +30,9 @@ import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import Svg, { Line, Path } from 'react-native-svg';
 import { X, Zap, RefreshCw } from 'lucide-react-native';
-import { colors, spacing, radii, touch } from '../theme';
+import { spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -78,6 +81,8 @@ function CenterReticle() {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function VideoRecordScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { objectId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
@@ -119,51 +124,6 @@ export function VideoRecordScreen({ route, navigation }: Props) {
     });
     return () => sub?.remove();
   }, [gyroX, gyroY]);
-
-  // ── Recording ───────────────────────────────────────────────────────────────
-
-  const handleStartRecording = useCallback(async () => {
-    if (!cameraRef.current || !cameraReady || isRecording) return;
-    try {
-      setIsRecording(true);
-      setRecordingSeconds(0);
-      recordingSecondsRef.current = 0;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
-
-      recordingTimerRef.current = setInterval(() => {
-        recordingSecondsRef.current += 1;
-        setRecordingSeconds(recordingSecondsRef.current);
-        if (recordingSecondsRef.current >= MAX_VIDEO_DURATION_SEC) {
-          cameraRef.current?.stopRecording();
-        }
-      }, 1000);
-
-      const result = await cameraRef.current.recordAsync({ maxDuration: MAX_VIDEO_DURATION_SEC });
-
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
-      setIsRecording(false);
-
-      if (result?.uri) {
-        await saveVideo(result.uri, recordingSecondsRef.current);
-      }
-    } catch (err) {
-      console.error('[VIDEO] Recording failed:', err);
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
-      setIsRecording(false);
-    }
-  }, [cameraReady, isRecording]);
-
-  const handleStopRecording = useCallback(() => {
-    if (!cameraRef.current || !isRecording) return;
-    cameraRef.current.stopRecording();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-  }, [isRecording]);
 
   // ── Save video to existing object ───────────────────────────────────────────
 
@@ -208,6 +168,51 @@ export function VideoRecordScreen({ route, navigation }: Props) {
       setSaving(false);
     }
   }, [objectId, db, navigation, t]);
+
+  // ── Recording ───────────────────────────────────────────────────────────────
+
+  const handleStartRecording = useCallback(async () => {
+    if (!cameraRef.current || !cameraReady || isRecording) return;
+    try {
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingSecondsRef.current = 0;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+
+      recordingTimerRef.current = setInterval(() => {
+        recordingSecondsRef.current += 1;
+        setRecordingSeconds(recordingSecondsRef.current);
+        if (recordingSecondsRef.current >= MAX_VIDEO_DURATION_SEC) {
+          cameraRef.current?.stopRecording();
+        }
+      }, 1000);
+
+      const result = await cameraRef.current.recordAsync({ maxDuration: MAX_VIDEO_DURATION_SEC });
+
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      setIsRecording(false);
+
+      if (result?.uri) {
+        await saveVideo(result.uri, recordingSecondsRef.current);
+      }
+    } catch (err) {
+      console.error('[VIDEO] Recording failed:', err);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      setIsRecording(false);
+    }
+  }, [cameraReady, isRecording, saveVideo]);
+
+  const handleStopRecording = useCallback(() => {
+    if (!cameraRef.current || !isRecording) return;
+    cameraRef.current.stopRecording();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+  }, [isRecording]);
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -320,15 +325,15 @@ export function VideoRecordScreen({ route, navigation }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.cameraBg,
+    backgroundColor: c.cameraBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cameraBg },
-  permText: { color: colors.white, marginTop: spacing.md },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.cameraBg },
+  permText: { color: c.white, marginTop: spacing.md },
   // Camera preview — matches CaptureScreen structure exactly
   cameraPreview: {
     width: '100%',
@@ -367,12 +372,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 6, gap: 8, zIndex: 20,
   },
   timerDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30' },
-  timerText: { fontSize: 16, fontWeight: '700', color: colors.white, fontVariant: ['tabular-nums'] },
+  timerText: { fontSize: 16, fontWeight: '700', color: c.white, fontVariant: ['tabular-nums'] },
   // Top bar
   topBar: { position: 'absolute', top: 56, left: spacing.lg, zIndex: 25 },
   topBtn: {
     width: 36, height: 36, borderRadius: radii.full,
-    backgroundColor: colors.overlay, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.overlay, alignItems: 'center', justifyContent: 'center',
   },
   // Bottom bar
   bottomBar: {
@@ -386,9 +391,9 @@ const styles = StyleSheet.create({
   },
   shutterBtn: {
     width: 72, height: 72, borderRadius: 36, borderWidth: 4,
-    borderColor: colors.white, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.transparent,
+    borderColor: c.white, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.transparent,
   },
   shutterRecord: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#FF3B30' },
   shutterStop: { width: 28, height: 28, borderRadius: 6, backgroundColor: '#FF3B30' },
-});
+}); }

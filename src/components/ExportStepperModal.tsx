@@ -34,7 +34,9 @@ import {
   ListViewIcon,
 } from '../theme/icons';
 import { FileText, Zap, Archive, Table, Code } from 'lucide-react-native';
-import { colors, radii, spacing, typography, touch, shadows } from '../theme';
+import { radii, spacing, typography, touch, shadows } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { ExportableObject } from '../services/export-service';
 import { exportAsJSON, exportAsCSV, exportAsPDF } from '../services/export-service';
 import { shareExport, buildExportFilename } from '../services/export-share';
@@ -168,6 +170,9 @@ function StepIndicator({
   current: number;
   labels: string[];
 }) {
+  const { colors } = useTheme();
+  const si = useMemo(() => makeSiStyles(colors), [colors]);
+
   return (
     <View style={si.row} accessibilityRole="progressbar">
       {steps.map((_, i) => (
@@ -204,38 +209,40 @@ function StepIndicator({
   );
 }
 
-const si = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  item: { alignItems: 'center', gap: spacing.xs },
-  dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.surfaceContainer,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dotDone: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dotText: { ...typography.caption, color: colors.textTertiary, fontWeight: '600' },
-  dotTextActive: { color: colors.white },
-  label: { ...typography.caption, color: colors.textTertiary },
-  labelActive: { color: colors.primary, fontWeight: '600' },
-});
+function makeSiStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: spacing.lg,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+    },
+    item: { alignItems: 'center', gap: spacing.xs },
+    dot: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: c.surfaceContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+      borderColor: c.border,
+    },
+    dotActive: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    dotDone: {
+      backgroundColor: c.primary,
+      borderColor: c.primary,
+    },
+    dotText: { ...typography.caption, color: c.textTertiary, fontWeight: '600' },
+    dotTextActive: { color: c.white },
+    label: { ...typography.caption, color: c.textTertiary },
+    labelActive: { color: c.primary, fontWeight: '600' },
+  });
+}
 
 // ═════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
@@ -287,6 +294,8 @@ function ObjectExportFlow({
   onExportComplete?: () => void;
 }) {
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   const {
     config,
     domain,
@@ -451,7 +460,7 @@ function ObjectExportFlow({
       } else {
         // PDF — pass through existing generation for now
         setProgress(t('export.preview_generating'));
-        const uri = await exportAsPDF(data, config);
+        const uri = await exportAsPDF(data, config, colors);
         const filename = buildExportFilename(title, 'pdf');
         await shareExport(uri, filename, 'application/pdf', true);
       }
@@ -466,7 +475,7 @@ function ObjectExportFlow({
       setError(t('export.error_message'));
       setProgress('');
     }
-  }, [config, data, t, onExportComplete]);
+  }, [config, data, t, onExportComplete, colors]);
 
   // Can we advance from the current step?
   const canNext =
@@ -624,6 +633,8 @@ function FormatStep({
   onPreset: (p: ExportPreset) => void;
   t: (k: string, opts?: Record<string, unknown>) => string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   const formats: { key: ExportFormat; icon: React.ReactNode; title: string; desc: string }[] = [
     {
       key: 'pdf_datasheet',
@@ -725,6 +736,8 @@ function TemplateStep({
   onSelect: (tier: ExportTier) => void;
   t: (k: string) => string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   const tiers: { key: ExportTier; title: string; desc: string }[] = [
     {
       key: 'quick',
@@ -812,6 +825,8 @@ function ImagesStep({
   onSetFlag: (key: 'useIsolated' | 'showDimensions', v: boolean) => void;
   t: (k: string, p?: Record<string, unknown>) => string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   const requiredTotal = inventory.missing_required.length + inventory.captured.length;
   const capturedCount = requiredTotal - inventory.missing_required.length;
 
@@ -937,6 +952,9 @@ function ContentStep({
   onSetFlag: (key: 'showAiBadges' | 'includeBranding', v: boolean) => void;
   t: (k: string) => string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
+  const cs = useMemo(() => makeCsStyles(colors), [colors]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const lang = t('pdf.html_lang') === 'de' ? 'de' : 'en';
 
@@ -1053,11 +1071,11 @@ function ContentStep({
   );
 }
 
-const cs = StyleSheet.create({
+function makeCsStyles(c: ColorPalette) { return StyleSheet.create({
   sectionBlock: {
     marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     overflow: 'hidden',
   },
@@ -1067,7 +1085,7 @@ const cs = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     minHeight: touch.minTarget,
   },
   sectionTap: {
@@ -1078,22 +1096,22 @@ const cs = StyleSheet.create({
   },
   expandArrow: {
     fontSize: 10,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     width: 14,
   },
   sectionLabel: {
     ...typography.bodyMedium,
-    color: colors.text,
+    color: c.text,
   },
   partialDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.warning,
+    backgroundColor: c.warning,
   },
   fieldList: {
     paddingVertical: spacing.xs,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
   fieldRow: {
     flexDirection: 'row',
@@ -1108,21 +1126,21 @@ const cs = StyleSheet.create({
     height: 20,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: c.border,
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxOn: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: c.primary,
+    borderColor: c.primary,
   },
   fieldLabel: {
     ...typography.bodySmall,
-    color: colors.text,
+    color: c.text,
     flex: 1,
   },
-});
+}); }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // STEP 5: PREVIEW
@@ -1139,6 +1157,8 @@ function PreviewStep({
   presetId: string | null;
   t: (k: string, opts?: Record<string, unknown>) => string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   const activeSections = Object.entries(config.sections)
     .filter(([, v]) => v)
     .map(([k]) => k);
@@ -1215,6 +1235,8 @@ function PreviewStep({
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   return (
     <View style={styles.summaryRow}>
       <Text style={styles.summaryLabel}>{label}</Text>
@@ -1242,6 +1264,8 @@ function ExportingStep({
   onRetry: () => void;
   t: (k: string) => string;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   return (
     <View style={styles.exportingContainer}>
       {!done && !error && (
@@ -1322,6 +1346,8 @@ function LegacyExportFlow({
 }) {
   const db = useDatabase();
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
 
   type LegacyFormat = 'pdf' | 'json' | 'csv';
   const [step, setStep] = useState<'format' | 'review' | 'exporting'>('format');
@@ -1402,7 +1428,7 @@ function LegacyExportFlow({
         setProgress(
           t('exportStepper.exportingBatch', { count: source.objectIds.length }),
         );
-        const uri = await exportBatchToPDF(db, source.objectIds, source.title);
+        const uri = await exportBatchToPDF(db, source.objectIds, source.title, colors);
         await sharePDF(uri);
       } else if (source.mode === 'collection') {
         setProgress(
@@ -1410,7 +1436,7 @@ function LegacyExportFlow({
             name: source.collectionName,
           }),
         );
-        const uri = await exportCollectionToPDF(db, source.collectionId);
+        const uri = await exportCollectionToPDF(db, source.collectionId, colors);
         await sharePDF(uri);
       }
 
@@ -1424,7 +1450,7 @@ function LegacyExportFlow({
       setError(t('export.error_message'));
       setProgress('');
     }
-  }, [source, db, t, onExportComplete]);
+  }, [source, db, t, onExportComplete, colors]);
 
   const scopeLabel = useMemo(() => {
     if (!scope) return '';
@@ -1602,6 +1628,8 @@ function LegacyFormatCard({
   description: string;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
   return (
     <Pressable
       style={({ pressed }) => [
@@ -1658,11 +1686,11 @@ function buildScope(
 // STYLES
 // ═════════════════════════════════════════════════════════════════════════════
 
-const styles = StyleSheet.create({
+function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
   // ── Full-screen layout ──
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   header: {
     flexDirection: 'row',
@@ -1670,7 +1698,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   headerBtn: {
     width: touch.minTarget,
@@ -1681,7 +1709,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     textAlign: 'center',
   },
   content: {
@@ -1693,7 +1721,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
     gap: spacing.md,
   },
   bottomBack: {
@@ -1705,7 +1733,7 @@ const styles = StyleSheet.create({
   },
   bottomBackText: {
     ...typography.bodyMedium,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   bottomNext: {
     flex: 1,
@@ -1718,14 +1746,14 @@ const styles = StyleSheet.create({
   },
   stepHeading: {
     ...typography.h3,
-    color: colors.text,
+    color: c.text,
     marginBottom: spacing.lg,
   },
   // ── Preset row ──
   presetSectionTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: spacing.sm,
@@ -1741,29 +1769,29 @@ const styles = StyleSheet.create({
   },
   presetCard: {
     width: 120,
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 14,
     padding: spacing.md,
     alignItems: 'flex-start',
   },
   presetCardPressed: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
   presetName: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.text,
+    color: c.text,
     marginTop: spacing.sm,
   },
   presetSub: {
     fontSize: 11,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginTop: 2,
   },
   presetBanner: {
-    backgroundColor: colors.infoLight,
+    backgroundColor: c.infoLight,
     borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -1772,7 +1800,7 @@ const styles = StyleSheet.create({
   presetBannerText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.primary,
+    color: c.primary,
     textAlign: 'center',
   },
   cardList: {
@@ -1783,17 +1811,17 @@ const styles = StyleSheet.create({
   formatCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.lg,
     gap: spacing.md,
     minHeight: touch.minTarget,
   },
   formatCardPressed: {
-    backgroundColor: colors.primarySurface,
-    borderColor: colors.primary,
+    backgroundColor: c.primarySurface,
+    borderColor: c.primary,
   },
   formatIconWrap: {
     width: 36,
@@ -1805,26 +1833,26 @@ const styles = StyleSheet.create({
   },
   formatCardTitle: {
     ...typography.bodyMedium,
-    color: colors.text,
+    color: c.text,
   },
   formatCardDesc: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginTop: 2,
   },
 
   // ── Template cards ──
   templateCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radii.md,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.lg,
     minHeight: touch.minTarget,
   },
   templateCardActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySurface,
+    borderColor: c.primary,
+    backgroundColor: c.primarySurface,
   },
   templateHeader: {
     flexDirection: 'row',
@@ -1834,20 +1862,20 @@ const styles = StyleSheet.create({
   },
   templateTitle: {
     ...typography.bodyMedium,
-    color: colors.text,
+    color: c.text,
   },
   templateTitleActive: {
-    color: colors.primary,
+    color: c.primary,
   },
   templateDesc: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   checkCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1862,17 +1890,17 @@ const styles = StyleSheet.create({
     width: IMG_SIZE,
     borderRadius: radii.md,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     overflow: 'hidden',
   },
   imageCellSelected: {
-    borderColor: colors.primary,
+    borderColor: c.primary,
     borderWidth: 2,
   },
   imageThumb: {
     width: '100%' as unknown as number,
     height: IMG_SIZE,
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
   },
   imageCheck: {
     position: 'absolute',
@@ -1881,13 +1909,13 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   imageLabel: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xs,
@@ -1899,18 +1927,18 @@ const styles = StyleSheet.create({
   },
   completenessText: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginBottom: spacing.sm,
   },
   completenessBar: {
     height: 6,
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     borderRadius: 3,
     overflow: 'hidden',
   },
   completenessBarFill: {
     height: '100%' as unknown as number,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: 3,
   },
 
@@ -1927,14 +1955,14 @@ const styles = StyleSheet.create({
   },
   toggleTitle: {
     ...typography.bodyMedium,
-    color: colors.text,
+    color: c.text,
   },
 
   // ── Preview ──
   previewPage: {
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     padding: spacing.lg,
     ...shadows.sm,
@@ -1949,18 +1977,18 @@ const styles = StyleSheet.create({
   prevTitleBlock: {
     width: '60%' as unknown as number,
     height: 14,
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     borderRadius: radii.sm,
   },
   prevBadge: {
     width: 48,
     height: 14,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
     borderRadius: radii.sm,
   },
   prevDivider: {
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginVertical: spacing.md,
   },
   prevImageRow: {
@@ -1970,7 +1998,7 @@ const styles = StyleSheet.create({
   prevImageBox: {
     width: 56,
     height: 56,
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1985,19 +2013,19 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   prevSectionLabel: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   prevFooter: {
     ...typography.caption,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     textAlign: 'center',
   },
   prevSummary: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radii.md,
     padding: spacing.lg,
     gap: spacing.sm,
@@ -2009,11 +2037,11 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   summaryValue: {
     ...typography.bodySmall,
-    color: colors.text,
+    color: c.text,
     fontWeight: '600',
     textTransform: 'capitalize',
   },
@@ -2030,27 +2058,27 @@ const styles = StyleSheet.create({
   },
   exportingTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
   exportingDetail: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
   },
   successCircle: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.success,
+    backgroundColor: c.success,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
   },
   errorText: {
     ...typography.bodySmall,
-    color: colors.error,
+    color: c.error,
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
@@ -2078,10 +2106,10 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
   },
   sheet: {
-    backgroundColor: colors.surfaceElevated,
+    backgroundColor: c.surfaceElevated,
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
     paddingBottom: spacing['3xl'],
@@ -2091,29 +2119,29 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: radii.full,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginTop: spacing.sm,
     marginBottom: spacing.md,
   },
   legacyStepTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     textAlign: 'center',
     marginBottom: spacing.xs,
   },
   legacyStepLabel: {
     ...typography.caption,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     textAlign: 'center',
     marginBottom: spacing.lg,
   },
   // ── Review section ──
   reviewSection: {
     marginHorizontal: spacing.lg,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.lg,
     marginBottom: spacing.lg,
   },
@@ -2126,38 +2154,38 @@ const styles = StyleSheet.create({
   },
   reviewLabel: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     flex: 1,
   },
   reviewValue: {
     ...typography.bodySmall,
-    color: colors.text,
+    color: c.text,
     textAlign: 'right',
     flex: 1,
   },
   formatBadge: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radii.sm,
   },
   formatBadgeText: {
     ...typography.caption,
-    color: colors.white,
+    color: c.white,
     fontWeight: '600',
   },
   warningBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm,
-    backgroundColor: colors.warningLight,
+    backgroundColor: c.warningLight,
     borderRadius: radii.sm,
     padding: spacing.md,
     marginTop: spacing.sm,
   },
   warningText: {
     ...typography.caption,
-    color: colors.warning,
+    color: c.warning,
     flex: 1,
   },
-});
+}); }

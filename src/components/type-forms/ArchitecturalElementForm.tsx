@@ -1,14 +1,18 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { FieldInput } from '../FieldInput';
 import { DateField } from '../DateField';
 import type { TypeFormProps } from './index';
 import type { ArchitecturalElementData } from '../../db/types';
-import { colors, typography, radii } from '../../theme';
+import { typography, radii } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 const CONDITIONS = ['excellent', 'good', 'fair', 'poor', 'critical'] as const;
 
 export default function ArchitecturalElementForm({ data, onChange, t }: TypeFormProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const d = data as ArchitecturalElementData;
 
   const [elementType, setElementType] = useState(d.element_type ?? '');
@@ -112,36 +116,38 @@ export default function ArchitecturalElementForm({ data, onChange, t }: TypeForm
   );
 }
 
-const styles = StyleSheet.create({
-  fieldLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.chipActive, borderColor: colors.chipActive },
-  chipText: { color: colors.textSecondary, fontSize: typography.size.sm },
-  chipTextActive: { color: colors.white, fontWeight: typography.weight.semibold },
-  toggleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-    marginBottom: 16,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    fieldLabel: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+      marginTop: 4,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 16,
+    },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: radii.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: { backgroundColor: c.chipActive, borderColor: c.chipActive },
+    chipText: { color: c.textSecondary, fontSize: typography.size.sm },
+    chipTextActive: { color: c.white, fontWeight: typography.weight.semibold },
+    toggleRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: 4,
+      marginBottom: 16,
+    },
+  });
+}

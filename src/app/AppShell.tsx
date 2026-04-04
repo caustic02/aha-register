@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, StyleSheet, Text, View } from 'react-native';
-import { colors, typography, spacing } from '../theme';
+import { typography, spacing } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { NavigationContainer } from '@react-navigation/native';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import i18n from 'i18next';
@@ -18,6 +20,8 @@ import { AuthScreen } from '../screens/AuthScreen';
 import TrustScreen from '../screens/TrustScreen';
 
 export default function AppShell() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
@@ -168,18 +172,19 @@ export default function AppShell() {
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loading: {
-    color: colors.accent,
-    fontSize: typography.size.lg,
-    marginTop: spacing.lg,
-    fontWeight: typography.weight.semibold,
-  },
-  error: { color: colors.danger, fontSize: typography.size.base, textAlign: 'center', padding: spacing.xxl },
-});
+const makeStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loading: {
+      color: colors.accent,
+      fontSize: typography.size.lg,
+      marginTop: spacing.lg,
+      fontWeight: typography.weight.semibold,
+    },
+    error: { color: colors.danger, fontSize: typography.size.base, textAlign: 'center', padding: spacing.xxl },
+  });

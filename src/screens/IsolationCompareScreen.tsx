@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   Alert,
@@ -21,7 +21,9 @@ import { isolateObject, type IsolationResult } from '../services/isolationServic
 import { logAuditEntry } from '../db/audit';
 import { Button, IconButton } from '../components/ui';
 import { CloseIcon } from '../theme/icons';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -37,6 +39,8 @@ const COMPARE_BG = 'rgba(0,0,0,0.95)';
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function IsolationCompareScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { objectId, mediaId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
@@ -427,7 +431,7 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   // eslint-disable-next-line react-native/no-color-literals
   safe: {
     flex: 1,
@@ -442,7 +446,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...typography.h4,
-    color: colors.white,
+    color: c.white,
     flex: 1,
     textAlign: 'center',
   },
@@ -467,6 +471,7 @@ const styles = StyleSheet.create({
     bottom: 0,
   },
   // White background behind isolated PNG for better viewing
+  // eslint-disable-next-line react-native/no-color-literals
   whiteBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: '#FFFFFF',
@@ -483,26 +488,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: spacing.xl,
     alignSelf: 'center',
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
     borderRadius: radii.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   processingText: {
     ...typography.bodySmall,
-    color: colors.white,
+    color: c.white,
   },
   // Error overlay
   errorOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
     padding: spacing.xl,
   },
   errorText: {
     ...typography.body,
-    color: colors.white,
+    color: c.white,
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
@@ -519,7 +524,7 @@ const styles = StyleSheet.create({
   },
   segmentRow: {
     flexDirection: 'row',
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
     borderRadius: radii.full,
     padding: 2,
     marginBottom: spacing.md,
@@ -533,15 +538,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentBtnActive: {
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
   },
   segmentText: {
     ...typography.bodySmall,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     fontWeight: typography.weight.semibold,
   },
   segmentTextActive: {
-    color: colors.text,
+    color: c.text,
   },
   // Save / Share utility row
   utilRow: {
@@ -559,7 +564,7 @@ const styles = StyleSheet.create({
   },
   utilText: {
     ...typography.bodySmall,
-    color: colors.white,
+    color: c.white,
   },
   actionRow: {
     flexDirection: 'row',
@@ -568,4 +573,4 @@ const styles = StyleSheet.create({
   actionBtn: {
     flex: 1,
   },
-});
+}); }

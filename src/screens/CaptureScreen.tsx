@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-color-literals, react-native/no-inline-styles */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -48,7 +48,9 @@ import {
   processDocumentScan,
   extractTextOnDevice,
 } from '../services/documentScanService';
-import { colors, typography, spacing, radii, layout, touch } from '../theme';
+import { typography, spacing, radii, layout, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { ImageViewer } from '../components/ImageViewer';
 import { useCaptureProtocol } from '../hooks/useCaptureProtocol';
 import { ProtocolPicker } from '../components/ProtocolPicker';
@@ -115,6 +117,8 @@ function CornerBracket({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export function CaptureScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -1316,14 +1320,14 @@ export function CaptureScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   center: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xxl,
@@ -1332,7 +1336,7 @@ const styles = StyleSheet.create({
   // ── Live camera ─────────────────────────────────────────────────────────────
   cameraContainer: {
     flex: 1,
-    backgroundColor: colors.cameraBg,
+    backgroundColor: c.cameraBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1411,7 +1415,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   photoCountText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
@@ -1450,7 +1454,7 @@ const styles = StyleSheet.create({
   domainPillText: {
     fontSize: 13,
     fontWeight: '500',
-    color: colors.white,
+    color: c.white,
   },
   objectTitlePill: {
     flexDirection: 'row',
@@ -1464,7 +1468,7 @@ const styles = StyleSheet.create({
   objectTitlePillText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.white,
+    color: c.white,
   },
 
   // ── Corner brackets (V0 design) ───────────────────────────────────────────
@@ -1502,7 +1506,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   viewTypePillText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
     textAlign: 'center',
@@ -1518,7 +1522,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   zoomLabelText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold,
   },
@@ -1543,7 +1547,7 @@ const styles = StyleSheet.create({
   // ── Shutter flash ─────────────────────────────────────────────────────────
   shutterFlash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
     zIndex: 15,
   },
 
@@ -1553,7 +1557,7 @@ const styles = StyleSheet.create({
     top: 140,
     left: spacing.xl,
     right: spacing.xl,
-    backgroundColor: colors.error,
+    backgroundColor: c.error,
     borderRadius: radii.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -1562,7 +1566,7 @@ const styles = StyleSheet.create({
   },
   errorToastText: {
     ...typography.bodySmall,
-    color: colors.white,
+    color: c.white,
     textAlign: 'center',
   },
 
@@ -1579,7 +1583,7 @@ const styles = StyleSheet.create({
     padding: 3,
   },
   pvToggleBtnActive: {
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
     borderRadius: 20,
     paddingHorizontal: 20,
     alignItems: 'center',
@@ -1605,7 +1609,7 @@ const styles = StyleSheet.create({
 
   // ── Thumbnail strip ───────────────────────────────────────────────────────
   thumbStripWrap: {
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
   },
@@ -1618,7 +1622,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: colors.overlayLight,
+    borderColor: c.overlayLight,
     overflow: 'hidden',
   },
   thumbImage: {
@@ -1634,7 +1638,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   thumbCountText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
@@ -1660,7 +1664,7 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 36,
     borderWidth: 4,
-    borderColor: colors.white,
+    borderColor: c.white,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'transparent',
@@ -1672,7 +1676,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 29,
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
   },
   shutterInnerRecording: {
     width: 28,
@@ -1703,31 +1707,31 @@ const styles = StyleSheet.create({
   recordingTimerText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.white,
+    color: c.white,
     fontVariant: ['tabular-nums'],
   },
   videoPreview: {
     width: '100%',
     height: 300,
-    backgroundColor: colors.cameraBg,
+    backgroundColor: c.cameraBg,
   },
 
   // ── Permission screen ────────────────────────────────────────────────────────
   permissionTitle: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.xl,
     fontWeight: typography.weight.semibold,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
   permissionBody: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.md,
     textAlign: 'center',
     marginBottom: spacing.xxl,
   },
   permissionHint: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.base,
     textAlign: 'center',
     marginTop: spacing.sm,
@@ -1740,27 +1744,27 @@ const styles = StyleSheet.create({
   preview: {
     width: '100%',
     aspectRatio: 3 / 4,
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
   },
   metaSection: {
     padding: layout.screenPadding,
   },
   metaLabel: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     marginTop: spacing.md,
   },
   metaValue: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.md,
     marginTop: 2,
   },
 
   // ── Shared buttons ───────────────────────────────────────────────────────────
   primaryBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1768,13 +1772,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   primaryBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.bold,
   },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: c.primary,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1782,29 +1786,29 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   secondaryBtnText: {
-    color: colors.primary,
+    color: c.primary,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },
 
   // ── Spinners / done ──────────────────────────────────────────────────────────
   spinnerText: {
-    color: colors.heroGreen,
+    color: c.heroGreen,
     fontSize: typography.size.md,
     marginTop: spacing.lg,
   },
   checkmark: {
-    color: colors.heroGreen,
+    color: c.heroGreen,
     fontSize: spacing['4xl'],
     marginBottom: spacing.lg,
   },
   doneTitle: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.xxl,
     fontWeight: typography.weight.semibold,
   },
   doneId: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.base,
     marginTop: spacing.sm,
     marginBottom: spacing.xxxl,
@@ -1813,35 +1817,35 @@ const styles = StyleSheet.create({
   // ── Intro overlay ────────────────────────────────────────────────────────────
   introOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlayDark,
+    backgroundColor: c.overlayDark,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xxxl,
     zIndex: 20,
   },
   introCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radii.lg,
     padding: spacing.xxl,
     alignItems: 'center',
     maxWidth: 320,
   },
   introText: {
-    color: colors.textPrimary,
+    color: c.textPrimary,
     fontSize: typography.size.md,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: spacing.xl,
   },
   introBtn: {
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderRadius: radii.md,
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.md,
   },
   introBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },
-});
+}); }

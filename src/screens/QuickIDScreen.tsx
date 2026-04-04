@@ -5,7 +5,7 @@
  * before capturing photos. Creates the object record in SQLite,
  * then navigates to CaptureScreen with the new object_id.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -29,7 +29,9 @@ import { SyncEngine } from '../sync/engine';
 import { getSetting, SETTING_KEYS } from '../services/settingsService';
 import { BackIcon, ForwardIcon } from '../theme/icons';
 import { IconButton } from '../components/ui';
-import { colors, typography, spacing, radii, touch } from '../theme';
+import { typography, spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface CollectionRow {
   id: string;
@@ -37,6 +39,8 @@ interface CollectionRow {
 }
 
 export function QuickIDScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -252,10 +256,10 @@ export function QuickIDScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   flex: {
     flex: 1,
@@ -266,11 +270,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   headerTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     flex: 1,
     textAlign: 'center',
   },
@@ -284,28 +288,28 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.label,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   inputLarge: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     minHeight: 56,
   },
   input: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     ...typography.body,
-    color: colors.text,
+    color: c.text,
     minHeight: touch.minTarget,
   },
   collectionRow: {
@@ -316,21 +320,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: c.border,
+    backgroundColor: c.surface,
     minHeight: touch.minTargetSmall,
     justifyContent: 'center',
   },
   collectionChipActive: {
-    borderColor: colors.heroGreen,
-    backgroundColor: colors.greenLight,
+    borderColor: c.heroGreen,
+    backgroundColor: c.greenLight,
   },
   collectionChipText: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   collectionChipTextActive: {
-    color: colors.heroGreen,
+    color: c.heroGreen,
     fontWeight: typography.weight.semibold,
   },
   bottom: {
@@ -339,14 +343,14 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     gap: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   continueBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.heroGreen,
+    backgroundColor: c.heroGreen,
     borderRadius: radii.lg,
     paddingVertical: spacing.lg,
     minHeight: touch.minTarget,
@@ -356,7 +360,7 @@ const styles = StyleSheet.create({
   },
   continueBtnText: {
     ...typography.body,
-    color: colors.white,
+    color: c.white,
     fontWeight: typography.weight.semibold,
   },
   skipBtn: {
@@ -367,6 +371,6 @@ const styles = StyleSheet.create({
   },
   skipBtnText: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
-});
+}); }

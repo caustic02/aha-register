@@ -3,12 +3,14 @@
  * Shown only while SyncEngine is actively running (network push/pull).
  * Uses position:absolute so it doesn't push content down.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { useAppTranslation } from '../hooks/useAppTranslation';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 const BAR_HEIGHT = 28;
 
@@ -16,6 +18,8 @@ export function SyncStatusBar() {
   const { status, pendingCount } = useSyncStatus();
   const { t } = useAppTranslation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [translateY] = useState(() => new Animated.Value(-BAR_HEIGHT));
   const visible = status === 'syncing';
@@ -53,23 +57,25 @@ export function SyncStatusBar() {
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: BAR_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.sm,
-    zIndex: 100,
-    elevation: 4,
-  },
-  text: {
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.medium,
-    flexShrink: 1,
-  },
-});
+function makeStyles(_c: ColorPalette) {
+  return StyleSheet.create({
+    bar: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      height: BAR_HEIGHT,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.lg,
+      gap: spacing.sm,
+      zIndex: 100,
+      elevation: 4,
+    },
+    text: {
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.medium,
+      flexShrink: 1,
+    },
+  });
+}
