@@ -33,6 +33,9 @@ import {
   FolderPlus,
   FolderOpen,
   AlertCircle,
+  CheckCircle2,
+  RefreshCw,
+  WifiOff,
 } from 'lucide-react-native';
 import Svg, { Path, Rect, Circle, Polyline, Line } from 'react-native-svg';
 import { radii, spacing, touch, typography } from '../theme';
@@ -217,7 +220,7 @@ export function HomeScreen({ navigation }: Props) {
           {extra && <Text style={st.secLabelExtra}>{extra}</Text>}
           {badge != null && (
             <View style={st.sectionBadge}>
-              <AlertCircle size={14} color="#D97706" />
+              <AlertCircle size={14} color={colors.warning} />
               <Text style={st.sectionBadgeText}>{badge}</Text>
             </View>
           )}
@@ -264,7 +267,7 @@ export function HomeScreen({ navigation }: Props) {
             <Text style={st.attentionReasonText}>{reason}</Text>
           </View>
         </View>
-        <AlertCircle size={20} color="#D97706" />
+        <AlertCircle size={20} color={colors.warning} />
       </PressScale>
     );
   }
@@ -359,12 +362,16 @@ export function HomeScreen({ navigation }: Props) {
 
   // Sync status styling
   const syncState = syncStatus.status; // 'idle' | 'syncing' | 'offline' | 'error'
-  const syncColor = syncState === 'error' || syncState === 'offline' ? '#C53030'
-    : syncState === 'syncing' ? '#D97706' : '#0F766E';
-  const syncBg = syncState === 'error' || syncState === 'offline' ? 'rgba(197, 48, 48, 0.1)'
-    : syncState === 'syncing' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(15, 118, 110, 0.1)';
-  const syncBorder = syncState === 'error' || syncState === 'offline' ? 'rgba(197, 48, 48, 0.3)'
-    : syncState === 'syncing' ? 'rgba(217, 119, 6, 0.3)' : 'rgba(15, 118, 110, 0.3)';
+  const syncColor = syncState === 'error' || syncState === 'offline' ? colors.statusError
+    : syncState === 'syncing' ? colors.statusWarning : colors.statusSuccess;
+  const syncBg = syncState === 'error' || syncState === 'offline' ? colors.errorLight
+    : syncState === 'syncing' ? colors.warningLight : colors.successLight;
+  const syncBorder = syncState === 'error' || syncState === 'offline' ? colors.error
+    : syncState === 'syncing' ? colors.warning : colors.success;
+  const SyncIcon = syncState === 'error' ? AlertCircle
+    : syncState === 'offline' ? WifiOff
+    : syncState === 'syncing' ? RefreshCw
+    : CheckCircle2;
   const syncLabel = syncState === 'syncing' ? 'Syncing...'
     : syncState === 'offline' ? 'Offline'
     : syncState === 'error' ? 'Sync failed'
@@ -432,12 +439,12 @@ export function HomeScreen({ navigation }: Props) {
                       <Text style={st.colName} numberOfLines={1}>{col.name}</Text>
                       <Text style={st.colSub}>{col.objectCount} objects</Text>
                     </View>
-                    <View style={{ backgroundColor: '#2A2A2A', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
+                    <View style={{ backgroundColor: colors.surfaceContainerHigh, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 }}>
                       <Text style={{ fontSize: 12, fontWeight: typography.weight.medium, color: colors.textMuted }}>{Math.round(Math.min((col.objectCount / 8) * 100, 100))}%</Text>
                     </View>
                   </View>
-                  <View style={{ height: 2, borderRadius: 1, backgroundColor: '#2A2A2A' }}>
-                    <View style={{ height: 2, borderRadius: 1, backgroundColor: '#666666', width: `${Math.min((col.objectCount / 8) * 100, 100)}%` }} />
+                  <View style={{ height: 2, borderRadius: 1, backgroundColor: colors.surfaceContainerHigh }}>
+                    <View style={{ height: 2, borderRadius: 1, backgroundColor: colors.textTertiary, width: `${Math.min((col.objectCount / 8) * 100, 100)}%` }} />
                   </View>
                 </PressScale>
               ))}
@@ -554,13 +561,13 @@ export function HomeScreen({ navigation }: Props) {
               <Text style={st.statValue}>{stats.totalPhotos}</Text>
               <Text style={st.statLabel}>{t('home.statPhotos')}</Text>
             </View>
-            <View style={[st.statCard, storageWarn !== 'normal' && { borderColor: storageWarn === 'critical' ? '#C53030' : '#D97706' }]}>
-              <Text style={[st.statValue, storageWarn !== 'normal' && { color: storageWarn === 'critical' ? '#C53030' : '#D97706' }]}>{formatStorageSize(stats.storageBytes)}</Text>
+            <View style={[st.statCard, storageWarn !== 'normal' && { borderColor: storageWarn === 'critical' ? colors.statusError : colors.statusWarning }]}>
+              <Text style={[st.statValue, storageWarn !== 'normal' && { color: storageWarn === 'critical' ? colors.statusError : colors.statusWarning }]}>{formatStorageSize(stats.storageBytes)}</Text>
               <Text style={st.statLabel}>{t('home.statStorage')}</Text>
             </View>
           </View>
           <View style={[st.syncBar, { backgroundColor: syncBg, borderColor: syncBorder }]}>
-            <View style={[st.syncDot, { backgroundColor: syncColor }]} />
+            <SyncIcon size={14} color={syncColor} />
             <Text style={[st.syncText, { color: syncColor }]}>{syncLabel}</Text>
           </View>
         </View>
@@ -606,17 +613,17 @@ function makeStyles(colors: ColorPalette) {
     secLabelExtra: { fontSize: 13, color: colors.textTertiary },
     sectionBadge: {
       flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 8,
-      backgroundColor: 'rgba(217, 119, 6, 0.15)', borderWidth: 1, borderColor: '#D97706',
+      backgroundColor: colors.warningLight, borderWidth: 1, borderColor: colors.warning,
       paddingHorizontal: 10, paddingVertical: 2, borderRadius: 12,
     },
-    sectionBadgeText: { fontSize: 12, fontWeight: typography.weight.semibold, color: '#D97706' },
+    sectionBadgeText: { fontSize: 12, fontWeight: typography.weight.semibold, color: colors.warning },
     viewAll: { minHeight: touch.minTarget, justifyContent: 'center' },
     viewAllText: { fontSize: 13, fontWeight: typography.weight.medium, color: colors.textSecondary },
 
     // CTA (96px)
     cta: {
       flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-      height: 96, backgroundColor: colors.heroGreen, borderRadius: R, borderWidth: 1, borderColor: '#3D7A35', marginBottom: ITEM_GAP,
+      height: 96, backgroundColor: colors.heroGreen, borderRadius: R, borderWidth: 1, borderColor: colors.accent, marginBottom: ITEM_GAP,
     },
     ctaIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
     ctaText: { flex: 1, marginLeft: 14 },
@@ -628,7 +635,7 @@ function makeStyles(colors: ColorPalette) {
     quickBtn: {
       width: '100%', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1,
-      borderColor: '#3A3A3A', height: 100,
+      borderColor: colors.border, height: 100,
     },
     quickBtnIcon: { alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
     quickBtnText: { fontSize: 14, fontWeight: typography.weight.medium, color: colors.text, textAlign: 'center' },
@@ -636,7 +643,7 @@ function makeStyles(colors: ColorPalette) {
     // Collection cards (170x100 with progress)
     colCard: {
       width: 220, height: 100, backgroundColor: colors.surfaceElevated, borderRadius: R,
-      borderWidth: 1, borderColor: '#3A3A3A', padding: 14, justifyContent: 'space-between',
+      borderWidth: 1, borderColor: colors.border, padding: 14, justifyContent: 'space-between',
     },
     colName: { fontSize: 16, fontWeight: typography.weight.bold, color: colors.text },
     colSub: { fontSize: 11, color: colors.textTertiary, marginTop: 2 },
@@ -644,7 +651,7 @@ function makeStyles(colors: ColorPalette) {
 
     // Recent (unfiled) — 140x140 square photo-fill
     recentCard: {
-      width: 140, height: 140, borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
+      width: 140, height: 140, borderRadius: R, borderWidth: 1, borderColor: colors.border,
       overflow: 'hidden', backgroundColor: colors.surface,
     },
     thumbEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface },
@@ -653,7 +660,7 @@ function makeStyles(colors: ColorPalette) {
     // Empty
     emptyCard: {
       alignItems: 'center', paddingVertical: spacing.xl, paddingHorizontal: spacing.lg,
-      backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
+      backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: colors.border,
     },
     emptyTitle: { fontSize: 14, fontWeight: typography.weight.medium, color: colors.text, marginTop: spacing.sm },
     emptyMsg: { fontSize: 12, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
@@ -661,7 +668,7 @@ function makeStyles(colors: ColorPalette) {
     // AttentionRow (vertical list)
     attentionRow: {
       flexDirection: 'row', alignItems: 'center', minHeight: 88,
-      backgroundColor: colors.surface, borderWidth: 1, borderColor: '#3A3A3A',
+      backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
       borderRadius: 12, paddingHorizontal: 12, marginBottom: 10,
     },
     attentionThumb: { width: 72, height: 72, borderRadius: 10, backgroundColor: colors.surfaceElevated, overflow: 'hidden' },
@@ -669,15 +676,15 @@ function makeStyles(colors: ColorPalette) {
     attentionTitle: { fontSize: 15, fontWeight: typography.weight.semibold, color: colors.text },
     attentionReasonRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
     attentionDots: { flexDirection: 'row', gap: 4 },
-    attentionDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#D97706' },
-    attentionDotEmpty: { backgroundColor: '#3A3A3A' },
+    attentionDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.warning },
+    attentionDotEmpty: { backgroundColor: colors.border },
     attentionReasonText: { fontSize: 12, color: colors.textSecondary, marginLeft: 8 },
 
     // ActionCard (2-col grid, photo 100px top)
     actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: ITEM_GAP },
     actionCard: {
       backgroundColor: colors.surfaceElevated, borderRadius: R,
-      borderWidth: 1, borderColor: '#3A3A3A', overflow: 'hidden',
+      borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
     },
     actionPhotoTop: { width: '100%', height: 120, backgroundColor: colors.surface },
     actionInfo: { padding: 10, gap: 4 },
@@ -693,7 +700,7 @@ function makeStyles(colors: ColorPalette) {
     // CompactRow (52px)
     compactRow: {
       flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
-      borderWidth: 1, borderColor: '#3A3A3A', borderRadius: R,
+      borderWidth: 1, borderColor: colors.border, borderRadius: R,
       paddingHorizontal: 14, height: 52, marginBottom: 8, gap: 10,
     },
     compactThumb: { width: 36, height: 36, borderRadius: 8, backgroundColor: colors.surface, overflow: 'hidden' },
@@ -707,7 +714,7 @@ function makeStyles(colors: ColorPalette) {
     toolCell: {
       height: 88, alignItems: 'center', justifyContent: 'center',
       backgroundColor: colors.surfaceElevated, borderRadius: R,
-      borderWidth: 1, borderColor: '#3A3A3A',
+      borderWidth: 1, borderColor: colors.border,
     },
     toolCellIcon: {
       width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
@@ -719,7 +726,7 @@ function makeStyles(colors: ColorPalette) {
     statsGrid: { flexDirection: 'row', gap: ITEM_GAP, marginBottom: ITEM_GAP },
     statCard: {
       flex: 1, alignItems: 'center', justifyContent: 'center', height: 52,
-      backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
+      backgroundColor: colors.surfaceElevated, borderRadius: R, borderWidth: 1, borderColor: colors.border,
     },
     statValue: { fontSize: 17, fontWeight: typography.weight.bold, color: colors.text },
     statLabel: { fontSize: 11, color: colors.textSecondary },
@@ -727,10 +734,10 @@ function makeStyles(colors: ColorPalette) {
     // Sync (44px)
     syncBar: {
       flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
-      borderRadius: R, borderWidth: 1, borderColor: '#3A3A3A',
+      borderRadius: R, borderWidth: 1, borderColor: colors.border,
       paddingHorizontal: 16, paddingVertical: 16, marginTop: 12, gap: 8,
     },
-    syncDot: { width: 8, height: 8, borderRadius: 4 },
+    syncIcon: { flexShrink: 0 },
     syncText: { fontSize: 12, color: colors.textSecondary },
 
     // Badge (kept for compatibility)

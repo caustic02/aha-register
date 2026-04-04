@@ -25,12 +25,12 @@ import {
 } from 'lucide-react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { CaptureProtocol, ProtocolShot } from '../config/protocols';
-import { spacing, radii, typography, touch } from '../theme';
+import { spacing, radii, typography, touch, colors } from '../theme';
 
 // ── Camera-safe overlay colours ──────────────────────────────────────────────
 const OVERLAY_BG = 'rgba(0,0,0,0.6)';
 const OVERLAY_LIGHT = 'rgba(0,0,0,0.45)';
-const TEXT_WHITE = '#FFFFFF';
+const TEXT_WHITE = colors.white;
 const TEXT_DIM = 'rgba(255,255,255,0.7)';
 const PROGRESS_BG = 'rgba(255,255,255,0.2)';
 

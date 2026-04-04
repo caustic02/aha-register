@@ -897,7 +897,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   sourceTextCol: { flex: 1 },
   sourceTitle: { fontSize: 15, fontWeight: typography.weight.semibold, color: c.text },
   sourceSub: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
-  sourceDivider: { height: 1, backgroundColor: '#3A3A3A', marginHorizontal: 20 },
+  sourceDivider: { height: 1, backgroundColor: c.border, marginHorizontal: 20 },
   sourceCancel: { alignItems: 'center', paddingVertical: 16 },
   sourceCancelText: { fontSize: 15, fontWeight: typography.weight.medium, color: c.textSecondary },
 }); }
