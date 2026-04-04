@@ -1232,7 +1232,11 @@
     "ansicht_hinten": "Ansicht hinten",
     "aufsicht": "Aufsicht",
     "untersicht": "Untersicht",
-    "detail": "Detail"
+    "detail": "Detail",
+    "reassign_title": "Ansichtstyp ändern",
+    "reassign_occupied": "\"{{viewType}}\" hat bereits ein Foto. Ansichtstypen tauschen?",
+    "reassign_swap_confirm": "Tauschen",
+    "unassign": "Ansichtstyp entfernen"
   },
   "view_checklist": {
     "title": "Weitere Ansichten aufnehmen",

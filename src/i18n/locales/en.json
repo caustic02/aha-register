@@ -1232,7 +1232,11 @@
     "ansicht_hinten": "Back view",
     "aufsicht": "Top view",
     "untersicht": "Bottom view",
-    "detail": "Detail"
+    "detail": "Detail",
+    "reassign_title": "Change view type",
+    "reassign_occupied": "\"{{viewType}}\" already has a photo. Swap view types?",
+    "reassign_swap_confirm": "Swap",
+    "unassign": "Remove view type"
   },
   "view_checklist": {
     "title": "Capture more views",
