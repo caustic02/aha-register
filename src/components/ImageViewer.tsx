@@ -78,6 +78,7 @@ export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
           minScale={1}
           maxScale={5}
           doubleTapScale={2}
+          isDoubleTapEnabled
           style={styles.zoomable}
         >
           <Image

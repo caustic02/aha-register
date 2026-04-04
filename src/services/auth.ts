@@ -75,7 +75,10 @@ export async function signIn(
   if (error) return { success: false, error: error.message };
   if (!data.user) return { success: false, error: 'Sign in failed' };
 
-  // Load user's institution from cloud
+  // Enable sync regardless of institution lookup outcome
+  await setSetting(db, SETTING_KEYS.SYNC_ENABLED, 'true');
+
+  // Load user's institution from cloud (best-effort)
   try {
     const { data: membership } = await supabase
       .from('institution_members')
@@ -87,9 +90,8 @@ export async function signIn(
     if (membership?.institution_id) {
       await setSetting(db, SETTING_KEYS.SYNC_INSTITUTION_ID, membership.institution_id);
     }
-    await setSetting(db, SETTING_KEYS.SYNC_ENABLED, 'true');
   } catch (err) {
-    if (__DEV__) console.warn('[auth] could not load institution:', err);
+    console.error('[auth] could not load institution:', err);
   }
 
   return { success: true };

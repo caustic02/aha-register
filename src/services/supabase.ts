@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { SecureStorage, migrateAuthTokens } from '../utils/secure-storage';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = (process.env.EXPO_PUBLIC_SUPABASE_URL ?? '').trim();
+const supabaseAnonKey = (process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '').trim();
 
 // Migrate existing plaintext tokens from AsyncStorage → SecureStore.
 // This runs once, is idempotent, and is awaited before any auth call
