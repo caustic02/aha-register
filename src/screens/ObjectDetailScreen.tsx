@@ -139,7 +139,7 @@ const EDITABLE_FIELDS = new Set([
   'title', 'description', 'inventory_number', 'alte_inventarnummer',
   'klassifikation', 'material', 'technik', 'masse_hoehe', 'masse_breite',
   'masse_tiefe', 'masse_einheit', 'gewicht', 'gewicht_einheit',
-  'durchmesser', 'format', 'inschriften', 'markierungen', 'schlagworte',
+  'durchmesser', 'durchmesser_einheit', 'format', 'inschriften', 'markierungen', 'schlagworte',
   'erhaltungszustand', 'zustandsbeschreibung', 'restaurierungsbedarf',
   'provenienzangaben', 'erwerbungsart', 'erwerbungsdatum', 'veraeusserer',
   'standort_gebaeude', 'standort_etage', 'standort_raum', 'standort_regal',
@@ -1179,11 +1179,22 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               />
             </View>
           </View>
-          <EditableField
-            label={t('detail.diameter')}
-            value={object.durchmesser ?? null}
-            onSave={(v) => handleFieldSave('durchmesser', v)}
-          />
+          <View style={sec.dimensionGrid}>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.diameter')}
+                value={object.durchmesser ?? null}
+                onSave={(v) => handleFieldSave('durchmesser', v)}
+              />
+            </View>
+            <View style={sec.dimensionCol}>
+              <EditableField
+                label={t('detail.diameter_unit')}
+                value={object.durchmesser_einheit ?? null}
+                onSave={(v) => handleFieldSave('durchmesser_einheit', v)}
+              />
+            </View>
+          </View>
           <EditableField
             label={t('detail.format')}
             value={object.format ?? null}

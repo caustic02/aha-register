@@ -104,6 +104,7 @@ const TOOLS = [
   { label: 'Browse', nav: 'ObjectList' as const },
   { label: 'AI Analysis', nav: 'CaptureCamera' as const },
   { label: 'Scan Doc', nav: 'CaptureCamera' as const },
+  { label: 'Scale Ref', nav: 'ScaleReference' as const },
 ] as const;
 
 // Custom SVG tool icons (26x26 viewBox, stroke-based)
@@ -126,6 +127,8 @@ function ToolSvgIcon({ index, color }: { index: number; color: string }) {
     <Svg key="6" width={26} height={26} viewBox="0 0 24 24"><Path d="M12 3v2M12 19v2M4.93 4.93l1.41 1.41M16.24 16.24l1.41 1.41M3 12h2M19 12h2M4.93 19.07l1.41-1.41M16.24 7.76l1.41-1.41" {...p} /><Circle cx={12} cy={12} r={4} {...p} /></Svg>,
     // Document scan
     <Svg key="7" width={26} height={26} viewBox="0 0 24 24"><Path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" {...p} /><Path d="M14 2v6h6M8 13h8M8 17h5" {...p} /></Svg>,
+    // Scale reference: ruler
+    <Svg key="8" width={26} height={26} viewBox="0 0 24 24"><Rect x={2} y={8} width={20} height={8} rx={2} {...p} /><Path d="M6 8v4M10 8v2M14 8v2M18 8v4" {...p} /></Svg>,
   ];
   return icons[index] ?? null;
 }

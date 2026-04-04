@@ -362,6 +362,7 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE object_collections ADD COLUMN updated_at TEXT`,
   // objects: additional Supabase parity columns
   `ALTER TABLE objects ADD COLUMN durchmesser TEXT`,
+  `ALTER TABLE objects ADD COLUMN durchmesser_einheit TEXT`,
   `ALTER TABLE objects ADD COLUMN format TEXT`,
   `ALTER TABLE objects ADD COLUMN condition_status TEXT`,
   `ALTER TABLE objects ADD COLUMN condition_note TEXT`,

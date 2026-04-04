@@ -281,6 +281,7 @@ export interface RegisterObject {
   verwahrende_einrichtung?: string | null;
   nutzungsrechte_metadaten?: string | null;
   durchmesser?: string | null;
+  durchmesser_einheit?: string | null;
   format?: string | null;
   condition_status?: string | null;
   condition_note?: string | null;
