@@ -1,7 +1,10 @@
 import { ChevronRight } from 'lucide-react-native';
-import React, { ReactNode } from 'react';
+import React, { useMemo } from 'react';
+import type { ReactNode } from 'react';
 import { Image, ImageSourcePropType, Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 import { Badge } from './Badge';
 
 interface BadgeProps {
@@ -20,6 +23,47 @@ interface ListItemProps {
   badge?: BadgeProps;
 }
 
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    base: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      minHeight: 72,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+    },
+    pressed: {
+      opacity: 0.85,
+    },
+    thumbnail: {
+      width: 48,
+      height: 48,
+      borderRadius: radii.sm,
+      marginRight: spacing.lg,
+    },
+    textArea: {
+      flex: 1,
+    },
+    titleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    title: {
+      ...typography.bodyMedium,
+      color: c.text,
+      flexShrink: 1,
+    },
+    badgeGap: {
+      marginLeft: spacing.sm,
+    },
+    subtitle: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      marginTop: spacing.xs,
+    },
+  });
+}
+
 export function ListItem({
   title,
   onPress,
@@ -30,6 +74,8 @@ export function ListItem({
   rightElement,
   badge,
 }: ListItemProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const a11yLabel = subtitle ? `${title}, ${subtitle}` : title;
 
   return (
@@ -67,42 +113,3 @@ export function ListItem({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 72,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  thumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: radii.sm,
-    marginRight: spacing.lg,
-  },
-  textArea: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  title: {
-    ...typography.bodyMedium,
-    color: colors.text,
-    flexShrink: 1,
-  },
-  badgeGap: {
-    marginLeft: spacing.sm,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: spacing.xs,
-  },
-});

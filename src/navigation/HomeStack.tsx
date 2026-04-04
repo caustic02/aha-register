@@ -5,6 +5,8 @@ import { ObjectListScreen } from '../screens/ObjectListScreen';
 import { ObjectDetailScreen } from '../screens/ObjectDetailScreen';
 import { IsolationCompareScreen } from '../screens/IsolationCompareScreen';
 import { DocumentReviewScreen } from '../screens/DocumentReviewScreen';
+import { VideoRecordScreen } from '../screens/VideoRecordScreen';
+import { ViewChecklistScreen } from '../screens/ViewChecklistScreen';
 
 export type HomeStackParamList = {
   Home: undefined;
@@ -12,6 +14,8 @@ export type HomeStackParamList = {
   ObjectDetail: { objectId: string };
   IsolationCompare: { objectId: string; mediaId: string };
   DocumentReview: { mediaId: string };
+  VideoRecord: { objectId: string };
+  ViewChecklist: { objectId: string };
 };
 
 const Stack = createNativeStackNavigator<HomeStackParamList>();
@@ -28,6 +32,12 @@ export function HomeStack() {
         options={{ presentation: 'fullScreenModal' }}
       />
       <Stack.Screen name="DocumentReview" component={DocumentReviewScreen} />
+      <Stack.Screen
+        name="VideoRecord"
+        component={VideoRecordScreen}
+        options={{ presentation: 'fullScreenModal' }}
+      />
+      <Stack.Screen name="ViewChecklist" component={ViewChecklistScreen} />
     </Stack.Navigator>
   );
 }

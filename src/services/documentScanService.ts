@@ -221,6 +221,106 @@ export async function extractTextOnDevice(
   return { text, confidence };
 }
 
+/**
+ * Calls the ocr-enhance Edge Function directly with the image,
+ * without requiring prior on-device OCR results.
+ *
+ * Used as a fallback when on-device OCR (rn-mlkit-ocr) fails.
+ * Saves extracted text to the media record on success.
+ */
+export async function extractTextFromCloud(
+  db: SQLiteDatabase,
+  mediaId: string,
+  imageUri: string,
+  domain: string = 'general',
+): Promise<OcrResult> {
+  // 1. Network check
+  const networkState = await Network.getNetworkStateAsync();
+  if (!(networkState.isConnected && networkState.isInternetReachable)) {
+    throw new Error('No network connection for cloud OCR');
+  }
+
+  // 2. Auth token
+  const token = await getAccessToken();
+  if (!token) throw new Error('Could not obtain auth token for cloud OCR');
+
+  // 3. Read image as base64
+  const imageFile = new File(imageUri);
+  if (!imageFile.exists) throw new Error('Image file not found for cloud OCR');
+  const imageBase64 = await imageFile.base64();
+
+  // 4. Call Edge Function
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), CLOUD_OCR_TIMEOUT_MS);
+
+  let responseData: {
+    status: string;
+    text?: string;
+    confidence?: number;
+    language?: string;
+    handwriting_detected?: boolean;
+    notes?: string;
+    error?: string;
+  };
+
+  try {
+    const response = await fetch(OCR_ENHANCE_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        image_base64: imageBase64,
+        mime_type: 'image/jpeg',
+        existing_text: '',
+        existing_confidence: 0,
+        domain,
+      }),
+      signal: controller.signal,
+    });
+
+    responseData = await response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  // 5. Process result
+  if (
+    (responseData.status === 'upgraded' || responseData.status === 'no_upgrade') &&
+    responseData.text != null &&
+    responseData.text.trim().length > 0
+  ) {
+    const confidence = responseData.confidence ?? 0;
+    const text = responseData.text;
+    const now = new Date().toISOString();
+
+    await db.runAsync(
+      `UPDATE media
+       SET ocr_text = ?, ocr_confidence = ?, ocr_source = 'cloud', updated_at = ?
+       WHERE id = ?`,
+      [text, confidence, now, mediaId],
+    );
+
+    await logAuditEntry(db, {
+      tableName: 'media',
+      recordId: mediaId,
+      action: 'cloud_ocr_direct',
+      newValues: {
+        confidence,
+        language: responseData.language,
+        handwritingDetected: responseData.handwriting_detected,
+      },
+    });
+
+    return { text, confidence };
+  }
+
+  throw new Error(
+    responseData.error ?? `Cloud OCR returned status: ${responseData.status}`,
+  );
+}
+
 // ── Cloud OCR upgrade (C6) ───────────────────────────────────────────────────
 
 const OCR_ENHANCE_URL =

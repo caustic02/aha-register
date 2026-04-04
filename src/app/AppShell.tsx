@@ -1,13 +1,15 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { colors, typography, spacing } from '../theme';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, AppState, StyleSheet, Text, View } from 'react-native';
+import { typography, spacing } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { NavigationContainer } from '@react-navigation/native';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import i18n from 'i18next';
 
 import { initDatabase } from '../db/database';
 import { DatabaseProvider } from '../contexts/DatabaseContext';
-import { MainTabs } from '../navigation/MainTabs';
+import { RootStack } from '../navigation/RootStack';
 import { SyncStatusBar } from '../components/SyncStatusBar';
 import { getSetting, setSetting, SETTING_KEYS } from '../services/settingsService';
 import { getSession, onAuthStateChange } from '../services/auth';
@@ -18,6 +20,8 @@ import { AuthScreen } from '../screens/AuthScreen';
 import TrustScreen from '../screens/TrustScreen';
 
 export default function AppShell() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [db, setDb] = useState<SQLiteDatabase | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
@@ -25,6 +29,21 @@ export default function AppShell() {
   const [authenticated, setAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const syncEngineRef = useRef<SyncEngine | null>(null);
+  const appStateRef = useRef(AppState.currentState);
+  const [rootKey, setRootKey] = useState(0);
+
+  useEffect(() => {
+    if (!authenticated) return;
+
+    const sub = AppState.addEventListener('change', (next) => {
+      if (appStateRef.current === 'background' && next === 'active') {
+        setRootKey((k) => k + 1);
+      }
+      appStateRef.current = next;
+    });
+
+    return () => sub.remove();
+  }, [authenticated]);
 
   useEffect(() => {
     initDatabase()
@@ -146,25 +165,26 @@ export default function AppShell() {
       ) : (
         <NavigationContainer>
           <SyncStatusBar />
-          <MainTabs />
+          <RootStack key={rootKey} />
         </NavigationContainer>
       )}
     </DatabaseProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loading: {
-    color: colors.accent,
-    fontSize: typography.size.lg,
-    marginTop: spacing.lg,
-    fontWeight: typography.weight.semibold,
-  },
-  error: { color: colors.danger, fontSize: typography.size.base, textAlign: 'center', padding: spacing.xxl },
-});
+const makeStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    center: {
+      flex: 1,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    loading: {
+      color: colors.accent,
+      fontSize: typography.size.lg,
+      marginTop: spacing.lg,
+      fontWeight: typography.weight.semibold,
+    },
+    error: { color: colors.danger, fontSize: typography.size.base, textAlign: 'center', padding: spacing.xxl },
+  });

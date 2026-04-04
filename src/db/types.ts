@@ -61,7 +61,24 @@ export type ViewType =
   | 'detail_label'
   | 'overall'
   | 'interior'
-  | 'document_scan';
+  | 'document_scan'
+  // Registerbogen multi-view capture types
+  | 'ansicht_front'
+  | 'ansicht_rechts'
+  | 'ansicht_links'
+  | 'ansicht_hinten'
+  | 'aufsicht'
+  | 'untersicht';
+
+/** Registerbogen 6-view subset used in guided multi-view capture */
+export type RegisterViewType =
+  | 'ansicht_front'
+  | 'ansicht_rechts'
+  | 'ansicht_links'
+  | 'ansicht_hinten'
+  | 'aufsicht'
+  | 'untersicht'
+  | 'detail';
 
 export type TranscriptionStatus = 'none' | 'draft' | 'ai_generated' | 'verified';
 
@@ -158,6 +175,7 @@ export interface Institution {
   institution_type: string | null;
   address: string | null;
   contact_info: string | null; // JSON
+  settings: string | null; // JSON
   created_at: string;
   updated_at: string;
 }
@@ -211,6 +229,61 @@ export interface RegisterObject {
   protocol_complete?: number;
   shots_completed?: string;
   shots_remaining?: string;
+  // Location tagging
+  location_building?: string | null;
+  location_floor?: string | null;
+  location_room?: string | null;
+  location_shelf?: string | null;
+  location_notes?: string | null;
+  // Registerbogen fields (companion app parity)
+  mediaId?: string | null;
+  alte_inventarnummer?: string | null;
+  klassifikation?: string | null;
+  material?: string | null;
+  technik?: string | null;
+  masse_hoehe?: string | null;
+  masse_breite?: string | null;
+  masse_tiefe?: string | null;
+  masse_einheit?: string | null;
+  gewicht?: string | null;
+  gewicht_einheit?: string | null;
+  inschriften?: string | null;
+  markierungen?: string | null;
+  schlagworte?: string | null;
+  erhaltungszustand?: string | null;
+  zustandsbeschreibung?: string | null;
+  letzter_zustandsbericht?: string | null;
+  restaurierungsbedarf?: string | null;
+  erwerbungsart?: string | null;
+  erwerbungsdatum?: string | null;
+  veraeusserer?: string | null;
+  provenienzangaben?: string | null;
+  belastete_provenienz?: number;
+  belastete_provenienz_notizen?: string | null;
+  erwerbungspreis?: string | null;
+  erwerbungspreis_waehrung?: string | null;
+  standort_gebaeude?: string | null;
+  standort_etage?: string | null;
+  standort_raum?: string | null;
+  standort_regal?: string | null;
+  standort_hinweise?: string | null;
+  aktueller_status?: string | null;
+  versicherungswert?: string | null;
+  versicherungswert_waehrung?: string | null;
+  versicherungspolice?: string | null;
+  leihgabe?: number;
+  leihgabe_nehmer?: string | null;
+  leihgabe_von?: string | null;
+  leihgabe_bis?: string | null;
+  ausfuhrgenehmigung?: number;
+  ausfuhrgenehmigung_referenz?: string | null;
+  datensatz_sprache?: string | null;
+  verwahrende_einrichtung?: string | null;
+  nutzungsrechte_metadaten?: string | null;
+  durchmesser?: string | null;
+  format?: string | null;
+  condition_status?: string | null;
+  condition_note?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -239,6 +312,11 @@ export interface Media {
   ocr_source?: OcrSource;
   // View inventory (D1)
   view_type?: ViewType | null;
+  // Per-view dimensions and notes (Registerbogen multi-view)
+  view_dimensions?: string | null;
+  view_notes?: string | null;
+  // Supabase Storage path for cloud-synced photos
+  storage_path?: string | null;
   // Capture protocol shot tracking
   shot_type?: string | null;
   protocol_id?: string | null;
@@ -248,6 +326,12 @@ export interface Media {
   license_type?: LicenseType | null;
   license_uri?: string | null;
   usage_restrictions?: string | null;
+  // Companion app parity
+  alt_text?: string | null;
+  // Original file tracking (Supabase parity)
+  original_file_path?: string | null;
+  original_mime_type?: string | null;
+  original_file_size?: number | null;
 }
 
 export interface Annotation {
@@ -385,6 +469,38 @@ export interface SyncQueueItem {
   retry_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ObjectTask {
+  id: string;
+  object_id: string;
+  title: string;
+  completed: number; // 0 or 1
+  sort_order: number;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface FloorMap {
+  id: string;
+  name: string;
+  building: string | null;
+  floor: string | null;
+  image_uri: string;
+  image_width: number | null;
+  image_height: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MapPin {
+  id: string;
+  floor_map_id: string;
+  object_id: string | null;
+  x_percent: number;
+  y_percent: number;
+  label: string | null;
+  created_at: string;
 }
 
 export interface CaptureProtocolRow {

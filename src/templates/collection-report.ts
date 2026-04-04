@@ -8,11 +8,7 @@
  */
 
 import type { ObjectExportData } from '../services/exportTemplate';
-import { colors } from '../theme';
-
-// ── Theme colors (imported from centralized design system) ──────────────────
-
-const C = colors;
+import type { ColorPalette } from '../theme';
 
 // ── Translation function type ───────────────────────────────────────────────
 
@@ -60,7 +56,8 @@ function fmtDims(v: unknown, t: TFunc): string | null {
 
 // ── CSS ─────────────────────────────────────────────────────────────────────
 
-const CSS = `
+function buildCSS(C: ColorPalette): string {
+  return `
 @page { size: A4; margin: 18mm 20mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -161,6 +158,7 @@ code, .mono { font-family: 'Courier New', Courier, monospace; font-size: 8.5pt; 
 .compact-brand .brand-register { font-size: 9pt; color: ${C.textSecondary}; }
 .compact-coll-name { font-size: 9pt; color: ${C.textSecondary}; font-style: italic; }
 `;
+}
 
 // ── Cover page ───────────────────────────────────────────────────────────────
 
@@ -171,6 +169,7 @@ function buildCoverPage(
   institutionName: string | null,
   now: string,
   t: TFunc,
+  _C: ColorPalette,
 ): string {
   return `
   <div class="accent-bar"></div>
@@ -214,6 +213,7 @@ function buildObjectPage(
   collectionName: string,
   now: string,
   t: TFunc,
+  C: ColorPalette,
 ): string {
   const { object: obj, media } = data;
   const tsd = parseTypeData(obj.type_specific_data);
@@ -307,6 +307,7 @@ function buildSummaryPage(
   objects: ObjectExportData[],
   now: string,
   t: TFunc,
+  _C: ColorPalette,
 ): string {
   const rows = objects.map((d, i) => {
     const tsd = parseTypeData(d.object.type_specific_data);
@@ -363,22 +364,24 @@ export function generateCollectionReportHTML(
   objects: ObjectExportData[],
   institutionName: string | null,
   t: TFunc,
-  collectionDescription?: string | null,
+  collectionDescription: string | null | undefined,
+  C: ColorPalette,
 ): string {
+  const palette = C;
   const locale = t('pdf.date_locale');
   const now = new Date().toLocaleDateString(locale, {
     year: 'numeric', month: '2-digit', day: '2-digit',
   });
 
-  const cover = buildCoverPage(collectionName, collectionDescription ?? null, objects.length, institutionName, now, t);
+  const cover = buildCoverPage(collectionName, collectionDescription ?? null, objects.length, institutionName, now, t, palette);
 
   const objectPages = objects.map((data, i) => {
-    const page = buildObjectPage(data, i + 1, objects.length, collectionName, now, t);
+    const page = buildObjectPage(data, i + 1, objects.length, collectionName, now, t, palette);
     return i < objects.length - 1 ? page + '\n<div class="page-break"></div>' : page;
   }).join('\n');
 
   const summaryPage = objects.length > 1
-    ? '\n<div class="page-break"></div>\n' + buildSummaryPage(collectionName, objects, now, t)
+    ? '\n<div class="page-break"></div>\n' + buildSummaryPage(collectionName, objects, now, t, palette)
     : '';
 
   return `<!DOCTYPE html>
@@ -386,7 +389,7 @@ export function generateCollectionReportHTML(
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>${CSS}</style>
+  <style>${buildCSS(palette)}</style>
 </head>
 <body>
   ${cover}

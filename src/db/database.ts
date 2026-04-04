@@ -4,6 +4,7 @@ import { INDEXES_SQL } from './indexes';
 import { getOrCreateDatabaseKey } from '../utils/db-encryption';
 import { migrateToEncryptedDatabase } from '../utils/db-migration-encrypt';
 import { SecureStorage } from '../utils/secure-storage';
+import { createSerializedDb } from '../utils/serializedDb';
 
 const DB_NAME = 'aha-register.db';
 const DB_ENCRYPTED_FLAG = '_db_encrypted';
@@ -90,5 +91,8 @@ export async function initDatabase(): Promise<SQLite.SQLiteDatabase> {
     await runMigrations(db);
   }
 
-  return db;
+  // Wrap with serialised transaction queue to prevent concurrent
+  // withTransactionAsync calls from triggering a NullPointerException
+  // in the Android native SQLite layer.
+  return createSerializedDb(db);
 }

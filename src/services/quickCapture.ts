@@ -16,6 +16,8 @@ import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import { getSetting, SETTING_KEYS } from './settingsService';
 import { copyToMediaStorage, buildStorageName, normalizeFileType } from './captureHelpers';
+import { uploadAndRecordStoragePath } from './storage-upload';
+import { supabase } from './supabase';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -124,6 +126,16 @@ export async function quickCapture(
       mediaId,
     });
   });
+
+  // Fire-and-forget: upload to Supabase Storage in background
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session?.user?.id) {
+      const ext = mimeType.split('/')[1] ?? 'jpg';
+      uploadAndRecordStoragePath(
+        db, mediaId, destUri, session.user.id, objectId, ext,
+      ).catch(() => {});
+    }
+  }).catch(() => {});
 
   return objectId;
 }

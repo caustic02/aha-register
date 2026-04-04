@@ -1,15 +1,18 @@
 import 'react-native-gesture-handler';
 import './src/i18n';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import * as Sentry from '@sentry/react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as Updates from 'expo-updates';
 import { useTranslation } from 'react-i18next';
 import AppShell from './src/app/AppShell';
 import { captureError } from './src/utils/sentry';
-import { colors, typography, spacing, radii } from './src/theme';
+import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { typography, spacing, radii } from './src/theme';
+import type { ColorPalette } from './src/theme';
 
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN || '',
@@ -20,6 +23,8 @@ Sentry.init({
 
 function CrashFallback() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const crashStyles = useMemo(() => makeCrashStyles(colors), [colors]);
 
   const handleRestart = useCallback(async () => {
     try {
@@ -30,11 +35,11 @@ function CrashFallback() {
   }, []);
 
   return (
-    <View style={styles.crash}>
-      <Text style={styles.crashTitle}>{t('errors.crash_title')}</Text>
-      <Text style={styles.crashMessage}>{t('errors.crash_message')}</Text>
-      <Pressable onPress={handleRestart} style={styles.crashButton}>
-        <Text style={styles.crashButtonText}>{t('errors.crash_restart')}</Text>
+    <View style={crashStyles.crash}>
+      <Text style={crashStyles.crashTitle}>{t('errors.crash_title')}</Text>
+      <Text style={crashStyles.crashMessage}>{t('errors.crash_message')}</Text>
+      <Pressable onPress={handleRestart} style={crashStyles.crashButton}>
+        <Text style={crashStyles.crashButtonText}>{t('errors.crash_restart')}</Text>
       </Pressable>
     </View>
   );
@@ -64,12 +69,16 @@ class AppErrorBoundary extends React.Component<
 
 function App() {
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <AppErrorBoundary>
-        <StatusBar style="light" />
-        <AppShell />
-      </AppErrorBoundary>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.root}>
+        <ThemeProvider>
+        <AppErrorBoundary>
+          <StatusBar style="auto" />
+          <AppShell />
+        </AppErrorBoundary>
+        </ThemeProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 
@@ -79,35 +88,39 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  crash: {
-    flex: 1,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xxl,
-  },
-  crashTitle: {
-    color: colors.textPrimary,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.bold,
-    marginBottom: spacing.md,
-    textAlign: 'center',
-  },
-  crashMessage: {
-    color: colors.textMuted,
-    fontSize: typography.size.base,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-  },
-  crashButton: {
-    backgroundColor: colors.accent,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: radii.md,
-  },
-  crashButtonText: {
-    color: colors.white,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-  },
 });
+
+const makeCrashStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    crash: {
+      flex: 1,
+      backgroundColor: colors.background,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: spacing.xxl,
+    },
+    crashTitle: {
+      color: colors.textPrimary,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.bold,
+      marginBottom: spacing.md,
+      textAlign: 'center',
+    },
+    crashMessage: {
+      color: colors.textMuted,
+      fontSize: typography.size.base,
+      textAlign: 'center',
+      marginBottom: spacing.xl,
+    },
+    crashButton: {
+      backgroundColor: colors.accent,
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.md,
+      borderRadius: radii.md,
+    },
+    crashButtonText: {
+      color: colors.white,
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+    },
+  });

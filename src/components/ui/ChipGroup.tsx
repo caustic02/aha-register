@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { colors, radii, spacing, touch, typography } from '../../theme';
+import { radii, spacing, touch, typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface ChipOption {
   label: string;
@@ -14,12 +16,53 @@ interface ChipGroupProps {
   multiSelect?: boolean;
 }
 
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      minHeight: 40,
+      paddingHorizontal: spacing.lg,
+      borderRadius: radii.md,
+      borderWidth: 1.5,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    chipSelected: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary,
+    },
+    chipUnselected: {
+      backgroundColor: c.surface,
+      borderColor: c.border,
+    },
+    chipPressed: {
+      opacity: 0.75,
+    },
+    chipText: {
+      ...typography.bodySmall,
+    },
+    chipTextSelected: {
+      color: c.primary,
+      fontWeight: '600',
+    },
+    chipTextUnselected: {
+      color: c.text,
+    },
+  });
+}
+
 export function ChipGroup({
   options,
   selected,
   onSelect,
   multiSelect = false,
 }: ChipGroupProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const selectedValues = Array.isArray(selected) ? selected : [selected];
 
   function handlePress(value: string) {
@@ -66,40 +109,3 @@ export function ChipGroup({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    minHeight: 40,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipSelected: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  chipUnselected: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-  },
-  chipPressed: {
-    opacity: 0.75,
-  },
-  chipText: {
-    ...typography.bodySmall,
-  },
-  chipTextSelected: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  chipTextUnselected: {
-    color: colors.text,
-  },
-});

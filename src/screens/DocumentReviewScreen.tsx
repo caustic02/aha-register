@@ -4,18 +4,18 @@
  * Shows a scanned document image (zoomable) with editable OCR text.
  * Supports save, re-scan, and delete.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
@@ -26,7 +26,9 @@ import {
   DeleteIcon,
   ScanIcon,
 } from '../theme/icons';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { logAuditEntry } from '../db/audit';
 import { SyncEngine } from '../sync/engine';
 import {
@@ -42,6 +44,8 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'DocumentReview'>;
 const IMAGE_HEIGHT = 300;
 
 export function DocumentReviewScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { mediaId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
@@ -194,7 +198,7 @@ export function DocumentReviewScreen({ route, navigation }: Props) {
         : null;
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.headerRow}>
         <IconButton
@@ -300,10 +304,10 @@ export function DocumentReviewScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   headerRow: {
     flexDirection: 'row',
@@ -311,11 +315,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   headerTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     flex: 1,
     marginHorizontal: spacing.sm,
   },
@@ -328,7 +332,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
   documentImage: {
     width: '100%' as unknown as number,
@@ -348,15 +352,15 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     ...typography.label,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginBottom: spacing.sm,
   },
   textInput: {
     ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
+    color: c.text,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     padding: spacing.md,
     minHeight: 160,
@@ -376,6 +380,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     ...typography.bodyMedium,
-    color: colors.primary,
+    color: c.primary,
   },
-});
+}); }

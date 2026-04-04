@@ -1,3 +1,6 @@
+// Deploy after changes:
+//   npx supabase functions deploy remove-background --project-ref fdwmfijtpknwaesyvzbg
+
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -48,9 +51,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parse request body
-    const { imageBase64, mimeType } = await req.json() as {
+    const { imageBase64, mimeType, type, semitransparency } = await req.json() as {
       imageBase64?: string
       mimeType?: string
+      type?: string
+      semitransparency?: boolean
     }
 
     if (!imageBase64 || !mimeType) {
@@ -60,11 +65,33 @@ Deno.serve(async (req: Request) => {
       })
     }
 
-    // Call remove.bg API
+    // Decode base64 → binary Blob so we send via `image_file` (binary upload).
+    // The `image_file_b64` FormData text field is unreliable in Deno edge
+    // runtime for large payloads — remove.bg returns "failed_to_read_image".
+    const binaryStr = atob(imageBase64)
+    const bytes = new Uint8Array(binaryStr.length)
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i)
+    }
+    const imageBlob = new Blob([bytes], { type: mimeType })
+
+    console.log('[remove-background] Image blob size:', imageBlob.size, 'bytes, first 50 base64 chars:', imageBase64.slice(0, 50))
+
+    // Call remove.bg API with binary file upload
     const formData = new FormData()
-    formData.append('image_file_b64', imageBase64)
+    formData.append('image_file', imageBlob, 'image.jpg')
     formData.append('size', 'auto')
     formData.append('format', 'png')
+
+    // Pass object type hint — "product" gives much better results for non-human objects
+    if (type) {
+      formData.append('type', type)
+    }
+    if (semitransparency != null) {
+      formData.append('semitransparency', String(semitransparency))
+    }
+
+    console.log('[remove-background] Calling remove.bg, blob size:', imageBlob.size, 'type:', type ?? 'auto')
 
     const bgResponse = await fetch(REMOVE_BG_URL, {
       method: 'POST',
@@ -98,6 +125,8 @@ Deno.serve(async (req: Request) => {
     }
     const resultBase64 = btoa(binaryString)
 
+    console.log('[remove-background] Success, result size:', resultBase64.length)
+
     return new Response(
       JSON.stringify({
         resultBase64,
@@ -111,7 +140,7 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     console.error('[remove-background] Unhandled error:', err)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', detail: String(err) }),
       {
         status: 500,
         headers: {

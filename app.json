@@ -3,7 +3,7 @@
     "name": "aha-register",
     "slug": "aha-register",
     "scheme": "aharegister",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -66,9 +66,11 @@
       ],
       "expo-secure-store",
       "react-native-document-scanner-plugin",
-      "rn-mlkit-ocr"
+      "rn-mlkit-ocr",
+      "expo-video",
+      "expo-localization"
     ],
-    "runtimeVersion": "0.2.0",
+    "runtimeVersion": "0.4.0",
     "updates": {
       "enabled": true,
       "url": "https://u.expo.dev/bec4d444-c862-47d2-b326-37eaa5a4519e",
@@ -78,7 +80,8 @@
     "extra": {
       "eas": {
         "projectId": "bec4d444-c862-47d2-b326-37eaa5a4519e"
-      }
+      },
+      "versioning": "version and runtimeVersion must stay in sync; bump them together on each meaningful release (see docs/VERSIONING.md)."
     },
     "owner": "aha-register"
   }

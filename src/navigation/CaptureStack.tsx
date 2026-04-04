@@ -8,8 +8,10 @@ import type { NavigationProp } from '@react-navigation/native';
 import { CaptureScreen } from '../screens/CaptureScreen';
 import { AIProcessingScreen } from '../screens/AIProcessingScreen';
 import { ReviewCardScreen } from '../screens/ReviewCardScreen';
+import { AIReviewScreen } from '../screens/AIReviewScreen';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
+import type { RegisterViewType } from '../db/types';
 import { updateReviewStatus } from '../services/objectService';
 import { useDatabase } from '../contexts/DatabaseContext';
 import type { MainTabParamList } from './MainTabs';
@@ -18,7 +20,7 @@ import { useSettings } from '../hooks/useSettings';
 // ── Param list ───────────────────────────────────────────────────────────────
 
 export type CaptureStackParamList = {
-  CaptureCamera: undefined;
+  CaptureCamera: { viewType?: RegisterViewType; objectId?: string } | undefined;
   AIProcessing: {
     imageUri: string;
     imageBase64: string;
@@ -33,6 +35,10 @@ export type CaptureStackParamList = {
     captureMetadata: CaptureMetadata;
     sha256Hash?: string;
     existingObjectId?: string;
+  };
+  AIReview: {
+    objectId: string;
+    photoUri: string;
   };
 };
 
@@ -132,9 +138,9 @@ function ReviewCardWrapper({
           routes: [{ name: 'CaptureCamera' }],
         }),
       );
-      // Navigate to the Home tab → ObjectDetail to view the saved object
+      // Navigate to ViewChecklist for multi-view capture guidance
       tabNav.navigate('Home', {
-        screen: 'ObjectDetail',
+        screen: 'ViewChecklist',
         params: { objectId },
       });
     },
@@ -162,6 +168,51 @@ function ReviewCardWrapper({
   );
 }
 
+// ── Wrapper: AIReviewScreen ──────────────────────────────────────────────────
+
+function AIReviewWrapper({
+  route,
+  navigation,
+}: NativeStackScreenProps<CaptureStackParamList, 'AIReview'>) {
+  const { objectId, photoUri } = route.params;
+  const tabNav = useNavigation<NavigationProp<MainTabParamList>>();
+
+  const handleSave = useCallback(
+    (savedId: string) => {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'CaptureCamera' }],
+        }),
+      );
+      tabNav.navigate('Home', {
+        screen: 'ObjectDetail',
+        params: { objectId: savedId },
+      });
+    },
+    [navigation, tabNav],
+  );
+
+  const handleBack = useCallback(() => {
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [{ name: 'CaptureCamera' }],
+      }),
+    );
+    tabNav.navigate('Home');
+  }, [navigation, tabNav]);
+
+  return (
+    <AIReviewScreen
+      objectId={objectId}
+      photoUri={photoUri}
+      onSave={handleSave}
+      onBack={handleBack}
+    />
+  );
+}
+
 // ── Stack navigator ──────────────────────────────────────────────────────────
 
 export function CaptureStack() {
@@ -170,6 +221,7 @@ export function CaptureStack() {
       <Stack.Screen name="CaptureCamera" component={CaptureScreen} />
       <Stack.Screen name="AIProcessing" component={AIProcessingWrapper} />
       <Stack.Screen name="ReviewCard" component={ReviewCardWrapper} />
+      <Stack.Screen name="AIReview" component={AIReviewWrapper} />
     </Stack.Navigator>
   );
 }

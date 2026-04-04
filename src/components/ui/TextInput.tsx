@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   KeyboardTypeOptions,
   StyleSheet,
@@ -6,7 +6,9 @@ import {
   TextInput as RNTextInput,
   View,
 } from 'react-native';
-import { colors, radii, spacing, touch, typography } from '../../theme';
+import { radii, spacing, touch, typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface TextInputProps {
   label: string;
@@ -26,6 +28,64 @@ interface TextInputProps {
   rightIcon?: React.ReactNode;
 }
 
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      width: '100%',
+    },
+    label: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      marginBottom: spacing.xs,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderRadius: radii.md,
+      overflow: 'hidden',
+    },
+    input: {
+      flex: 1,
+      minHeight: touch.minTarget,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      fontSize: typography.body.fontSize,
+      color: c.text,
+    },
+    inputWithLeftIcon: {
+      paddingLeft: spacing.xs,
+    },
+    inputWithRightIcon: {
+      paddingRight: spacing.xs,
+    },
+    iconLeft: {
+      paddingLeft: spacing.md,
+    },
+    iconRight: {
+      paddingRight: spacing.md,
+    },
+    multiline: {
+      minHeight: 100,
+      textAlignVertical: 'top',
+      paddingTop: spacing.sm,
+    },
+    disabled: {
+      opacity: 0.6,
+    },
+    error: {
+      ...typography.caption,
+      color: c.error,
+      marginTop: spacing.xs,
+    },
+    helper: {
+      ...typography.caption,
+      color: c.textTertiary,
+      marginTop: spacing.xs,
+    },
+  });
+}
+
 export function TextInput({
   label,
   value,
@@ -43,6 +103,8 @@ export function TextInput({
   leftIcon,
   rightIcon,
 }: TextInputProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [focused, setFocused] = useState(false);
 
   const borderColor = error
@@ -102,59 +164,3 @@ export function TextInput({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-  },
-  label: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    overflow: 'hidden',
-  },
-  input: {
-    flex: 1,
-    minHeight: touch.minTarget,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
-    fontSize: typography.body.fontSize,
-    color: colors.text,
-  },
-  inputWithLeftIcon: {
-    paddingLeft: spacing.xs,
-  },
-  inputWithRightIcon: {
-    paddingRight: spacing.xs,
-  },
-  iconLeft: {
-    paddingLeft: spacing.md,
-  },
-  iconRight: {
-    paddingRight: spacing.md,
-  },
-  multiline: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-    paddingTop: spacing.sm,
-  },
-  disabled: {
-    opacity: 0.6,
-  },
-  error: {
-    ...typography.caption,
-    color: colors.error,
-    marginTop: spacing.xs,
-  },
-  helper: {
-    ...typography.caption,
-    color: colors.textTertiary,
-    marginTop: spacing.xs,
-  },
-});

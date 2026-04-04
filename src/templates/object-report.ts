@@ -6,12 +6,8 @@
  */
 
 import type { ObjectExportData } from '../services/exportTemplate';
-import { colors } from '../theme';
+import type { ColorPalette } from '../theme';
 import { getProtocol } from '../config/protocols';
-
-// ── Theme colors (imported from centralized design system) ──────────────────
-
-const C = colors;
 
 // ── Translation function type ───────────────────────────────────────────────
 
@@ -67,7 +63,7 @@ function fmtDims(v: unknown, t: TFunc): string | null {
   return parts.join(' × ') + unit;
 }
 
-function buildProtocolSection(obj: ObjectExportData['object'], t: TFunc): string {
+function buildProtocolSection(obj: ObjectExportData['object'], t: TFunc, C: ColorPalette): string {
   const protocolId = (obj as unknown as Record<string, unknown>).protocol_id as string | undefined;
   if (!protocolId) return '';
 
@@ -139,7 +135,7 @@ function buildProtocolSection(obj: ObjectExportData['object'], t: TFunc): string
   </div>`;
 }
 
-function statusDot(status: string | null | undefined): string {
+function statusDot(status: string | null | undefined, C: ColorPalette): string {
   // Color mapping uses raw DB values (always German strings)
   const map: Record<string, string> = {
     'ausgestellt': C.accent,
@@ -164,7 +160,8 @@ function translateDisplayStatus(rawStatus: string, t: TFunc): string {
 
 // ── CSS ─────────────────────────────────────────────────────────────────────
 
-const CSS = `
+function buildCSS(C: ColorPalette): string {
+  return `
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,700&display=swap');
 @page { size: A4; margin: 18mm 20mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -363,10 +360,11 @@ code, .mono {
 .compact-obj-title { font-size: 10pt; font-weight: 600; color: ${C.textPrimary}; }
 .compact-inv { font-family: 'Courier New', Courier, monospace; font-size: 8pt; color: ${C.textMuted}; }
 `;
+}
 
 // ── QR code element ──────────────────────────────────────────────────────────
 
-function qrElement(qrSvg?: string): string {
+function qrElement(qrSvg: string | undefined, C: ColorPalette): string {
   if (qrSvg) {
     return `<div class="qr-box">${qrSvg}</div>`;
   }
@@ -375,7 +373,7 @@ function qrElement(qrSvg?: string): string {
 
 // ── Page 1 builder ───────────────────────────────────────────────────────────
 
-function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
+function buildPage1(data: ObjectExportData, now: string, t: TFunc, C: ColorPalette): string {
   const { object: obj, media, auditTrail, collections } = data;
   const tsd = parseTypeData(obj.type_specific_data);
   const primary = media.find((m) => m.is_primary === 1) ?? media[0] ?? null;
@@ -528,7 +526,7 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
         </div>
         <div class="fact-row">
           <span class="fact-label">${esc(t('pdf.fact_presence'))}</span>
-          <span class="fact-value">${displayStatus ? statusDot(displayStatus) + esc(translateDisplayStatus(displayStatus, t)) : '&mdash;'}</span>
+          <span class="fact-value">${displayStatus ? statusDot(displayStatus, C) + esc(translateDisplayStatus(displayStatus, t)) : '&mdash;'}</span>
         </div>
         <div class="fact-row">
           <span class="fact-label">${esc(t('pdf.fact_location'))}</span>
@@ -548,7 +546,7 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
   </div>` : ''}
 
   <!-- PROTOCOL COMPLIANCE -->
-  ${buildProtocolSection(obj, t)}
+  ${buildProtocolSection(obj, t, C)}
 
   <!-- PROVENIENZ & ERWERBUNG -->
   ${showProv ? `
@@ -574,7 +572,7 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
         <div class="tamper-meta-item"><strong>${esc(t('pdf.tamper_events'))}</strong><br/>${auditTrail.length}</div>
       </div>
     </div>
-    ${qrElement(data.qrSvg)}
+    ${qrElement(data.qrSvg, C)}
   </div>
 
   <!-- PAGE FOOTER -->
@@ -586,7 +584,7 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc): string {
 
 // ── Page 2 builder ───────────────────────────────────────────────────────────
 
-function buildPage2(data: ObjectExportData, now: string, t: TFunc): string {
+function buildPage2(data: ObjectExportData, now: string, t: TFunc, C: ColorPalette): string {
   const { object: obj, media, auditTrail } = data;
   const tsd = parseTypeData(obj.type_specific_data);
   const primary = media.find((m) => m.is_primary === 1) ?? media[0] ?? null;
@@ -706,7 +704,7 @@ function buildPage2(data: ObjectExportData, now: string, t: TFunc): string {
         <div class="tamper-meta-item"><strong>${esc(t('pdf.tamper_total_events'))}</strong><br/>${auditTrail.length}</div>
       </div>
     </div>
-    ${qrElement(data.qrSvg)}
+    ${qrElement(data.qrSvg, C)}
   </div>
 
   <!-- PAGE FOOTER -->
@@ -718,7 +716,7 @@ function buildPage2(data: ObjectExportData, now: string, t: TFunc): string {
 
 // ── Main export ──────────────────────────────────────────────────────────────
 
-export function generateObjectReportHTML(data: ObjectExportData, t: TFunc): string {
+export function generateObjectReportHTML(data: ObjectExportData, t: TFunc, C: ColorPalette): string {
   const locale = t('pdf.date_locale');
   const now = new Date().toLocaleDateString(locale, {
     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -729,11 +727,11 @@ export function generateObjectReportHTML(data: ObjectExportData, t: TFunc): stri
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>${CSS}</style>
+  <style>${buildCSS(C)}</style>
 </head>
 <body>
-  ${buildPage1(data, now, t)}
-  ${buildPage2(data, now, t)}
+  ${buildPage1(data, now, t, C)}
+  ${buildPage2(data, now, t, C)}
 </body>
 </html>`;
 }

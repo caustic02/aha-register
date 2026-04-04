@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Modal,
@@ -12,7 +12,9 @@ import {
   getAllCollections,
   type CollectionWithCount,
 } from '../services/collectionService';
-import { colors, typography, radii } from '../theme';
+import { typography, radii } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface CollectionPickerModalProps {
   visible: boolean;
@@ -29,6 +31,8 @@ export function CollectionPickerModal({
 }: CollectionPickerModalProps) {
   const db = useDatabase();
   const [collections, setCollections] = useState<CollectionWithCount[]>([]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   useEffect(() => {
     if (visible) {
@@ -54,7 +58,7 @@ export function CollectionPickerModal({
         </Text>
       </Pressable>
     ),
-    [onSelect, t],
+    [onSelect, t, styles],
   );
 
   return (
@@ -86,59 +90,61 @@ export function CollectionPickerModal({
   );
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: colors.overlay,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    maxHeight: '60%',
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-  },
-  closeBtn: {
-    color: colors.textSecondary,
-    fontSize: typography.size.lg,
-  },
-  row: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
-  },
-  name: {
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.medium,
-  },
-  count: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    marginTop: 2,
-  },
-  empty: {
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.md,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      backgroundColor: c.overlay,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      maxHeight: '60%',
+      paddingBottom: 40,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borderLight,
+    },
+    title: {
+      color: c.textPrimary,
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+    },
+    closeBtn: {
+      color: c.textSecondary,
+      fontSize: typography.size.lg,
+    },
+    row: {
+      paddingHorizontal: 20,
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borderLight,
+    },
+    name: {
+      color: c.textPrimary,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.medium,
+    },
+    count: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      marginTop: 2,
+    },
+    empty: {
+      padding: 40,
+      alignItems: 'center',
+    },
+    emptyText: {
+      color: c.textSecondary,
+      fontSize: typography.size.md,
+    },
+  });
+}

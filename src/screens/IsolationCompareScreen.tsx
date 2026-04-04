@@ -1,16 +1,19 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   Alert,
   Animated,
   Image,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { File } from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
+import { Download, Share2 } from 'lucide-react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
@@ -18,7 +21,9 @@ import { isolateObject, type IsolationResult } from '../services/isolationServic
 import { logAuditEntry } from '../db/audit';
 import { Button, IconButton } from '../components/ui';
 import { CloseIcon } from '../theme/icons';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -34,6 +39,8 @@ const COMPARE_BG = 'rgba(0,0,0,0.95)';
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function IsolationCompareScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { objectId, mediaId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
@@ -100,6 +107,7 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
       setPhase('compare');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
+      console.error('[BG-REMOVAL] UI caught error:', msg);
       if (msg === 'OFFLINE') {
         setErrorMsg(t('isolation.offlineError'));
       } else if (msg === 'QUOTA_EXHAUSTED') {
@@ -108,9 +116,10 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
         const parts = msg.split(':');
         const status = parts[1];
         const detail = parts.slice(2).join(':');
-        setErrorMsg(`${t('isolation.failed')} (${status}: ${detail})`);
+        console.error('[BG-REMOVAL] API error detail:', status, detail);
+        setErrorMsg(t('isolation.failedHint'));
       } else {
-        setErrorMsg(t('isolation.failed'));
+        setErrorMsg(t('isolation.failedHint'));
       }
       setPhase('error');
     }
@@ -170,6 +179,43 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
     Alert.alert(t('isolation.backgroundRemoved'));
     navigation.goBack();
   }, [navigation, t]);
+
+  // ── Save to device gallery ──────────────────────────────────────────────────
+
+  const handleSaveToDevice = useCallback(async () => {
+    if (!result) return;
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(t('isolation.permissionNeeded'));
+        return;
+      }
+      await MediaLibrary.saveToLibraryAsync(result.filePath);
+      Alert.alert(t('isolation.savedToGallery'));
+    } catch (err) {
+      console.error('[BG-REMOVAL] Save to gallery failed:', err);
+      Alert.alert(t('common.error'));
+    }
+  }, [result, t]);
+
+  // ── Share isolated image ────────────────────────────────────────────────────
+
+  const handleShare = useCallback(async () => {
+    if (!result) return;
+    try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert(t('common.error'));
+        return;
+      }
+      await Sharing.shareAsync(result.filePath, {
+        mimeType: 'image/png',
+        UTI: 'public.png',
+      });
+    } catch (err) {
+      console.error('[BG-REMOVAL] Share failed:', err);
+    }
+  }, [result, t]);
 
   // ── Processing phase ────────────────────────────────────────────────────────
 
@@ -273,6 +319,8 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
 
       {/* Image compare area */}
       <View style={styles.imageContainer}>
+        {/* White background visible behind the isolated (transparent) PNG */}
+        {activeTab === 'isolated' && <View style={styles.whiteBackdrop} />}
         {originalUri && (
           <Animated.Image
             source={{ uri: originalUri }}
@@ -333,6 +381,28 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
           </Pressable>
         </View>
 
+        {/* Save / Share row */}
+        <View style={styles.utilRow}>
+          <Pressable
+            style={styles.utilBtn}
+            onPress={handleSaveToDevice}
+            accessibilityRole="button"
+            accessibilityLabel={t('isolation.saveToDevice')}
+          >
+            <Download size={18} color={colors.white} />
+            <Text style={styles.utilText}>{t('isolation.saveToDevice')}</Text>
+          </Pressable>
+          <Pressable
+            style={styles.utilBtn}
+            onPress={handleShare}
+            accessibilityRole="button"
+            accessibilityLabel={t('isolation.share')}
+          >
+            <Share2 size={18} color={colors.white} />
+            <Text style={styles.utilText}>{t('isolation.share')}</Text>
+          </Pressable>
+        </View>
+
         {/* Action buttons */}
         <View style={styles.actionRow}>
           <View style={styles.actionBtn}>
@@ -361,7 +431,7 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   // eslint-disable-next-line react-native/no-color-literals
   safe: {
     flex: 1,
@@ -376,7 +446,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...typography.h4,
-    color: colors.white,
+    color: c.white,
     flex: 1,
     textAlign: 'center',
   },
@@ -400,6 +470,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
   },
+  // White background behind isolated PNG for better viewing
+  // eslint-disable-next-line react-native/no-color-literals
+  whiteBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#FFFFFF',
+    margin: spacing.lg,
+    borderRadius: radii.lg,
+  },
   // Processing overlay
   // eslint-disable-next-line react-native/no-color-literals
   processingOverlay: {
@@ -410,26 +488,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: spacing.xl,
     alignSelf: 'center',
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
     borderRadius: radii.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
   processingText: {
     ...typography.bodySmall,
-    color: colors.white,
+    color: c.white,
   },
   // Error overlay
   errorOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
     padding: spacing.xl,
   },
   errorText: {
     ...typography.body,
-    color: colors.white,
+    color: c.white,
     textAlign: 'center',
     marginBottom: spacing.xl,
   },
@@ -446,10 +524,10 @@ const styles = StyleSheet.create({
   },
   segmentRow: {
     flexDirection: 'row',
-    backgroundColor: colors.overlay,
+    backgroundColor: c.overlay,
     borderRadius: radii.full,
     padding: 2,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   segmentBtn: {
     flex: 1,
@@ -460,15 +538,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   segmentBtnActive: {
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
   },
   segmentText: {
     ...typography.bodySmall,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     fontWeight: typography.weight.semibold,
   },
   segmentTextActive: {
-    color: colors.text,
+    color: c.text,
+  },
+  // Save / Share utility row
+  utilRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  utilBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  utilText: {
+    ...typography.bodySmall,
+    color: c.white,
   },
   actionRow: {
     flexDirection: 'row',
@@ -477,4 +573,4 @@ const styles = StyleSheet.create({
   actionBtn: {
     flex: 1,
   },
-});
+}); }

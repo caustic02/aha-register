@@ -3,7 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { Button } from './ui';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { ObjectType } from '../db/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -43,6 +45,8 @@ export function FilterSheet({
   onApply,
 }: FilterSheetProps) {
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const snapPoints = useMemo(() => ['40%', '80%'], []);
 
   const [selectedTypes, setSelectedTypes] = useState<ObjectType[]>(
@@ -184,65 +188,67 @@ export function FilterSheet({
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  sheetBg: {
-    backgroundColor: colors.surface,
-  },
-  handle: {
-    backgroundColor: colors.border,
-    width: 36,
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
-  title: {
-    ...typography.h4,
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  sectionLabel: {
-    ...typography.label,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    marginTop: spacing.md,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  chip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.full,
-    backgroundColor: colors.secondaryContainer,
-    minHeight: touch.minTargetSmall,
-    justifyContent: 'center',
-  },
-  chipActive: {
-    backgroundColor: colors.primaryContainer,
-  },
-  chipText: {
-    ...typography.bodySmall,
-    color: colors.secondary,
-  },
-  chipTextActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  actions: {
-    marginTop: spacing.xl,
-    paddingBottom: spacing.lg,
-  },
-  clearAll: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-  },
-  clearAllText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    sheetBg: {
+      backgroundColor: c.surface,
+    },
+    handle: {
+      backgroundColor: c.border,
+      width: 36,
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: spacing.lg,
+    },
+    title: {
+      ...typography.h4,
+      color: c.text,
+      marginBottom: spacing.lg,
+    },
+    sectionLabel: {
+      ...typography.label,
+      color: c.textSecondary,
+      marginBottom: spacing.sm,
+      marginTop: spacing.md,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    chip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.full,
+      backgroundColor: c.secondaryContainer,
+      minHeight: touch.minTargetSmall,
+      justifyContent: 'center',
+    },
+    chipActive: {
+      backgroundColor: c.primaryContainer,
+    },
+    chipText: {
+      ...typography.bodySmall,
+      color: c.secondary,
+    },
+    chipTextActive: {
+      color: c.primary,
+      fontWeight: '600',
+    },
+    actions: {
+      marginTop: spacing.xl,
+      paddingBottom: spacing.lg,
+    },
+    clearAll: {
+      alignItems: 'center',
+      paddingVertical: spacing.md,
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+    },
+    clearAllText: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+    },
+  });
+}

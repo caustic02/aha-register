@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -6,7 +6,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 interface ConfidenceBarProps {
   confidence: number;
@@ -14,10 +16,39 @@ interface ConfidenceBarProps {
   animated?: boolean;
 }
 
-function getFillColor(confidence: number): string {
+function getFillColor(confidence: number, colors: ColorPalette): string {
   if (confidence < 40) return colors.warning;
   if (confidence < 75) return colors.ai;
   return colors.success;
+}
+
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    track: {
+      height: 8,
+      backgroundColor: c.surface,
+      borderRadius: radii.sm,
+      overflow: 'hidden',
+    },
+    fill: {
+      height: '100%',
+      borderRadius: radii.sm,
+    },
+    labelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: spacing.xs,
+    },
+    labelText: {
+      ...typography.bodySmall,
+      flex: 1,
+    },
+    percentage: {
+      ...typography.bodySmall,
+      fontWeight: '600',
+    },
+  });
 }
 
 export function ConfidenceBar({
@@ -25,8 +56,10 @@ export function ConfidenceBar({
   label,
   animated = true,
 }: ConfidenceBarProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const clampedConfidence = Math.max(0, Math.min(100, confidence));
-  const fillColor = getFillColor(clampedConfidence);
+  const fillColor = getFillColor(clampedConfidence, colors);
   const [reduceMotion, setReduceMotion] = useState(false);
   const [animValue] = useState(() => new Animated.Value(0));
   const [widthInterpolated] = useState(() =>
@@ -80,30 +113,3 @@ export function ConfidenceBar({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  track: {
-    height: 8,
-    backgroundColor: colors.surface,
-    borderRadius: radii.sm,
-    overflow: 'hidden',
-  },
-  fill: {
-    height: '100%',
-    borderRadius: radii.sm,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing.xs,
-  },
-  labelText: {
-    ...typography.bodySmall,
-    flex: 1,
-  },
-  percentage: {
-    ...typography.bodySmall,
-    fontWeight: '600',
-  },
-});

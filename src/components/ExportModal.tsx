@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,7 +12,9 @@ import * as Haptics from 'expo-haptics';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { Button, Divider, ListItem } from './ui';
 import { ExportIcon } from '../theme/icons';
-import { colors, radii, spacing, typography } from '../theme';
+import { radii, spacing, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import type { ExportableObject } from '../services/export-service';
 import { exportAsJSON, exportAsCSV, exportAsPDF } from '../services/export-service';
 import { shareExport, buildExportFilename } from '../services/export-share';
@@ -31,6 +33,8 @@ type ExportFormat = 'pdf' | 'json' | 'csv';
 
 export function ExportModal({ visible, onClose, data }: ExportModalProps) {
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [loading, setLoading] = useState<ExportFormat | null>(null);
 
   const handleExport = async (format: ExportFormat) => {
@@ -41,7 +45,7 @@ export function ExportModal({ visible, onClose, data }: ExportModalProps) {
       const title = data.object.title;
 
       if (format === 'pdf') {
-        const uri = await exportAsPDF(data);
+        const uri = await exportAsPDF(data, undefined, colors);
         const filename = buildExportFilename(title, 'pdf');
         await shareExport(uri, filename, 'application/pdf', true);
       } else if (format === 'json') {
@@ -152,35 +156,37 @@ export function ExportModal({ visible, onClose, data }: ExportModalProps) {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: colors.overlay,
-  },
-  sheet: {
-    backgroundColor: colors.surfaceElevated,
-    borderTopLeftRadius: radii.lg,
-    borderTopRightRadius: radii.lg,
-    paddingBottom: spacing['3xl'],
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: radii.full,
-    backgroundColor: colors.border,
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  title: {
-    ...typography.h4,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  cancelWrap: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      backgroundColor: c.overlay,
+    },
+    sheet: {
+      backgroundColor: c.surfaceElevated,
+      borderTopLeftRadius: radii.lg,
+      borderTopRightRadius: radii.lg,
+      paddingBottom: spacing['3xl'],
+    },
+    handle: {
+      alignSelf: 'center',
+      width: 36,
+      height: 4,
+      borderRadius: radii.full,
+      backgroundColor: c.border,
+      marginTop: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    title: {
+      ...typography.h4,
+      color: c.text,
+      textAlign: 'center',
+      marginBottom: spacing.md,
+    },
+    cancelWrap: {
+      paddingHorizontal: spacing.lg,
+      paddingTop: spacing.lg,
+    },
+  });
+}

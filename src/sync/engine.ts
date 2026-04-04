@@ -4,6 +4,7 @@ import type { SyncAction, SyncStatus, SyncQueueItem } from '../db/types';
 import { SyncTransport } from '../services/sync-transport';
 import { getSetting } from '../services/settingsService';
 import { generateId } from '../utils/uuid';
+import { beginSyncCycle, endSyncCycle } from './syncCycle';
 
 export type { SyncAction, SyncStatus, SyncQueueItem };
 
@@ -78,6 +79,7 @@ export class SyncEngine {
     }
 
     this.syncing = true;
+    beginSyncCycle();
     try {
       if (__DEV__) console.log('[sync] starting sync cycle');
 
@@ -92,9 +94,24 @@ export class SyncEngine {
         if (__DEV__) console.log(`[sync] push complete: ${pushResult.pushed} pushed, ${pushResult.failed} failed, ${pushResult.skipped} skipped`);
       }
 
-      // Pull
+      // Pull — one-time reset to pick up seed data (v0.4.0b)
+      const PULL_RESET_KEY = 'pull_reset_v040e';
+      const resetDone = await getSetting(this.db, PULL_RESET_KEY);
+      const rawTs = await this.transport.getLastSyncTimestamp();
+      if (__DEV__) console.log(`[sync] raw last_sync_timestamp=${rawTs}, resetDone=${resetDone}`);
+
+      if (resetDone !== 'true') {
+        if (__DEV__) console.log('[sync] running one-time pull reset to 2026-03-28');
+        await this.transport.setLastSyncTimestamp('2026-03-28T00:00:00.000Z');
+        await this.db.runAsync(
+          `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES (?, 'true', ?)`,
+          [PULL_RESET_KEY, new Date().toISOString()],
+        );
+      }
+
       const lastSync = await this.transport.getLastSyncTimestamp();
       const since = lastSync ?? '1970-01-01T00:00:00.000Z';
+      if (__DEV__) console.log(`[sync] after reset check, since=${since}`);
       const pullResult = await this.transport.pullChanges(since);
       if (__DEV__) console.log(`[sync] pull complete: ${pullResult.inserted} inserted, ${pullResult.updated} updated, ${pullResult.skipped} skipped, ${pullResult.conflicts} conflicts`);
 
@@ -107,6 +124,7 @@ export class SyncEngine {
     } catch (err) {
       if (__DEV__) console.warn('[sync] cycle error:', err);
     } finally {
+      endSyncCycle();
       this.syncing = false;
     }
   }

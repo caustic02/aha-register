@@ -291,6 +291,11 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE media ADD COLUMN ocr_source TEXT NOT NULL DEFAULT 'none'`,
   // media: view inventory for guided capture (D1)
   `ALTER TABLE media ADD COLUMN view_type TEXT`,
+  // media: per-view dimensions and notes for Registerbogen multi-view capture
+  `ALTER TABLE media ADD COLUMN view_dimensions TEXT`,
+  `ALTER TABLE media ADD COLUMN view_notes TEXT`,
+  // media: Supabase Storage path for cloud-synced photos
+  `ALTER TABLE media ADD COLUMN storage_path TEXT`,
   // media: capture protocol shot tracking
   `ALTER TABLE media ADD COLUMN shot_type TEXT`,
   `ALTER TABLE media ADD COLUMN protocol_id TEXT`,
@@ -300,6 +305,108 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE objects ADD COLUMN protocol_complete INTEGER DEFAULT 0`,
   `ALTER TABLE objects ADD COLUMN shots_completed TEXT DEFAULT '[]'`,
   `ALTER TABLE objects ADD COLUMN shots_remaining TEXT DEFAULT '[]'`,
+  // objects: location tagging
+  `ALTER TABLE objects ADD COLUMN location_building TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_floor TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_room TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_shelf TEXT`,
+  `ALTER TABLE objects ADD COLUMN location_notes TEXT`,
+  // objects: Registerbogen fields (companion app parity)
+  `ALTER TABLE objects ADD COLUMN "mediaId" TEXT`,
+  `ALTER TABLE objects ADD COLUMN alte_inventarnummer TEXT`,
+  `ALTER TABLE objects ADD COLUMN klassifikation TEXT`,
+  `ALTER TABLE objects ADD COLUMN material TEXT`,
+  `ALTER TABLE objects ADD COLUMN technik TEXT`,
+  `ALTER TABLE objects ADD COLUMN masse_hoehe TEXT`,
+  `ALTER TABLE objects ADD COLUMN masse_breite TEXT`,
+  `ALTER TABLE objects ADD COLUMN masse_tiefe TEXT`,
+  `ALTER TABLE objects ADD COLUMN masse_einheit TEXT`,
+  `ALTER TABLE objects ADD COLUMN gewicht TEXT`,
+  `ALTER TABLE objects ADD COLUMN gewicht_einheit TEXT`,
+  `ALTER TABLE objects ADD COLUMN inschriften TEXT`,
+  `ALTER TABLE objects ADD COLUMN markierungen TEXT`,
+  `ALTER TABLE objects ADD COLUMN schlagworte TEXT`,
+  `ALTER TABLE objects ADD COLUMN erhaltungszustand TEXT`,
+  `ALTER TABLE objects ADD COLUMN zustandsbeschreibung TEXT`,
+  `ALTER TABLE objects ADD COLUMN letzter_zustandsbericht TEXT`,
+  `ALTER TABLE objects ADD COLUMN restaurierungsbedarf TEXT`,
+  `ALTER TABLE objects ADD COLUMN erwerbungsart TEXT`,
+  `ALTER TABLE objects ADD COLUMN erwerbungsdatum TEXT`,
+  `ALTER TABLE objects ADD COLUMN veraeusserer TEXT`,
+  `ALTER TABLE objects ADD COLUMN provenienzangaben TEXT`,
+  `ALTER TABLE objects ADD COLUMN belastete_provenienz INTEGER DEFAULT 0`,
+  `ALTER TABLE objects ADD COLUMN belastete_provenienz_notizen TEXT`,
+  `ALTER TABLE objects ADD COLUMN erwerbungspreis TEXT`,
+  `ALTER TABLE objects ADD COLUMN erwerbungspreis_waehrung TEXT`,
+  `ALTER TABLE objects ADD COLUMN standort_gebaeude TEXT`,
+  `ALTER TABLE objects ADD COLUMN standort_etage TEXT`,
+  `ALTER TABLE objects ADD COLUMN standort_raum TEXT`,
+  `ALTER TABLE objects ADD COLUMN standort_regal TEXT`,
+  `ALTER TABLE objects ADD COLUMN standort_hinweise TEXT`,
+  `ALTER TABLE objects ADD COLUMN aktueller_status TEXT`,
+  `ALTER TABLE objects ADD COLUMN versicherungswert TEXT`,
+  `ALTER TABLE objects ADD COLUMN versicherungswert_waehrung TEXT`,
+  `ALTER TABLE objects ADD COLUMN versicherungspolice TEXT`,
+  `ALTER TABLE objects ADD COLUMN leihgabe INTEGER DEFAULT 0`,
+  `ALTER TABLE objects ADD COLUMN leihgabe_nehmer TEXT`,
+  `ALTER TABLE objects ADD COLUMN leihgabe_von TEXT`,
+  `ALTER TABLE objects ADD COLUMN leihgabe_bis TEXT`,
+  `ALTER TABLE objects ADD COLUMN ausfuhrgenehmigung INTEGER DEFAULT 0`,
+  `ALTER TABLE objects ADD COLUMN ausfuhrgenehmigung_referenz TEXT`,
+  `ALTER TABLE objects ADD COLUMN datensatz_sprache TEXT`,
+  `ALTER TABLE objects ADD COLUMN verwahrende_einrichtung TEXT`,
+  `ALTER TABLE objects ADD COLUMN nutzungsrechte_metadaten TEXT`,
+  // media: alt_text (companion app parity)
+  `ALTER TABLE media ADD COLUMN alt_text TEXT`,
+  // object_collections: updated_at (companion app parity)
+  `ALTER TABLE object_collections ADD COLUMN updated_at TEXT`,
+  // objects: additional Supabase parity columns
+  `ALTER TABLE objects ADD COLUMN durchmesser TEXT`,
+  `ALTER TABLE objects ADD COLUMN format TEXT`,
+  `ALTER TABLE objects ADD COLUMN condition_status TEXT`,
+  `ALTER TABLE objects ADD COLUMN condition_note TEXT`,
+  // media: original file tracking (Supabase parity)
+  `ALTER TABLE media ADD COLUMN original_file_path TEXT`,
+  `ALTER TABLE media ADD COLUMN original_mime_type TEXT`,
+  `ALTER TABLE media ADD COLUMN original_file_size INTEGER`,
+  // institutions: settings (Supabase parity)
+  `ALTER TABLE institutions ADD COLUMN settings TEXT`, // JSON
+];
+
+/**
+ * Tables created via runMigrations (not in SCHEMA_SQL).
+ * Uses CREATE TABLE IF NOT EXISTS so safe on re-launch.
+ */
+const MIGRATION_TABLES = [
+  `CREATE TABLE IF NOT EXISTS object_tasks (
+    id          TEXT PRIMARY KEY,
+    object_id   TEXT NOT NULL REFERENCES objects(id) ON DELETE CASCADE,
+    title       TEXT NOT NULL,
+    completed   INTEGER DEFAULT 0,
+    sort_order  INTEGER DEFAULT 0,
+    created_at  TEXT DEFAULT (datetime('now')),
+    completed_at TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS floor_maps (
+    id            TEXT PRIMARY KEY,
+    name          TEXT NOT NULL,
+    building      TEXT,
+    floor         TEXT,
+    image_uri     TEXT NOT NULL,
+    image_width   INTEGER,
+    image_height  INTEGER,
+    created_at    TEXT DEFAULT (datetime('now')),
+    updated_at    TEXT DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS map_pins (
+    id            TEXT PRIMARY KEY,
+    floor_map_id  TEXT NOT NULL REFERENCES floor_maps(id) ON DELETE CASCADE,
+    object_id     TEXT REFERENCES objects(id) ON DELETE SET NULL,
+    x_percent     REAL NOT NULL,
+    y_percent     REAL NOT NULL,
+    label         TEXT,
+    created_at    TEXT DEFAULT (datetime('now'))
+  )`,
 ];
 
 /**
@@ -314,6 +421,14 @@ export async function runMigrations(
       await db.execAsync(sql);
     } catch {
       // Column already exists — expected on re-launch, safe to ignore
+    }
+  }
+  // Create new tables (IF NOT EXISTS is safe)
+  for (const sql of MIGRATION_TABLES) {
+    try {
+      await db.execAsync(sql);
+    } catch {
+      // Table already exists — safe to ignore
     }
   }
 }

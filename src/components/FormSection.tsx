@@ -4,7 +4,7 @@
  * Header: icon + title + AI count badge + animated chevron.
  * Expand/collapse with LayoutAnimation. Respects reduceMotion.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -18,7 +18,9 @@ import {
 } from 'react-native';
 import { ExpandIcon } from '../theme/icons';
 import { useAppTranslation } from '../hooks/useAppTranslation';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 // Enable LayoutAnimation on Android (no-op if already enabled / New Architecture)
 if (Platform.OS === 'android') {
@@ -43,6 +45,8 @@ export function FormSection({
   children,
 }: FormSectionProps) {
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [rotateAnim] = useState(() => new Animated.Value(expanded ? 1 : 0));
   const [reduceMotion, setReduceMotion] = useState(false);
 
@@ -107,38 +111,40 @@ export function FormSection({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: touch.minTarget,
-    gap: spacing.sm,
-  },
-  title: {
-    flex: 1,
-    fontSize: typography.size.lg,
-    fontWeight: typography.weight.semibold,
-    color: colors.text,
-  },
-  aiCountBadge: {
-    backgroundColor: colors.aiLight,
-    borderRadius: radii.full,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  aiCountText: {
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.medium,
-    color: colors.ai,
-  },
-  content: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      minHeight: touch.minTarget,
+      gap: spacing.sm,
+    },
+    title: {
+      flex: 1,
+      fontSize: typography.size.lg,
+      fontWeight: typography.weight.semibold,
+      color: c.text,
+    },
+    aiCountBadge: {
+      backgroundColor: c.aiLight,
+      borderRadius: radii.full,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 2,
+    },
+    aiCountText: {
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.medium,
+      color: c.ai,
+    },
+    content: {
+      paddingHorizontal: spacing.lg,
+      paddingBottom: spacing.lg,
+    },
+  });
+}

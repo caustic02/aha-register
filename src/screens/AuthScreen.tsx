@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -16,7 +16,9 @@ import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { signIn, signUp } from '../services/auth';
 import AhaLogo from '../components/AhaLogo';
-import { colors, typography, spacing, radii } from '../theme';
+import { typography, spacing, radii } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 const HERO_HEIGHT = Dimensions.get('window').height * 0.30;
 
@@ -26,6 +28,8 @@ interface AuthScreenProps {
 }
 
 export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
 
@@ -72,13 +76,14 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
       onAuthenticated();
     } else {
       const raw = (result.error ?? '').toLowerCase();
+      console.error('[Auth error]', JSON.stringify(result.error, null, 2));
       let friendly: string;
       if (raw.includes('row-level security') || raw.includes('policy')) {
         friendly = t('auth.error_rls');
       } else if (raw.includes('already registered') || raw.includes('already been registered')) {
         friendly = t('auth.error_email_taken');
       } else {
-        friendly = t('auth.error_generic');
+        friendly = result.error || t('auth.error_generic');
       }
       setError(friendly);
     }
@@ -239,10 +244,10 @@ export function AuthScreen({ onAuthenticated, onSkip }: AuthScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.primary, // navy fills status bar area
+    backgroundColor: c.primary, // navy fills status bar area
   },
   flex: {
     flex: 1,
@@ -254,7 +259,7 @@ const styles = StyleSheet.create({
   /* Navy hero */
   hero: {
     height: HERO_HEIGHT,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingTop: spacing.xxl,
@@ -263,14 +268,14 @@ const styles = StyleSheet.create({
   /* Parchment form card — overlaps hero */
   formCard: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -28,
     paddingHorizontal: 28,
     paddingTop: 32,
     paddingBottom: 60,
-    shadowColor: colors.textPrimary,
+    shadowColor: c.textPrimary,
     shadowOffset: { width: 0, height: -3 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -279,14 +284,14 @@ const styles = StyleSheet.create({
 
   /* Primary skip/start button */
   startBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radii.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
     marginBottom: spacing.xxl,
   },
   startBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.lg,
     fontWeight: typography.weight.bold,
   },
@@ -300,10 +305,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
   },
   dividerText: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     marginHorizontal: spacing.md,
   },
@@ -313,7 +318,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   fieldLabel: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
@@ -322,28 +327,28 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   textInput: {
-    backgroundColor: colors.borderLight,
+    backgroundColor: c.borderLight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     paddingHorizontal: 14,
     paddingVertical: spacing.md,
-    color: colors.textPrimary,
+    color: c.textPrimary,
     fontSize: typography.size.md,
   },
   passwordRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.borderLight,
+    backgroundColor: c.borderLight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
   },
   passwordInput: {
     flex: 1,
     paddingHorizontal: 14,
     paddingVertical: spacing.md,
-    color: colors.textPrimary,
+    color: c.textPrimary,
     fontSize: typography.size.md,
   },
   eyeBtn: {
@@ -351,13 +356,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   errorText: {
-    color: colors.danger,
+    color: c.danger,
     fontSize: typography.size.sm,
     marginTop: spacing.md,
     textAlign: 'center',
   },
   submitBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radii.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
@@ -367,7 +372,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.bold,
   },
@@ -376,8 +381,8 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   toggleText: {
-    color: colors.primary,
+    color: c.primary,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },
-});
+}); }

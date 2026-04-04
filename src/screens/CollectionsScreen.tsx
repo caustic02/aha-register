@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
   RefreshControl,
-  SafeAreaView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
@@ -16,13 +16,17 @@ import {
   type CollectionWithCount,
 } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import { typography, spacing, radii, layout } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { EmptyState } from '../components/ui';
 import { CollectionsTabIcon } from '../theme/icons';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionList'>;
 
 export function CollectionsScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
   const [collections, setCollections] = useState<CollectionWithCount[]>([]);
@@ -87,11 +91,11 @@ export function CollectionsScreen({ navigation }: Props) {
         <Text style={styles.cardCount}>{objectCountLabel(item.objectCount)}</Text>
       </Pressable>
     ),
-    [t, navigation, objectCountLabel],
+    [t, navigation, objectCountLabel, styles],
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('collections.title')}</Text>
         <Pressable
@@ -124,7 +128,7 @@ export function CollectionsScreen({ navigation }: Props) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.accent}
+            tintColor={colors.heroGreen}
           />
         }
       />
@@ -132,13 +136,12 @@ export function CollectionsScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   header: {
-    paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     flexDirection: 'row',
@@ -147,18 +150,18 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     ...typography.h1,
-    color: colors.text,
+    color: c.text,
   },
   addBtn: {
     width: 48,
     height: 48,
     borderRadius: radii.xl,
-    backgroundColor: colors.accent,
+    backgroundColor: c.heroGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
   addBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.xl,
     fontWeight: typography.weight.semibold,
     lineHeight: 24,
@@ -168,12 +171,12 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   card: {
-    backgroundColor: colors.borderLight,
+    backgroundColor: c.borderLight,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
     marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -182,31 +185,31 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   cardName: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold,
     flex: 1,
     marginRight: 10,
   },
   typeBadge: {
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: radii.sm,
   },
   typeBadgeText: {
-    color: colors.accent,
+    color: c.heroGreen,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
   cardDesc: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     lineHeight: 18,
     marginBottom: spacing.sm,
   },
   cardCount: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
   },
   emptyContainer: {
@@ -214,4 +217,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-});
+}); }

@@ -4,7 +4,7 @@
  * and allows saving, continuing, or retaking individual shots.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Image,
   Modal,
@@ -20,13 +20,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Camera, Check, X } from 'lucide-react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { CaptureProtocol } from '../config/protocols';
-import { colors, typography, spacing, radii, touch } from '../theme';
+import { typography, spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { WarningIcon } from '../theme/icons';
 
 // ── Overlay colours (camera-safe not needed — this is themed) ────────────────
 const THUMB_OVERLAY = 'rgba(0,0,0,0.35)';
-const DASH_REQUIRED = colors.statusWarning;
-const DASH_OPTIONAL = colors.border;
 
 interface CompletionSummaryProps {
   visible: boolean;
@@ -59,9 +59,14 @@ export function CompletionSummary({
 }: CompletionSummaryProps) {
   const { t, i18n } = useAppTranslation();
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { width } = useWindowDimensions();
   const isGerman = i18n.language.startsWith('de');
   const [titleText, setTitleText] = useState(initialTitle ?? '');
+
+  const DASH_REQUIRED = colors.statusWarning;
+  const DASH_OPTIONAL = colors.border;
 
   const cardWidth = (width - spacing.xl * 2 - spacing.md) / 2;
   const sortedShots = [...protocol.shots].sort((a, b) => a.order - b.order);
@@ -147,6 +152,7 @@ export function CompletionSummary({
                         styles.cardEmpty,
                         shot.required ? styles.cardMissingRequired : styles.cardMissingOptional,
                         { height: cardWidth },
+                        shot.required ? { borderColor: DASH_REQUIRED } : { borderColor: DASH_OPTIONAL },
                       ]}
                     >
                       <Camera size={28} color={isMissing && shot.required ? DASH_REQUIRED : colors.textTertiary} />
@@ -223,217 +229,217 @@ export function CompletionSummary({
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  headerLeft: {
-    flex: 1,
-  },
-  title: {
-    ...typography.h3,
-    color: colors.text,
-  },
-  subtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  warningBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginHorizontal: spacing.xl,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.warningLight,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.warning,
-  },
-  warningText: {
-    ...typography.bodySmall,
-    color: colors.warning,
-    flex: 1,
-  },
-  scroll: {
-    flex: 1,
-  },
-  gridContent: {
-    padding: spacing.xl,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  card: {
-    marginBottom: spacing.sm,
-  },
-  cardImageWrap: {
-    position: 'relative',
-    borderRadius: radii.md,
-    overflow: 'hidden',
-  },
-  cardImage: {
-    borderRadius: radii.md,
-  },
-  cardCheckOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: THUMB_OVERLAY,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.md,
-  },
-  cardEmpty: {
-    borderRadius: radii.md,
-    borderWidth: 2,
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  cardSkipped: {
-    backgroundColor: colors.warningLight,
-    borderColor: colors.warning,
-  },
-  cardMissingRequired: {
-    borderColor: DASH_REQUIRED,
-    backgroundColor: colors.errorLight,
-  },
-  cardMissingOptional: {
-    borderColor: DASH_OPTIONAL,
-    backgroundColor: colors.surface,
-  },
-  skippedText: {
-    ...typography.bodySmall,
-    color: colors.warning,
-    fontWeight: typography.weight.semibold,
-  },
-  emptyHint: {
-    ...typography.caption,
-    color: colors.textTertiary,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
-    gap: spacing.xs,
-  },
-  cardLabel: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: typography.weight.medium,
-    flex: 1,
-  },
-  statusBadge: {
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 1,
-  },
-  badgeDone: {
-    backgroundColor: colors.successLight,
-  },
-  badgeSkipped: {
-    backgroundColor: colors.warningLight,
-  },
-  badgeRequired: {
-    backgroundColor: colors.errorLight,
-  },
-  badgeOptional: {
-    backgroundColor: colors.surface,
-  },
-  statusBadgeText: {
-    ...typography.caption,
-    fontWeight: typography.weight.semibold,
-    color: colors.text,
-  },
-  titleSection: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  titlePrompt: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontWeight: typography.weight.medium,
-    marginBottom: spacing.xs,
-  },
-  titleInput: {
-    ...typography.body,
-    color: colors.text,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: touch.minTargetSmall,
-  },
-  actionBar: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  savePrimaryBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.md,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-  },
-  savePrimaryText: {
-    color: colors.white,
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.bold,
-  },
-  continueBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: radii.md,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-  },
-  continueBtnText: {
-    color: colors.primary,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-  },
-  saveAnywayBtn: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    minHeight: touch.minTarget,
-    justifyContent: 'center',
-  },
-  saveAnywayText: {
-    color: colors.textSecondary,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.semibold,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.lg,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    headerLeft: {
+      flex: 1,
+    },
+    title: {
+      ...typography.h3,
+      color: c.text,
+    },
+    subtitle: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    warningBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+      marginHorizontal: spacing.xl,
+      marginTop: spacing.md,
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      backgroundColor: c.warningLight,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: c.warning,
+    },
+    warningText: {
+      ...typography.bodySmall,
+      color: c.warning,
+      flex: 1,
+    },
+    scroll: {
+      flex: 1,
+    },
+    gridContent: {
+      padding: spacing.xl,
+    },
+    grid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.md,
+    },
+    card: {
+      marginBottom: spacing.sm,
+    },
+    cardImageWrap: {
+      position: 'relative',
+      borderRadius: radii.md,
+      overflow: 'hidden',
+    },
+    cardImage: {
+      borderRadius: radii.md,
+    },
+    cardCheckOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: THUMB_OVERLAY,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: radii.md,
+    },
+    cardEmpty: {
+      borderRadius: radii.md,
+      borderWidth: 2,
+      borderStyle: 'dashed',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing.sm,
+    },
+    cardSkipped: {
+      backgroundColor: c.warningLight,
+      borderColor: c.warning,
+    },
+    cardMissingRequired: {
+      backgroundColor: c.errorLight,
+    },
+    cardMissingOptional: {
+      backgroundColor: c.surface,
+    },
+    skippedText: {
+      ...typography.bodySmall,
+      color: c.warning,
+      fontWeight: typography.weight.semibold,
+    },
+    emptyHint: {
+      ...typography.caption,
+      color: c.textTertiary,
+    },
+    cardFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: spacing.xs,
+      gap: spacing.xs,
+    },
+    cardLabel: {
+      ...typography.bodySmall,
+      color: c.text,
+      fontWeight: typography.weight.medium,
+      flex: 1,
+    },
+    statusBadge: {
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 1,
+    },
+    badgeDone: {
+      backgroundColor: c.successLight,
+    },
+    badgeSkipped: {
+      backgroundColor: c.warningLight,
+    },
+    badgeRequired: {
+      backgroundColor: c.errorLight,
+    },
+    badgeOptional: {
+      backgroundColor: c.surface,
+    },
+    statusBadgeText: {
+      ...typography.caption,
+      fontWeight: typography.weight.semibold,
+      color: c.text,
+    },
+    titleSection: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.md,
+      paddingBottom: spacing.sm,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    titlePrompt: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      fontWeight: typography.weight.medium,
+      marginBottom: spacing.xs,
+    },
+    titleInput: {
+      ...typography.body,
+      color: c.text,
+      backgroundColor: c.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: c.border,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: touch.minTargetSmall,
+    },
+    actionBar: {
+      paddingHorizontal: spacing.xl,
+      paddingTop: spacing.lg,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      gap: spacing.md,
+    },
+    savePrimaryBtn: {
+      backgroundColor: c.primary,
+      borderRadius: radii.md,
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+    },
+    savePrimaryText: {
+      color: c.white,
+      fontSize: typography.size.md,
+      fontWeight: typography.weight.bold,
+    },
+    continueBtn: {
+      flex: 1,
+      borderWidth: 1,
+      borderColor: c.primary,
+      borderRadius: radii.md,
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+    },
+    continueBtnText: {
+      color: c.primary,
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+    },
+    saveAnywayBtn: {
+      flex: 1,
+      backgroundColor: c.surface,
+      borderRadius: radii.md,
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+    },
+    saveAnywayText: {
+      color: c.textSecondary,
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.semibold,
+    },
+  });
+}

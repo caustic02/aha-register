@@ -1,9 +1,10 @@
 import { File } from 'expo-file-system';
 import * as Print from 'expo-print';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Platform } from 'react-native';
 import type { RegisterObject, Media, PersonRole } from '../db/types';
-import type { ExportConfig } from '../hooks/useExportConfig';
-import { colors } from '../theme';
+import type { ExportConfig, ExportSections, ExportFields } from '../hooks/useExportConfig';
+import type { ColorPalette } from '../theme';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -204,7 +205,8 @@ const VIEW_LABELS: Record<string, string> = {
   document_scan: 'Document scan',
 };
 
-const PDF_CSS = `
+function buildPdfCSS(colors: ColorPalette): string {
+  return `
   *{margin:0;padding:0;box-sizing:border-box}
   @page{size:A4;margin:20mm 18mm 22mm 18mm}
   body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:10pt;color:${colors.text};line-height:1.45;background:#fff}
@@ -239,6 +241,7 @@ const PDF_CSS = `
   td{padding:3pt 6pt;vertical-align:top;border-bottom:.4pt solid #eee}
   td.lbl{width:130pt;font-size:9pt;font-weight:600;color:${colors.textSecondary}}
   td.val{color:${colors.text}}
+  td.val.empty{color:#999;font-style:italic}
   .ai-badge{display:inline-block;font-size:7pt;font-weight:600;color:${colors.ai};background:${colors.aiLight};border-radius:3pt;padding:1pt 4pt;margin-left:4pt;vertical-align:middle}
 
   /* ── Two-column layout ── */
@@ -256,6 +259,7 @@ const PDF_CSS = `
   /* ── Page break utility ── */
   .page-break{page-break-before:always;margin-top:0}
 `;
+}
 
 // ── Image loading helper ────────────────────────────────────────────────────
 
@@ -266,14 +270,26 @@ interface ImageData {
   id: string;
 }
 
+const MAX_PDF_IMAGE_PX = 1200;
+const PDF_IMAGE_QUALITY = 0.7;
+
 async function loadImageBase64(media: Media): Promise<ImageData | null> {
   try {
     const file = new File(media.file_path);
     if (!file.exists) return null;
-    const base64 = await file.base64();
+
+    // Resize to max 1200px wide and compress for PDF embedding.
+    // The original file in storage is never modified.
+    const resized = await manipulateAsync(
+      media.file_path,
+      [{ resize: { width: MAX_PDF_IMAGE_PX } }],
+      { compress: PDF_IMAGE_QUALITY, format: SaveFormat.JPEG },
+    );
+    const resizedFile = new File(resized.uri);
+    const base64 = await resizedFile.base64();
     return {
       base64,
-      mime: media.mime_type,
+      mime: 'image/jpeg',
       viewType: media.view_type ?? null,
       id: media.id,
     };
@@ -309,17 +325,69 @@ function formatDimensions(tsd: Record<string, unknown>): string | null {
 
 // ── Table row builder ───────────────────────────────────────────────────────
 
-function row(label: string, value: string | null | undefined, aiBadge?: boolean): string {
+function _row(label: string, value: string | null | undefined, aiBadge?: boolean): string {
   if (value == null || value.trim().length === 0) return '';
   const badge = aiBadge ? '<span class="ai-badge">AI</span>' : '';
   return `<tr><td class="lbl">${escapeHtml(label)}</td><td class="val">${escapeHtml(value)}${badge}</td></tr>`;
+}
+
+// ── Field-level helpers (for toggle-aware sections) ─────────────────────────
+
+/** Extract a string (or join an array) from type_specific_data. */
+function tsdStr(tsd: Record<string, unknown>, key: string): string | null {
+  const v = tsd[key];
+  if (typeof v === 'string' && v.trim().length > 0) return v;
+  if (Array.isArray(v)) {
+    const joined = (v as string[]).filter(Boolean).join(', ');
+    return joined.length > 0 ? joined : null;
+  }
+  return null;
+}
+
+/** Like row(), but shows "Not recorded" for null/empty values. */
+function fieldRow(
+  label: string,
+  value: string | null | undefined,
+  aiBadge?: boolean,
+): string {
+  if (value == null || value.trim().length === 0) {
+    return `<tr><td class="lbl">${escapeHtml(label)}</td><td class="val empty">Not recorded</td></tr>`;
+  }
+  const badge = aiBadge ? '<span class="ai-badge">AI</span>' : '';
+  return `<tr><td class="lbl">${escapeHtml(label)}</td><td class="val">${escapeHtml(value)}${badge}</td></tr>`;
+}
+
+interface FieldDef {
+  id: string;
+  label: string;
+  value: string | null;
+  ai?: boolean;
+}
+
+/** Build a section from field definitions, respecting per-field toggles. */
+function buildSectionHtml(
+  categoryId: string,
+  sectionLabel: string,
+  fieldDefs: FieldDef[],
+  sections: ExportSections,
+  fields: ExportFields,
+  showAi: boolean,
+): string {
+  if (!sections[categoryId]) return '';
+  const visible = fieldDefs.filter((f) => fields[f.id] !== false);
+  if (visible.length === 0) return '';
+  const rows = visible.map((f) =>
+    fieldRow(f.label, f.value, showAi && f.ai),
+  );
+  return `<div class="section"><h2>${escapeHtml(sectionLabel)}</h2><table>${rows.join('')}</table></div>`;
 }
 
 // ── Main PDF export ─────────────────────────────────────────────────────────
 
 export async function exportAsPDF(
   data: ExportableObject,
-  config?: ExportConfig,
+  config: ExportConfig | undefined,
+  colors: ColorPalette,
 ): Promise<string> {
   const safe = stripAnonymous(data);
   const obj = safe.object;
@@ -451,117 +519,164 @@ export async function exportAsPDF(
     }
   }
 
-  // ── Metadata columns ──────────────────────────────────────────────────────
+  // ── Metadata columns (toggle-aware) ─────────────────────────────────────
 
   const ai = showAiBadges;
+  const fields = config?.fields ?? {};
 
-  // Column 1: Identification + Physical + Classification
-  let col1 = '';
+  // Parse device metadata from type_specific_data
+  const deviceData =
+    tsd.device != null && typeof tsd.device === 'object'
+      ? (tsd.device as Record<string, string>)
+      : null;
+  const deviceLabel = deviceData
+    ? [deviceData.manufacturer, deviceData.model].filter(Boolean).join(' ')
+    : null;
 
-  if (sections.identification) {
-    const rows = [
-      row('Title', obj.title),
-      row('Object type', typeLabel),
-      obj.event_start
-        ? row(
-            'Date / period',
-            [obj.event_start, obj.event_end].filter(Boolean).join(' \u2013 '),
-          )
-        : '',
-      row('Date created', typeof tsd.dateCreated === 'string' ? tsd.dateCreated : null, ai),
-      safe.persons.length > 0
-        ? row(
-            'Artist / maker',
-            safe.persons.map((p) => p.name).join('; '),
-          )
-        : '',
-      row('Inventory no.', obj.inventory_number),
-    ];
-    col1 += `<div class="section"><h2>Identification</h2><table>${rows.join('')}</table></div>`;
-  }
+  // Media counts for Media section
+  const totalPhotos = safe.media.filter(
+    (m) => m.file_type === 'image' && (!m.media_type || m.media_type === 'original'),
+  ).length;
+  const isolatedCount = safe.media.filter(
+    (m) => m.media_type === 'derivative_isolated',
+  ).length;
+  const docScanCount = safe.media.filter(
+    (m) => m.media_type === 'document_scan',
+  ).length;
+  const totalFileSize = safe.media.reduce(
+    (sum, m) => sum + (m.file_size ?? 0),
+    0,
+  );
+  const fileSizeStr =
+    totalFileSize > 0
+      ? totalFileSize > 1_000_000
+        ? `${(totalFileSize / 1_000_000).toFixed(1)} MB`
+        : `${(totalFileSize / 1_000).toFixed(0)} KB`
+      : null;
 
-  if (sections.physical) {
-    const medium =
-      typeof tsd.medium === 'string'
-        ? tsd.medium
-        : Array.isArray(tsd.material)
-          ? (tsd.material as string[]).join(', ')
-          : null;
-    const technique = Array.isArray(tsd.technique)
-      ? (tsd.technique as string[]).join(', ')
-      : typeof tsd.technique === 'string'
-        ? tsd.technique
-        : null;
-    const dims = formatDimensions(tsd);
-    const rows = [
-      row('Medium / materials', medium, ai),
-      row('Technique', technique, ai),
-      row('Dimensions', dims),
-    ];
-    col1 += `<div class="section"><h2>Physical Description</h2><table>${rows.join('')}</table></div>`;
-  }
+  // ── Field definitions per category ─────────────────────────────────────
 
-  if (sections.classification) {
-    const rows = [
-      row(
-        'Style / period',
-        typeof tsd.stylePeriod === 'string' ? tsd.stylePeriod : null,
-        ai,
-      ),
-      row(
-        'Culture / origin',
-        typeof tsd.cultureOrigin === 'string' ? tsd.cultureOrigin : null,
-        ai,
-      ),
-      row(
-        'Keywords',
-        Array.isArray(tsd.keywords)
-          ? (tsd.keywords as string[]).join(', ')
-          : null,
-        ai,
-      ),
-    ];
-    col1 += `<div class="section"><h2>Classification</h2><table>${rows.join('')}</table></div>`;
-  }
+  const identificationFields: FieldDef[] = [
+    { id: 'title', label: 'Title', value: obj.title },
+    { id: 'object_type', label: 'Object type', value: typeLabel },
+    { id: 'inventory_number', label: 'Inventory number', value: obj.inventory_number },
+    { id: 'accession_number', label: 'Accession number', value: tsdStr(tsd, 'accessionNumber') },
+    { id: 'date_period', label: 'Date / Period', value: obj.event_start
+        ? [obj.event_start, obj.event_end].filter(Boolean).join(' \u2013 ')
+        : tsdStr(tsd, 'dateCreated'),
+      ai: !obj.event_start && tsdStr(tsd, 'dateCreated') != null,
+    },
+    { id: 'creator', label: 'Creator / Artist', value: safe.persons.length > 0 ? safe.persons.map((p) => p.name).join('; ') : null },
+    { id: 'artist_attribution', label: 'Attribution', value: tsdStr(tsd, 'artistAttribution'), ai: true },
+    { id: 'alt_titles', label: 'Alternative titles', value: tsdStr(tsd, 'altTitles') },
+    { id: 'place_of_origin', label: 'Place of origin', value: tsdStr(tsd, 'placeOfOrigin') ?? tsdStr(tsd, 'cultureOrigin'), ai: true },
+    { id: 'description', label: 'Description', value: obj.description },
+  ];
 
-  // Column 2: Condition + Provenance + Location
-  let col2 = '';
+  const physicalFields: FieldDef[] = [
+    { id: 'materials', label: 'Medium / Materials', value: tsdStr(tsd, 'medium') ?? tsdStr(tsd, 'material'), ai: true },
+    { id: 'technique', label: 'Technique', value: tsdStr(tsd, 'technique'), ai: true },
+    { id: 'dimensions', label: 'Dimensions', value: formatDimensions(tsd) ?? tsdStr(tsd, 'dimensions') },
+    { id: 'weight', label: 'Weight', value: tsdStr(tsd, 'weight') },
+    { id: 'inscriptions', label: 'Inscriptions / Markings', value: tsdStr(tsd, 'inscriptions') ?? tsdStr(tsd, 'inscription') },
+    { id: 'color_notes', label: 'Colour notes', value: tsdStr(tsd, 'colorNotes') },
+    { id: 'parts_count', label: 'Parts count', value: tsdStr(tsd, 'partsCount') },
+    { id: 'fragility', label: 'Fragility', value: tsdStr(tsd, 'fragility') },
+  ];
 
-  if (sections.condition) {
-    const condText =
-      typeof tsd.condition === 'string' ? tsd.condition : null;
-    const rows = [row('Condition', condText, ai)];
-    col2 += `<div class="section"><h2>Condition</h2><table>${rows.join('')}</table></div>`;
-  }
+  const classificationFields: FieldDef[] = [
+    { id: 'aat_terms', label: 'Getty AAT terms', value: tsdStr(tsd, 'aatTerms') ?? tsdStr(tsd, 'classification') },
+    { id: 'style_period', label: 'Style / Period', value: tsdStr(tsd, 'stylePeriod') ?? tsdStr(tsd, 'period'), ai: true },
+    { id: 'subject_matter', label: 'Subject matter', value: tsdStr(tsd, 'subjectMatter') },
+    { id: 'cultural_context', label: 'Cultural context', value: tsdStr(tsd, 'cultureOrigin') ?? tsdStr(tsd, 'culture'), ai: true },
+    { id: 'domain_specialization', label: 'Domain specialisation', value: tsdStr(tsd, 'domainSpecialization') },
+  ];
 
-  if (sections.provenance) {
-    const prov =
-      typeof tsd.provenance === 'string' ? tsd.provenance : null;
-    const rows = [row('Provenance', prov)];
-    col2 += `<div class="section"><h2>Provenance</h2><table>${rows.join('')}</table></div>`;
-  }
+  const conditionFields: FieldDef[] = [
+    { id: 'condition_summary', label: 'Condition summary', value: tsdStr(tsd, 'condition'), ai: true },
+    { id: 'condition_rating', label: 'Condition rating', value: tsdStr(tsd, 'conditionRating') },
+    { id: 'condition_date', label: 'Date assessed', value: tsdStr(tsd, 'conditionDate') },
+    { id: 'damage_notes', label: 'Damage notes', value: tsdStr(tsd, 'damageNotes') },
+    { id: 'conservation_history', label: 'Conservation history', value: tsdStr(tsd, 'conservationHistory') },
+    { id: 'handling_requirements', label: 'Handling requirements', value: tsdStr(tsd, 'handlingRequirements') },
+    { id: 'environmental_sensitivity', label: 'Environmental sensitivity', value: tsdStr(tsd, 'environmentalSensitivity') },
+  ];
 
-  // Location (always in col2 for standard/detailed)
-  if (template !== 'quick') {
-    const locRows: string[] = [];
-    if (obj.latitude != null && obj.longitude != null) {
-      locRows.push(
-        row(
-          'GPS',
-          `${obj.latitude.toFixed(6)}, ${obj.longitude.toFixed(6)}`,
-        ),
-      );
-    }
-    locRows.push(row('Capture date', formatIso(obj.created_at)));
-    locRows.push(row('Object UUID', obj.id));
-    if (locRows.some((r) => r.length > 0)) {
-      col2 += `<div class="section"><h2>Capture Data</h2><table>${locRows.join('')}</table></div>`;
-    }
-  }
+  const provenanceFields: FieldDef[] = [
+    { id: 'ownership_history', label: 'Ownership history', value: tsdStr(tsd, 'provenance') ?? tsdStr(tsd, 'ownershipHistory') ?? tsdStr(tsd, 'provenance_narrative') },
+    { id: 'acquisition_method', label: 'Acquisition method', value: tsdStr(tsd, 'acquisitionMethod') ?? tsdStr(tsd, 'acquisition_type') },
+    { id: 'acquisition_date', label: 'Acquisition date', value: tsdStr(tsd, 'acquisitionDate') },
+    { id: 'source_donor', label: 'Source / Donor', value: tsdStr(tsd, 'sourceDonor') },
+    { id: 'credit_line', label: 'Credit line', value: tsdStr(tsd, 'creditLine') },
+    { id: 'legal_status', label: 'Legal status', value: tsdStr(tsd, 'legalStatus') },
+    { id: 'export_restrictions', label: 'Export restrictions', value: tsdStr(tsd, 'exportRestrictions') },
+    { id: 'deaccession_status', label: 'Deaccession status', value: tsdStr(tsd, 'deaccessionStatus') },
+  ];
 
-  // Description (full-width, below columns)
+  const locationFields: FieldDef[] = [
+    { id: 'current_location', label: 'Current location', value: tsdStr(tsd, 'currentLocation') ?? tsdStr(tsd, 'storage_location') },
+    { id: 'building_room_shelf', label: 'Building / Room / Shelf', value: tsdStr(tsd, 'buildingRoomShelf') },
+    { id: 'storage_requirements', label: 'Storage requirements', value: tsdStr(tsd, 'storageRequirements') },
+    { id: 'climate_requirements', label: 'Climate requirements', value: tsdStr(tsd, 'climateRequirements') },
+  ];
+
+  const captureFields: FieldDef[] = [
+    { id: 'sha256_hash', label: 'SHA-256 hash', value: primaryHash },
+    { id: 'gps_coordinates', label: 'GPS coordinates', value: obj.latitude != null && obj.longitude != null
+        ? `${obj.latitude.toFixed(6)}, ${obj.longitude.toFixed(6)}`
+        : null },
+    { id: 'capture_timestamp', label: 'Capture timestamp', value: formatIso(obj.created_at) },
+    { id: 'device_info', label: 'Device info', value: deviceLabel },
+    { id: 'coordinate_source', label: 'Coordinate source', value: obj.coordinate_source },
+    { id: 'evidence_class', label: 'Evidence classification', value: obj.evidence_class },
+    { id: 'privacy_tier', label: 'Privacy tier', value: obj.privacy_tier },
+  ];
+
+  const mediaFields: FieldDef[] = [
+    { id: 'primary_photo', label: 'Primary photo', value: primaryOriginal?.file_name ?? null },
+    { id: 'all_photos', label: 'All photos', value: totalPhotos > 0 ? `${totalPhotos} image${totalPhotos > 1 ? 's' : ''}${fileSizeStr ? ` (${fileSizeStr})` : ''}` : null },
+    { id: 'isolated_images', label: 'Background-removed images', value: isolatedCount > 0 ? `${isolatedCount}` : null },
+    { id: 'document_scans', label: 'Document scans', value: docScanCount > 0 ? `${docScanCount}` : null },
+  ];
+
+  const valuationFields: FieldDef[] = [
+    { id: 'insurance_value', label: 'Insurance value', value: tsdStr(tsd, 'insuranceValue') ?? tsdStr(tsd, 'insurance_value') },
+    { id: 'appraisal_date', label: 'Appraisal date', value: tsdStr(tsd, 'appraisalDate') },
+    { id: 'fair_market_value', label: 'Fair market value', value: tsdStr(tsd, 'fairMarketValue') },
+    { id: 'replacement_value', label: 'Replacement value', value: tsdStr(tsd, 'replacementValue') },
+  ];
+
+  const legalFields: FieldDef[] = [
+    { id: 'legal_hold', label: 'Legal hold', value: obj.legal_hold === 1 ? 'Active' : 'None' },
+    { id: 'berkeley_protocol', label: 'Berkeley Protocol', value: tsdStr(tsd, 'berkeleyProtocol') },
+    { id: 'restricted_access', label: 'Restricted access', value: tsdStr(tsd, 'restrictedAccess') },
+  ];
+
+  // ── Build columns ─────────────────────────────────────────────────────
+
+  const col1 =
+    buildSectionHtml('identification', 'Identification', identificationFields, sections, fields, ai)
+    + buildSectionHtml('physical', 'Physical Description', physicalFields, sections, fields, ai)
+    + buildSectionHtml('classification', 'Classification', classificationFields, sections, fields, ai);
+
+  const col2 =
+    buildSectionHtml('condition', 'Condition', conditionFields, sections, fields, ai)
+    + buildSectionHtml('provenance', 'Provenance', provenanceFields, sections, fields, ai)
+    + buildSectionHtml('location', 'Location', locationFields, sections, fields, ai)
+    + buildSectionHtml('capture', 'Capture Verification', captureFields, sections, fields, ai)
+    + buildSectionHtml('media', 'Media & Images', mediaFields, sections, fields, ai)
+    + buildSectionHtml('valuation', 'Valuation', valuationFields, sections, fields, ai)
+    + buildSectionHtml('legal', 'Legal / Compliance', legalFields, sections, fields, ai);
+
+  // Description (full-width, below columns) — only if identification section + description field are enabled
   let descriptionHtml = '';
-  if (obj.description && obj.description.trim().length > 0 && template !== 'quick') {
+  if (
+    sections.identification &&
+    fields.description !== false &&
+    obj.description &&
+    obj.description.trim().length > 0 &&
+    template !== 'quick'
+  ) {
     descriptionHtml = `
       <div class="section">
         <h2>Description</h2>
@@ -572,10 +687,8 @@ export async function exportAsPDF(
   // Metadata layout
   let metadataHtml: string;
   if (template === 'quick') {
-    // Single column for quick
-    metadataHtml = col1;
+    metadataHtml = col1 + col2;
   } else {
-    // Two-column for standard/detailed
     metadataHtml = `<div class="cols"><div class="col">${col1}</div><div class="col">${col2}</div></div>`;
   }
 
@@ -629,7 +742,7 @@ export async function exportAsPDF(
 
   const html = `<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><style>${PDF_CSS}</style></head>
+<head><meta charset="utf-8"><style>${buildPdfCSS(colors)}</style></head>
 <body>
   ${headerHtml}
   ${imagesHtml}

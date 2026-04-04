@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Dimensions,
@@ -14,7 +14,9 @@ import {
 } from 'react-native';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { Media } from '../db/types';
-import { colors, typography, radii, spacing } from '../theme';
+import { typography, radii, spacing } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_HEIGHT = 280;
@@ -28,6 +30,8 @@ interface Props {
 
 export function ImageGallery({ media, onAddPhoto, onSetPrimary, onDelete }: Props) {
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList<Media>>(null);
 
@@ -91,7 +95,7 @@ export function ImageGallery({ media, onAddPhoto, onSetPrimary, onDelete }: Prop
         )}
       </Pressable>
     ),
-    [handleLongPress, media.length],
+    [handleLongPress, media.length, styles],
   );
 
   // Empty state
@@ -154,99 +158,101 @@ export function ImageGallery({ media, onAddPhoto, onSetPrimary, onDelete }: Prop
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    position: 'relative',
-  },
-  imageContainer: {
-    width: SCREEN_WIDTH,
-    height: IMAGE_HEIGHT,
-  },
-  image: {
-    width: SCREEN_WIDTH,
-    height: IMAGE_HEIGHT,
-    backgroundColor: colors.overlayLight,
-  },
-  placeholder: {
-    width: '100%',
-    height: IMAGE_HEIGHT,
-    backgroundColor: colors.overlayLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderIcon: {
-    fontSize: spacing['3xl'],
-    color: colors.border,
-  },
-  addText: {
-    color: colors.accent,
-    fontSize: typography.size.base,
-    fontWeight: typography.weight.medium,
-    marginTop: 12,
-  },
-  primaryBadge: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: colors.overlayDark,
-    width: 28,
-    height: 28,
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryBadgeText: {
-    color: colors.warning,
-    fontSize: typography.size.base,
-  },
-  counterBadge: {
-    position: 'absolute',
-    bottom: 32,
-    right: 12,
-    backgroundColor: colors.overlayDark,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.lg,
-  },
-  counterText: {
-    color: colors.white,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-  },
-  addButton: {
-    position: 'absolute',
-    bottom: 32,
-    left: 12,
-    backgroundColor: colors.accent,
-    width: 36,
-    height: 36,
-    borderRadius: radii.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    color: colors.white,
-    fontSize: typography.size.xl,
-    fontWeight: typography.weight.semibold,
-    lineHeight: 24,
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-    backgroundColor: colors.background,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: radii.sm,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.accent,
-    width: 8,
-    height: 8,
-    borderRadius: radii.sm,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      position: 'relative',
+    },
+    imageContainer: {
+      width: SCREEN_WIDTH,
+      height: IMAGE_HEIGHT,
+    },
+    image: {
+      width: SCREEN_WIDTH,
+      height: IMAGE_HEIGHT,
+      backgroundColor: c.overlayLight,
+    },
+    placeholder: {
+      width: '100%',
+      height: IMAGE_HEIGHT,
+      backgroundColor: c.overlayLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    placeholderIcon: {
+      fontSize: spacing['3xl'],
+      color: c.border,
+    },
+    addText: {
+      color: c.heroGreen,
+      fontSize: typography.size.base,
+      fontWeight: typography.weight.medium,
+      marginTop: 12,
+    },
+    primaryBadge: {
+      position: 'absolute',
+      top: 12,
+      left: 12,
+      backgroundColor: c.overlayDark,
+      width: 28,
+      height: 28,
+      borderRadius: radii.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryBadgeText: {
+      color: c.warning,
+      fontSize: typography.size.base,
+    },
+    counterBadge: {
+      position: 'absolute',
+      bottom: 32,
+      right: 12,
+      backgroundColor: c.overlayDark,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.lg,
+    },
+    counterText: {
+      color: c.white,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+    },
+    addButton: {
+      position: 'absolute',
+      bottom: 32,
+      left: 12,
+      backgroundColor: c.heroGreen,
+      width: 36,
+      height: 36,
+      borderRadius: radii.xl,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    addButtonText: {
+      color: c.white,
+      fontSize: typography.size.xl,
+      fontWeight: typography.weight.semibold,
+      lineHeight: 24,
+    },
+    dots: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 10,
+      backgroundColor: c.background,
+    },
+    dot: {
+      width: 6,
+      height: 6,
+      borderRadius: radii.sm,
+      backgroundColor: c.border,
+    },
+    dotActive: {
+      backgroundColor: c.heroGreen,
+      width: 8,
+      height: 8,
+      borderRadius: radii.sm,
+    },
+  });
+}

@@ -4,15 +4,15 @@ import {
   FlatList,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+// Bottom tabs removed - using single stack
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { FieldInput } from '../components/FieldInput';
@@ -29,13 +29,16 @@ import { SelectionHeader, BatchActionButtons } from '../components/BatchActionBa
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
 import { BackIcon } from '../theme/icons';
 import { CollectionPickerModal } from '../components/CollectionPickerModal';
-import type { CollectionStackParamList } from '../navigation/CollectionStack';
-import type { MainTabParamList } from '../navigation/MainTabs';
-import { colors, typography, spacing, radii, layout, touch } from '../theme';
+import type { RootStackParamList } from '../navigation/RootStack';
+import { typography, spacing, radii, layout, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
-type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionDetail'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'CollectionDetail'>;
 
 export function CollectionDetailScreen({ route, navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { collectionId } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
@@ -126,12 +129,7 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
 
   const navigateToObject = useCallback(
     (objectId: string) => {
-      const tabNav =
-        navigation.getParent<BottomTabNavigationProp<MainTabParamList>>();
-      tabNav?.navigate('Home', {
-        screen: 'ObjectDetail',
-        params: { objectId },
-      });
+      navigation.navigate('ObjectDetail', { objectId });
     },
     [navigation],
   );
@@ -288,13 +286,13 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
         </View>
       </Pressable>
     ),
-    [t, navigateToObject, selectionMode, selectedIds, toggleSelection, enterSelectionMode],
+    [t, navigateToObject, selectionMode, selectedIds, toggleSelection, enterSelectionMode, styles],
   );
 
   if (!collection) return null;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       {selectionMode ? (
         <SelectionHeader
@@ -525,10 +523,10 @@ export function CollectionDetailScreen({ route, navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   header: {
     flexDirection: 'row',
@@ -537,11 +535,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    borderBottomColor: c.border,
+    backgroundColor: c.background,
   },
   exportBtn: {
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     paddingHorizontal: 14,
     paddingVertical: spacing.sm,
     borderRadius: radii.md,
@@ -549,7 +547,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   exportBtnText: {
-    color: colors.accent,
+    color: c.heroGreen,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },
@@ -564,35 +562,35 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   typeBadge: {
-    backgroundColor: colors.border,
+    backgroundColor: c.surfaceContainer,
     paddingHorizontal: 10,
     paddingVertical: spacing.xs,
     borderRadius: radii.md,
   },
   typeBadgeText: {
-    color: colors.accent,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold,
   },
   countText: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
   },
   addObjectsHeaderBtn: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     padding: 14,
     alignItems: 'center',
     marginTop: spacing.sm,
   },
   addObjectsHeaderBtnText: {
-    color: colors.accent,
+    color: c.heroGreen,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },
   sectionTitle: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.lg,
     fontWeight: typography.weight.semibold,
     marginTop: spacing.xxl,
@@ -601,9 +599,9 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.borderLight,
+    backgroundColor: c.borderLight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.lg,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
@@ -615,17 +613,17 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: colors.textPrimary,
+    color: c.textPrimary,
     fontSize: typography.size.md,
     padding: 0,
   },
   clearBtn: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.base,
     paddingLeft: spacing.sm,
   },
   filterCount: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     marginBottom: spacing.sm,
   },
@@ -638,19 +636,19 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   filterChipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: c.heroGreen,
+    borderColor: c.heroGreen,
   },
   filterChipText: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.medium,
   },
   filterChipTextActive: {
-    color: colors.background,
+    color: c.background,
     fontWeight: typography.weight.bold,
   },
   objectRow: {
@@ -658,7 +656,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.borderLight,
+    borderBottomColor: c.borderLight,
     gap: spacing.md,
   },
   objectRowSelection: {
@@ -669,16 +667,16 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: radii.lg,
     borderWidth: 2,
-    borderColor: colors.accent,
+    borderColor: c.heroGreen,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: c.heroGreen,
+    borderColor: c.heroGreen,
   },
   checkMark: {
-    color: colors.background,
+    color: c.background,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.bold,
   },
@@ -686,26 +684,26 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: radii.md,
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
   },
   thumbPlaceholder: {
     width: 48,
     height: 48,
     borderRadius: radii.md,
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   thumbPlaceholderText: {
     fontSize: typography.size.xl,
-    color: colors.border,
+    color: c.border,
   },
   objectInfo: {
     flex: 1,
     gap: spacing.xs,
   },
   objectTitle: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.md,
     fontWeight: typography.weight.medium,
   },
@@ -715,18 +713,18 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   objectBadge: {
-    backgroundColor: colors.border,
+    backgroundColor: c.surfaceContainer,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radii.sm,
   },
   objectBadgeText: {
-    color: colors.accent,
+    color: c.textSecondary,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
   objectDate: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.xs,
   },
   emptyContent: {
@@ -734,20 +732,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xxxl,
   },
   emptyText: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.md,
     marginBottom: spacing.lg,
   },
   addObjectsBtn: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
     paddingHorizontal: layout.screenPadding,
     paddingVertical: 10,
   },
   addObjectsBtnText: {
-    color: colors.accent,
+    color: c.heroGreen,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },
-});
+}); }

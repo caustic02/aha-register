@@ -1,4 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+/* eslint-disable react-native/no-color-literals, react-native/no-inline-styles */
+import React, { useCallback, useEffect, useRef, useMemo, useState } from 'react';
 import {
   AccessibilityInfo,
   ActivityIndicator,
@@ -15,12 +16,13 @@ import {
 import { Accelerometer } from 'expo-sensors';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import type { CameraType, FlashMode, CameraRatio } from 'expo-camera';
+import type { CameraType, FlashMode } from 'expo-camera';
 import { File } from 'expo-file-system';
-import type { CaptureStackParamList } from '../navigation/CaptureStack';
+import type { RootStackParamList } from '../navigation/RootStack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { pickFromLibrary, type CaptureResult } from '../services/capture';
@@ -35,14 +37,20 @@ import {
   SETTING_KEYS,
 } from '../services/settingsService';
 import { TypeSelector } from '../components/TypeSelector';
-import { GridIcon, QuickModeIcon, FullModeIcon, ScanIcon } from '../theme/icons';
-import type { ObjectType, RegisterObject } from '../db/types';
+import { ScanIcon, AddPhotoIcon } from '../theme/icons';
+import { X, ChevronDown, Zap, RefreshCw } from 'lucide-react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Svg, { Path } from 'react-native-svg';
+import type { ObjectType, RegisterObject, RegisterViewType } from '../db/types';
+import { DEFAULT_FIRST_VIEW } from '../constants/viewTypes';
 import {
   launchDocumentScanner,
   processDocumentScan,
   extractTextOnDevice,
 } from '../services/documentScanService';
-import { colors, typography, spacing, radii, layout, touch } from '../theme';
+import { typography, spacing, radii, layout, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { ImageViewer } from '../components/ImageViewer';
 import { useCaptureProtocol } from '../hooks/useCaptureProtocol';
 import { ProtocolPicker } from '../components/ProtocolPicker';
@@ -60,7 +68,6 @@ const OVERLAY_LEVEL_FLAT = 'rgba(45,90,39,0.85)';
 const OVERLAY_COUNT_BG = 'rgba(0,0,0,0.55)';
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
-type AspectRatio = '4:3' | '1:1';
 type CaptureMode = 'quick' | 'full';
 
 interface QuickCaptureThumbnail {
@@ -75,6 +82,7 @@ const FLASH_CYCLE: FlashMode[] = ['off', 'on', 'auto'];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function flashIcon(mode: FlashMode): string {
   if (mode === 'on') return '\u26A1'; // ⚡ bright
   if (mode === 'auto') return '\u26A1\u1D2C'; // ⚡ᴬ  (superscript A)
@@ -87,12 +95,50 @@ function flashLabel(mode: FlashMode, t: (k: string) => string): string {
   return t('capture.flash_off');
 }
 
+// ── SVG corner bracket ────────────────────────────────────────────────────────
+
+const BRACKET_SIZE = 40;
+
+function CornerBracket({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
+  const s = BRACKET_SIZE;
+  const paths: Record<string, string> = {
+    tl: `M 0 ${s} L 0 0 L ${s} 0`,
+    tr: `M 0 0 L ${s} 0 L ${s} ${s}`,
+    bl: `M 0 0 L 0 ${s} L ${s} ${s}`,
+    br: `M 0 ${s} L ${s} ${s} L ${s} 0`,
+  };
+  return (
+    <Svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
+      <Path d={paths[corner]} stroke="rgba(255,255,255,0.85)" strokeWidth={2} fill="none" strokeLinecap="square" />
+    </Svg>
+  );
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 export function CaptureScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
-  const navigation = useNavigation<NativeStackNavigationProp<CaptureStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, 'CaptureCamera'>>();
+
+  // Multi-view capture params (from ViewChecklistScreen or QuickIDScreen)
+  const routeViewType = route.params?.viewType as RegisterViewType | undefined;
+  const routeObjectId = route.params?.objectId as string | undefined;
+
+  // Object title for display pill (when coming from QuickID or ViewChecklist)
+  const [objectTitle, setObjectTitle] = useState<string | null>(null);
+  useEffect(() => {
+    if (!routeObjectId) return;
+    db.getFirstAsync<{ title: string }>(
+      'SELECT title FROM objects WHERE id = ?',
+      [routeObjectId],
+    ).then((row) => {
+      if (row && row.title !== 'Untitled') setObjectTitle(row.title);
+    }).catch(() => {});
+  }, [db, routeObjectId]);
 
   // Camera permissions
   const [permission, requestPermission] = useCameraPermissions();
@@ -100,8 +146,9 @@ export function CaptureScreen() {
   // Camera settings
   const [facing, setFacing] = useState<CameraType>('back');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
-  const [aspectRatio, setAspectRatio] = useState<AspectRatio>('4:3');
   const [cameraReady, setCameraReady] = useState(false);
+
+  // (Video recording moved to ObjectDetail "Add Video" flow)
 
   const cameraRef = useRef<CameraView>(null);
   const protocolFirstObjectIdRef = useRef<string | null>(null);
@@ -113,6 +160,18 @@ export function CaptureScreen() {
   const [hash, setHash] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [defaultObjectType, setDefaultObjectType] = useState<ObjectType | null>(null);
+
+  // Pinch-to-zoom
+  const [zoom, setZoom] = useState(0);
+  const zoomRef = useRef(0);
+  const baseZoomRef = useRef(0);
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      const z = Math.min(1, Math.max(0, baseZoomRef.current + (e.scale - 1) * 0.3));
+      zoomRef.current = z;
+      setZoom(z);
+    })
+    .onEnd(() => { baseZoomRef.current = zoomRef.current; });
 
   // Grid overlay
   const [gridEnabled, setGridEnabled] = useState(false);
@@ -147,7 +206,7 @@ export function CaptureScreen() {
   const [showShotList, setShowShotList] = useState(false);
   const [showTips, setShowTips] = useState(false);
   const [showCompletionSummary, setShowCompletionSummary] = useState(false);
-  const [protocolPickerDismissed, setProtocolPickerDismissed] = useState(false);
+  const [, setProtocolPickerDismissed] = useState(false);
 
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion);
@@ -211,13 +270,6 @@ export function CaptureScreen() {
     }
   }, [protocolHook.state, protocolHook.protocol]);
 
-  // Show protocol picker when entering full mode without a protocol
-  useEffect(() => {
-    if (captureMode === 'full' && !protocolHook.protocol && !protocolPickerDismissed && phase === 'idle') {
-      setShowProtocolPicker(true);
-    }
-  }, [captureMode, protocolHook.protocol, protocolPickerDismissed, phase]);
-
   const handleProtocolSelect = useCallback((protocolId: string) => {
     protocolFirstObjectIdRef.current = null;
     protocolHook.selectProtocol(protocolId);
@@ -250,14 +302,6 @@ export function CaptureScreen() {
 
   // ── Camera controls ──────────────────────────────────────────────────────────
 
-  const handleGridToggle = useCallback(() => {
-    setGridEnabled((prev) => {
-      const next = !prev;
-      AsyncStorage.setItem('camera.gridEnabled', String(next));
-      return next;
-    });
-  }, []);
-
   const handleFlashToggle = useCallback(() => {
     setFlashMode((prev) => {
       const idx = FLASH_CYCLE.indexOf(prev);
@@ -271,10 +315,7 @@ export function CaptureScreen() {
     setFacing((prev) => (prev === 'back' ? 'front' : 'back'));
   }, []);
 
-  const handleRatioToggle = useCallback(() => {
-    setAspectRatio((prev) => (prev === '4:3' ? '1:1' : '4:3'));
-  }, []);
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleModeToggle = useCallback((mode: CaptureMode) => {
     setCaptureMode(mode);
     AsyncStorage.setItem(CAPTURE_MODE_KEY, mode);
@@ -435,6 +476,24 @@ export function CaptureScreen() {
               : null;
 
           const objectId = await quickCapture(db, photoUri, location);
+
+          // Tag the primary media with ansicht_front view_type
+          const now = new Date().toISOString();
+          await db.runAsync(
+            `UPDATE media SET view_type = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
+            [DEFAULT_FIRST_VIEW, now, objectId],
+          );
+          // Sync the view_type update
+          const primaryRow = await db.getFirstAsync<{ id: string }>(
+            `SELECT id FROM media WHERE object_id = ? AND is_primary = 1`,
+            [objectId],
+          );
+          if (primaryRow) {
+            const { SyncEngine: SE } = await import('../sync/engine');
+            const se = new SE(db);
+            await se.queueChange('media', primaryRow.id, 'update', { view_type: DEFAULT_FIRST_VIEW });
+          }
+
           setQuickThumbnails((prev) => [...prev, { objectId, uri: photoUri }]);
           setSessionPhotoCount((prev) => prev + 1);
           setQuickError(null);
@@ -450,6 +509,55 @@ export function CaptureScreen() {
     }
   }, [cameraReady, db, triggerShutterFlash]);
 
+  // Multi-view capture shutter: captures a photo for a specific Registerbogen view
+  // and adds it to an existing object with the correct view_type
+  const handleViewTypeShutter = useCallback(async () => {
+    if (!cameraRef.current || !cameraReady || !routeViewType || !routeObjectId) return;
+    try {
+      const pic = await cameraRef.current.takePictureAsync({
+        quality: 1,
+        exif: true,
+      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+      triggerShutterFlash();
+
+      const photoUri = pic.uri;
+      const viewType = routeViewType;
+      const objectId = routeObjectId;
+
+      // Fire and forget — camera stays live
+      (async () => {
+        try {
+          // addMediaToObject handles file copy, SHA-256, audit, sync
+          const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
+
+          // Tag media with view_type
+          const now = new Date().toISOString();
+          await db.runAsync(
+            `UPDATE media SET view_type = ?, updated_at = ? WHERE id = ?`,
+            [viewType, now, media.id],
+          );
+          // Sync the view_type update
+          const { SyncEngine: SE } = await import('../sync/engine');
+          const se = new SE(db);
+          await se.queueChange('media', media.id, 'update', { view_type: viewType });
+
+          setSessionPhotoCount((prev) => prev + 1);
+          setQuickError(null);
+
+          // Navigate back to ViewChecklist
+          navigation.navigate('ViewChecklist', { objectId });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          setQuickError(msg);
+          setTimeout(() => setQuickError(null), 3000);
+        }
+      })();
+    } catch {
+      // Camera not ready — ignore
+    }
+  }, [cameraReady, db, triggerShutterFlash, routeViewType, routeObjectId, navigation]);
+
   const handleShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady) return;
     try {
@@ -458,20 +566,22 @@ export function CaptureScreen() {
         exif: true,
       });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-      const result: CaptureResult = {
-        uri: pic.uri,
-        width: pic.width,
-        height: pic.height,
-        fileName: null,
-        fileSize: null,
+      triggerShutterFlash();
+
+      // Extract metadata + hash, then navigate to review screen
+      const meta = await extractMetadata(pic.exif ?? null);
+      const fileHash = await computeSHA256(pic.uri);
+
+      navigation.navigate('CaptureReview', {
+        imageUri: pic.uri,
         mimeType: 'image/jpeg',
-        exif: pic.exif ?? null,
-      };
-      await processCapture(result);
+        metadata: meta,
+        sha256Hash: fileHash,
+      });
     } catch {
       // Camera not ready or other error — ignore silently
     }
-  }, [cameraReady, processCapture]);
+  }, [cameraReady, navigation, triggerShutterFlash]);
 
   const handleLibrary = useCallback(async () => {
     const results = await pickFromLibrary();
@@ -533,12 +643,9 @@ export function CaptureScreen() {
     const id = savedId;
     handleRetake();
     if (id) {
-      navigation.getParent()?.navigate('Home', {
-        screen: 'ObjectDetail',
-        params: { objectId: id },
-      });
+      navigation.navigate('ObjectDetail', { objectId: id });
     } else {
-      navigation.getParent()?.navigate('Home');
+      navigation.navigate('Home');
     }
   }, [navigation, handleRetake, savedId]);
 
@@ -580,13 +687,29 @@ export function CaptureScreen() {
           [shotId, protocolHook.protocol.id, protocolHook.currentShot.order, now, objectId],
         );
         protocolHook.captureShot(shotId, capture.uri);
+      } else {
+        // No protocol active: tag primary media with ansicht_front
+        const now = new Date().toISOString();
+        await db.runAsync(
+          `UPDATE media SET view_type = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
+          [DEFAULT_FIRST_VIEW, now, objectId],
+        );
+        // Sync the view_type update
+        const pRow = await db.getFirstAsync<{ id: string }>(
+          `SELECT id FROM media WHERE object_id = ? AND is_primary = 1`,
+          [objectId],
+        );
+        if (pRow) {
+          const { SyncEngine: SE } = await import('../sync/engine');
+          const se = new SE(db);
+          await se.queueChange('media', pRow.id, 'update', { view_type: DEFAULT_FIRST_VIEW });
+        }
       }
 
       setSessionPhotoCount((prev) => prev + 1);
-      navigation.getParent()?.navigate('Home', {
-        screen: 'ObjectDetail',
-        params: { objectId },
-      });
+      // Navigate to AI Review screen for Gemini analysis
+      const photoUri = capture.uri;
+      navigation.navigate('AIReview', { objectId, photoUri });
       handleRetake();
     } catch {
       setPhase('preview');
@@ -616,10 +739,7 @@ export function CaptureScreen() {
 
   const handleThumbnailPress = useCallback(
     (objectId: string) => {
-      navigation.getParent()?.navigate('Home', {
-        screen: 'ObjectDetail',
-        params: { objectId },
-      });
+      navigation.navigate('ObjectDetail', { objectId });
     },
     [navigation],
   );
@@ -716,12 +836,14 @@ export function CaptureScreen() {
     }
   }, [db, t]);
 
+  // (Video mode handlers moved to VideoRecordScreen)
+
   // ── Non-idle phases ───────────────────────────────────────────────────────
 
   if (phase === 'extracting') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.spinnerText}>{t('capture.securing')}</Text>
       </View>
     );
@@ -730,7 +852,7 @@ export function CaptureScreen() {
   if (phase === 'saving') {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.accent} />
+        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.spinnerText}>{t('capture.save_draft')}...</Text>
       </View>
     );
@@ -819,6 +941,8 @@ export function CaptureScreen() {
     );
   }
 
+  // (Video review phase moved to VideoRecordScreen)
+
   // ── Idle: live camera view ────────────────────────────────────────────────
 
   // Permission not yet resolved
@@ -846,35 +970,61 @@ export function CaptureScreen() {
     );
   }
 
-  // Flash icon color
-  const flashColor =
-    flashMode === 'off' ? colors.textMuted : flashMode === 'on' ? colors.warning : colors.accent;
-
-  // Android ratio prop (iOS uses container styling)
-  const androidRatio: CameraRatio | undefined =
-    Platform.OS === 'android' ? aspectRatio : undefined;
+  // Android ratio prop (iOS uses container styling); fixed 4:3 — no in-viewfinder toggle
+  const androidRatio = Platform.OS === 'android' ? ('4:3' as const) : undefined;
 
   return (
     <View style={styles.cameraContainer}>
-      {/* Live camera view */}
-      <CameraView
-        ref={cameraRef}
-        style={StyleSheet.absoluteFill}
-        facing={facing}
-        flash={flashMode}
-        ratio={androidRatio}
-        onCameraReady={() => setCameraReady(true)}
-      />
+      {/* Camera preview with aspect-ratio wrapper for bracket positioning */}
+      <GestureDetector gesture={pinchGesture}>
+      <View style={styles.cameraPreview}>
+        <CameraView
+          ref={cameraRef}
+          style={StyleSheet.absoluteFill}
+          facing={facing}
+          flash={flashMode}
+          zoom={zoom}
+          ratio={androidRatio}
+          onCameraReady={() => setCameraReady(true)}
+        />
 
-      {/* 1:1 crop overlay — two dark bars to frame the square composition zone */}
-      {aspectRatio === '1:1' && (
-        <>
-          <View style={styles.cropBarTop} pointerEvents="none" />
-          <View style={styles.cropBarBottom} pointerEvents="none" />
-        </>
-      )}
+        {/* Corner brackets (SVG for crisp rendering) */}
+        <View style={[styles.bracketWrap, { top: 16, left: 16 }]} pointerEvents="none"><CornerBracket corner="tl" /></View>
+        <View style={[styles.bracketWrap, { top: 16, right: 16 }]} pointerEvents="none"><CornerBracket corner="tr" /></View>
+        <View style={[styles.bracketWrap, { bottom: 16, left: 16 }]} pointerEvents="none"><CornerBracket corner="bl" /></View>
+        <View style={[styles.bracketWrap, { bottom: 16, right: 16 }]} pointerEvents="none"><CornerBracket corner="br" /></View>
 
-      {/* ── Grid overlay + crosshair (pointerEvents="none" so touches pass through) */}
+        {/* Center instructional text — inside camera preview */}
+        {phase === 'idle' && !protocolHook.protocol && !routeViewType && (
+          <View style={styles.centerTextWrap} pointerEvents="none">
+            <Text style={styles.centerTextMain}>
+              {t('capture.positionInFrame')}
+            </Text>
+            <Text style={styles.centerTextSub}>
+              {t('capture.holdSteady')}
+            </Text>
+          </View>
+        )}
+
+        {/* Multi-view capture: view label pill at top of camera preview */}
+        {routeViewType && (
+          <View style={styles.viewTypePill} pointerEvents="none">
+            <Text style={styles.viewTypePillText}>
+              {t(`view_types.${routeViewType}`)}
+            </Text>
+          </View>
+        )}
+
+        {/* Zoom level label */}
+        {zoom > 0.01 && (
+          <View style={styles.zoomLabel} pointerEvents="none">
+            <Text style={styles.zoomLabelText}>{(1 + zoom * 9).toFixed(1)}x</Text>
+          </View>
+        )}
+      </View>
+      </GestureDetector>
+
+      {/* ── Grid overlay (pointerEvents="none" so touches pass through) */}
       {gridEnabled && (
         <View style={styles.gridOverlay} pointerEvents="none">
           {/* Horizontal thirds */}
@@ -883,11 +1033,6 @@ export function CaptureScreen() {
           {/* Vertical thirds */}
           <View style={styles.gridV1} />
           <View style={styles.gridV2} />
-          {/* Center crosshair */}
-          <View style={styles.crosshairWrap}>
-            <View style={styles.crosshairH} />
-            <View style={styles.crosshairV} />
-          </View>
         </View>
       )}
 
@@ -918,54 +1063,45 @@ export function CaptureScreen() {
         </View>
       )}
 
-      {/* Top controls: Flash | Ratio | Flip | Grid — hidden during protocol capture */}
-      {!protocolHook.protocol && <View style={styles.topControls}>
-        {/* Flash toggle */}
-        <Pressable
-          style={styles.controlBtn}
-          onPress={handleFlashToggle}
-          accessibilityLabel={flashLabel(flashMode, t)}
-        >
-          <Text style={[styles.controlIcon, { color: flashColor }]}>
-            {flashIcon(flashMode)}
-          </Text>
-          <Text style={[styles.controlLabel, { color: flashColor }]}>
-            {flashMode === 'auto' ? 'AUTO' : flashMode.toUpperCase()}
-          </Text>
-        </Pressable>
+      {/* ── Top bar: close + domain/object pill + library ── */}
+      {!protocolHook.protocol && (
+        <View style={styles.topBar}>
+          <Pressable
+            style={styles.topBarCircle}
+            onPress={() => navigation.navigate('Home')}
+            accessibilityLabel={t('common.back')}
+            accessibilityRole="button"
+            hitSlop={touch.hitSlop}
+          >
+            <X size={18} color={colors.white} />
+          </Pressable>
+          {objectTitle ? (
+            <View style={styles.objectTitlePill}>
+              <Text style={styles.objectTitlePillText} numberOfLines={1}>
+                {objectTitle}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.domainPill}>
+              <Text style={styles.domainPillText}>
+                {t('home.domainMuseumCollection')}
+              </Text>
+              <ChevronDown size={14} color="rgba(255,255,255,0.7)" />
+            </View>
+          )}
+          <Pressable
+            style={styles.topBarCircle}
+            onPress={handleLibrary}
+            accessibilityLabel={t('capture.choose_from_library')}
+            accessibilityRole="button"
+            hitSlop={touch.hitSlop}
+          >
+            <AddPhotoIcon size={18} color={colors.white} />
+          </Pressable>
+        </View>
+      )}
 
-        {/* Aspect ratio toggle */}
-        <Pressable
-          style={styles.controlBtn}
-          onPress={handleRatioToggle}
-          accessibilityLabel={t('capture.ratio_label')}
-        >
-          <Text style={styles.ratioText}>{aspectRatio}</Text>
-        </Pressable>
-
-        {/* Flip camera */}
-        <Pressable
-          style={styles.controlBtn}
-          onPress={handleFacingToggle}
-          accessibilityLabel={t('capture.flip_camera')}
-        >
-          <Text style={styles.controlIcon}>{'\u21BA'}</Text>
-        </Pressable>
-
-        {/* Grid toggle */}
-        <Pressable
-          style={[styles.controlBtn, gridEnabled && styles.controlBtnActive]}
-          onPress={handleGridToggle}
-          accessibilityRole="button"
-          accessibilityLabel={t('camera.gridToggle')}
-          accessibilityState={{ checked: gridEnabled }}
-        >
-          <GridIcon
-            size={20}
-            color={gridEnabled ? colors.primary : colors.white}
-          />
-        </Pressable>
-      </View>}
+      {/* Corner brackets + guidance text moved inside cameraPreview above */}
 
       {/* Intro overlay for first-time users */}
       {showIntro && (
@@ -1053,10 +1189,7 @@ export function CaptureScreen() {
                 `UPDATE objects SET title = ?, updated_at = ? WHERE id = ?`,
                 [title, new Date().toISOString(), targetId],
               ).catch(() => {});
-              navigation.getParent()?.navigate('Home', {
-                screen: 'ObjectDetail',
-                params: { objectId: targetId },
-              });
+              navigation.navigate('ObjectDetail', { objectId: targetId });
             }
           }}
           onContinue={() => {
@@ -1125,78 +1258,43 @@ export function CaptureScreen() {
           </View>
         )}
 
-        {/* Mode toggle */}
-        <View style={styles.modeToggleRow}>
-          <View style={styles.modeTogglePill}>
-            <Pressable
-              style={[
-                styles.modeToggleBtn,
-                captureMode === 'quick' && styles.modeToggleBtnActive,
-              ]}
-              onPress={() => handleModeToggle('quick')}
-              accessibilityRole="button"
-              accessibilityLabel={t('capture.modeQuick')}
-              accessibilityState={{ selected: captureMode === 'quick' }}
-            >
-              <QuickModeIcon
-                size={14}
-                color={captureMode === 'quick' ? colors.white : colors.textTertiary}
-              />
-              <Text
-                style={[
-                  styles.modeToggleText,
-                  captureMode === 'quick' && styles.modeToggleTextActive,
-                ]}
-              >
-                {t('capture.modeQuick')}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[
-                styles.modeToggleBtn,
-                captureMode === 'full' && styles.modeToggleBtnActive,
-              ]}
-              onPress={() => handleModeToggle('full')}
-              accessibilityRole="button"
-              accessibilityLabel={t('capture.modeFull')}
-              accessibilityState={{ selected: captureMode === 'full' }}
-            >
-              <FullModeIcon
-                size={14}
-                color={captureMode === 'full' ? colors.white : colors.textTertiary}
-              />
-              <Text
-                style={[
-                  styles.modeToggleText,
-                  captureMode === 'full' && styles.modeToggleTextActive,
-                ]}
-              >
-                {t('capture.modeFull')}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Controls: Library | Shutter | (spacer) */}
+        {/* Controls: Flash | Shutter | Flip  (+ doc scan on far right) */}
         <View style={styles.bottomControls}>
-          {/* Library picker */}
           <Pressable
-            style={styles.libraryBtn}
-            onPress={handleLibrary}
-            accessibilityLabel={t('capture.choose_from_library')}
+            style={styles.docScanCircle}
+            onPress={handleDocumentScan}
+            accessibilityRole="button"
+            accessibilityLabel={t('capture.scan_document')}
+            hitSlop={touch.hitSlop}
           >
-            <Text style={styles.libraryIcon}>{'\u25A3'}</Text>
+            <ScanIcon size={18} color={colors.white} />
           </Pressable>
 
-          {/* Shutter */}
+          <Pressable
+            style={styles.circleBtn48}
+            onPress={handleFlashToggle}
+            accessibilityLabel={flashLabel(flashMode, t)}
+            accessibilityRole="button"
+            hitSlop={touch.hitSlop}
+          >
+            <Zap
+              size={22}
+              color={colors.white}
+              style={flashMode === 'off' ? { opacity: 0.5 } : undefined}
+            />
+          </Pressable>
+
+          {/* Shutter (photo only) */}
           <Pressable
             style={[styles.shutterBtn, !cameraReady && styles.shutterBtnDisabled]}
             onPress={
-              protocolHook.protocol
-                ? handleProtocolShutter
-                : captureMode === 'quick'
-                  ? handleQuickShutter
-                  : handleShutter
+              routeViewType && routeObjectId
+                ? handleViewTypeShutter
+                : protocolHook.protocol
+                  ? handleProtocolShutter
+                  : captureMode === 'quick'
+                    ? handleQuickShutter
+                    : handleShutter
             }
             disabled={!cameraReady}
             accessibilityLabel={t('capture.take_photo')}
@@ -1204,29 +1302,32 @@ export function CaptureScreen() {
             <View style={styles.shutterInner} />
           </Pressable>
 
-          {/* Document scan */}
           <Pressable
-            style={styles.docScanBtn}
-            onPress={handleDocumentScan}
+            style={styles.circleBtn48}
+            onPress={handleFacingToggle}
             accessibilityRole="button"
-            accessibilityLabel={t('capture.scan_document')}
+            accessibilityLabel={t('capture.flip_camera')}
+            hitSlop={touch.hitSlop}
           >
-            <ScanIcon size={22} color={colors.white} />
+            <RefreshCw size={22} color={colors.white} />
           </Pressable>
+
+          {/* Spacer to balance doc scan on the left */}
+          <View style={{ width: 36 }} />
         </View>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   center: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xxl,
@@ -1235,29 +1336,16 @@ const styles = StyleSheet.create({
   // ── Live camera ─────────────────────────────────────────────────────────────
   cameraContainer: {
     flex: 1,
-    backgroundColor: colors.camera,
+    backgroundColor: c.cameraBg,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
-  // Crop overlay bars for 1:1 ratio (appear above/below the square zone)
-  cropBarTop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    // Height is calculated so the remaining visible area is square (width-based)
-    // We overlay ~20% from top and bottom as a darkened guide
-    height: '15%',
-    backgroundColor: colors.overlay,
-    zIndex: 2,
-  },
-  cropBarBottom: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: '15%',
-    backgroundColor: colors.overlay,
-    zIndex: 2,
+  cameraPreview: {
+    width: '100%',
+    aspectRatio: 3 / 4,  // 4:3 camera ratio (width < height → 0.75)
+    position: 'relative',
+    // NO flex: 1 — aspectRatio must control the height
+    // NO overflow: 'hidden' — brackets must be visible at edges
   },
 
   // ── Grid overlay ────────────────────────────────────────────────────────────
@@ -1297,31 +1385,6 @@ const styles = StyleSheet.create({
     width: StyleSheet.hairlineWidth,
     backgroundColor: OVERLAY_GRID,
   },
-  // Crosshair
-  crosshairWrap: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    width: 32,
-    height: 32,
-    marginTop: -16,
-    marginLeft: -16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  crosshairH: {
-    position: 'absolute',
-    width: 32,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
-  },
-  crosshairV: {
-    position: 'absolute',
-    width: StyleSheet.hairlineWidth,
-    height: 32,
-    backgroundColor: OVERLAY_GRID,
-  },
-
   // ── Level indicator ─────────────────────────────────────────────────────────
   levelWrap: {
     position: 'absolute',
@@ -1352,61 +1415,118 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   photoCountText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
 
-  // ── Top controls ────────────────────────────────────────────────────────────
-  topControls: {
+  // ── Top bar (V0 design) ─────────────────────────────────────────────────────
+  topBar: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     paddingTop: 56,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: layout.screenPadding,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.overlayLight,
     zIndex: 10,
   },
-  controlBtn: {
-    flexDirection: 'column',
+  topBarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
-    backgroundColor: colors.overlay,
-    borderWidth: 1,
-    borderColor: colors.overlayLight,
-    borderRadius: radii.lg,
-    paddingHorizontal: 14,
-    paddingVertical: spacing.sm,
-    minWidth: 56,
-    minHeight: touch.minTarget,
     justifyContent: 'center',
-    gap: 2,
   },
-  controlBtnActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySurface,
+  domainPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 18,
+    height: 36,
+    paddingHorizontal: 16,
+    gap: 6,
   },
-  controlIcon: {
-    fontSize: typography.size.xl,
-    color: colors.white,
+  domainPillText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: c.white,
   },
-  controlLabel: {
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.bold,
-    letterSpacing: 0.5,
+  objectTitlePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(45,90,39,0.7)',
+    borderRadius: 18,
+    height: 36,
+    paddingHorizontal: 16,
+    maxWidth: '60%',
   },
-  ratioText: {
-    fontSize: typography.size.md,
-    fontWeight: typography.weight.bold,
-    color: colors.white,
-    paddingVertical: spacing.xs,
+  objectTitlePillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: c.white,
   },
 
-  // ── Bottom area (mode toggle + thumbnail strip + controls) ──────────────────
+  // ── Corner brackets (V0 design) ───────────────────────────────────────────
+  bracketWrap: {
+    position: 'absolute',
+    zIndex: 20,
+  },
+  centerTextWrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerTextMain: {
+    fontSize: 15,
+    fontWeight: '400',
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'center',
+  },
+  centerTextSub: {
+    fontSize: 12,
+    fontWeight: '400',
+    color: 'rgba(255,255,255,0.45)',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  // ── Multi-view capture pill ──────────────────────────────────────────────────
+  viewTypePill: {
+    position: 'absolute',
+    top: spacing.xl,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    zIndex: 10,
+  },
+  viewTypePillText: {
+    color: c.white,
+    fontSize: typography.size.md,
+    fontWeight: typography.weight.semibold,
+    textAlign: 'center',
+  },
+  // Zoom label
+  zoomLabel: {
+    position: 'absolute',
+    bottom: 12,
+    alignSelf: 'center',
+    backgroundColor: OVERLAY_COUNT_BG,
+    borderRadius: radii.full,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  zoomLabelText: {
+    color: c.white,
+    fontSize: typography.size.sm,
+    fontWeight: typography.weight.semibold,
+  },
+  // ── Bottom area (V0 design) ─────────────────────────────────────────────────
   bottomArea: {
     position: 'absolute',
     bottom: 0,
@@ -1415,19 +1535,19 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   bottomControls: {
-    paddingBottom: 50,
+    paddingBottom: 40,
     paddingTop: spacing.md,
-    paddingHorizontal: spacing.xxxl,
+    paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.overlayLight,
+    justifyContent: 'center',
+    gap: 20,
   },
 
   // ── Shutter flash ─────────────────────────────────────────────────────────
   shutterFlash: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.white,
+    backgroundColor: c.white,
     zIndex: 15,
   },
 
@@ -1437,7 +1557,7 @@ const styles = StyleSheet.create({
     top: 140,
     left: spacing.xl,
     right: spacing.xl,
-    backgroundColor: colors.error,
+    backgroundColor: c.error,
     borderRadius: radii.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
@@ -1446,46 +1566,50 @@ const styles = StyleSheet.create({
   },
   errorToastText: {
     ...typography.bodySmall,
-    color: colors.white,
+    color: c.white,
     textAlign: 'center',
   },
 
-  // ── Mode toggle ───────────────────────────────────────────────────────────
-  modeToggleRow: {
+  // ── Photo/Video toggle (V0 design) ──────────────────────────────────────────
+  pvToggleRow: {
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    backgroundColor: colors.overlayLight,
   },
-  modeTogglePill: {
+  pvTogglePill: {
     flexDirection: 'row',
-    backgroundColor: OVERLAY_COUNT_BG,
-    borderRadius: radii.full,
-    padding: 2,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: 24,
+    height: 40,
+    padding: 3,
   },
-  modeToggleBtn: {
-    flexDirection: 'row',
+  pvToggleBtnActive: {
+    backgroundColor: c.white,
+    borderRadius: 20,
+    paddingHorizontal: 20,
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.full,
-    minHeight: 32,
+    justifyContent: 'center',
   },
-  modeToggleBtnActive: {
-    backgroundColor: colors.primary,
+  pvToggleTextActive: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0D0D0D',
   },
-  modeToggleText: {
-    ...typography.caption,
-    color: colors.textTertiary,
-    fontWeight: typography.weight.semibold,
+  pvToggleBtn: {
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    minHeight: touch.minTarget,
   },
-  modeToggleTextActive: {
-    color: colors.white,
+  pvToggleText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: 'rgba(255,255,255,0.7)',
   },
 
   // ── Thumbnail strip ───────────────────────────────────────────────────────
   thumbStripWrap: {
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
   },
@@ -1498,7 +1622,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: colors.overlayLight,
+    borderColor: c.overlayLight,
     overflow: 'hidden',
   },
   thumbImage: {
@@ -1514,70 +1638,100 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   thumbCountText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.semibold,
   },
-  libraryBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.lg,
-    backgroundColor: colors.overlayLight,
-    borderWidth: 1,
-    borderColor: colors.overlayLight,
+  // ── Circle buttons (V0 design) ──────────────────────────────────────────────
+  circleBtn48: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  libraryIcon: {
-    fontSize: typography.size.xxl,
-    color: colors.white,
+  docScanCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   shutterBtn: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     borderWidth: 4,
-    borderColor: colors.white,
+    borderColor: c.white,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.overlayLight,
+    backgroundColor: 'transparent',
   },
   shutterBtnDisabled: {
     opacity: 0.4,
   },
   shutterInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.white,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: c.white,
   },
-  docScanBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: radii.lg,
-    backgroundColor: colors.overlay,
-    borderWidth: 1,
-    borderColor: colors.overlayLight,
+  shutterInnerRecording: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: '#FF3B30',
+  },
+  // ── Recording timer ──
+  recordingTimerWrap: {
+    position: 'absolute',
+    top: 56,
+    alignSelf: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 8,
+    zIndex: 20,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#FF3B30',
+  },
+  recordingTimerText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: c.white,
+    fontVariant: ['tabular-nums'],
+  },
+  videoPreview: {
+    width: '100%',
+    height: 300,
+    backgroundColor: c.cameraBg,
   },
 
   // ── Permission screen ────────────────────────────────────────────────────────
   permissionTitle: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.xl,
     fontWeight: typography.weight.semibold,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
   permissionBody: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.md,
     textAlign: 'center',
     marginBottom: spacing.xxl,
   },
   permissionHint: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.base,
     textAlign: 'center',
     marginTop: spacing.sm,
@@ -1590,27 +1744,27 @@ const styles = StyleSheet.create({
   preview: {
     width: '100%',
     aspectRatio: 3 / 4,
-    backgroundColor: colors.overlayLight,
+    backgroundColor: c.overlayLight,
   },
   metaSection: {
     padding: layout.screenPadding,
   },
   metaLabel: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
     marginTop: spacing.md,
   },
   metaValue: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.md,
     marginTop: 2,
   },
 
   // ── Shared buttons ───────────────────────────────────────────────────────────
   primaryBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1618,13 +1772,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   primaryBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.bold,
   },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: c.primary,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1632,29 +1786,29 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   secondaryBtnText: {
-    color: colors.primary,
+    color: c.primary,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },
 
   // ── Spinners / done ──────────────────────────────────────────────────────────
   spinnerText: {
-    color: colors.accent,
+    color: c.heroGreen,
     fontSize: typography.size.md,
     marginTop: spacing.lg,
   },
   checkmark: {
-    color: colors.accent,
+    color: c.heroGreen,
     fontSize: spacing['4xl'],
     marginBottom: spacing.lg,
   },
   doneTitle: {
-    color: colors.text,
+    color: c.text,
     fontSize: typography.size.xxl,
     fontWeight: typography.weight.semibold,
   },
   doneId: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.base,
     marginTop: spacing.sm,
     marginBottom: spacing.xxxl,
@@ -1663,35 +1817,35 @@ const styles = StyleSheet.create({
   // ── Intro overlay ────────────────────────────────────────────────────────────
   introOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlayDark,
+    backgroundColor: c.overlayDark,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.xxxl,
     zIndex: 20,
   },
   introCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: radii.lg,
     padding: spacing.xxl,
     alignItems: 'center',
     maxWidth: 320,
   },
   introText: {
-    color: colors.textPrimary,
+    color: c.textPrimary,
     fontSize: typography.size.md,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: spacing.xl,
   },
   introBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: c.heroGreen,
     borderRadius: radii.md,
     paddingHorizontal: spacing.xxl,
     paddingVertical: spacing.md,
   },
   introBtnText: {
-    color: colors.white,
+    color: c.white,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },
-});
+}); }

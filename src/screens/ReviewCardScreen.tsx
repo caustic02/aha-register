@@ -3,17 +3,20 @@ import {
   Alert,
   Image,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput as RNTextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import BottomSheet, { BottomSheetBackdrop, BottomSheetView } from '@gorhom/bottom-sheet';
-import { colors, radii, spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import {
+  CheckIcon,
   ConditionIcon,
   LayersIcon,
   RulerIcon,
@@ -117,20 +120,6 @@ function fieldString(value: string | string[] | null): string {
   return value;
 }
 
-function formatTimestamp(ts?: string): string {
-  if (!ts) return '—';
-  try {
-    return new Date(ts).toLocaleString();
-  } catch {
-    return ts;
-  }
-}
-
-function formatCoords(meta: CaptureMetadata, fallback: string): string {
-  if (meta.latitude == null || meta.longitude == null) return fallback;
-  return `${meta.latitude.toFixed(6)}, ${meta.longitude.toFixed(6)}`;
-}
-
 function guessMimeType(uri: string): string {
   const lower = uri.toLowerCase();
   if (lower.endsWith('.png')) return 'image/png';
@@ -145,11 +134,13 @@ export function ReviewCardScreen({
   imageUri,
   analysisResult,
   captureMetadata,
-  sha256Hash,
+  sha256Hash: _sha256Hash,
   existingObjectId,
   onSave,
   onDiscard,
 }: ReviewCardScreenProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t, i18n } = useAppTranslation();
   const db = useDatabase();
   const vocabLang = (i18n.language?.startsWith('de') ? 'de' : 'en') as 'en' | 'de';
@@ -466,18 +457,9 @@ export function ReviewCardScreen({
             resizeMode="cover"
             accessibilityLabel="Captured photograph"
           />
-          <View style={styles.captureMetaRow}>
-            <Text style={styles.captureMeta}>
-              {formatTimestamp(captureMetadata.timestamp)}
-            </Text>
-            <Text style={styles.captureMeta}>
-              {formatCoords(captureMetadata, t('reviewCard.coordsNotAvailable'))}
-            </Text>
-            {sha256Hash != null && (
-              <Text style={[styles.captureMeta, typography.mono]}>
-                {sha256Hash.slice(0, 8)}
-              </Text>
-            )}
+          <View style={styles.capturedBadge}>
+            <CheckIcon size={13} color={colors.heroGreen} />
+            <Text style={styles.capturedBadgeText}>{t('reviewCard.photoCaptured')}</Text>
           </View>
         </Card>
 
@@ -897,11 +879,13 @@ function AIField({
   confidence: number;
   children: React.ReactNode;
 }) {
+  const { colors: c } = useTheme();
+  const s = useMemo(() => makeStyles(c), [c]);
   const hasAI = confidence > 0;
   return (
-    <View style={[styles.aiField, hasAI && styles.aiFieldActive]}>
+    <View style={[s.aiField, hasAI && s.aiFieldActive]}>
       {hasAI && (
-        <View style={styles.aiFieldHeader}>
+        <View style={s.aiFieldHeader}>
           <AIFieldBadge visible confidence={confidence} />
         </View>
       )}
@@ -912,10 +896,10 @@ function AIField({
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   scroll: {
     flex: 1,
@@ -935,15 +919,15 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: radii.lg,
     borderTopRightRadius: radii.lg,
   },
-  captureMetaRow: {
+  capturedBadge: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
+    alignItems: 'center',
+    gap: spacing.xs,
     padding: spacing.lg,
   },
-  captureMeta: {
+  capturedBadgeText: {
     ...typography.caption,
-    color: colors.textTertiary,
+    color: c.heroGreen,
   },
   // Sections
   section: {
@@ -969,7 +953,7 @@ const styles = StyleSheet.create({
   // Validation error
   validationError: {
     ...typography.caption,
-    color: colors.statusError,
+    color: c.statusError,
     marginTop: spacing.xs,
     marginLeft: spacing.md,
   },
@@ -979,7 +963,7 @@ const styles = StyleSheet.create({
   },
   fieldGroupLabel: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontWeight: typography.weight.medium,
     marginBottom: spacing.sm,
   },
@@ -988,9 +972,9 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   aiFieldActive: {
-    backgroundColor: colors.aiSurface,
+    backgroundColor: c.aiSurface,
     borderWidth: 1,
-    borderColor: colors.aiBorder,
+    borderColor: c.aiBorder,
     borderRadius: radii.md,
     padding: spacing.md,
   },
@@ -1002,11 +986,11 @@ const styles = StyleSheet.create({
   },
   aiConfidenceText: {
     ...typography.caption,
-    color: colors.aiText,
+    color: c.aiText,
   },
   fieldLabel: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginBottom: spacing.xs,
   },
   // Confidence bar under description
@@ -1025,23 +1009,23 @@ const styles = StyleSheet.create({
   },
   artistName: {
     ...typography.bodyMedium,
-    color: colors.text,
+    color: c.text,
     flex: 1,
   },
   // Empty states
   emptyText: {
     ...typography.bodySmall,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     marginTop: spacing.sm,
   },
   // Collection picker (inline)
   selectedCollectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: c.primary,
     padding: spacing.md,
     marginTop: spacing.sm,
   },
@@ -1050,21 +1034,21 @@ const styles = StyleSheet.create({
   },
   selectedCollectionName: {
     ...typography.bodyMedium,
-    color: colors.text,
+    color: c.text,
   },
   selectedCollectionType: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginTop: 2,
   },
   removeCollectionText: {
     ...typography.body,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     paddingHorizontal: spacing.sm,
   },
   collectionHint: {
     ...typography.bodySmall,
-    color: colors.textTertiary,
+    color: c.textTertiary,
     marginTop: spacing.xs,
   },
   chooseCollectionBtn: {
@@ -1073,14 +1057,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     minHeight: touch.minTargetSmall,
     justifyContent: 'center',
   },
   chooseCollectionText: {
     ...typography.bodySmall,
-    color: colors.primary,
+    color: c.primary,
     fontWeight: '600',
   },
   // Actions
@@ -1093,10 +1077,10 @@ const styles = StyleSheet.create({
   },
   // ── Bottom Sheet ──────────────────────────────────────────────────────────
   sheetBg: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
   sheetHandle: {
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     width: 36,
   },
   sheetContent: {
@@ -1105,7 +1089,7 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
     marginBottom: spacing.lg,
   },
   // Inline create row
@@ -1116,18 +1100,18 @@ const styles = StyleSheet.create({
   },
   inlineCreateInput: {
     flex: 1,
-    backgroundColor: colors.surfaceContainer,
+    backgroundColor: c.surfaceContainer,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
-    color: colors.text,
+    color: c.text,
     fontSize: typography.bodySmall.fontSize,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     minHeight: touch.minTargetSmall,
   },
   inlineCreateBtn: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     justifyContent: 'center',
@@ -1138,7 +1122,7 @@ const styles = StyleSheet.create({
   },
   inlineCreateBtnText: {
     ...typography.bodySmall,
-    color: colors.textInverse,
+    color: c.textInverse,
     fontWeight: '600',
   },
   // Collection list
@@ -1152,19 +1136,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   sheetItemSelected: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: c.primaryLight,
   },
   sheetItemName: {
     ...typography.body,
-    color: colors.text,
+    color: c.text,
   },
   sheetItemNameSelected: {
-    color: colors.primary,
+    color: c.primary,
     fontWeight: '600',
   },
   sheetItemMeta: {
     ...typography.caption,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginTop: 2,
   },
   // Empty state in sheet
@@ -1174,13 +1158,13 @@ const styles = StyleSheet.create({
   },
   sheetEmptyTitle: {
     ...typography.body,
-    color: colors.text,
+    color: c.text,
     fontWeight: '600',
     marginBottom: spacing.xs,
   },
   sheetEmptySubtitle: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
   },
-});
+}); }

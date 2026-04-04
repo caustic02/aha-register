@@ -1,20 +1,22 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { createCollection } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
-import { colors, typography, spacing, radii, layout } from '../theme';
+import { typography, spacing, radii, layout } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CreateCollection'>;
 
@@ -30,6 +32,8 @@ const COLLECTION_TYPES = [
 type CollectionType = (typeof COLLECTION_TYPES)[number];
 
 export function CreateCollectionScreen({ navigation }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
   const { t } = useAppTranslation();
 
@@ -154,32 +158,31 @@ export function CreateCollectionScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+function makeStyles(c: ColorPalette) { return StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   header: {
-    paddingTop: spacing.xl,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   headerTitle: {
     ...typography.h4,
-    color: colors.text,
+    color: c.text,
   },
   cancelText: {
     ...typography.bodyMedium,
-    color: colors.textSecondary,
+    color: c.textSecondary,
   },
   saveText: {
     ...typography.bodyMedium,
-    color: colors.primary,
+    color: c.primary,
   },
   saveTextDisabled: {
     opacity: 0.4,
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
   },
   label: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.semibold,
     textTransform: 'uppercase',
@@ -196,19 +199,19 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   input: {
-    backgroundColor: colors.borderLight,
+    backgroundColor: c.borderLight,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radii.md,
-    color: colors.textPrimary,
+    color: c.textPrimary,
     fontSize: typography.size.md,
     padding: 14,
   },
   inputError: {
-    borderColor: colors.danger,
+    borderColor: c.danger,
   },
   errorText: {
-    color: colors.danger,
+    color: c.danger,
     fontSize: typography.size.sm,
     marginTop: 6,
   },
@@ -227,20 +230,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'transparent',
   },
   typeBadgeActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    backgroundColor: c.heroGreen,
+    borderColor: c.heroGreen,
   },
   typeBadgeText: {
-    color: colors.textSecondary,
+    color: c.textSecondary,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.medium,
   },
   typeBadgeTextActive: {
-    color: colors.white,
+    color: c.white,
     fontWeight: typography.weight.semibold,
   },
-});
+}); }

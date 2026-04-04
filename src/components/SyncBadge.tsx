@@ -4,12 +4,14 @@
  * size="sm"  — 8 dp colored dot, hidden when synced (no visual noise for default state)
  * size="md"  — icon + short text label, all states always visible
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { ObjectSyncStatus } from '../hooks/useSyncStatuses';
 import { CheckIcon, ErrorIcon, OfflineIcon, SyncIcon } from '../theme/icons';
 import { useAppTranslation } from '../hooks/useAppTranslation';
-import { colors, spacing, typography } from '../theme';
+import { spacing, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 
 interface SyncBadgeProps {
   status: ObjectSyncStatus;
@@ -17,19 +19,6 @@ interface SyncBadgeProps {
 }
 
 const DOT_SIZE = 8;
-
-function statusColor(status: ObjectSyncStatus): string {
-  switch (status) {
-    case 'pending':
-      return colors.statusSyncing;
-    case 'failed':
-      return colors.statusError;
-    case 'offline':
-      return colors.statusOffline;
-    default:
-      return colors.statusSuccess;
-  }
-}
 
 function StatusIcon({
   status,
@@ -52,6 +41,21 @@ function StatusIcon({
 
 export function SyncBadge({ status, size = 'sm' }: SyncBadgeProps) {
   const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+
+  function statusColor(s: ObjectSyncStatus): string {
+    switch (s) {
+      case 'pending':
+        return colors.statusSyncing;
+      case 'failed':
+        return colors.statusError;
+      case 'offline':
+        return colors.statusOffline;
+      default:
+        return colors.statusSuccess;
+    }
+  }
 
   if (size === 'sm') {
     // Don't render the dot for synced — avoid visual noise on fully-synced items
@@ -79,19 +83,21 @@ export function SyncBadge({ status, size = 'sm' }: SyncBadgeProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  dot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-  },
-  mdRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  mdLabel: {
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.medium,
-  },
-});
+function makeStyles(_c: ColorPalette) {
+  return StyleSheet.create({
+    dot: {
+      width: DOT_SIZE,
+      height: DOT_SIZE,
+      borderRadius: DOT_SIZE / 2,
+    },
+    mdRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.xs,
+    },
+    mdLabel: {
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.medium,
+    },
+  });
+}

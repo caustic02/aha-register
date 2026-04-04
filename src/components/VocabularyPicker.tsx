@@ -18,7 +18,9 @@ import {
   StyleSheet,
 } from 'react-native';
 
-import { colors, typography, spacing, radii, touch } from '../theme';
+import { typography, spacing, radii, touch } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { SearchIcon, CloseIcon } from '../theme/icons';
 import type { GettyTerm, VocabularySelection } from '../data/getty/types';
 import { cleanAatLabel } from '../utils/vocabulary';
@@ -54,6 +56,8 @@ export function VocabularyPicker({
   language,
   label,
 }: VocabularyPickerProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -265,7 +269,7 @@ export function VocabularyPicker({
             >
               <Text style={styles.customTermLabel}>
                 {language === 'de'
-                  ? `„${debouncedQuery.trim()}" als eigenen Begriff verwenden`
+                  ? `\u201E${debouncedQuery.trim()}\u201C als eigenen Begriff verwenden`
                   : `Use "${debouncedQuery.trim()}" as custom term`}
               </Text>
             </TouchableOpacity>
@@ -359,163 +363,165 @@ export function VocabularyPicker({
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      gap: spacing.sm,
+    },
 
-  // Label
-  label: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
+    // Label
+    label: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+      marginBottom: spacing.xs,
+    },
 
-  // Selected chips
-  chipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    gap: spacing.xs,
-    minHeight: touch.minTargetSmall,
-  },
-  chipText: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    flexShrink: 1,
-  },
+    // Selected chips
+    chipsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.xs,
+    },
+    chip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.primaryLight,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: spacing.xs,
+      gap: spacing.xs,
+      minHeight: touch.minTargetSmall,
+    },
+    chipText: {
+      ...typography.bodySmall,
+      color: c.primary,
+      flexShrink: 1,
+    },
 
-  // Search input
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing.md,
-    minHeight: touch.minTargetSmall,
-    gap: spacing.sm,
-  },
-  input: {
-    flex: 1,
-    ...typography.body,
-    color: colors.text,
-    paddingVertical: spacing.sm,
-  },
+    // Search input
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      minHeight: touch.minTargetSmall,
+      gap: spacing.sm,
+    },
+    input: {
+      flex: 1,
+      ...typography.body,
+      color: c.text,
+      paddingVertical: spacing.sm,
+    },
 
-  // Dropdown
-  dropdown: {
-    backgroundColor: colors.surfaceContainer,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    overflow: 'hidden',
-  },
-  dropdownList: {
-    maxHeight: MAX_DROPDOWN_ITEMS * 56, // approx row height
-  },
-  dropdownItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: touch.minTargetSmall,
-    gap: spacing.sm,
-  },
-  dropdownItemSelected: {
-    backgroundColor: colors.primaryLight,
-  },
-  dropdownItemContent: {
-    flex: 1,
-    gap: 2,
-  },
-  dropdownItemLabel: {
-    ...typography.body,
-    color: colors.text,
-  },
-  dropdownItemParent: {
-    ...typography.caption,
-    color: colors.textTertiary,
-  },
+    // Dropdown
+    dropdown: {
+      backgroundColor: c.surfaceContainer,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.md,
+      overflow: 'hidden',
+    },
+    dropdownList: {
+      maxHeight: MAX_DROPDOWN_ITEMS * 56, // approx row height
+    },
+    dropdownItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: touch.minTargetSmall,
+      gap: spacing.sm,
+    },
+    dropdownItemSelected: {
+      backgroundColor: c.primaryLight,
+    },
+    dropdownItemContent: {
+      flex: 1,
+      gap: 2,
+    },
+    dropdownItemLabel: {
+      ...typography.body,
+      color: c.text,
+    },
+    dropdownItemParent: {
+      ...typography.caption,
+      color: c.textTertiary,
+    },
 
-  // URI badge
-  uriBadge: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-  },
-  uriBadgeText: {
-    ...typography.mono,
-    fontSize: 10,
-    color: colors.textTertiary,
-  },
+    // URI badge
+    uriBadge: {
+      backgroundColor: c.surface,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.xs,
+      paddingVertical: 2,
+    },
+    uriBadgeText: {
+      ...typography.mono,
+      fontSize: 10,
+      color: c.textTertiary,
+    },
 
-  // Custom term option
-  dropdownItemCustom: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    minHeight: touch.minTargetSmall,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    justifyContent: 'center',
-  },
-  customTermLabel: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '500',
-  },
+    // Custom term option
+    dropdownItemCustom: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      minHeight: touch.minTargetSmall,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+      justifyContent: 'center',
+    },
+    customTermLabel: {
+      ...typography.bodySmall,
+      color: c.primary,
+      fontWeight: '500',
+    },
 
-  // Empty state
-  emptyState: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-  },
-  emptyText: {
-    ...typography.bodySmall,
-    color: colors.textTertiary,
-  },
+    // Empty state
+    emptyState: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.lg,
+      alignItems: 'center',
+    },
+    emptyText: {
+      ...typography.bodySmall,
+      color: c.textTertiary,
+    },
 
-  // Quick suggestions
-  suggestionsRow: {
-    flexGrow: 0,
-  },
-  suggestionsContent: {
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  suggestionChip: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    minHeight: touch.minTargetSmall,
-    justifyContent: 'center',
-  },
-  suggestionChipSelected: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
-  },
-  suggestionChipText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  suggestionChipTextSelected: {
-    color: colors.primary,
-  },
-});
+    // Quick suggestions
+    suggestionsRow: {
+      flexGrow: 0,
+    },
+    suggestionsContent: {
+      gap: spacing.sm,
+      paddingVertical: spacing.xs,
+    },
+    suggestionChip: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.xs,
+      minHeight: touch.minTargetSmall,
+      justifyContent: 'center',
+    },
+    suggestionChipSelected: {
+      backgroundColor: c.primaryLight,
+      borderColor: c.primary,
+    },
+    suggestionChipText: {
+      ...typography.bodySmall,
+      color: c.textSecondary,
+    },
+    suggestionChipTextSelected: {
+      color: c.primary,
+    },
+  });
+}
 
 export default VocabularyPicker;

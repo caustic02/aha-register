@@ -1,10 +1,12 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { FieldInput } from '../FieldInput';
 import { DateField } from '../DateField';
 import type { TypeFormProps } from './index';
 import type { MuseumObjectData } from '../../db/types';
-import { colors, typography, radii } from '../../theme';
+import { typography, radii } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 const CONDITIONS = ['excellent', 'good', 'fair', 'poor', 'critical'] as const;
 const UNITS = ['cm', 'mm', 'in', 'm'] as const;
@@ -25,6 +27,8 @@ function Section({
   initialOpen: boolean;
   children: React.ReactNode;
 }) {
+  const { colors } = useTheme();
+  const secStyles = useMemo(() => makeSectionStyles(colors), [colors]);
   const [open, setOpen] = useState(initialOpen);
   return (
     <View style={secStyles.container}>
@@ -36,7 +40,7 @@ function Section({
               <Text style={secStyles.badgeText}>{filled}/{total}</Text>
             </View>
           )}
-          <Text style={secStyles.chevron}>{open ? '▲' : '▼'}</Text>
+          <Text style={secStyles.chevron}>{open ? '\u25B2' : '\u25BC'}</Text>
         </View>
       </Pressable>
       {open && <View style={secStyles.body}>{children}</View>}
@@ -44,59 +48,63 @@ function Section({
   );
 }
 
-const secStyles = StyleSheet.create({
-  container: {
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    backgroundColor: colors.borderLight,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    flex: 1,
-  },
-  right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  badge: {
-    backgroundColor: colors.accent,
-    borderRadius: radii.md,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  badgeText: {
-    color: colors.white,
-    fontSize: typography.size.xs,
-    fontWeight: typography.weight.semibold,
-  },
-  chevron: {
-    color: colors.textSecondary,
-    fontSize: typography.size.xs,
-  },
-  body: {
-    padding: 14,
-    paddingTop: 8,
-  },
-});
+function makeSectionStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: 8,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.lg,
+      overflow: 'hidden',
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      backgroundColor: c.borderLight,
+    },
+    title: {
+      color: c.textPrimary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      flex: 1,
+    },
+    right: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    badge: {
+      backgroundColor: c.heroGreen,
+      borderRadius: radii.md,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+    },
+    badgeText: {
+      color: c.white,
+      fontSize: typography.size.xs,
+      fontWeight: typography.weight.semibold,
+    },
+    chevron: {
+      color: c.textSecondary,
+      fontSize: typography.size.xs,
+    },
+    body: {
+      padding: 14,
+      paddingTop: 8,
+    },
+  });
+}
 
 // ── MuseumObjectForm ──────────────────────────────────────────────────────────
 
 export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const d = data as MuseumObjectData;
 
   // Existing typed fields
@@ -380,7 +388,7 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
               setDimensionsVerified(v);
               onChange({ ...data, dimensions_verified: v });
             }}
-            trackColor={{ false: colors.border, true: colors.accent }}
+            trackColor={{ false: colors.border, true: colors.heroGreen }}
             thumbColor={colors.white}
           />
         </View>
@@ -393,289 +401,127 @@ export default function MuseumObjectForm({ data, onChange, t }: TypeFormProps) {
         total={4}
         initialOpen={false}
       >
-        <FieldInput
-          label={t('type_forms.museum_object.period')}
-          value={period}
-          onChangeText={setPeriod}
-          onBlur={() => save({ period: period || undefined })}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.culture')}
-          value={culture}
-          onChangeText={setCulture}
-          onBlur={() => save({ culture: culture || undefined })}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.department')}
-          value={txt.department}
-          onChangeText={(v) => updateTxt('department', v)}
-          onBlur={() => saveFld('department', txt.department)}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.classification')}
-          value={txt.classification}
-          onChangeText={(v) => updateTxt('classification', v)}
-          onBlur={() => saveFld('classification', txt.classification)}
-        />
+        <FieldInput label={t('type_forms.museum_object.period')} value={period} onChangeText={setPeriod} onBlur={() => save({ period: period || undefined })} />
+        <FieldInput label={t('type_forms.museum_object.culture')} value={culture} onChangeText={setCulture} onBlur={() => save({ culture: culture || undefined })} />
+        <FieldInput label={t('type_forms.museum_object.department')} value={txt.department} onChangeText={(v) => updateTxt('department', v)} onBlur={() => saveFld('department', txt.department)} />
+        <FieldInput label={t('type_forms.museum_object.classification')} value={txt.classification} onChangeText={(v) => updateTxt('classification', v)} onBlur={() => saveFld('classification', txt.classification)} />
       </Section>
 
       {/* ── Section 4: Display & Storage ─────────────────────────────── */}
-      <Section
-        title={t('type_forms.museum_object.section_display_storage')}
-        filled={displayStorageFilled}
-        total={2}
-        initialOpen={false}
-      >
+      <Section title={t('type_forms.museum_object.section_display_storage')} filled={displayStorageFilled} total={2} initialOpen={false}>
         <Text style={styles.fieldLabel}>{t('type_forms.museum_object.display_status')}</Text>
         <View style={styles.chipRow}>
           {DISPLAY_STATUSES.map((s) => (
-            <Pressable
-              key={s}
-              style={[styles.chip, displayStatus === s && styles.chipActive]}
-              onPress={() => {
-                const val = s === displayStatus ? '' : s;
-                setDisplayStatus(val);
-                onChange({ ...data, display_status: val || undefined });
-              }}
-            >
-              <Text style={[styles.chipText, displayStatus === s && styles.chipTextActive]}>
-                {t(`type_forms.museum_object.display_status_${s.replace(/ /g, '_').toLowerCase()}`)}
-              </Text>
+            <Pressable key={s} style={[styles.chip, displayStatus === s && styles.chipActive]} onPress={() => { const val = s === displayStatus ? '' : s; setDisplayStatus(val); onChange({ ...data, display_status: val || undefined }); }}>
+              <Text style={[styles.chipText, displayStatus === s && styles.chipTextActive]}>{t(`type_forms.museum_object.display_status_${s.replace(/ /g, '_').toLowerCase()}`)}</Text>
             </Pressable>
           ))}
         </View>
-        <FieldInput
-          label={t('type_forms.museum_object.storage_location')}
-          value={txt.storage_location}
-          onChangeText={(v) => updateTxt('storage_location', v)}
-          onBlur={() => saveFld('storage_location', txt.storage_location)}
-        />
+        <FieldInput label={t('type_forms.museum_object.storage_location')} value={txt.storage_location} onChangeText={(v) => updateTxt('storage_location', v)} onBlur={() => saveFld('storage_location', txt.storage_location)} />
       </Section>
 
       {/* ── Section 5: Ownership & Acquisition ───────────────────────── */}
-      <Section
-        title={t('type_forms.museum_object.section_ownership')}
-        filled={ownershipFilled}
-        total={6}
-        initialOpen={false}
-      >
-        <FieldInput
-          label={t('type_forms.museum_object.owner')}
-          value={txt.owner}
-          onChangeText={(v) => updateTxt('owner', v)}
-          onBlur={() => saveFld('owner', txt.owner)}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.acquisition_type')}
-          value={txt.acquisition_type}
-          onChangeText={(v) => updateTxt('acquisition_type', v)}
-          onBlur={() => saveFld('acquisition_type', txt.acquisition_type)}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.purchase_price')}
-          value={txt.purchase_price}
-          onChangeText={(v) => updateTxt('purchase_price', v)}
-          onBlur={() => saveFld('purchase_price', txt.purchase_price)}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.insurance_value')}
-          value={txt.insurance_value}
-          onChangeText={(v) => updateTxt('insurance_value', v)}
-          onBlur={() => saveFld('insurance_value', txt.insurance_value)}
-        />
+      <Section title={t('type_forms.museum_object.section_ownership')} filled={ownershipFilled} total={6} initialOpen={false}>
+        <FieldInput label={t('type_forms.museum_object.owner')} value={txt.owner} onChangeText={(v) => updateTxt('owner', v)} onBlur={() => saveFld('owner', txt.owner)} />
+        <FieldInput label={t('type_forms.museum_object.acquisition_type')} value={txt.acquisition_type} onChangeText={(v) => updateTxt('acquisition_type', v)} onBlur={() => saveFld('acquisition_type', txt.acquisition_type)} />
+        <FieldInput label={t('type_forms.museum_object.purchase_price')} value={txt.purchase_price} onChangeText={(v) => updateTxt('purchase_price', v)} onBlur={() => saveFld('purchase_price', txt.purchase_price)} />
+        <FieldInput label={t('type_forms.museum_object.insurance_value')} value={txt.insurance_value} onChangeText={(v) => updateTxt('insurance_value', v)} onBlur={() => saveFld('insurance_value', txt.insurance_value)} />
         <View style={styles.switchRow}>
           <Text style={styles.switchLabel}>{t('type_forms.museum_object.permanent_loan')}</Text>
-          <Switch
-            value={permanentLoan}
-            onValueChange={(v) => {
-              setPermanentLoan(v);
-              onChange({ ...data, permanent_loan: v });
-            }}
-            trackColor={{ false: colors.border, true: colors.accent }}
-            thumbColor={colors.white}
-          />
+          <Switch value={permanentLoan} onValueChange={(v) => { setPermanentLoan(v); onChange({ ...data, permanent_loan: v }); }} trackColor={{ false: colors.border, true: colors.heroGreen }} thumbColor={colors.white} />
         </View>
         {permanentLoan && (
-          <DateField
-            label={t('type_forms.museum_object.permanent_loan_until')}
-            value={permanentLoanUntil}
-            onChange={(v) => {
-              setPermanentLoanUntil(v);
-              onChange({ ...data, permanent_loan_until: v });
-            }}
-            t={t}
-          />
+          <DateField label={t('type_forms.museum_object.permanent_loan_until')} value={permanentLoanUntil} onChange={(v) => { setPermanentLoanUntil(v); onChange({ ...data, permanent_loan_until: v }); }} t={t} />
         )}
       </Section>
 
       {/* ── Section 6: Provenance ────────────────────────────────────── */}
-      <Section
-        title={t('type_forms.museum_object.section_provenance')}
-        filled={provenanceFilled}
-        total={4}
-        initialOpen={false}
-      >
-        <FieldInput
-          label={t('type_forms.museum_object.provenance')}
-          value={provenance}
-          onChangeText={setProvenance}
-          onBlur={() => save({ provenance: provenance || undefined })}
-          multiline
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.historical_collections')}
-          value={txt.historical_collections}
-          onChangeText={(v) => updateTxt('historical_collections', v)}
-          onBlur={() => saveFld('historical_collections', txt.historical_collections)}
-          multiline
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.historical_inventory_numbers')}
-          value={txt.historical_inventory_numbers}
-          onChangeText={(v) => updateTxt('historical_inventory_numbers', v)}
-          onBlur={() => saveFld('historical_inventory_numbers', txt.historical_inventory_numbers)}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.provenance_narrative')}
-          value={txt.provenance_narrative}
-          onChangeText={(v) => updateTxt('provenance_narrative', v)}
-          onBlur={() => saveFld('provenance_narrative', txt.provenance_narrative)}
-          multiline
-        />
+      <Section title={t('type_forms.museum_object.section_provenance')} filled={provenanceFilled} total={4} initialOpen={false}>
+        <FieldInput label={t('type_forms.museum_object.provenance')} value={provenance} onChangeText={setProvenance} onBlur={() => save({ provenance: provenance || undefined })} multiline />
+        <FieldInput label={t('type_forms.museum_object.historical_collections')} value={txt.historical_collections} onChangeText={(v) => updateTxt('historical_collections', v)} onBlur={() => saveFld('historical_collections', txt.historical_collections)} multiline />
+        <FieldInput label={t('type_forms.museum_object.historical_inventory_numbers')} value={txt.historical_inventory_numbers} onChangeText={(v) => updateTxt('historical_inventory_numbers', v)} onBlur={() => saveFld('historical_inventory_numbers', txt.historical_inventory_numbers)} />
+        <FieldInput label={t('type_forms.museum_object.provenance_narrative')} value={txt.provenance_narrative} onChangeText={(v) => updateTxt('provenance_narrative', v)} onBlur={() => saveFld('provenance_narrative', txt.provenance_narrative)} multiline />
       </Section>
 
       {/* ── Section 7: Research & Bibliography ───────────────────────── */}
-      <Section
-        title={t('type_forms.museum_object.section_research')}
-        filled={researchFilled}
-        total={4}
-        initialOpen={false}
-      >
-        <FieldInput
-          label={t('type_forms.museum_object.scientific_notes')}
-          value={txt.scientific_notes}
-          onChangeText={(v) => updateTxt('scientific_notes', v)}
-          onBlur={() => saveFld('scientific_notes', txt.scientific_notes)}
-          multiline
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.bibliography')}
-          value={txt.bibliography}
-          onChangeText={(v) => updateTxt('bibliography', v)}
-          onBlur={() => saveFld('bibliography', txt.bibliography)}
-          multiline
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.mentioned_in')}
-          value={txt.mentioned_in}
-          onChangeText={(v) => updateTxt('mentioned_in', v)}
-          onBlur={() => saveFld('mentioned_in', txt.mentioned_in)}
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.internet_comment')}
-          value={txt.internet_comment}
-          onChangeText={(v) => updateTxt('internet_comment', v)}
-          onBlur={() => saveFld('internet_comment', txt.internet_comment)}
-        />
+      <Section title={t('type_forms.museum_object.section_research')} filled={researchFilled} total={4} initialOpen={false}>
+        <FieldInput label={t('type_forms.museum_object.scientific_notes')} value={txt.scientific_notes} onChangeText={(v) => updateTxt('scientific_notes', v)} onBlur={() => saveFld('scientific_notes', txt.scientific_notes)} multiline />
+        <FieldInput label={t('type_forms.museum_object.bibliography')} value={txt.bibliography} onChangeText={(v) => updateTxt('bibliography', v)} onBlur={() => saveFld('bibliography', txt.bibliography)} multiline />
+        <FieldInput label={t('type_forms.museum_object.mentioned_in')} value={txt.mentioned_in} onChangeText={(v) => updateTxt('mentioned_in', v)} onBlur={() => saveFld('mentioned_in', txt.mentioned_in)} />
+        <FieldInput label={t('type_forms.museum_object.internet_comment')} value={txt.internet_comment} onChangeText={(v) => updateTxt('internet_comment', v)} onBlur={() => saveFld('internet_comment', txt.internet_comment)} />
       </Section>
 
       {/* ── Section 8: Administration ────────────────────────────────── */}
-      <Section
-        title={t('type_forms.museum_object.section_admin')}
-        filled={adminFilled}
-        total={4}
-        initialOpen={false}
-      >
-        <FieldInput
-          label={t('type_forms.museum_object.registrar_data')}
-          value={txt.registrar_data}
-          onChangeText={(v) => updateTxt('registrar_data', v)}
-          onBlur={() => saveFld('registrar_data', txt.registrar_data)}
-          multiline
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.admin_notes')}
-          value={txt.admin_notes}
-          onChangeText={(v) => updateTxt('admin_notes', v)}
-          onBlur={() => saveFld('admin_notes', txt.admin_notes)}
-          multiline
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.general_notes')}
-          value={txt.general_notes}
-          onChangeText={(v) => updateTxt('general_notes', v)}
-          onBlur={() => saveFld('general_notes', txt.general_notes)}
-          multiline
-        />
-        <FieldInput
-          label={t('type_forms.museum_object.rights_status')}
-          value={txt.rights_status}
-          onChangeText={(v) => updateTxt('rights_status', v)}
-          onBlur={() => saveFld('rights_status', txt.rights_status)}
-        />
+      <Section title={t('type_forms.museum_object.section_admin')} filled={adminFilled} total={4} initialOpen={false}>
+        <FieldInput label={t('type_forms.museum_object.registrar_data')} value={txt.registrar_data} onChangeText={(v) => updateTxt('registrar_data', v)} onBlur={() => saveFld('registrar_data', txt.registrar_data)} multiline />
+        <FieldInput label={t('type_forms.museum_object.admin_notes')} value={txt.admin_notes} onChangeText={(v) => updateTxt('admin_notes', v)} onBlur={() => saveFld('admin_notes', txt.admin_notes)} multiline />
+        <FieldInput label={t('type_forms.museum_object.general_notes')} value={txt.general_notes} onChangeText={(v) => updateTxt('general_notes', v)} onBlur={() => saveFld('general_notes', txt.general_notes)} multiline />
+        <FieldInput label={t('type_forms.museum_object.rights_status')} value={txt.rights_status} onChangeText={(v) => updateTxt('rights_status', v)} onBlur={() => saveFld('rights_status', txt.rights_status)} />
       </Section>
 
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  fieldLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  dimRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 12,
-  },
-  dimField: { flex: 1 },
-  dimLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.size.xs,
-    marginBottom: 4,
-  },
-  dimInput: {
-    backgroundColor: colors.borderLight,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    color: colors.textPrimary,
-    fontSize: typography.size.md,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: { backgroundColor: colors.chipActive, borderColor: colors.chipActive },
-  chipText: { color: colors.textSecondary, fontSize: typography.size.sm },
-  chipTextActive: { color: colors.white, fontWeight: typography.weight.semibold },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  switchLabel: {
-    color: colors.textSecondary,
-    fontSize: typography.size.sm,
-    fontWeight: typography.weight.semibold,
-    textTransform: 'uppercase',
-    flex: 1,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    fieldLabel: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+      marginBottom: 8,
+      marginTop: 4,
+    },
+    dimRow: {
+      flexDirection: 'row',
+      gap: 8,
+      marginBottom: 12,
+    },
+    dimField: { flex: 1 },
+    dimLabel: {
+      color: c.textSecondary,
+      fontSize: typography.size.xs,
+      marginBottom: 4,
+    },
+    dimInput: {
+      backgroundColor: c.borderLight,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radii.md,
+      color: c.textPrimary,
+      fontSize: typography.size.md,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    chipRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginBottom: 16,
+    },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: radii.xl,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: { backgroundColor: c.chipActive, borderColor: c.chipActive },
+    chipText: { color: c.textSecondary, fontSize: typography.size.sm },
+    chipTextActive: { color: c.white, fontWeight: typography.weight.semibold },
+    switchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 16,
+    },
+    switchLabel: {
+      color: c.textSecondary,
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      textTransform: 'uppercase',
+      flex: 1,
+    },
+  });
+}

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -8,7 +8,9 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, radii, shadows, spacing, typography } from '../theme';
+import { radii, shadows, spacing, typography } from '../theme';
+import type { ColorPalette } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import { Button } from '../components/ui';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
@@ -55,6 +57,8 @@ export function AIProcessingScreen({
   onComplete,
   onSkip,
 }: AIProcessingScreenProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { t } = useAppTranslation();
 
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -355,126 +359,128 @@ export function AIProcessingScreen({
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  // Image section — top portion
-  imageSection: {
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing['2xl'],
-  },
-  imageWrapper: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    ...shadows.sm,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  // Progress bar
-  progressBarTrack: {
-    height: 4,
-    backgroundColor: colors.surfaceContainer,
-    borderRadius: 2,
-    marginTop: spacing.lg,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.tertiary,
-    borderRadius: 2,
-  },
-  stepText: {
-    ...typography.bodySmall,
-    color: colors.aiText,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
-  // Skeleton preview section
-  skeletonSection: {
-    flex: 1,
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing.xl,
-  },
-  skeletonBlock: {
-    backgroundColor: colors.surfaceContainer,
-    borderRadius: radii.sm,
-  },
-  skeletonTitle: {
-    height: 24,
-    width: '70%',
-    marginBottom: spacing.md,
-  },
-  skeletonRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  skeletonBadge: {
-    height: 22,
-    width: 64,
-    borderRadius: radii.full,
-  },
-  skeletonBadgeSmall: {
-    height: 22,
-    width: 44,
-    borderRadius: radii.full,
-  },
-  skeletonChip: {
-    height: 32,
-    width: 72,
-    borderRadius: radii.full,
-  },
-  skeletonChipWide: {
-    height: 32,
-    width: 96,
-    borderRadius: radii.full,
-  },
-  skeletonField: {
-    height: 40,
-    width: '100%',
-    marginBottom: spacing.md,
-    borderRadius: radii.md,
-  },
-  skeletonFieldShort: {
-    height: 40,
-    width: '60%',
-    marginBottom: spacing.md,
-    borderRadius: radii.md,
-  },
-  skeletonFieldMedium: {
-    height: 40,
-    width: '80%',
-    marginBottom: spacing.md,
-    borderRadius: radii.md,
-  },
-  skeletonTextArea: {
-    height: 72,
-    width: '100%',
-    marginBottom: spacing.md,
-    borderRadius: radii.md,
-  },
-  // Error state
-  errorContainer: {
-    marginTop: spacing.md,
-  },
-  errorText: {
-    ...typography.bodySmall,
-    color: colors.statusError,
-    marginBottom: spacing.lg,
-    textAlign: 'center',
-  },
-  errorGap: {
-    height: spacing.sm,
-  },
-  // Completion flash
-  completeFade: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background,
-  },
-});
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: c.background,
+    },
+    // Image section — top portion
+    imageSection: {
+      paddingHorizontal: spacing['2xl'],
+      paddingTop: spacing['2xl'],
+    },
+    imageWrapper: {
+      width: '100%',
+      aspectRatio: 4 / 3,
+      borderRadius: radii.lg,
+      overflow: 'hidden',
+      ...shadows.sm,
+    },
+    image: {
+      width: '100%',
+      height: '100%',
+    },
+    // Progress bar
+    progressBarTrack: {
+      height: 4,
+      backgroundColor: c.surfaceContainer,
+      borderRadius: 2,
+      marginTop: spacing.lg,
+      overflow: 'hidden',
+    },
+    progressBarFill: {
+      height: '100%',
+      backgroundColor: c.tertiary,
+      borderRadius: 2,
+    },
+    stepText: {
+      ...typography.bodySmall,
+      color: c.aiText,
+      marginTop: spacing.sm,
+      textAlign: 'center',
+    },
+    // Skeleton preview section
+    skeletonSection: {
+      flex: 1,
+      paddingHorizontal: spacing['2xl'],
+      paddingTop: spacing.xl,
+    },
+    skeletonBlock: {
+      backgroundColor: c.surfaceContainer,
+      borderRadius: radii.sm,
+    },
+    skeletonTitle: {
+      height: 24,
+      width: '70%',
+      marginBottom: spacing.md,
+    },
+    skeletonRow: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+      marginBottom: spacing.md,
+    },
+    skeletonBadge: {
+      height: 22,
+      width: 64,
+      borderRadius: radii.full,
+    },
+    skeletonBadgeSmall: {
+      height: 22,
+      width: 44,
+      borderRadius: radii.full,
+    },
+    skeletonChip: {
+      height: 32,
+      width: 72,
+      borderRadius: radii.full,
+    },
+    skeletonChipWide: {
+      height: 32,
+      width: 96,
+      borderRadius: radii.full,
+    },
+    skeletonField: {
+      height: 40,
+      width: '100%',
+      marginBottom: spacing.md,
+      borderRadius: radii.md,
+    },
+    skeletonFieldShort: {
+      height: 40,
+      width: '60%',
+      marginBottom: spacing.md,
+      borderRadius: radii.md,
+    },
+    skeletonFieldMedium: {
+      height: 40,
+      width: '80%',
+      marginBottom: spacing.md,
+      borderRadius: radii.md,
+    },
+    skeletonTextArea: {
+      height: 72,
+      width: '100%',
+      marginBottom: spacing.md,
+      borderRadius: radii.md,
+    },
+    // Error state
+    errorContainer: {
+      marginTop: spacing.md,
+    },
+    errorText: {
+      ...typography.bodySmall,
+      color: c.statusError,
+      marginBottom: spacing.lg,
+      textAlign: 'center',
+    },
+    errorGap: {
+      height: spacing.sm,
+    },
+    // Completion flash
+    completeFade: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: c.background,
+    },
+  });
+}

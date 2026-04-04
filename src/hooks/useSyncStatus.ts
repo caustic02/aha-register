@@ -7,6 +7,10 @@ import { AppState } from 'react-native';
 import * as Network from 'expo-network';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { getSetting } from '../services/settingsService';
+import {
+  getSyncCycleActive,
+  subscribeSyncCycle,
+} from '../sync/syncCycle';
 
 export type SyncStatusValue = 'idle' | 'syncing' | 'offline' | 'error';
 
@@ -28,6 +32,7 @@ export function useSyncStatus(): SyncStatusState {
     lastSyncedAt: null,
   });
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const refreshRef = useRef<() => Promise<void>>(async () => {});
 
   const refresh = useCallback(async () => {
     try {
@@ -50,14 +55,15 @@ export function useSyncStatus(): SyncStatusState {
         (networkState.isConnected ?? false) &&
         (networkState.isInternetReachable ?? false);
       const lastSyncedAt = lastSyncTs ? new Date(lastSyncTs) : null;
+      const syncCycleActive = getSyncCycleActive();
 
       let status: SyncStatusValue;
-      if (!isOnline) {
+      if (syncCycleActive) {
+        status = 'syncing';
+      } else if (!isOnline) {
         status = 'offline';
       } else if (failedCount > 0) {
         status = 'error';
-      } else if (pendingCount > 0) {
-        status = 'syncing';
       } else {
         status = 'idle';
       }
@@ -67,6 +73,10 @@ export function useSyncStatus(): SyncStatusState {
       // Keep previous state on error
     }
   }, [db]);
+
+  useEffect(() => {
+    refreshRef.current = refresh;
+  });
 
   useEffect(() => {
     // Initial load
@@ -80,9 +90,17 @@ export function useSyncStatus(): SyncStatusState {
       if (nextState === 'active') refresh();
     });
 
+    const unsubCycle = subscribeSyncCycle(() => {
+      if (getSyncCycleActive()) {
+        setState((prev) => ({ ...prev, status: 'syncing' }));
+      }
+      void refreshRef.current();
+    });
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       appStateSub.remove();
+      unsubCycle();
     };
   }, [refresh]);
 

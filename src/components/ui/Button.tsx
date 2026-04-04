@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -6,7 +6,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import { colors, radii, spacing, touch, typography } from '../../theme';
+import type { ReactNode } from 'react';
+import { radii, spacing, touch, typography } from '../../theme';
+import type { ColorPalette } from '../../theme';
+import { useTheme } from '../../theme/ThemeContext';
 
 type Variant = 'primary' | 'secondary' | 'ghost';
 type Size = 'lg' | 'md' | 'sm';
@@ -25,6 +28,53 @@ interface ButtonProps {
 
 const HEIGHT: Record<Size, number> = { lg: 56, md: 48, sm: 40 };
 
+function makeStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    base: {
+      borderRadius: radii.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    fullWidth: {
+      alignSelf: 'stretch',
+    },
+    inner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    icon: {
+      marginRight: spacing.sm,
+    },
+    disabled: {
+      opacity: 0.5,
+    },
+    // Variants
+    primary: {
+      backgroundColor: c.primary,
+    },
+    primaryPressed: {
+      backgroundColor: c.primaryDark,
+      opacity: 0.85,
+    },
+    secondary: {
+      backgroundColor: c.transparent,
+      borderWidth: 1.5,
+      borderColor: c.primary,
+    },
+    secondaryPressed: {
+      opacity: 0.85,
+    },
+    ghost: {
+      backgroundColor: c.transparent,
+    },
+    ghostPressed: {
+      opacity: 0.85,
+    },
+  });
+}
+
 export function Button({
   label,
   onPress,
@@ -36,6 +86,8 @@ export function Button({
   fullWidth = true,
   accessibilityHint,
 }: ButtonProps) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const textColor =
     variant === 'primary' ? colors.textInverse : colors.primary;
   const textStyle =
@@ -74,48 +126,3 @@ export function Button({
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: radii.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  fullWidth: {
-    alignSelf: 'stretch',
-  },
-  inner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    marginRight: spacing.sm,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  // Variants
-  primary: {
-    backgroundColor: colors.primary,
-  },
-  primaryPressed: {
-    backgroundColor: colors.primaryDark,
-    opacity: 0.85,
-  },
-  secondary: {
-    backgroundColor: colors.transparent,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  secondaryPressed: {
-    opacity: 0.85,
-  },
-  ghost: {
-    backgroundColor: colors.transparent,
-  },
-  ghostPressed: {
-    opacity: 0.85,
-  },
-});
