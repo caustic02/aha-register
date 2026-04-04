@@ -136,7 +136,7 @@ export class SyncTransport {
     // Explicit refresh as fallback
     const { data, error } = await supabase.auth.refreshSession();
     if (error || !data.session) {
-      if (__DEV__) console.warn('[sync] session expired, cannot refresh');
+      console.error('[sync] session expired, cannot refresh');
       return null;
     }
     if (__DEV__) console.log(`[sync] session refreshed: user=${data.session.user.id.slice(0, 8)}`);
@@ -148,11 +148,27 @@ export class SyncTransport {
   async pushChanges(queue: SyncQueueItem[]): Promise<PushResult> {
     const result: PushResult = { pushed: 0, failed: 0, skipped: 0, errors: [] };
 
-    const institutionId = await getSetting(this.db, 'sync_institution_id');
+    let institutionId = await getSetting(this.db, 'sync_institution_id');
     const userId = await this.ensureSession();
     if (!userId) {
       if (__DEV__) console.warn('[sync] no valid session, aborting push');
       return result;
+    }
+
+    // If institution_id is missing locally, fetch it from Supabase.
+    // Without this, RLS silently rejects all inserts.
+    if (!institutionId) {
+      const { data: membership } = await supabase
+        .from('institution_members')
+        .select('institution_id')
+        .eq('user_id', userId)
+        .limit(1)
+        .single();
+      if (membership?.institution_id) {
+        institutionId = membership.institution_id as string;
+        await setSetting(this.db, 'sync_institution_id', institutionId as string);
+        if (__DEV__) console.log(`[sync] resolved institution_id=${institutionId}`);
+      }
     }
 
     for (let i = 0; i < queue.length; i += BATCH_SIZE) {
@@ -189,7 +205,7 @@ export class SyncTransport {
 
           result.failed++;
           result.errors.push({ id: item.id, error: errorMsg });
-          if (__DEV__) console.warn(`[sync] push failed ${item.table_name}/${item.record_id}: ${errorMsg}`);
+          console.error(`[sync] push failed ${item.table_name}/${item.record_id}: ${errorMsg}`);
         }
       }
     }
@@ -262,11 +278,12 @@ export class SyncTransport {
       }
     }
 
-    const { error } = await supabase
+    const { error, count } = await supabase
       .from(table)
-      .upsert(payload, { onConflict: 'id' });
+      .upsert(payload, { onConflict: 'id', count: 'exact' });
 
     if (error) throw new Error(error.message);
+    if (count === 0) throw new Error(`RLS rejected upsert to ${table} (institution_id=${payload.institution_id ?? 'null'})`);
 
     // For media rows: upload the actual file to Supabase Storage if not yet uploaded
     if (table === 'media' && (item.action === 'insert' || item.action === 'update')) {
@@ -341,7 +358,7 @@ export class SyncTransport {
 
     const { data: rows, error, status, statusText } = await query;
     if (error) {
-      if (__DEV__) console.warn(`[sync] pull ${table} error: ${error.message} (HTTP ${status})`);
+      console.error(`[sync] pull ${table} error: ${error.message} (HTTP ${status})`);
       return;
     }
     if (__DEV__) console.log(`[sync] pull ${table}: ${rows?.length ?? 0} rows (HTTP ${status} ${statusText ?? ''}, since=${since})`);
@@ -353,7 +370,7 @@ export class SyncTransport {
         if (__DEV__ && ri < 3) console.log(`[sync] merging ${table}/${(remoteRow.id as string).slice(0, 8)} title=${(remoteRow as Record<string, unknown>).title ?? '—'}`);
         await this.mergeRemoteRow(table, remoteRow, result, appendOnly);
       } catch (err) {
-        if (__DEV__) console.warn(`[sync] merge error ${table}/${remoteRow.id}: ${err}`);
+        console.error(`[sync] merge error ${table}/${remoteRow.id}: ${err}`);
       }
     }
   }

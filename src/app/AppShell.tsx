@@ -65,13 +65,16 @@ export default function AppShell() {
         const session = await getSession();
         if (session) {
           setAuthenticated(true);
-          // Start auto-sync
-          const engine = new SyncEngine(database);
-          engine.startAutoSync();
-          engine.triggerSync();
-          syncEngineRef.current = engine;
         }
         setAuthChecked(true);
+
+        // Always start sync engine — it checks for a valid session internally.
+        // This avoids the bug where getSession() returns null at boot
+        // (expired token, migration timing) but the user IS signed in.
+        const engine = new SyncEngine(database);
+        engine.startAutoSync();
+        engine.triggerSync();
+        syncEngineRef.current = engine;
       })
       .catch((err) => setError(String(err)));
   }, []);

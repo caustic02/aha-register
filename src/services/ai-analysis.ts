@@ -3,7 +3,7 @@ import { supabase, ensureMigrated } from './supabase';
 const EDGE_FUNCTION_URL =
   'https://fdwmfijtpknwaesyvzbg.supabase.co/functions/v1/analyze-object';
 
-const TIMEOUT_MS = 30_000;
+const TIMEOUT_MS = 60_000;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -139,8 +139,8 @@ export async function analyzeObject(
 
     return data as AIAnalysisResponse;
   } catch (err: unknown) {
-    if (err instanceof DOMException && err.name === 'AbortError') {
-      return { success: false, error: 'Request timed out after 30 seconds' };
+    if (err instanceof Error && err.name === 'AbortError') {
+      return { success: false, error: 'Request timed out after 60 seconds' };
     }
     return {
       success: false,

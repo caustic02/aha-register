@@ -97,6 +97,18 @@ const DOMAIN_ICON_MAP: Record<CollectionDomain, React.ComponentType<{ size: numb
   general: ObjectsTabIcon,
 };
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
 // ── Storage size calculation ──────────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
@@ -171,6 +183,13 @@ export function SettingsScreen() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [syncEnabled, setSyncEnabled] = useState(false);
 
+  // Sync diagnostics
+  const [syncLastAttempt, setSyncLastAttempt] = useState<string | null>(null);
+  const [syncLastResult, setSyncLastResult] = useState<string | null>(null);
+  const [syncLastError, setSyncLastError] = useState<string | null>(null);
+  const [syncQueueCount, setSyncQueueCount] = useState(0);
+  const [syncRunning, setSyncRunning] = useState(false);
+
   // Domain picker collapse state
   const [domainExpanded, setDomainExpanded] = useState(!collectionDomain);
 
@@ -212,6 +231,18 @@ export function SettingsScreen() {
 
     const session = await getSession();
     setUserEmail(session?.user?.email ?? null);
+
+    // Sync diagnostics
+    const [syncAttempt, syncResult, syncError, queueRows] = await Promise.all([
+      getSetting(db, SETTING_KEYS.LAST_SYNC_ATTEMPT),
+      getSetting(db, SETTING_KEYS.LAST_SYNC_RESULT),
+      getSetting(db, SETTING_KEYS.LAST_SYNC_ERROR),
+      db.getFirstAsync<{ cnt: number }>('SELECT COUNT(*) as cnt FROM sync_queue WHERE status IN (\'pending\', \'failed\')'),
+    ]);
+    setSyncLastAttempt(syncAttempt);
+    setSyncLastResult(syncResult);
+    setSyncLastError(syncError && syncError.length > 0 ? syncError : null);
+    setSyncQueueCount(queueRows?.cnt ?? 0);
 
     // Calculate storage size with 5s timeout
     computeStorageSize(db).then(setStorageDisplay).catch(() => {
@@ -287,6 +318,33 @@ export function SettingsScreen() {
     },
     [db],
   );
+
+  // ── Sync Now handler ────────────────────────────────────────────────────────
+
+  const handleSyncNow = useCallback(async () => {
+    if (syncRunning) return;
+    setSyncRunning(true);
+    try {
+      const { SyncEngine } = await import('../sync/engine');
+      const engine = new SyncEngine(db);
+      await engine.sync();
+    } catch {
+      // error is persisted in SQLite by the engine
+    } finally {
+      setSyncRunning(false);
+      // Reload sync diagnostics
+      const [syncAttempt, syncResult, syncError, queueRows] = await Promise.all([
+        getSetting(db, SETTING_KEYS.LAST_SYNC_ATTEMPT),
+        getSetting(db, SETTING_KEYS.LAST_SYNC_RESULT),
+        getSetting(db, SETTING_KEYS.LAST_SYNC_ERROR),
+        db.getFirstAsync<{ cnt: number }>('SELECT COUNT(*) as cnt FROM sync_queue WHERE status IN (\'pending\', \'failed\')'),
+      ]);
+      setSyncLastAttempt(syncAttempt);
+      setSyncLastResult(syncResult);
+      setSyncLastError(syncError && syncError.length > 0 ? syncError : null);
+      setSyncQueueCount(queueRows?.cnt ?? 0);
+    }
+  }, [db, syncRunning]);
 
   // ── Coming soon stub ────────────────────────────────────────────────────────
 
@@ -381,6 +439,42 @@ export function SettingsScreen() {
           >
             <SignOutIcon size={20} color={colors.error} />
             <Text style={styles.dangerText}>{t('auth.sign_out')}</Text>
+          </Pressable>
+        </Card>
+
+        {/* ── Sync Status ──────────────────────────────────────────────────── */}
+        <SectionHeader title="Sync Status" />
+        <Card>
+          <MetadataRow label="Queue" value={`${syncQueueCount} pending`} />
+          <MetadataRow
+            label="Last attempt"
+            value={syncLastAttempt ? formatDate(syncLastAttempt) : 'never'}
+          />
+          <MetadataRow
+            label="Last result"
+            value={syncLastResult ?? 'none'}
+          />
+          {syncLastError != null && (
+            <View style={styles.syncErrorBox}>
+              <Text style={styles.syncErrorLabel}>Error</Text>
+              <Text style={styles.syncErrorText} selectable>{syncLastError}</Text>
+            </View>
+          )}
+          <Divider />
+          <Pressable
+            onPress={handleSyncNow}
+            hitSlop={touch.hitSlop}
+            accessibilityRole="button"
+            accessibilityLabel="Sync Now"
+            style={({ pressed }) => [
+              styles.actionRow,
+              pressed && styles.pressed,
+            ]}
+          >
+            <ExportIcon size={20} color={syncRunning ? colors.textMuted : colors.primary} />
+            <Text style={[styles.syncNowText, syncRunning && { color: colors.textMuted }]}>
+              {syncRunning ? 'Syncing...' : 'Sync Now'}
+            </Text>
           </Pressable>
         </Card>
 
@@ -953,6 +1047,29 @@ function makeStyles(c: ColorPalette) {
     },
     pressed: {
       opacity: 0.7,
+    },
+    // Sync status
+    syncErrorBox: {
+      padding: spacing.sm,
+      marginTop: spacing.xs,
+      backgroundColor: c.surface,
+      borderRadius: spacing.xs,
+      borderLeftWidth: 3,
+      borderLeftColor: c.error,
+    },
+    syncErrorLabel: {
+      ...typography.caption,
+      color: c.error,
+      fontWeight: '700',
+      marginBottom: spacing.xs,
+    },
+    syncErrorText: {
+      ...typography.bodySmall,
+      color: c.error,
+    },
+    syncNowText: {
+      ...typography.bodyMedium,
+      color: c.primary,
     },
   });
 }

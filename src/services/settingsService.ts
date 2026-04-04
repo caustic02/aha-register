@@ -14,6 +14,9 @@ export const SETTING_KEYS = {
   LAST_SYNC_TIMESTAMP: 'last_sync_timestamp',
   SYNC_INSTITUTION_ID: 'sync_institution_id',
   SYNC_ENABLED: 'sync_enabled',
+  LAST_SYNC_ATTEMPT: 'last_sync_attempt',
+  LAST_SYNC_RESULT: 'last_sync_result',
+  LAST_SYNC_ERROR: 'last_sync_error',
 } as const;
 
 export const INSTITUTION_TYPES = [

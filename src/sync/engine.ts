@@ -2,7 +2,7 @@ import type { SQLiteDatabase } from 'expo-sqlite';
 import { AppState } from 'react-native';
 import type { SyncAction, SyncStatus, SyncQueueItem } from '../db/types';
 import { SyncTransport } from '../services/sync-transport';
-import { getSetting } from '../services/settingsService';
+import { getSetting, setSetting } from '../services/settingsService';
 import { generateId } from '../utils/uuid';
 import { beginSyncCycle, endSyncCycle } from './syncCycle';
 
@@ -58,7 +58,7 @@ export class SyncEngine {
 
   /**
    * Run a full sync cycle: push local changes, then pull remote changes.
-   * Returns silently if offline, sync is disabled, or already syncing.
+   * Requires: active Supabase session + network. No settings flag needed.
    */
   async sync(): Promise<void> {
     if (this.syncing) {
@@ -66,20 +66,28 @@ export class SyncEngine {
       return;
     }
 
-    const enabled = await getSetting(this.db, 'sync_enabled');
-    if (enabled !== 'true') {
-      if (__DEV__) console.log('[sync] disabled, skipping');
+    const online = await this.transport.isOnline();
+    if (!online) {
+      console.warn('[sync] offline, skipping');
+      await setSetting(this.db, 'last_sync_error', 'device offline');
+      await setSetting(this.db, 'last_sync_attempt', new Date().toISOString());
       return;
     }
 
-    const online = await this.transport.isOnline();
-    if (!online) {
-      if (__DEV__) console.log('[sync] offline, skipping');
+    // Session check — sync only if authenticated
+    const userId = await this.transport.ensureSession();
+    if (!userId) {
+      console.warn('[sync] no active session, skipping');
+      await setSetting(this.db, 'last_sync_error', 'no active session (not signed in)');
+      await setSetting(this.db, 'last_sync_attempt', new Date().toISOString());
       return;
     }
 
     this.syncing = true;
     beginSyncCycle();
+    await setSetting(this.db, 'last_sync_attempt', new Date().toISOString());
+    await setSetting(this.db, 'last_sync_error', '');
+    await setSetting(this.db, 'last_sync_result', 'syncing...');
     try {
       if (__DEV__) console.log('[sync] starting sync cycle');
 
@@ -89,9 +97,14 @@ export class SyncEngine {
         [MAX_RETRIES],
       );
 
+      let pushSummary = 'push: 0 items';
       if (pending.length > 0) {
         const pushResult = await this.transport.pushChanges(pending);
-        if (__DEV__) console.log(`[sync] push complete: ${pushResult.pushed} pushed, ${pushResult.failed} failed, ${pushResult.skipped} skipped`);
+        pushSummary = `push: ${pushResult.pushed} ok, ${pushResult.failed} failed, ${pushResult.skipped} skipped`;
+        if (pushResult.errors.length > 0) {
+          await setSetting(this.db, 'last_sync_error', pushResult.errors.map(e => `${e.id}: ${e.error}`).join('\n'));
+        }
+        if (__DEV__) console.log(`[sync] ${pushSummary}`);
       }
 
       // Pull — one-time reset to pick up seed data (v0.4.0b)
@@ -113,16 +126,21 @@ export class SyncEngine {
       const since = lastSync ?? '1970-01-01T00:00:00.000Z';
       if (__DEV__) console.log(`[sync] after reset check, since=${since}`);
       const pullResult = await this.transport.pullChanges(since);
-      if (__DEV__) console.log(`[sync] pull complete: ${pullResult.inserted} inserted, ${pullResult.updated} updated, ${pullResult.skipped} skipped, ${pullResult.conflicts} conflicts`);
+      const pullSummary = `pull: ${pullResult.inserted} ins, ${pullResult.updated} upd, ${pullResult.skipped} skip, ${pullResult.conflicts} conflict`;
+      if (__DEV__) console.log(`[sync] ${pullSummary}`);
 
       // Post-sync: cloud OCR for eligible document scans (fire-and-forget)
       this.runPostSyncCloudOcr().catch(() => {});
 
       // Update timestamp
       await this.transport.setLastSyncTimestamp(new Date().toISOString());
+      await setSetting(this.db, 'last_sync_result', `${pushSummary} | ${pullSummary}`);
       if (__DEV__) console.log('[sync] cycle complete');
     } catch (err) {
-      if (__DEV__) console.warn('[sync] cycle error:', err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[sync] cycle error:', err);
+      await setSetting(this.db, 'last_sync_error', msg).catch(() => {});
+      await setSetting(this.db, 'last_sync_result', 'FAILED').catch(() => {});
     } finally {
       endSyncCycle();
       this.syncing = false;

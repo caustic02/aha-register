@@ -63,7 +63,7 @@ import { useObjectDocuments } from '../hooks/useObjectDocuments';
 import { getProtocol, type CaptureProtocol } from '../config/protocols';
 import { CheckIcon } from '../theme/icons';
 import { Camera, QrCode } from 'lucide-react-native';
-import { VIEW_TYPES, STANDARD_VIEW_TYPES } from '../constants/viewTypes';
+import { STANDARD_VIEW_TYPES } from '../constants/viewTypes';
 import type { RegisterViewType } from '../db/types';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { LocationPicker } from '../components/LocationPicker';
@@ -898,6 +898,79 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
+        {/* ── HERO IMAGE ───────────────────────────────────────────────────── */}
+        {primaryMedia && (
+          <Pressable
+            style={styles.heroContainer}
+            onPress={() => handleMediaTap(primaryMedia)}
+            accessibilityRole="image"
+            accessibilityLabel={primaryMedia.caption ?? object.title}
+          >
+            <Image
+              source={{ uri: primaryMedia.file_path }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          </Pressable>
+        )}
+
+        {/* ── CAPTURE MORE VIEWS ───────────────────────────────────────────── */}
+        <View style={styles.heroViewGallery}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.heroViewGalleryContent}
+          >
+            {STANDARD_VIEW_TYPES.map((viewDef) => {
+              const captured = media.find(
+                (m) => m.view_type === viewDef.key && m.media_type !== 'derivative_isolated',
+              );
+              return (
+                <Pressable
+                  key={viewDef.key}
+                  style={styles.heroViewItemWrapper}
+                  onPress={() => {
+                    if (captured) {
+                      setViewerUri(captured.file_path);
+                    } else {
+                      navigation.navigate('CaptureCamera', {
+                        viewType: viewDef.key as RegisterViewType,
+                        objectId: object.id,
+                      });
+                    }
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(viewDef.labelKey)}
+                >
+                  <View style={[
+                    styles.heroViewItem,
+                    captured ? styles.heroViewItemCaptured : styles.heroViewItemEmpty,
+                  ]}>
+                    {captured ? (
+                      <Image
+                        source={{ uri: captured.file_path }}
+                        style={styles.heroViewThumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <Camera size={24} color={colors.textTertiary} />
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.heroViewLabel,
+                      captured && styles.heroViewLabelCaptured,
+                    ]}
+                    numberOfLines={2}
+                  >
+                    {t(viewDef.labelKey)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
         {/* ── COMPLETION RING + SYNC ────────────────────────────────────────── */}
         <View style={sec.completionRow}>
           <CompletionRing percent={completeness} />
@@ -1337,120 +1410,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
               </ScrollView>
             </View>
           ) : null}
-
-          {/* ── MULTI-VIEW GALLERY (Registerbogen) ──────────────────────────── */}
-          <View style={styles.viewGallerySection}>
-            <SectionHeader title={t('view_checklist.title')} />
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.viewGalleryContent}
-            >
-              {VIEW_TYPES.map((viewDef) => {
-                const captured = media.find(
-                  (m) => m.view_type === viewDef.key && m.media_type !== 'derivative_isolated',
-                );
-                return (
-                  <Pressable
-                    key={viewDef.key}
-                    style={[
-                      styles.viewGalleryItem,
-                      captured ? styles.viewGalleryItemCaptured : styles.viewGalleryItemEmpty,
-                    ]}
-                    onPress={() => {
-                      if (captured) {
-                        setViewerUri(captured.file_path);
-                      } else {
-                        navigation.navigate('CaptureCamera', {
-                          viewType: viewDef.key as RegisterViewType,
-                          objectId: object.id,
-                        });
-                      }
-                    }}
-                    accessibilityRole="button"
-                    accessibilityLabel={t(viewDef.labelKey)}
-                  >
-                    {captured ? (
-                      <>
-                        <Image
-                          source={{ uri: captured.file_path }}
-                          style={styles.viewGalleryImage}
-                          resizeMode="cover"
-                        />
-                        <View style={styles.viewGalleryCheck}>
-                          <CheckIcon size={12} color={colors.white} />
-                        </View>
-                      </>
-                    ) : (
-                      <Camera size={20} color={colors.textTertiary} />
-                    )}
-                    <Text
-                      style={[
-                        styles.viewGalleryLabel,
-                        captured && styles.viewGalleryLabelCaptured,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {t(viewDef.labelKey)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            {/* Per-view dimension inputs for captured views */}
-            {media
-              .filter((m) => m.view_type && VIEW_TYPES.some((v) => v.key === m.view_type))
-              .map((m) => (
-                <View key={m.id} style={styles.viewDimensionRow}>
-                  <Text style={styles.viewDimensionLabel}>
-                    {t(`view_types.${m.view_type}`)} - {t('view_checklist.dimensions_label')}
-                  </Text>
-                  <TextInput
-                    style={styles.viewDimensionInput}
-                    placeholder={t('view_checklist.dimensions_placeholder')}
-                    placeholderTextColor={colors.textTertiary}
-                    defaultValue={m.view_dimensions ?? ''}
-                    onEndEditing={(e) => {
-                      const val = e.nativeEvent.text.trim();
-                      db.runAsync(
-                        `UPDATE media SET view_dimensions = ?, updated_at = ? WHERE id = ?`,
-                        [val || null, new Date().toISOString(), m.id],
-                      ).then(() => {
-                        import('../sync/engine').then(({ SyncEngine: SE }) => {
-                          new SE(db).queueChange('media', m.id, 'update', { view_dimensions: val || null });
-                        });
-                      }).catch(() => {});
-                    }}
-                  />
-                  {m.view_type === 'detail' && (
-                    <>
-                      <Text style={[styles.viewDimensionLabel, { marginTop: spacing.sm }]}>
-                        {t('view_checklist.notes_label')}
-                      </Text>
-                      <TextInput
-                        style={styles.viewDimensionInput}
-                        placeholder={t('view_checklist.notes_placeholder')}
-                        placeholderTextColor={colors.textTertiary}
-                        defaultValue={m.view_notes ?? ''}
-                        multiline
-                        onEndEditing={(e) => {
-                          const val = e.nativeEvent.text.trim();
-                          db.runAsync(
-                            `UPDATE media SET view_notes = ?, updated_at = ? WHERE id = ?`,
-                            [val || null, new Date().toISOString(), m.id],
-                          ).then(() => {
-                            import('../sync/engine').then(({ SyncEngine: SE }) => {
-                              new SE(db).queueChange('media', m.id, 'update', { view_notes: val || null });
-                            });
-                          }).catch(() => {});
-                        }}
-                      />
-                    </>
-                  )}
-                </View>
-              ))}
-          </View>
 
           {/* ── ADD VIDEO BUTTON ─────────────────────────────────────────────── */}
           <Pressable
@@ -2055,8 +2014,65 @@ function makeStyles(c: ColorPalette) {
       flex: 1,
     },
     scrollContent: {
-      paddingTop: spacing.sm,
+      paddingTop: 0,
       paddingBottom: 100,
+    },
+    // Hero image
+    heroContainer: {
+      width: '100%',
+      maxHeight: 300,
+      backgroundColor: c.surface,
+      overflow: 'hidden',
+    },
+    heroImage: {
+      width: '100%',
+      height: 300,
+    },
+    // Hero view gallery (thumbnails below hero)
+    heroViewGallery: {
+      paddingVertical: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    heroViewGalleryContent: {
+      paddingHorizontal: spacing.lg,
+      gap: spacing.sm,
+    },
+    heroViewItemWrapper: {
+      alignItems: 'center',
+      width: 88,
+    },
+    heroViewItem: {
+      width: 80,
+      height: 80,
+      borderRadius: radii.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+      overflow: 'hidden',
+    },
+    heroViewItemCaptured: {
+      borderWidth: 2,
+      borderColor: c.success,
+    },
+    heroViewItemEmpty: {
+      borderWidth: 1.5,
+      borderColor: c.border,
+      borderStyle: 'dashed',
+    },
+    heroViewThumb: {
+      width: '100%',
+      height: '100%',
+    },
+    heroViewLabel: {
+      ...typography.caption,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: 4,
+      fontSize: 11,
+    },
+    heroViewLabelCaptured: {
+      color: c.success,
+      fontWeight: typography.weight.semibold,
     },
     // Gallery
     gallerySection: {
