@@ -945,6 +945,14 @@
     "offlineBanner": "Offline-Modus",
     "captureCtaTitle": "Neues Objekt erfassen",
     "captureCtaSubtitle": "Foto, Dokument oder Kurznotiz",
+    "domain_subtitle": {
+      "museum_collection": "Museumssammlungen",
+      "archaeological_site": "Grabungsdokumentation",
+      "human_rights": "Vorfallsdokumentation",
+      "natural_history": "Probensammlung",
+      "conservation_lab": "Restaurierungsdokumentation",
+      "general": "Sammlungsverwaltung"
+    },
     "domainMuseumCollection": "Museumssammlung",
     "needsReview": "Zur Pr\u00fcfung",
     "statStorage": "Speicher",

@@ -19,6 +19,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
+import { useSettings } from '../hooks/useSettings';
 import {
   CaptureTabIcon,
   ForwardIcon,
@@ -200,6 +201,7 @@ export function HomeScreen({ navigation }: Props) {
 
   const db = useDatabase();
   const { t } = useAppTranslation();
+  const { collectionDomain } = useSettings();
   const syncStatus = useSyncStatus();
 
   const insets = useSafeAreaInsets();
@@ -381,7 +383,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={st.headerInner}>
           <View>
             <WordmarkLogo width={110} fill={colors.white} />
-            <Text style={st.headerSubtitle}>Museum Collections</Text>
+            <Text style={st.headerSubtitle}>{t(`home.domain_subtitle.${collectionDomain}`)}</Text>
           </View>
           <View style={st.headerActions}>
             <Pressable style={st.headerBtn} onPress={() => navigation.navigate('ObjectList')} accessibilityLabel={t('common.search')} hitSlop={touch.hitSlop}>

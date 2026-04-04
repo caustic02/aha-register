@@ -945,6 +945,14 @@
     "offlineBanner": "Working offline",
     "captureCtaTitle": "Capture New Object",
     "captureCtaSubtitle": "Photo, document, or quick note",
+    "domain_subtitle": {
+      "museum_collection": "Museum Collections",
+      "archaeological_site": "Site Documentation",
+      "human_rights": "Incident Records",
+      "natural_history": "Specimen Collection",
+      "conservation_lab": "Conservation Records",
+      "general": "Collection Management"
+    },
     "domainMuseumCollection": "Museum collection",
     "needsReview": "Needs Review",
     "statStorage": "Storage",
