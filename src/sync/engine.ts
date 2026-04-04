@@ -1,19 +1,27 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import { AppState } from 'react-native';
+import * as Network from 'expo-network';
 import type { SyncAction, SyncStatus, SyncQueueItem } from '../db/types';
 import { SyncTransport } from '../services/sync-transport';
 import { getSetting, setSetting } from '../services/settingsService';
 import { generateId } from '../utils/uuid';
-import { beginSyncCycle, endSyncCycle } from './syncCycle';
+import { beginSyncCycle, endSyncCycle, getSyncCycleActive } from './syncCycle';
 
 export type { SyncAction, SyncStatus, SyncQueueItem };
 
 const MAX_RETRIES = 5;
+/** How often (ms) to run a safety-net sync while the app is foregrounded. */
+const AUTO_SYNC_INTERVAL_MS = 60_000;
+/** How often (ms) to poll network state for offline→online transitions. */
+const CONNECTIVITY_POLL_MS = 5_000;
 
 export class SyncEngine {
   private transport: SyncTransport;
   private syncing = false;
   private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
+  private syncIntervalId: ReturnType<typeof setInterval> | null = null;
+  private connectivityIntervalId: ReturnType<typeof setInterval> | null = null;
+  private lastOnlineState: boolean | null = null;
 
   constructor(private db: SQLiteDatabase) {
     this.transport = new SyncTransport(db);
@@ -34,6 +42,11 @@ export class SyncEngine {
        VALUES (?, ?, ?, ?, ?, 'pending', 0, ?, ?)`,
       [id, tableName, recordId, action, JSON.stringify(payload), now, now],
     );
+    // Kick off an immediate sync so captures push within seconds.
+    // Guard: don't start a second cycle if one is already running.
+    if (!getSyncCycleActive()) {
+      this.sync().catch(() => {});
+    }
   }
 
   async getSyncStatus(): Promise<{
@@ -55,6 +68,25 @@ export class SyncEngine {
   }
 
   // ── Full sync cycle ──────────────────────────────────────────────────────
+
+  /**
+   * Reset items that are permanently stuck (retry_count > MAX_RETRIES) back
+   * to pending so they get another attempt. This rescues items that previously
+   * failed due to now-fixed server/schema bugs (missing location columns,
+   * missing institution_id, etc.). Called at the top of every sync cycle.
+   */
+  private async resetStalledFailures(): Promise<void> {
+    try {
+      await this.db.runAsync(
+        `UPDATE sync_queue
+         SET status = 'pending', retry_count = 0, updated_at = ?
+         WHERE status = 'failed' AND retry_count > ?`,
+        [new Date().toISOString(), MAX_RETRIES],
+      );
+    } catch {
+      // Non-fatal — continue with sync
+    }
+  }
 
   /**
    * Run a full sync cycle: push local changes, then pull remote changes.
@@ -90,6 +122,9 @@ export class SyncEngine {
     await setSetting(this.db, 'last_sync_result', 'syncing...');
     try {
       if (__DEV__) console.log('[sync] starting sync cycle');
+
+      // Rescue items that exceeded MAX_RETRIES due to now-fixed server bugs
+      await this.resetStalledFailures();
 
       // Push
       const pending = await this.db.getAllAsync<SyncQueueItem>(
@@ -154,14 +189,40 @@ export class SyncEngine {
    * Call once at app startup.
    */
   startAutoSync(): void {
-    // Sync when app comes to foreground
+    // ── 1. Sync when app comes to foreground ──────────────────────────────
     this.appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        this.sync();
+        this.sync().catch(() => {});
       }
     });
 
-    if (__DEV__) console.log('[sync] auto-sync listeners started');
+    // ── 2. Safety-net: sync every 60 s while foregrounded ─────────────────
+    this.syncIntervalId = setInterval(() => {
+      if (AppState.currentState === 'active') {
+        this.sync().catch(() => {});
+      }
+    }, AUTO_SYNC_INTERVAL_MS);
+
+    // ── 3. Connectivity watch: detect offline → online transitions ─────────
+    // expo-network is poll-only; check every 5 s and trigger sync the moment
+    // the device comes back online (handles "100 photos taken in airplane mode"
+    // scenario without any extra user interaction).
+    this.connectivityIntervalId = setInterval(async () => {
+      if (AppState.currentState !== 'active') return;
+      try {
+        const state = await Network.getNetworkStateAsync();
+        const isOnline = (state.isConnected ?? false) && (state.isInternetReachable ?? false);
+        if (this.lastOnlineState === false && isOnline) {
+          if (__DEV__) console.log('[sync] connectivity restored — triggering sync');
+          this.sync().catch(() => {});
+        }
+        this.lastOnlineState = isOnline;
+      } catch {
+        // Network query failed — ignore
+      }
+    }, CONNECTIVITY_POLL_MS);
+
+    if (__DEV__) console.log('[sync] auto-sync listeners started (foreground, 60s interval, connectivity watch)');
   }
 
   /**
@@ -170,6 +231,15 @@ export class SyncEngine {
   stopAutoSync(): void {
     this.appStateSubscription?.remove();
     this.appStateSubscription = null;
+    if (this.syncIntervalId !== null) {
+      clearInterval(this.syncIntervalId);
+      this.syncIntervalId = null;
+    }
+    if (this.connectivityIntervalId !== null) {
+      clearInterval(this.connectivityIntervalId);
+      this.connectivityIntervalId = null;
+    }
+    this.lastOnlineState = null;
     if (__DEV__) console.log('[sync] auto-sync listeners stopped');
   }
 
