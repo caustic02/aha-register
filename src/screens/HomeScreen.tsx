@@ -203,7 +203,7 @@ export function HomeScreen({ navigation }: Props) {
   const syncStatus = useSyncStatus();
 
   const insets = useSafeAreaInsets();
-  const HEADER_H = insets.top + 56; // safe area + header content
+  const HEADER_H = insets.top + 64; // safe area + header content (48dp buttons + padding)
 
   // ── Sub-components (need access to theme-derived `st` and `colors`) ──
 
@@ -384,11 +384,11 @@ export function HomeScreen({ navigation }: Props) {
             <Text style={st.headerSubtitle}>Museum Collections</Text>
           </View>
           <View style={st.headerActions}>
-            <Pressable style={st.headerBtn} onPress={() => navigation.navigate('ObjectList')} accessibilityLabel={t('common.search')} hitSlop={touch.hitSlop}>
-              <SearchIcon size={18} color={HEADER_TEXT} />
+            <Pressable style={st.headerBtn} onPress={() => navigation.navigate('ObjectList')} accessibilityRole="button" accessibilityLabel={t('common.search')} hitSlop={touch.hitSlop}>
+              <SearchIcon size={20} color={HEADER_TEXT} />
             </Pressable>
-            <Pressable style={st.headerBtn} onPress={() => navigation.navigate('Settings')} accessibilityLabel="Settings" hitSlop={touch.hitSlop}>
-              <SettingsTabIcon size={18} color={HEADER_TEXT} />
+            <Pressable style={st.headerBtn} onPress={() => navigation.navigate('Settings')} accessibilityRole="button" accessibilityLabel="Settings" hitSlop={touch.hitSlop}>
+              <SettingsTabIcon size={20} color={HEADER_TEXT} />
             </Pressable>
           </View>
         </View>
@@ -583,6 +583,7 @@ function makeStyles(colors: ColorPalette) {
     headerBlur: {
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
       backgroundColor: 'rgba(10, 10, 10, 0.75)',
+      overflow: 'visible',
     },
     headerInner: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -593,9 +594,9 @@ function makeStyles(colors: ColorPalette) {
     },
     headerActions: { flexDirection: 'row', gap: 10 },
     headerBtn: {
-      width: 38, height: 38, borderRadius: 19, backgroundColor: 'transparent',
+      width: touch.minTarget, height: touch.minTarget, borderRadius: touch.minTarget / 2,
+      backgroundColor: 'transparent',
       borderWidth: 1, borderColor: colors.white + '40', alignItems: 'center', justifyContent: 'center',
-      minWidth: touch.minTarget, minHeight: touch.minTarget,
     },
 
     // Section
