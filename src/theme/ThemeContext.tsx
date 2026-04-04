@@ -31,9 +31,8 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme();
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
-  const [loaded, setLoaded] = useState(false);
 
-  // Load saved preference
+  // Load saved preference (non-blocking — app renders immediately with default)
   useEffect(() => {
     SecureStore.getItemAsync(STORAGE_KEY)
       .then((val) => {
@@ -41,8 +40,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
           setPreferenceState(val);
         }
       })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
+      .catch(() => {});
   }, []);
 
   const setPreference = useCallback((pref: ThemePreference) => {
@@ -64,9 +62,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     () => ({ colors: resolvedColors, mode, preference, setPreference }),
     [resolvedColors, mode, preference, setPreference],
   );
-
-  // Don't render until we've loaded the preference to avoid flash
-  if (!loaded) return null;
 
   return (
     <ThemeContext.Provider value={value}>
