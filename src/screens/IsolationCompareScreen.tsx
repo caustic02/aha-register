@@ -4,6 +4,7 @@ import {
   Alert,
   Animated,
   Image,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -185,9 +186,18 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
   const handleSaveToDevice = useCallback(async () => {
     if (!result) return;
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(t('isolation.permissionNeeded'));
+      const perm = await MediaLibrary.requestPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          t('capture.library_permission_title'),
+          t('isolation.permissionNeeded'),
+          perm.canAskAgain
+            ? [{ text: t('capture.library_permission_cancel') }]
+            : [
+                { text: t('capture.library_permission_cancel'), style: 'cancel' },
+                { text: t('capture.permission_open_settings'), onPress: () => Linking.openSettings() },
+              ],
+        );
         return;
       }
       await MediaLibrary.saveToLibraryAsync(result.filePath);

@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -217,10 +218,38 @@ export function VideoRecordScreen({ route, navigation }: Props) {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (!camPerm?.granted || !micPerm?.granted) {
+    const canAskCamera = camPerm?.canAskAgain !== false;
+    const canAskMic = micPerm?.canAskAgain !== false;
+    const canAskAny = canAskCamera || canAskMic;
+    // Still loading permissions — show spinner
+    if (!camPerm || !micPerm) {
+      return (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.heroGreen} />
+        </View>
+      );
+    }
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.permText}>{t('capture.permission_title')}</Text>
+        <Text style={[styles.permText, { fontSize: 14, marginTop: 8, opacity: 0.7 }]}>{t('capture.permission_body')}</Text>
+        {canAskAny ? (
+          <Pressable
+            style={[styles.topBtn, { marginTop: 20, width: 'auto', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.heroGreen }]}
+            onPress={() => { if (!camPerm.granted) requestCamPerm(); if (!micPerm.granted) requestMicPerm(); }}
+            accessibilityRole="button"
+          >
+            <Text style={styles.permText}>{t('capture.permission_grant')}</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={[styles.topBtn, { marginTop: 20, width: 'auto', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.heroGreen }]}
+            onPress={() => Linking.openSettings()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.permText}>{t('capture.permission_open_settings')}</Text>
+          </Pressable>
+        )}
       </View>
     );
   }

@@ -40,14 +40,18 @@ export async function shareExport(
   mimeType: string,
   isPdfUri = false,
 ): Promise<void> {
-  if (isPdfUri) {
-    await Sharing.shareAsync(content, { mimeType, UTI: 'com.adobe.pdf' });
-    return;
-  }
+  try {
+    if (isPdfUri) {
+      await Sharing.shareAsync(content, { mimeType, UTI: 'com.adobe.pdf' });
+      return;
+    }
 
-  const filePath = `${Paths.cache.uri}${filename}`;
-  const file = new File(filePath);
-  const encoder = new TextEncoder();
-  file.write(encoder.encode(content));
-  await Sharing.shareAsync(filePath, { mimeType });
+    const filePath = `${Paths.cache.uri}${filename}`;
+    const file = new File(filePath);
+    const encoder = new TextEncoder();
+    file.write(encoder.encode(content));
+    await Sharing.shareAsync(filePath, { mimeType });
+  } catch {
+    // User cancelled share or sharing unavailable — no-op
+  }
 }

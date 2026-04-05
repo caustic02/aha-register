@@ -436,7 +436,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={st.section}>
           <PressScale
             style={st.cta}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('QuickID'); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); navigation.navigate('QuickID'); }}
             accessibilityLabel={t('home.captureCtaTitle')}
           >
             <View style={st.ctaIcon}><CaptureTabIcon size={32} color={colors.white} /></View>

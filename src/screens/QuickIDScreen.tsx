@@ -63,7 +63,7 @@ export function QuickIDScreen() {
     if (!trimmed || saving) return;
 
     setSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     try {
       const objectId = generateId();

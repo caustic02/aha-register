@@ -405,7 +405,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
   const handleMapLongPress = useCallback(
     (evt: { nativeEvent: { locationX: number; locationY: number } }) => {
       if (!activeMapId) return;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
       const xPct = (evt.nativeEvent.locationX / displayW) * 100;
       const yPct = (evt.nativeEvent.locationY / displayH) * 100;
@@ -424,7 +424,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
         'INSERT INTO map_pins (id, floor_map_id, object_id, x_percent, y_percent, created_at) VALUES (?, ?, ?, ?, ?, ?)',
         [id, activeMapId, objectId, pendingPinPos.x, pendingPinPos.y, now],
       );
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setShowObjectPicker(false);
       setPendingPinPos(null);
       await loadPins();
