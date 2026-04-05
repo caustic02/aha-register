@@ -1,8 +1,10 @@
 /* eslint-disable react-native/no-inline-styles, react-native/no-color-literals */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -22,6 +24,7 @@ import { BackIcon, CameraIcon } from '../theme/icons';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { generateId } from '../utils/uuid';
 import { radii, spacing, touch, typography } from '../theme';
+import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import type { FloorMap, MapPin as MapPinType } from '../db/types';
@@ -208,6 +211,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
+  const { t } = useAppTranslation();
   const targetObjectId = route.params?.objectId;
 
   const [maps, setMaps] = useState<FloorMap[]>([]);
@@ -328,25 +332,54 @@ export function FloorMapScreen({ route, navigation }: Props) {
     setShowNameInput(true);
   }, []);
 
+  const showPermissionDeniedAlert = useCallback((titleKey: string, bodyKey: string) => {
+    Alert.alert(
+      t(titleKey),
+      t(bodyKey),
+      [
+        { text: t('capture.library_permission_cancel'), style: 'cancel' },
+        { text: t('capture.permission_open_settings'), onPress: () => Linking.openSettings() },
+      ],
+    );
+  }, [t]);
+
   const pickImage = useCallback(async () => {
     setShowSourcePicker(false);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (result.canceled || result.assets.length === 0) return;
-    processAsset(result.assets[0]);
-  }, [processAsset]);
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        showPermissionDeniedAlert('capture.library_permission_title', 'capture.library_permission_body');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (result.canceled || result.assets.length === 0) return;
+      processAsset(result.assets[0]);
+    } catch {
+      // Picker threw unexpectedly — don't crash
+    }
+  }, [processAsset, showPermissionDeniedAlert]);
 
   const scanWithCamera = useCallback(async () => {
     setShowSourcePicker(false);
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (result.canceled || result.assets.length === 0) return;
-    processAsset(result.assets[0]);
-  }, [processAsset]);
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        showPermissionDeniedAlert('capture.permission_title', 'capture.permission_body');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (result.canceled || result.assets.length === 0) return;
+      processAsset(result.assets[0]);
+    } catch {
+      // Camera threw unexpectedly — don't crash
+    }
+  }, [processAsset, showPermissionDeniedAlert]);
 
   const saveNewMap = useCallback(async () => {
     if (!pendingImageUri || !newName.trim()) return;
