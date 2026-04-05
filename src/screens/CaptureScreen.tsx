@@ -6,6 +6,7 @@ import {
   Alert,
   Animated,
   Image,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -602,9 +603,28 @@ export function CaptureScreen() {
   }, [cameraReady, navigation, triggerShutterFlash]);
 
   const handleLibrary = useCallback(async () => {
-    const results = await pickFromLibrary();
-    if (results.length > 0) await processCapture(results[0]);
-  }, [processCapture]);
+    try {
+      const pick = await pickFromLibrary();
+      if (pick.status === 'permission_denied') {
+        Alert.alert(
+          t('capture.library_permission_title'),
+          t('capture.library_permission_body'),
+          pick.canAskAgain
+            ? [{ text: t('capture.library_permission_cancel') }]
+            : [
+                { text: t('capture.library_permission_cancel'), style: 'cancel' },
+                { text: t('capture.library_permission_open_settings'), onPress: () => Linking.openSettings() },
+              ],
+        );
+        return;
+      }
+      if (pick.status === 'ok' && pick.results.length > 0) {
+        await processCapture(pick.results[0]);
+      }
+    } catch {
+      // Picker threw unexpectedly — don't crash
+    }
+  }, [processCapture, t]);
 
   // ── Post-capture handlers ─────────────────────────────────────────────────
 
@@ -765,7 +785,30 @@ export function CaptureScreen() {
   // ── Document scan from camera ───────────────────────────────────────────────
 
   const handleDocumentScan = useCallback(async () => {
-    const scanResult = await launchDocumentScanner();
+    // Document scanner requires camera — verify permission first
+    if (!permission?.granted) {
+      if (permission?.canAskAgain) {
+        requestPermission();
+      } else {
+        Alert.alert(
+          t('capture.permission_title'),
+          t('capture.permission_body'),
+          [
+            { text: t('capture.library_permission_cancel'), style: 'cancel' },
+            { text: t('capture.permission_open_settings'), onPress: () => Linking.openSettings() },
+          ],
+        );
+      }
+      return;
+    }
+
+    let scanResult: Awaited<ReturnType<typeof launchDocumentScanner>>;
+    try {
+      scanResult = await launchDocumentScanner();
+    } catch {
+      // Scanner threw (e.g. missing permission at OS level) — don't crash
+      return;
+    }
     if (!scanResult) return; // user cancelled
 
     try {
@@ -852,7 +895,7 @@ export function CaptureScreen() {
     } catch {
       Alert.alert(t('common.error'));
     }
-  }, [db, t]);
+  }, [db, t, permission, requestPermission]);
 
   // (Video mode handlers moved to VideoRecordScreen)
 
@@ -979,7 +1022,12 @@ export function CaptureScreen() {
             <Text style={styles.primaryBtnText}>{t('capture.permission_grant')}</Text>
           </Pressable>
         ) : (
-          <Text style={styles.permissionHint}>{t('capture.permission_settings')}</Text>
+          <>
+            <Text style={styles.permissionHint}>{t('capture.permission_settings')}</Text>
+            <Pressable style={[styles.primaryBtn, { marginTop: spacing.md }]} onPress={() => Linking.openSettings()} accessibilityRole="button">
+              <Text style={styles.primaryBtnText}>{t('capture.permission_open_settings')}</Text>
+            </Pressable>
+          </>
         )}
         <Pressable style={[styles.secondaryBtn, { marginTop: spacing.md }]} onPress={handleLibrary} accessibilityRole="button">
           <Text style={styles.secondaryBtnText}>{t('capture.choose_from_library')}</Text>
