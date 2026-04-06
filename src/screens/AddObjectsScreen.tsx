@@ -21,6 +21,7 @@ import type { CollectionStackParamList } from '../navigation/CollectionStack';
 import { typography, spacing, radii, layout } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'AddObjects'>;
 
@@ -86,7 +87,7 @@ export function AddObjectsScreen({ route, navigation }: Props) {
             {isSelected && <Text style={styles.checkmark}>{'\u2713'}</Text>}
           </View>
           {item.file_path ? (
-            <Image source={{ uri: item.file_path }} style={styles.thumb} />
+            <Image source={{ uri: resolveMediaUri(item.file_path) }} style={styles.thumb} />
           ) : (
             <View style={styles.thumbPlaceholder}>
               <Text style={styles.thumbPlaceholderText}>{'\u25A3'}</Text>

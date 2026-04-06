@@ -30,6 +30,7 @@ import {
 import { VIEW_TYPES, type ViewTypeDefinition } from '../constants/viewTypes';
 import type { RegisterViewType } from '../db/types';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ViewChecklist'>;
 
@@ -190,7 +191,7 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
                 }
               >
                 {captured && thumb ? (
-                  <Image source={{ uri: thumb.filePath }} style={styles.thumbnail} />
+                  <Image source={{ uri: resolveMediaUri(thumb.filePath) }} style={styles.thumbnail} resizeMode="cover" />
                 ) : (
                   <View style={styles.iconContainer}>
                     <ViewIcon iconName={viewDef.icon} size={28} color={colors.textSecondary} />

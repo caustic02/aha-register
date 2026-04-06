@@ -29,6 +29,7 @@ import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import type { FloorMap, MapPin as MapPinType } from '../db/types';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FloorMap'>;
 
@@ -133,7 +134,7 @@ function ObjectPickerModal({
                   accessibilityRole="button"
                 >
                   {obj.file_path ? (
-                    <Image source={{ uri: obj.file_path }} style={s.modalThumb} />
+                    <Image source={{ uri: resolveMediaUri(obj.file_path) }} style={s.modalThumb} />
                   ) : (
                     <View style={[s.modalThumb, s.thumbEmpty]}>
                       <CameraIcon size={14} color={colors.textTertiary} />
@@ -171,7 +172,7 @@ function PinDetailPopup({
         <View style={s.popupCard}>
           <View style={s.popupTop}>
             {pin.obj_file_path ? (
-              <Image source={{ uri: pin.obj_file_path }} style={s.popupThumb} />
+              <Image source={{ uri: resolveMediaUri(pin.obj_file_path) }} style={s.popupThumb} />
             ) : (
               <View style={[s.popupThumb, s.thumbEmpty]}>
                 <CameraIcon size={20} color={colors.textTertiary} />

@@ -16,11 +16,11 @@ import {
   type CollectionWithCount,
 } from '../services/collectionService';
 import type { CollectionStackParamList } from '../navigation/CollectionStack';
-import { typography, spacing, radii, layout } from '../theme';
+import { typography, spacing, radii, layout, touch } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { EmptyState } from '../components/ui';
-import { CollectionsTabIcon } from '../theme/icons';
+import { BackIcon, CollectionsTabIcon } from '../theme/icons';
 
 type Props = NativeStackScreenProps<CollectionStackParamList, 'CollectionList'>;
 
@@ -97,6 +97,15 @@ export function CollectionsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
+        <Pressable
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          hitSlop={touch.hitSlop}
+          accessibilityLabel={t('common.back')}
+          accessibilityRole="button"
+        >
+          <BackIcon size={24} color={colors.text} />
+        </Pressable>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('collections.title')}</Text>
         <Pressable
           style={styles.addBtn}
@@ -145,12 +154,19 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  backButton: {
+    width: touch.minTarget,
+    height: touch.minTarget,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     ...typography.h1,
     color: c.text,
+    flex: 1,
   },
   addBtn: {
     width: 48,

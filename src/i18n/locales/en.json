@@ -221,7 +221,8 @@
       "exhibition": "Exhibition",
       "project": "Project",
       "research": "Research",
-      "conservation": "Conservation"
+      "conservation": "Conservation",
+      "curated": "Curated"
     },
     "add_objects": {
       "title": "Add Objects",

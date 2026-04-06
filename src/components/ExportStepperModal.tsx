@@ -39,6 +39,7 @@ import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import type { ExportableObject } from '../services/export-service';
 import { exportAsJSON, exportAsCSV, exportAsPDF } from '../services/export-service';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 import { shareExport, buildExportFilename } from '../services/export-share';
 import {
   exportCollectionToPDF,
@@ -871,7 +872,7 @@ function ImagesStep({
               accessibilityLabel={viewLabel}
             >
               <Image
-                source={{ uri: m.file_path }}
+                source={{ uri: resolveMediaUri(m.file_path) }}
                 style={styles.imageThumb}
                 resizeMode="cover"
               />

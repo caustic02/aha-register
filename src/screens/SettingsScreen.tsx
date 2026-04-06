@@ -443,44 +443,48 @@ export function SettingsScreen() {
           </Pressable>
         </Card>
 
-        {/* ── Sync Status ──────────────────────────────────────────────────── */}
-        <SectionHeader title="Sync Status" />
-        <Card>
-          <MetadataRow label="Queue" value={`${syncQueueCount} pending`} />
-          <MetadataRow
-            label="Last attempt"
-            value={syncLastAttempt ? formatDate(syncLastAttempt) : 'never'}
-          />
-          <MetadataRow
-            label="Last result"
-            value={syncLastResult ?? 'none'}
-          />
-          {syncLastError != null && (
-            <View style={styles.syncErrorBox}>
-              <View style={styles.syncErrorHeader}>
-                <AlertCircle size={14} color={colors.error} />
-                <Text style={styles.syncErrorLabel}>Error</Text>
-              </View>
-              <Text style={styles.syncErrorText} selectable>{syncLastError}</Text>
-            </View>
-          )}
-          <Divider />
-          <Pressable
-            onPress={handleSyncNow}
-            hitSlop={touch.hitSlop}
-            accessibilityRole="button"
-            accessibilityLabel="Sync Now"
-            style={({ pressed }) => [
-              styles.actionRow,
-              pressed && styles.pressed,
-            ]}
-          >
-            <ExportIcon size={20} color={syncRunning ? colors.textMuted : colors.accent} />
-            <Text style={[styles.syncNowText, syncRunning && { color: colors.textMuted }]}>
-              {syncRunning ? 'Syncing...' : 'Sync Now'}
-            </Text>
-          </Pressable>
-        </Card>
+        {/* ── Sync Status (hidden in guest mode) ────────────────────────── */}
+        {userEmail != null && (
+          <>
+            <SectionHeader title="Sync Status" />
+            <Card>
+              <MetadataRow label="Queue" value={`${syncQueueCount} pending`} />
+              <MetadataRow
+                label="Last attempt"
+                value={syncLastAttempt ? formatDate(syncLastAttempt) : 'never'}
+              />
+              <MetadataRow
+                label="Last result"
+                value={syncLastResult ?? 'none'}
+              />
+              {syncLastError != null && (
+                <View style={styles.syncErrorBox}>
+                  <View style={styles.syncErrorHeader}>
+                    <AlertCircle size={14} color={colors.error} />
+                    <Text style={styles.syncErrorLabel}>Error</Text>
+                  </View>
+                  <Text style={styles.syncErrorText} selectable>{syncLastError}</Text>
+                </View>
+              )}
+              <Divider />
+              <Pressable
+                onPress={handleSyncNow}
+                hitSlop={touch.hitSlop}
+                accessibilityRole="button"
+                accessibilityLabel="Sync Now"
+                style={({ pressed }) => [
+                  styles.actionRow,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <ExportIcon size={20} color={syncRunning ? colors.textMuted : colors.accent} />
+                <Text style={[styles.syncNowText, syncRunning && { color: colors.textMuted }]}>
+                  {syncRunning ? 'Syncing...' : 'Sync Now'}
+                </Text>
+              </Pressable>
+            </Card>
+          </>
+        )}
 
         {/* ── Institution ──────────────────────────────────────────────────── */}
         <SectionHeader title={t('settings.institution')} />

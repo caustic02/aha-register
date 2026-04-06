@@ -17,6 +17,7 @@ import type { Media } from '../db/types';
 import { typography, radii, spacing } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_HEIGHT = 280;
@@ -87,7 +88,7 @@ export function ImageGallery({ media, onAddPhoto, onSetPrimary, onDelete }: Prop
         onLongPress={() => handleLongPress(item)}
         delayLongPress={400}
       >
-        <Image source={{ uri: item.file_path }} style={styles.image} />
+        <Image source={{ uri: resolveMediaUri(item.file_path) }} style={styles.image} />
         {item.is_primary === 1 && media.length > 1 && (
           <View style={styles.primaryBadge}>
             <Text style={styles.primaryBadgeText}>{'\u2605'}</Text>

@@ -50,6 +50,7 @@ import type { HomeStackParamList } from '../navigation/HomeStack';
 import type { ObjectType } from '../db/types';
 import { useSyncStatuses } from '../hooks/useSyncStatuses';
 import { SyncBadge } from '../components/SyncBadge';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -199,12 +200,9 @@ export function ObjectListScreen({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       loadTypes();
-    }, [loadTypes]),
+      loadObjects();
+    }, [loadTypes, loadObjects]),
   );
-
-  useEffect(() => {
-    loadObjects();
-  }, [loadObjects]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -284,7 +282,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         <ListItem
           title={item.title}
           subtitle={formatRelativeDate(item.created_at)}
-          thumbnail={item.thumbnail ? { uri: item.thumbnail } : undefined}
+          thumbnail={item.thumbnail ? { uri: resolveMediaUri(item.thumbnail) } : undefined}
           badge={{
             label: t(`object_types.${item.object_type}`),
             variant: 'neutral',
@@ -342,7 +340,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         >
           {item.thumbnail ? (
             <Image
-              source={{ uri: item.thumbnail }}
+              source={{ uri: resolveMediaUri(item.thumbnail) }}
               style={styles.gridImage}
               resizeMode="cover"
             />
