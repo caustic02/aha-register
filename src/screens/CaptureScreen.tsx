@@ -60,13 +60,8 @@ import { ShotListSidebar } from '../components/ShotListSidebar';
 import { TipsModal } from '../components/TipsModal';
 import { CompletionSummary } from '../components/CompletionSummary';
 
-// Camera-specific overlay colours — rgba values intentionally outside the design
-// system token set because they are camera-viewfinder-only and must meet contrast
-// requirements against arbitrary scene content.
-const OVERLAY_GRID = 'rgba(255,255,255,0.3)';
-const OVERLAY_LEVEL_TILTED = 'rgba(255,255,255,0.5)';
-const OVERLAY_LEVEL_FLAT = 'rgba(45,90,39,0.85)';
-const OVERLAY_COUNT_BG = 'rgba(0,0,0,0.55)';
+// Camera-specific overlay colours — now centralized in theme palette as
+// camera* tokens. These work on arbitrary scene content in both light/dark modes.
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
 type CaptureMode = 'quick' | 'full';
@@ -1108,7 +1103,7 @@ export function CaptureScreen() {
           style={[
             styles.levelBar,
             {
-              backgroundColor: isLevel ? OVERLAY_LEVEL_FLAT : OVERLAY_LEVEL_TILTED,
+              backgroundColor: isLevel ? colors.cameraLevelFlat : colors.cameraLevelTilted,
               transform: [
                 {
                   rotate: tiltAnim.interpolate({
@@ -1152,7 +1147,7 @@ export function CaptureScreen() {
               <Text style={styles.domainPillText}>
                 {t('home.domainMuseumCollection')}
               </Text>
-              <ChevronDown size={14} color="rgba(255,255,255,0.7)" />
+              <ChevronDown size={14} color={colors.cameraTextDim} />
             </View>
           )}
           <Pressable
@@ -1425,7 +1420,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     right: 0,
     top: '33.33%',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   gridH2: {
     position: 'absolute',
@@ -1433,7 +1428,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     right: 0,
     top: '66.66%',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   gridV1: {
     position: 'absolute',
@@ -1441,7 +1436,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     bottom: 0,
     left: '33.33%',
     width: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   gridV2: {
     position: 'absolute',
@@ -1449,7 +1444,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     bottom: 0,
     left: '66.66%',
     width: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   // ── Level indicator ─────────────────────────────────────────────────────────
   levelWrap: {
@@ -1472,7 +1467,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     position: 'absolute',
     top: 130,
     left: layout.screenPadding,
-    backgroundColor: OVERLAY_COUNT_BG,
+    backgroundColor: c.cameraCountBg,
     borderRadius: radii.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
@@ -1504,14 +1499,14 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: c.cameraButtonBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   domainPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: c.cameraPillBg,
     borderRadius: 18,
     height: 36,
     paddingHorizontal: 16,
@@ -1525,7 +1520,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   objectTitlePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(45,90,39,0.7)',
+    backgroundColor: c.cameraLevelFlat,
     borderRadius: 18,
     height: 36,
     paddingHorizontal: 16,
@@ -1550,13 +1545,13 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   centerTextMain: {
     fontSize: 15,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.8)',
+    color: c.cameraTextBright,
     textAlign: 'center',
   },
   centerTextSub: {
     fontSize: 12,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.45)',
+    color: c.cameraTextMuted,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -1565,7 +1560,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     position: 'absolute',
     top: spacing.xl,
     alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: c.cameraOverlay,
     borderRadius: radii.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
@@ -1582,7 +1577,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     position: 'absolute',
     bottom: 12,
     alignSelf: 'center',
-    backgroundColor: OVERLAY_COUNT_BG,
+    backgroundColor: c.cameraCountBg,
     borderRadius: radii.full,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -1643,7 +1638,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   pvTogglePill: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: c.cameraPillBg,
     borderRadius: 24,
     height: 40,
     padding: 3,
@@ -1670,7 +1665,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   pvToggleText: {
     fontSize: 14,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.7)',
+    color: c.cameraTextDim,
   },
 
   // ── Thumbnail strip ───────────────────────────────────────────────────────
@@ -1697,7 +1692,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   thumbCountBadge: {
     alignSelf: 'center',
-    backgroundColor: OVERLAY_COUNT_BG,
+    backgroundColor: c.cameraCountBg,
     borderRadius: radii.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
@@ -1713,7 +1708,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: c.cameraButtonBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1721,7 +1716,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: c.cameraButtonBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1757,7 +1752,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: c.cameraOverlay,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,

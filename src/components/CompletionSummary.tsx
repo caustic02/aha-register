@@ -25,9 +25,6 @@ import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { WarningIcon } from '../theme/icons';
 
-// ── Overlay colours (camera-safe not needed — this is themed) ────────────────
-const THUMB_OVERLAY = 'rgba(0,0,0,0.35)';
-
 interface CompletionSummaryProps {
   visible: boolean;
   protocol: CaptureProtocol;
@@ -298,7 +295,7 @@ function makeStyles(c: ColorPalette) {
     },
     cardCheckOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: THUMB_OVERLAY,
+      backgroundColor: c.cameraThumbOverlay,
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: radii.md,

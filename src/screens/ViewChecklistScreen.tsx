@@ -333,7 +333,6 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // eslint-disable-next-line react-native/no-color-literals
   cardLabel: {
     position: 'absolute',
     bottom: 0,
@@ -345,7 +344,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm,
-    backgroundColor: 'rgba(255,255,255,0.92)',
+    backgroundColor: c.labelOverlay,
   },
   cardLabelText: {
     ...typography.bodySmall,

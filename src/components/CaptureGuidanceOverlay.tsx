@@ -28,11 +28,7 @@ import type { CaptureProtocol, ProtocolShot } from '../config/protocols';
 import { spacing, radii, typography, touch, colors } from '../theme';
 
 // ── Camera-safe overlay colours ──────────────────────────────────────────────
-const OVERLAY_BG = 'rgba(0,0,0,0.6)';
-const OVERLAY_LIGHT = 'rgba(0,0,0,0.45)';
 const TEXT_WHITE = colors.white;
-const TEXT_DIM = 'rgba(255,255,255,0.7)';
-const PROGRESS_BG = 'rgba(255,255,255,0.2)';
 
 // ── Shot icon mapping ────────────────────────────────────────────────────────
 
@@ -190,10 +186,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
-    backgroundColor: OVERLAY_BG,
+    backgroundColor: colors.cameraOverlay,
   },
   protocolName: {
-    color: TEXT_DIM,
+    color: colors.cameraTextDim,
     fontSize: typography.size.sm,
     fontWeight: typography.weight.medium,
     flex: 1,
@@ -201,7 +197,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   progressPill: {
-    backgroundColor: PROGRESS_BG,
+    backgroundColor: colors.cameraProgressBg,
     borderRadius: radii.full,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
@@ -213,7 +209,7 @@ const styles = StyleSheet.create({
   },
   // Bottom card
   bottomCard: {
-    backgroundColor: OVERLAY_BG,
+    backgroundColor: colors.cameraOverlay,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
@@ -234,13 +230,13 @@ const styles = StyleSheet.create({
     fontWeight: typography.weight.bold,
   },
   shotProgress: {
-    color: TEXT_DIM,
+    color: colors.cameraTextDim,
     fontSize: typography.size.xs,
     fontWeight: typography.weight.medium,
     marginTop: 2,
   },
   shotInstruction: {
-    color: TEXT_DIM,
+    color: colors.cameraTextDim,
     fontSize: typography.size.base,
     lineHeight: 20,
     marginBottom: spacing.md,
@@ -251,7 +247,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   actionBtn: {
-    backgroundColor: OVERLAY_LIGHT,
+    backgroundColor: colors.cameraOverlayLight,
     borderRadius: radii.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
@@ -265,7 +261,7 @@ const styles = StyleSheet.create({
   },
   shotListBtn: {
     marginLeft: 'auto',
-    backgroundColor: OVERLAY_LIGHT,
+    backgroundColor: colors.cameraOverlayLight,
     borderRadius: radii.md,
     width: touch.minTargetSmall,
     height: touch.minTargetSmall,

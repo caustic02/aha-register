@@ -47,10 +47,12 @@ export const colors = {
 
   // ── Accent (active tab, trust badges, verified indicators) ────────────────
   // accent = primary interactive color (buttons, links, active states). Must be green.
-  accent: brand.colors.accent,
+  // Dark mode uses a lighter green (#4E9A47) for WCAG AA contrast on dark backgrounds.
+  accent: '#4E9A47',
   accentLight: '#1A2E18',
   accentDark: '#1F3F1C',
-  heroGreen: brand.colors.accent, // alias — canonical interactive green is `accent`
+  accentText: '#FFFFFF',
+  heroGreen: '#4E9A47', // alias — canonical interactive green is `accent`
 
   // ── Secondary (tags, filters, less prominent UI) ─────────────────────────
   secondary: brand.colors.secondaryText,
@@ -69,6 +71,7 @@ export const colors = {
   // ── Surfaces ─────────────────────────────────────────────────────────────
   background: brand.colors.background,
   surface: brand.colors.surface,
+  surfaceSecondary: '#1A1A1A',
   surfaceContainer: '#1A1A1A',
   surfaceContainerHigh: '#2A2A2A',
   surfaceElevated: '#252525',
@@ -123,6 +126,8 @@ export const colors = {
 
   // ── Header ──────────────────────────────────────────────────────────────
   headerBg: '#0A0A0A',
+  headerBackground: '#0A0A0A',
+  headerText: '#E8E8E8',
 
   // ── Utility ──────────────────────────────────────────────────────────────
   white: '#FFFFFF',
@@ -130,11 +135,51 @@ export const colors = {
   overlay: 'rgba(0, 0, 0, 0.7)',
   overlayLight: 'rgba(0, 0, 0, 0.5)',
   overlayDark: 'rgba(0, 0, 0, 0.85)',
+  overlayMedium: 'rgba(0, 0, 0, 0.4)',
+  overlayDarkest: 'rgba(0, 0, 0, 0.95)',
   skeleton: '#2A2A2A',
   skeletonHighlight: '#333333',
   transparent: 'transparent',
   camera: '#111111',
   cameraBg: '#0D0D0D',
+
+  // ── Camera / viewfinder overlays (must work on arbitrary scene content) ──
+  cameraOverlay: 'rgba(0, 0, 0, 0.6)',
+  cameraOverlayLight: 'rgba(0, 0, 0, 0.45)',
+  cameraButtonBg: 'rgba(255, 255, 255, 0.15)',
+  cameraPillBg: 'rgba(255, 255, 255, 0.12)',
+  cameraGrid: 'rgba(255, 255, 255, 0.3)',
+  cameraLevelFlat: 'rgba(45, 90, 39, 0.85)',
+  cameraLevelTilted: 'rgba(255, 255, 255, 0.5)',
+  cameraCountBg: 'rgba(0, 0, 0, 0.55)',
+  cameraTextBright: 'rgba(255, 255, 255, 0.8)',
+  cameraTextDim: 'rgba(255, 255, 255, 0.7)',
+  cameraTextMuted: 'rgba(255, 255, 255, 0.45)',
+  cameraSidebarBg: 'rgba(0, 0, 0, 0.85)',
+  cameraSidebarItem: 'rgba(255, 255, 255, 0.08)',
+  cameraSidebarItemActive: 'rgba(255, 255, 255, 0.18)',
+  cameraBadgeOptional: 'rgba(255, 255, 255, 0.3)',
+  cameraThumbOverlay: 'rgba(0, 0, 0, 0.35)',
+  cameraProgressBg: 'rgba(255, 255, 255, 0.2)',
+  labelOverlay: 'rgba(255, 255, 255, 0.92)',
+  headerBlur: 'rgba(10, 10, 10, 0.75)',
+
+  // ── Card / Input / Icon ──────────────────────────────────────────────────
+  cardBackground: '#1E1E1E',
+  inputBackground: '#1A1A1A',
+  inputBorder: '#2A2A2A',
+  inputText: '#E8E8E8',
+  placeholderText: '#666666',
+  iconDefault: '#A0A0A0',
+  iconActive: '#4E9A47',
+  tabBarBackground: '#0A0A0A',
+  tabBarBorder: '#2A2A2A',
+  tabBarIndicator: 'rgba(255, 255, 255, 0.08)',
+  statusBarStyle: 'light-content',
+
+  // ── Semantic aliases ────────────────────────────────────────────────────
+  dangerBackground: '#3D1515',
+  warningBackground: '#3D2A08',
 
   // ── Legacy aliases (all now derive from brand) ──
   textPrimary: brand.colors.text,
@@ -157,6 +202,7 @@ export const lightColors: Record<keyof typeof colors, string> = {
   accent: '#2D5A27',
   accentLight: '#E8F5E4',
   accentDark: '#1F3F1C',
+  accentText: '#FFFFFF',
   heroGreen: '#2D5A27',
   secondary: '#6B7280',
   secondaryContainer: 'rgba(107, 123, 141, 0.10)',
@@ -168,6 +214,7 @@ export const lightColors: Record<keyof typeof colors, string> = {
   textInverse: '#F0F0F0',
   background: '#FAFAF8',
   surface: '#FFFFFF',
+  surfaceSecondary: '#F5F5F4',
   surfaceContainer: '#F5F5F4',
   surfaceContainerHigh: '#EDEDEC',
   surfaceElevated: '#FFFFFF',
@@ -206,16 +253,52 @@ export const lightColors: Record<keyof typeof colors, string> = {
   brownDark: '#B45309',
   blueDark: '#2563EB',
   headerBg: '#FFFFFF',
+  headerBackground: '#FFFFFF',
+  headerText: '#1A1A1A',
   white: '#FFFFFF',
   black: '#000000',
   overlay: 'rgba(0, 0, 0, 0.5)',
   overlayLight: 'rgba(0, 0, 0, 0.3)',
   overlayDark: 'rgba(0, 0, 0, 0.7)',
+  overlayMedium: 'rgba(0, 0, 0, 0.4)',
+  overlayDarkest: 'rgba(0, 0, 0, 0.95)',
   skeleton: '#E5E7EB',
   skeletonHighlight: '#D1D5DB',
   transparent: 'transparent',
   camera: '#111111',
   cameraBg: '#0D0D0D',
+  cameraOverlay: 'rgba(0, 0, 0, 0.6)',
+  cameraOverlayLight: 'rgba(0, 0, 0, 0.45)',
+  cameraButtonBg: 'rgba(255, 255, 255, 0.15)',
+  cameraPillBg: 'rgba(255, 255, 255, 0.12)',
+  cameraGrid: 'rgba(255, 255, 255, 0.3)',
+  cameraLevelFlat: 'rgba(45, 90, 39, 0.85)',
+  cameraLevelTilted: 'rgba(255, 255, 255, 0.5)',
+  cameraCountBg: 'rgba(0, 0, 0, 0.55)',
+  cameraTextBright: 'rgba(255, 255, 255, 0.8)',
+  cameraTextDim: 'rgba(255, 255, 255, 0.7)',
+  cameraTextMuted: 'rgba(255, 255, 255, 0.45)',
+  cameraSidebarBg: 'rgba(0, 0, 0, 0.85)',
+  cameraSidebarItem: 'rgba(255, 255, 255, 0.08)',
+  cameraSidebarItemActive: 'rgba(255, 255, 255, 0.18)',
+  cameraBadgeOptional: 'rgba(255, 255, 255, 0.3)',
+  cameraThumbOverlay: 'rgba(0, 0, 0, 0.35)',
+  cameraProgressBg: 'rgba(255, 255, 255, 0.2)',
+  labelOverlay: 'rgba(255, 255, 255, 0.92)',
+  headerBlur: 'rgba(250, 250, 248, 0.75)',
+  cardBackground: '#FFFFFF',
+  inputBackground: '#FFFFFF',
+  inputBorder: '#E5E7EB',
+  inputText: '#1A1A1A',
+  placeholderText: '#9CA3AF',
+  iconDefault: '#6B7280',
+  iconActive: '#2D5A27',
+  tabBarBackground: '#FAFAF8',
+  tabBarBorder: '#E5E7EB',
+  tabBarIndicator: 'rgba(30, 45, 61, 0.08)',
+  statusBarStyle: 'dark-content',
+  dangerBackground: '#FEF2F2',
+  warningBackground: '#FFFBEB',
   textPrimary: '#1A1A1A',
   textMuted: '#9CA3AF',
   borderLight: '#E5E7EB',
@@ -227,6 +310,10 @@ export const lightColors: Record<keyof typeof colors, string> = {
 
 /** Dark colors (same as `colors`, aliased for clarity) */
 export const darkColors = colors;
+
+/** Named palette exports matching the light/dark convention */
+export const lightPalette = lightColors;
+export const darkPalette = darkColors;
 
 /** Type for theme color palette — keys from colors, values are strings */
 export type ColorPalette = Record<keyof typeof colors, string>;
@@ -364,13 +451,8 @@ export const tabBar = {
   indicatorWidth: 64,
   indicatorHeight: 32,
   indicatorRadius: 16,
-  activeColor: brand.colors.primary,
-  inactiveColor: colors.textSecondary,
-  backgroundColor: brand.colors.background,
-  indicatorColor: 'rgba(30, 45, 61, 0.08)', // primary @ 8%
-  borderColor: colors.border,
-  labelActiveColor: brand.colors.primary,
-  labelInactiveColor: colors.textSecondary,
+  // Color fields removed — use colors.tabBarBackground, colors.accent, etc.
+  // from useTheme() in tab bar components for proper light/dark support.
 } as const;
 
 // ── Layout Constants ──────────────────────────────────────────────────────────

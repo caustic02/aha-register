@@ -160,7 +160,6 @@ function makeStyles(c: ColorPalette) {
       justifyContent: 'center',
       zIndex: 10,
     },
-    // eslint-disable-next-line react-native/no-color-literals
     bottomBar: {
       position: 'absolute',
       bottom: 0,
@@ -170,7 +169,7 @@ function makeStyles(c: ColorPalette) {
       justifyContent: 'center',
       gap: spacing['3xl'],
       paddingTop: spacing.lg,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: c.overlayLight,
     },
     actionBtn: {
       alignItems: 'center',

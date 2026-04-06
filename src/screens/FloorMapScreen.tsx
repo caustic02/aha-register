@@ -799,7 +799,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   hintText: {
     fontSize: 13,
     color: c.white,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: c.cameraOverlay,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
@@ -807,7 +807,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
 
   // Modal shared
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: c.overlayLight, justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: c.surfaceElevated,
     borderTopLeftRadius: 20,
@@ -853,7 +853,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   modalObjTitle: { fontSize: 14, color: c.text, flex: 1, fontWeight: typography.weight.medium },
 
   // Pin detail popup
-  popupOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  popupOverlay: { flex: 1, backgroundColor: c.overlayMedium, justifyContent: 'center', alignItems: 'center' },
   popupCard: {
     backgroundColor: c.surfaceElevated,
     borderRadius: radii.lg,

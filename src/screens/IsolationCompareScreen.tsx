@@ -34,8 +34,6 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'IsolationCompare'>;
 type Phase = 'processing' | 'error' | 'compare';
 type CompareTab = 'original' | 'isolated';
 
-// eslint-disable-next-line react-native/no-color-literals
-const COMPARE_BG = 'rgba(0,0,0,0.95)';
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -442,10 +440,9 @@ export function IsolationCompareScreen({ route, navigation }: Props) {
 // ── Styles ────────────────────────────────────────────────────────────────────
 
 function makeStyles(c: ColorPalette) { return StyleSheet.create({
-  // eslint-disable-next-line react-native/no-color-literals
   safe: {
     flex: 1,
-    backgroundColor: COMPARE_BG,
+    backgroundColor: c.overlayDarkest,
   },
   // Header
   headerRow: {
@@ -488,10 +485,9 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     borderRadius: radii.lg,
   },
   // Processing overlay
-  // eslint-disable-next-line react-native/no-color-literals
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: c.overlayLight,
   },
   processingLabel: {
     position: 'absolute',
