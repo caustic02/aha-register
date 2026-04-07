@@ -3,7 +3,7 @@
     "name": "aha-register",
     "slug": "aha-register",
     "scheme": "aharegister",
-    "version": "0.5.0",
+    "version": "0.5.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.tedeholdings.aharegister",
-      "buildNumber": "3",
+      "buildNumber": "4",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -27,7 +27,7 @@
       }
     },
     "android": {
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#1E2D3D",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -70,7 +70,7 @@
       "expo-video",
       "expo-localization"
     ],
-    "runtimeVersion": "0.5.0",
+    "runtimeVersion": "0.5.1",
     "updates": {
       "enabled": true,
       "url": "https://u.expo.dev/bec4d444-c862-47d2-b326-37eaa5a4519e",
