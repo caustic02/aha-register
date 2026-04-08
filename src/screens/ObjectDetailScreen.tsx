@@ -16,7 +16,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { useSettings } from '../hooks/useSettings';
-import { File } from 'expo-file-system';
 import { deleteObject, updateReviewStatus } from '../services/objectService';
 import { deleteMedia } from '../services/mediaService';
 import {
@@ -60,6 +59,7 @@ import { getDisplayLabel } from '../utils/displayLabels';
 import { useSyncStatuses } from '../hooks/useSyncStatuses';
 import { SyncBadge } from '../components/SyncBadge';
 import { resolveMediaUri } from '../utils/resolveMediaUri';
+import { readMediaBase64 } from '../utils/readMediaBase64';
 import { useObjectDocuments } from '../hooks/useObjectDocuments';
 import { getProtocol, type CaptureProtocol } from '../config/protocols';
 import { CheckIcon } from '../theme/icons';
@@ -463,9 +463,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         appVersion: '0.1.0',
       };
 
-      // Read image base64 for AI processing
-      const file = new File(pm.file_path);
-      const imageBase64 = await file.base64();
+      // Read image base64 for AI processing. `file_path` may be a local URI
+      // or a remote URL after sync, so delegate to the shared helper.
+      console.log('[handleStartReview] reading media', { mediaId: pm.id, filePath: pm.file_path.substring(0, 120) });
+      const imageBase64 = await readMediaBase64(pm.file_path);
+      console.log('[handleStartReview] base64 length:', imageBase64.length);
 
       // Navigate to AI processing
       navigation.navigate('AIProcessing', {
@@ -476,7 +478,8 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         sha256Hash: pm.sha256_hash ?? undefined,
         existingObjectId: objectId,
       });
-    } catch {
+    } catch (err) {
+      console.warn('[handleStartReview] failed:', err instanceof Error ? err.message : String(err));
       // If anything fails, revert status
       await updateReviewStatus(db, objectId, 'needs_review').catch(() => {});
     }
@@ -745,8 +748,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     if (!pm) return;
     setAiLoading(true);
     try {
-      const file = new File(pm.file_path);
-      const base64 = await file.base64();
+      console.log('[handleRunAI] reading media', { mediaId: pm.id, filePath: pm.file_path.substring(0, 120) });
+      const base64 = await readMediaBase64(pm.file_path);
+      console.log('[handleRunAI] base64 length:', base64.length);
       const { analyzeObject } = await import('../services/ai-analysis');
       const currentExtras: Record<string, unknown> = (() => {
         try {

@@ -11,8 +11,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { File } from 'expo-file-system';
 import { ChevronLeft, Check, Pencil } from 'lucide-react-native';
+import { readMediaBase64 } from '../utils/readMediaBase64';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { useSettings } from '../hooks/useSettings';
@@ -138,11 +138,13 @@ export function AIReviewScreen({ objectId, photoUri, onSave, onBack }: Props) {
 
     (async () => {
       try {
-        const file = new File(photoUri);
-        const imageBase64 = await file.base64();
+        console.log('[AIReview] reading photoUri:', photoUri.substring(0, 120));
+        const imageBase64 = await readMediaBase64(photoUri);
+        console.log('[AIReview] base64 length:', imageBase64.length);
         const domain = collectionDomain ?? 'museum_collection';
 
         const response = await analyzeObject(imageBase64, 'image/jpeg', domain);
+        console.log('[AIReview] analyzeObject response success:', response.success, 'error:', response.error);
 
         if (cancelled) return;
 
