@@ -100,6 +100,7 @@ export async function signIn(
 export async function signOut(db: SQLiteDatabase): Promise<void> {
   await supabase.auth.signOut();
   await setSetting(db, SETTING_KEYS.SYNC_ENABLED, 'false');
+  await setSetting(db, SETTING_KEYS.SYNC_INSTITUTION_ID, '');
 }
 
 export async function getSession(): Promise<Session | null> {
