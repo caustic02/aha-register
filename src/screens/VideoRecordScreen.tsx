@@ -52,6 +52,7 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'VideoRecord'>;
 // ── SVG components ────────────────────────────────────────────────────────────
 
 function CornerBracket({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
+  const { colors } = useTheme();
   const s = BRACKET_SIZE;
   const paths: Record<string, string> = {
     tl: `M 0 ${s} L 0 0 L ${s} 0`,
@@ -61,7 +62,7 @@ function CornerBracket({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
   };
   return (
     <Svg width={s} height={s} viewBox={`0 0 ${s} ${s}`}>
-      <Path d={paths[corner]} stroke="rgba(255,255,255,0.85)" strokeWidth={2} fill="none" strokeLinecap="square" />
+      <Path d={paths[corner]} stroke={colors.cameraTextBright} strokeWidth={2} fill="none" strokeLinecap="square" />
     </Svg>
   );
 }
