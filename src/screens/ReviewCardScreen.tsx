@@ -1111,7 +1111,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     minHeight: touch.minTargetSmall,
   },
   inlineCreateBtn: {
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     borderRadius: radii.md,
     paddingHorizontal: spacing.md,
     justifyContent: 'center',

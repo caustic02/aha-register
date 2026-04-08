@@ -283,7 +283,7 @@ export function DocumentReviewScreen({ route, navigation }: Props) {
             accessibilityRole="button"
             accessibilityLabel={t('documents.rescan')}
           >
-            <ScanIcon size={18} color={colors.primary} />
+            <ScanIcon size={18} color={colors.accent} />
             <Text style={styles.actionText}>{t('documents.rescan')}</Text>
           </Pressable>
 
@@ -380,6 +380,6 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   actionText: {
     ...typography.bodyMedium,
-    color: c.primary,
+    color: c.accent,
   },
 }); }
