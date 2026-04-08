@@ -289,11 +289,11 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
           onPress={() => handleCardPress(detailView)}
           accessibilityLabel={t('view_checklist.add_detail')}
         >
-          <ViewIcon iconName="search" size={20} color={isCaptured('detail') ? colors.success : colors.textSecondary} />
+          <ViewIcon iconName="search" size={20} color={isCaptured('detail') ? colors.accent : colors.textSecondary} />
           <Text style={[styles.detailButtonText, isCaptured('detail') && styles.detailButtonTextCaptured]}>
             {isCaptured('detail') ? t('view_types.detail') : t('view_checklist.add_detail')}
           </Text>
-          {isCaptured('detail') && <CheckIcon size={16} color={colors.success} />}
+          {isCaptured('detail') && <CheckIcon size={16} color={colors.accent} />}
         </Pressable>
       </ScrollView>
 
@@ -441,7 +441,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   detailButtonCaptured: {
     borderStyle: 'solid',
-    borderColor: c.success,
+    borderColor: c.accent,
   },
   detailButtonText: {
     ...typography.body,
@@ -449,7 +449,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     flex: 1,
   },
   detailButtonTextCaptured: {
-    color: c.success,
+    color: c.accent,
     fontWeight: typography.weight.semibold,
   },
   footer: {
@@ -460,7 +460,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     backgroundColor: c.background,
   },
   doneButton: {
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     borderRadius: radii.md,
     paddingVertical: spacing.md,
     alignItems: 'center',
