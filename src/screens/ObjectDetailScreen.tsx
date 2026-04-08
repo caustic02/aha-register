@@ -1604,11 +1604,11 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             {scanning ? (
               <ActivityIndicator
                 size="small"
-                color={colors.primary}
+                color={colors.accent}
                 accessibilityLabel={t('capture.document_scanning')}
               />
             ) : (
-              <ScanIcon size={18} color={colors.primary} />
+              <ScanIcon size={18} color={colors.accent} />
             )}
             <Text style={styles.scanButtonText}>
               {scanning
@@ -2420,7 +2420,7 @@ function makeStyles(c: ColorPalette) {
       marginTop: spacing.md,
       paddingVertical: spacing.md,
       borderWidth: 1,
-      borderColor: c.primary,
+      borderColor: c.accent,
       borderRadius: radii.md,
       minHeight: touch.minTarget,
     },
@@ -2429,7 +2429,7 @@ function makeStyles(c: ColorPalette) {
     },
     scanButtonText: {
       ...typography.bodyMedium,
-      color: c.primary,
+      color: c.accent,
     },
     // Gallery groups (protocol objects)
     galleryGroup: {

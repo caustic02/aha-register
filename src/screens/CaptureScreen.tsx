@@ -1877,7 +1877,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
 
   // ── Shared buttons ───────────────────────────────────────────────────────────
   primaryBtn: {
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1891,7 +1891,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   secondaryBtn: {
     borderWidth: 1,
-    borderColor: c.primary,
+    borderColor: c.accent,
     marginHorizontal: layout.screenPadding,
     borderRadius: radii.lg,
     padding: layout.cardPadding,
@@ -1899,7 +1899,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     marginTop: spacing.md,
   },
   secondaryBtnText: {
-    color: c.primary,
+    color: c.accent,
     fontSize: typography.size.md,
     fontWeight: typography.weight.semibold,
   },
