@@ -121,6 +121,17 @@ export class SyncTransport {
     await setSetting(this.db, 'last_sync_timestamp', timestamp);
   }
 
+  /**
+   * Returns true if the current session belongs to an anonymous user
+   * (created via supabase.auth.signInAnonymously()). Anonymous users have
+   * no institution / profile / membership, so RLS blocks all writes to
+   * institution-scoped tables. Cheap: reads from in-memory session cache.
+   */
+  async isAnonymousSession(): Promise<boolean> {
+    const { data: { session } } = await supabase.auth.getSession();
+    return session?.user?.is_anonymous ?? false;
+  }
+
   /** Verify session is valid; refresh if expired. Returns user id or null. */
   async ensureSession(): Promise<string | null> {
     // getUser() forces a server check and triggers token refresh if needed.
