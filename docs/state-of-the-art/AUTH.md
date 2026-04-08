@@ -1,7 +1,7 @@
 # State of the Art: Authentication
 
-> Last updated: 2026-03-15
-> Status: STUB
+> Last updated: 2026-04-06
+> Status: ACTIVE
 
 ## What This Is
 Supabase Auth for user signup/signin. "Start Documenting" (Explore the App) is primary button — app is fully usable without an account. Sign-in/sign-up are below a divider. SECURITY DEFINER RPC function handles institution creation to bypass RLS bootstrapping deadlock.
@@ -9,7 +9,7 @@ Supabase Auth for user signup/signin. "Start Documenting" (Explore the App) is p
 ## Architecture (Known)
 - `expo-router` auth flow with `src/screens/AuthScreen.tsx`
 - Supabase `signInWithPassword` / `signUp`
-- "Continue without account" path — app works fully offline without auth
+- "Continue without account" path — signs in anonymously via `supabase.auth.signInAnonymously()` for Edge Function access (AI analysis, OCR). App works fully offline if anonymous sign-in fails.
 - Institution record created via `SECURITY DEFINER` Postgres function on first sign-up (bypasses RLS chicken-and-egg: user needs an institution row to satisfy RLS, but can't insert without being authenticated to an institution)
 
 ## Decision History
@@ -19,6 +19,7 @@ Supabase Auth for user signup/signin. "Start Documenting" (Explore the App) is p
 | 2026-03-09 | SECURITY DEFINER RPC for institution bootstrap | Migration 20260309_create_institution_rpc.sql |
 | 2026-03-09 | Friendly error mapping for RLS errors | Device test bug fix |
 | 2026-03-09 | "Explore the App" as primary CTA, auth below divider | Auth UX commit |
+| 2026-04-06 | Anonymous sign-in on "Explore the App" tap for Edge Function access | TestFlight bug fix sprint |
 
 ## Known Gaps
 

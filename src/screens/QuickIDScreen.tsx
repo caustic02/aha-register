@@ -63,7 +63,7 @@ export function QuickIDScreen() {
     if (!trimmed || saving) return;
 
     setSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
     try {
       const objectId = generateId();
@@ -111,8 +111,9 @@ export function QuickIDScreen() {
         });
       });
 
-      // Navigate to camera with the new object_id
-      navigation.replace('CaptureCamera', { objectId });
+      // Navigate to the guided view overview. The user picks a view slot
+      // and each capture attaches to this object_id with the correct view_type.
+      navigation.replace('ViewChecklist', { objectId });
     } catch {
       setSaving(false);
     }

@@ -157,6 +157,11 @@
     "permission_body": "Allow camera access to capture and document objects.",
     "permission_grant": "Grant Access",
     "permission_settings": "Open Settings to enable camera access.",
+    "permission_open_settings": "Open Settings",
+    "library_permission_title": "Photo Library Access Required",
+    "library_permission_body": "Allow photo library access to import images. You can enable this in Settings.",
+    "library_permission_open_settings": "Open Settings",
+    "library_permission_cancel": "Cancel",
     "select_type": "Select Object Type",
     "select_type_subtitle": "Choose the type that best describes this object",
     "skip_use_default": "Skip (use default)",
@@ -216,7 +221,8 @@
       "exhibition": "Exhibition",
       "project": "Project",
       "research": "Research",
-      "conservation": "Conservation"
+      "conservation": "Conservation",
+      "curated": "Curated"
     },
     "add_objects": {
       "title": "Add Objects",
@@ -1246,6 +1252,8 @@
     "not_captured": "Not yet captured",
     "done": "Done",
     "add_detail": "Add detail photo",
+    "retake": "Retake",
+    "retake_confirm": "Retake this view?",
     "dimensions_label": "Dimensions",
     "dimensions_placeholder": "e.g. W: 12cm, H: 8cm",
     "notes_label": "Notes",

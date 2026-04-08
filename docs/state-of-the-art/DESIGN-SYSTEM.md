@@ -1,10 +1,23 @@
 # aha! Register Design System
 
-> Last updated: 2026-03-18
+> Last updated: 2026-04-06
 > Status: ACTIVE
 
 Centralized design tokens and visual standards for the aha! Register app.
 All values live in `src/theme/index.ts`. No hardcoded colors, font sizes, or radii in component files.
+
+## Light / Dark Mode
+
+Full light and dark mode support via `ThemeProvider` + `useTheme()` hook.
+
+- `src/theme/index.ts` exports `lightPalette` and `darkPalette` with identical key sets
+- `src/theme/ThemeContext.tsx` provides `ThemeProvider` (wraps app) and `useTheme()` (returns `{ colors, mode, preference, setPreference }`)
+- Preference options: `'system'` (default), `'light'`, `'dark'` — persisted in SecureStore
+- All components use `const { colors } = useTheme()` and pass `colors` to `makeStyles(colors)` — **never import `colors` directly from theme/index**
+- Dark mode accent: `#4E9A47` (lighter green for WCAG AA contrast on dark backgrounds, 5.07:1)
+- Light mode accent: `#2D5A27` (brand green, 8.2:1 on white)
+- Camera overlay tokens (`camera*`) are identical in both modes — they overlay arbitrary scene content
+- Only exceptions: SVG camera bracket strokes in CaptureScreen/VideoRecordScreen (fixed white, intentional)
 
 ---
 

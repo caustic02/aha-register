@@ -436,7 +436,7 @@ export function HomeScreen({ navigation }: Props) {
         <View style={st.section}>
           <PressScale
             style={st.cta}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); navigation.navigate('QuickID'); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); navigation.navigate('QuickID'); }}
             accessibilityLabel={t('home.captureCtaTitle')}
           >
             <View style={st.ctaIcon}><CaptureTabIcon size={32} color={colors.white} /></View>
@@ -444,7 +444,7 @@ export function HomeScreen({ navigation }: Props) {
               <Text style={st.ctaTitle}>{t('home.captureCtaTitle')}</Text>
               <Text style={st.ctaSub}>{t('home.captureCtaSubtitle')}</Text>
             </View>
-            <ForwardIcon size={20} color="rgba(255,255,255,0.5)" />
+            <ForwardIcon size={20} color={colors.cameraTextMuted} />
           </PressScale>
         </View>
 
@@ -506,7 +506,7 @@ export function HomeScreen({ navigation }: Props) {
                   ) : (
                     <View style={[StyleSheet.absoluteFill, st.thumbEmpty]}><CameraIcon size={22} color={colors.textTertiary} /></View>
                   )}
-                  <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, backgroundColor: 'rgba(0,0,0,0.5)' }} />
+                  <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 50, backgroundColor: colors.overlayLight }} />
                   <Text style={st.recentTitle} numberOfLines={1}>{item.title || 'Untitled'}</Text>
                 </PressScale>
               ))}
@@ -620,7 +620,7 @@ function makeStyles(colors: ColorPalette) {
     // Header — glassmorphism blur
     headerBlur: {
       position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-      backgroundColor: 'rgba(10, 10, 10, 0.75)',
+      backgroundColor: colors.headerBlur,
     },
     headerInner: {
       flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
@@ -654,10 +654,10 @@ function makeStyles(colors: ColorPalette) {
       flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
       height: 96, backgroundColor: colors.heroGreen, borderRadius: R, borderWidth: 1, borderColor: colors.accent, marginBottom: ITEM_GAP,
     },
-    ctaIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+    ctaIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.cameraButtonBg, alignItems: 'center', justifyContent: 'center' },
     ctaText: { flex: 1, marginLeft: 14 },
     ctaTitle: { fontSize: 20, fontWeight: typography.weight.bold, color: colors.white },
-    ctaSub: { fontSize: 14, color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+    ctaSub: { fontSize: 14, color: colors.cameraTextDim, marginTop: 2 },
 
     // Quick buttons (100px, vertical layout)
     quickRow: { flexDirection: 'row', gap: ITEM_GAP },

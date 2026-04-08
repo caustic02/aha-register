@@ -58,6 +58,7 @@ import type { ExportableObject } from '../services/export-service';
 import { getDisplayLabel } from '../utils/displayLabels';
 import { useSyncStatuses } from '../hooks/useSyncStatuses';
 import { SyncBadge } from '../components/SyncBadge';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 import { useObjectDocuments } from '../hooks/useObjectDocuments';
 import { getProtocol, type CaptureProtocol } from '../config/protocols';
 import { CheckIcon } from '../theme/icons';
@@ -858,7 +859,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     if (isVideoMedia(m)) {
       setVideoPlayerUri(m.file_path);
     } else {
-      setViewerUri(m.file_path);
+      setViewerUri(resolveMediaUri(m.file_path));
     }
   };
 
@@ -986,7 +987,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             accessibilityLabel={primaryMedia.caption ?? object.title}
           >
             <Image
-              source={{ uri: primaryMedia.file_path }}
+              source={{ uri: resolveMediaUri(primaryMedia.file_path) }}
               style={styles.heroImage}
               resizeMode="cover"
             />
@@ -1010,7 +1011,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                   style={styles.heroViewItemWrapper}
                   onPress={() => {
                     if (captured) {
-                      setViewerUri(captured.file_path);
+                      setViewerUri(resolveMediaUri(captured.file_path));
                     } else {
                       navigation.navigate('CaptureCamera', {
                         viewType: viewDef.key as RegisterViewType,
@@ -1028,7 +1029,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                   ]}>
                     {captured ? (
                       <Image
-                        source={{ uri: captured.file_path }}
+                        source={{ uri: resolveMediaUri(captured.file_path) }}
                         style={styles.heroViewThumb}
                         resizeMode="cover"
                       />

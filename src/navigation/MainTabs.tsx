@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import type { NavigatorScreenParams } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import { CollectionStack } from './CollectionStack';
 import type { CollectionStackParamList } from './CollectionStack';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { tabBar } from '../theme';
+import { useTheme } from '../theme/ThemeContext';
 import {
   HomeTabIcon,
   CollectionTabIcon,
@@ -64,11 +65,12 @@ function TabIcon({
   focused: boolean;
   color: string;
 }) {
+  const { colors } = useTheme();
   const sw = focused ? tabBar.activeStrokeWidth : tabBar.inactiveStrokeWidth;
 
   return (
     <View style={styles.iconContainer}>
-      {focused && <View style={styles.indicator} />}
+      {focused && <View style={[styles.indicator, { backgroundColor: colors.tabBarIndicator }]} />}
       {route === 'Capture' ? (
         <ViewfinderIcon size={tabBar.iconSize} color={color} strokeWidth={sw} />
       ) : (
@@ -86,6 +88,14 @@ function TabIcon({
 // ── Navigator ────────────────────────────────────────────────────────────────
 
 export function MainTabs() {
+  const { colors } = useTheme();
+  const themedBar = useMemo(() => ({
+    height: tabBar.height,
+    backgroundColor: colors.tabBarBackground,
+    borderTopColor: colors.tabBarBorder,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  }), [colors]);
+
   return (
     <Tab.Navigator
       initialRouteName="Home"
@@ -94,10 +104,10 @@ export function MainTabs() {
         tabBarIcon: ({ focused, color }) => (
           <TabIcon route={route.name} focused={focused} color={color} />
         ),
-        tabBarActiveTintColor: tabBar.activeColor,
-        tabBarInactiveTintColor: tabBar.inactiveColor,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: styles.label,
-        tabBarStyle: styles.bar,
+        tabBarStyle: themedBar,
         tabBarHideOnKeyboard: true,
       })}
     >
@@ -134,12 +144,6 @@ export function MainTabs() {
 // ── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  bar: {
-    height: tabBar.height,
-    backgroundColor: tabBar.backgroundColor,
-    borderTopColor: tabBar.borderColor,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
   label: {
     fontSize: tabBar.labelSize,
     fontWeight: '500',
@@ -152,7 +156,6 @@ const styles = StyleSheet.create({
   },
   indicator: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: tabBar.indicatorColor,
     borderRadius: tabBar.indicatorRadius,
   },
 });

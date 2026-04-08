@@ -21,16 +21,6 @@ import { typography, spacing, radii, touch } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 
-// ── Camera-safe overlay colours ──────────────────────────────────────────────
-const SIDEBAR_BG = 'rgba(0,0,0,0.85)';
-const BACKDROP_BG = 'rgba(0,0,0,0.4)';
-const ITEM_BG = 'rgba(255,255,255,0.08)';
-const ITEM_ACTIVE = 'rgba(255,255,255,0.18)';
-const ITEM_TRANSPARENT = 'rgba(0,0,0,0)';
-// TEXT_WHITE replaced with c.white / colors.white from theme tokens below
-const TEXT_DIM = 'rgba(255,255,255,0.6)';
-const BADGE_OPTIONAL = 'rgba(255,255,255,0.3)';
-
 const SIDEBAR_WIDTH = 280;
 
 interface ShotListSidebarProps {
@@ -85,7 +75,7 @@ export function ShotListSidebar({
       case 'done': return { backgroundColor: BADGE_DONE };
       case 'skipped': return { backgroundColor: BADGE_SKIPPED };
       case 'required': return { backgroundColor: BADGE_REQUIRED };
-      case 'optional': return { backgroundColor: BADGE_OPTIONAL };
+      case 'optional': return { backgroundColor: colors.cameraBadgeOptional };
     }
   };
 
@@ -164,11 +154,11 @@ function makeStyles(c: ColorPalette) {
     },
     backdropTouch: {
       flex: 1,
-      backgroundColor: BACKDROP_BG,
+      backgroundColor: c.overlayMedium,
     },
     sidebar: {
       width: SIDEBAR_WIDTH,
-      backgroundColor: SIDEBAR_BG,
+      backgroundColor: c.cameraSidebarBg,
       paddingTop: spacing.xl,
     },
     header: {
@@ -178,7 +168,7 @@ function makeStyles(c: ColorPalette) {
       paddingHorizontal: spacing.lg,
       paddingBottom: spacing.lg,
       borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: ITEM_BG,
+      borderBottomColor: c.cameraSidebarItem,
     },
     headerTitle: {
       color: c.white,
@@ -195,21 +185,21 @@ function makeStyles(c: ColorPalette) {
       paddingHorizontal: spacing.lg,
       paddingVertical: spacing.md,
       gap: spacing.md,
-      backgroundColor: ITEM_TRANSPARENT,
+      backgroundColor: c.transparent,
     },
     itemCurrent: {
-      backgroundColor: ITEM_ACTIVE,
+      backgroundColor: c.cameraSidebarItemActive,
     },
     orderCircle: {
       width: 28,
       height: 28,
       borderRadius: 14,
-      backgroundColor: ITEM_BG,
+      backgroundColor: c.cameraSidebarItem,
       alignItems: 'center',
       justifyContent: 'center',
     },
     orderText: {
-      color: TEXT_DIM,
+      color: c.cameraTextDim,
       fontSize: typography.size.sm,
       fontWeight: typography.weight.semibold,
     },

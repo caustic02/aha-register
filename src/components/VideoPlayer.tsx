@@ -7,6 +7,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Linking,
   Modal,
   Pressable,
   StyleSheet,
@@ -70,9 +71,18 @@ export function VideoPlayer({
   const handleSave = useCallback(async () => {
     if (!videoUri) return;
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(t('imageViewer.permissionNeeded'));
+      const perm = await MediaLibrary.requestPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          t('capture.library_permission_title'),
+          t('imageViewer.permissionNeeded'),
+          perm.canAskAgain
+            ? [{ text: t('capture.library_permission_cancel') }]
+            : [
+                { text: t('capture.library_permission_cancel'), style: 'cancel' },
+                { text: t('capture.permission_open_settings'), onPress: () => Linking.openSettings() },
+              ],
+        );
         return;
       }
       await MediaLibrary.saveToLibraryAsync(videoUri);

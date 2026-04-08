@@ -13,7 +13,7 @@ import { RootStack } from '../navigation/RootStack';
 import { SyncStatusBar } from '../components/SyncStatusBar';
 import { getSetting, setSetting, SETTING_KEYS } from '../services/settingsService';
 import { getSession, onAuthStateChange } from '../services/auth';
-import { ensureMigrated } from '../services/supabase';
+import { ensureMigrated, supabase } from '../services/supabase';
 import { SyncEngine } from '../sync/engine';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { AuthScreen } from '../screens/AuthScreen';
@@ -126,8 +126,15 @@ export default function AppShell() {
     setAuthenticated(true);
   }, []);
 
-  const handleSkipAuth = useCallback(() => {
-    // User skips auth — sync stays disabled, app works locally
+  const handleSkipAuth = useCallback(async () => {
+    // User skips auth — sync stays disabled, app works locally.
+    // Sign in anonymously so AI analysis and other Edge Functions work.
+    // If anonymous sign-in fails (e.g. offline), the app still works locally.
+    try {
+      await supabase.auth.signInAnonymously();
+    } catch {
+      // Best-effort — app is fully functional without a session
+    }
     setAuthenticated(true); // allow entry to main app
   }, []);
 

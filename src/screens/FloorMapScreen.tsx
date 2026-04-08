@@ -1,8 +1,10 @@
 /* eslint-disable react-native/no-inline-styles, react-native/no-color-literals */
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -22,10 +24,12 @@ import { BackIcon, CameraIcon } from '../theme/icons';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { generateId } from '../utils/uuid';
 import { radii, spacing, touch, typography } from '../theme';
+import { useAppTranslation } from '../hooks/useAppTranslation';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import type { FloorMap, MapPin as MapPinType } from '../db/types';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'FloorMap'>;
 
@@ -130,7 +134,7 @@ function ObjectPickerModal({
                   accessibilityRole="button"
                 >
                   {obj.file_path ? (
-                    <Image source={{ uri: obj.file_path }} style={s.modalThumb} />
+                    <Image source={{ uri: resolveMediaUri(obj.file_path) }} style={s.modalThumb} />
                   ) : (
                     <View style={[s.modalThumb, s.thumbEmpty]}>
                       <CameraIcon size={14} color={colors.textTertiary} />
@@ -168,7 +172,7 @@ function PinDetailPopup({
         <View style={s.popupCard}>
           <View style={s.popupTop}>
             {pin.obj_file_path ? (
-              <Image source={{ uri: pin.obj_file_path }} style={s.popupThumb} />
+              <Image source={{ uri: resolveMediaUri(pin.obj_file_path) }} style={s.popupThumb} />
             ) : (
               <View style={[s.popupThumb, s.thumbEmpty]}>
                 <CameraIcon size={20} color={colors.textTertiary} />
@@ -208,6 +212,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
   const s = useMemo(() => makeStyles(colors), [colors]);
   const db = useDatabase();
+  const { t } = useAppTranslation();
   const targetObjectId = route.params?.objectId;
 
   const [maps, setMaps] = useState<FloorMap[]>([]);
@@ -328,25 +333,54 @@ export function FloorMapScreen({ route, navigation }: Props) {
     setShowNameInput(true);
   }, []);
 
+  const showPermissionDeniedAlert = useCallback((titleKey: string, bodyKey: string) => {
+    Alert.alert(
+      t(titleKey),
+      t(bodyKey),
+      [
+        { text: t('capture.library_permission_cancel'), style: 'cancel' },
+        { text: t('capture.permission_open_settings'), onPress: () => Linking.openSettings() },
+      ],
+    );
+  }, [t]);
+
   const pickImage = useCallback(async () => {
     setShowSourcePicker(false);
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (result.canceled || result.assets.length === 0) return;
-    processAsset(result.assets[0]);
-  }, [processAsset]);
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        showPermissionDeniedAlert('capture.library_permission_title', 'capture.library_permission_body');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (result.canceled || result.assets.length === 0) return;
+      processAsset(result.assets[0]);
+    } catch {
+      // Picker threw unexpectedly — don't crash
+    }
+  }, [processAsset, showPermissionDeniedAlert]);
 
   const scanWithCamera = useCallback(async () => {
     setShowSourcePicker(false);
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ['images'],
-      quality: 0.8,
-    });
-    if (result.canceled || result.assets.length === 0) return;
-    processAsset(result.assets[0]);
-  }, [processAsset]);
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        showPermissionDeniedAlert('capture.permission_title', 'capture.permission_body');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        quality: 0.8,
+      });
+      if (result.canceled || result.assets.length === 0) return;
+      processAsset(result.assets[0]);
+    } catch {
+      // Camera threw unexpectedly — don't crash
+    }
+  }, [processAsset, showPermissionDeniedAlert]);
 
   const saveNewMap = useCallback(async () => {
     if (!pendingImageUri || !newName.trim()) return;
@@ -372,7 +406,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
   const handleMapLongPress = useCallback(
     (evt: { nativeEvent: { locationX: number; locationY: number } }) => {
       if (!activeMapId) return;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
       const xPct = (evt.nativeEvent.locationX / displayW) * 100;
       const yPct = (evt.nativeEvent.locationY / displayH) * 100;
@@ -391,7 +425,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
         'INSERT INTO map_pins (id, floor_map_id, object_id, x_percent, y_percent, created_at) VALUES (?, ?, ?, ?, ?, ?)',
         [id, activeMapId, objectId, pendingPinPos.x, pendingPinPos.y, now],
       );
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       setShowObjectPicker(false);
       setPendingPinPos(null);
       await loadPins();
@@ -765,7 +799,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   hintText: {
     fontSize: 13,
     color: c.white,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: c.cameraOverlay,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
@@ -773,7 +807,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
 
   // Modal shared
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalOverlay: { flex: 1, backgroundColor: c.overlayLight, justifyContent: 'flex-end' },
   modalSheet: {
     backgroundColor: c.surfaceElevated,
     borderTopLeftRadius: 20,
@@ -819,7 +853,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   modalObjTitle: { fontSize: 14, color: c.text, flex: 1, fontWeight: typography.weight.medium },
 
   // Pin detail popup
-  popupOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' },
+  popupOverlay: { flex: 1, backgroundColor: c.overlayMedium, justifyContent: 'center', alignItems: 'center' },
   popupCard: {
     backgroundColor: c.surfaceElevated,
     borderRadius: radii.lg,

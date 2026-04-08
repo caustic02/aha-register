@@ -6,7 +6,7 @@
  *   <ImageViewer visible={!!viewerUri} imageUri={viewerUri ?? ''} onClose={() => setViewerUri(null)} />
  */
 import React, { useCallback, useMemo } from 'react';
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Zoomable } from '@likashefqet/react-native-image-zoom';
@@ -38,9 +38,18 @@ export function ImageViewer({ visible, imageUri, onClose }: ImageViewerProps) {
   const handleSave = useCallback(async () => {
     if (!imageUri) return;
     try {
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(t('imageViewer.permissionNeeded'));
+      const perm = await MediaLibrary.requestPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(
+          t('capture.library_permission_title'),
+          t('imageViewer.permissionNeeded'),
+          perm.canAskAgain
+            ? [{ text: t('capture.library_permission_cancel') }]
+            : [
+                { text: t('capture.library_permission_cancel'), style: 'cancel' },
+                { text: t('capture.permission_open_settings'), onPress: () => Linking.openSettings() },
+              ],
+        );
         return;
       }
       await MediaLibrary.saveToLibraryAsync(imageUri);
@@ -151,7 +160,6 @@ function makeStyles(c: ColorPalette) {
       justifyContent: 'center',
       zIndex: 10,
     },
-    // eslint-disable-next-line react-native/no-color-literals
     bottomBar: {
       position: 'absolute',
       bottom: 0,
@@ -161,7 +169,7 @@ function makeStyles(c: ColorPalette) {
       justifyContent: 'center',
       gap: spacing['3xl'],
       paddingTop: spacing.lg,
-      backgroundColor: 'rgba(0,0,0,0.5)',
+      backgroundColor: c.overlayLight,
     },
     actionBtn: {
       alignItems: 'center',

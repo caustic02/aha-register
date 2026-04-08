@@ -6,6 +6,7 @@ import {
   Alert,
   Animated,
   Image,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -42,7 +43,6 @@ import { X, ChevronDown, Zap, RefreshCw } from 'lucide-react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Path } from 'react-native-svg';
 import type { ObjectType, RegisterObject, RegisterViewType } from '../db/types';
-import { DEFAULT_FIRST_VIEW } from '../constants/viewTypes';
 import {
   launchDocumentScanner,
   processDocumentScan,
@@ -59,13 +59,8 @@ import { ShotListSidebar } from '../components/ShotListSidebar';
 import { TipsModal } from '../components/TipsModal';
 import { CompletionSummary } from '../components/CompletionSummary';
 
-// Camera-specific overlay colours — rgba values intentionally outside the design
-// system token set because they are camera-viewfinder-only and must meet contrast
-// requirements against arbitrary scene content.
-const OVERLAY_GRID = 'rgba(255,255,255,0.3)';
-const OVERLAY_LEVEL_TILTED = 'rgba(255,255,255,0.5)';
-const OVERLAY_LEVEL_FLAT = 'rgba(45,90,39,0.85)';
-const OVERLAY_COUNT_BG = 'rgba(0,0,0,0.55)';
+// Camera-specific overlay colours — now centralized in theme palette as
+// camera* tokens. These work on arbitrary scene content in both light/dark modes.
 
 type Phase = 'idle' | 'extracting' | 'preview' | 'type_select' | 'saving' | 'done';
 type CaptureMode = 'quick' | 'full';
@@ -476,40 +471,36 @@ export function CaptureScreen() {
       // Build location data from EXIF (fire-and-forget below)
       const photoUri = pic.uri;
       const exif = pic.exif ?? null;
+      const targetObjectId = routeObjectId;
 
       // Fire and forget — camera stays live
       (async () => {
         try {
-          // Extract location from EXIF synchronously enough to pass to quickCapture
-          const meta = await extractMetadata(exif);
-          const location: LocationData | null =
-            meta.latitude != null && meta.longitude != null
-              ? {
-                  latitude: meta.latitude,
-                  longitude: meta.longitude,
-                  altitude: meta.altitude,
-                  accuracy: meta.accuracy,
-                  coordinateSource: meta.coordinateSource ?? 'gps_hardware',
-                }
-              : null;
+          let objectId: string;
 
-          const objectId = await quickCapture(db, photoUri, location);
+          if (targetObjectId) {
+            // Attach to the existing object — never create a new Untitled Object.
+            // No view_type is assigned here; the user picks views from the
+            // ViewChecklist overview. A generic capture leaves view_type NULL.
+            await addMediaToObject(db, targetObjectId, photoUri, 'image/jpeg');
+            objectId = targetObjectId;
+          } else {
+            // No object context: legacy standalone quick capture.
+            const meta = await extractMetadata(exif);
+            const location: LocationData | null =
+              meta.latitude != null && meta.longitude != null
+                ? {
+                    latitude: meta.latitude,
+                    longitude: meta.longitude,
+                    altitude: meta.altitude,
+                    accuracy: meta.accuracy,
+                    coordinateSource: meta.coordinateSource ?? 'gps_hardware',
+                  }
+                : null;
 
-          // Tag the primary media with ansicht_front view_type
-          const now = new Date().toISOString();
-          await db.runAsync(
-            `UPDATE media SET view_type = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
-            [DEFAULT_FIRST_VIEW, now, objectId],
-          );
-          // Sync the view_type update
-          const primaryRow = await db.getFirstAsync<{ id: string }>(
-            `SELECT id FROM media WHERE object_id = ? AND is_primary = 1`,
-            [objectId],
-          );
-          if (primaryRow) {
-            const { SyncEngine: SE } = await import('../sync/engine');
-            const se = new SE(db);
-            await se.queueChange('media', primaryRow.id, 'update', { view_type: DEFAULT_FIRST_VIEW });
+            objectId = await quickCapture(db, photoUri, location);
+            // NO auto view_type assignment — view_type is only set when
+            // the user tapped a specific view slot (handleViewTypeShutter).
           }
 
           setQuickThumbnails((prev) => [...prev, { objectId, uri: photoUri }]);
@@ -525,7 +516,7 @@ export function CaptureScreen() {
     } catch {
       // Camera not ready — ignore
     }
-  }, [cameraReady, db, triggerShutterFlash]);
+  }, [cameraReady, db, triggerShutterFlash, routeObjectId]);
 
   // Multi-view capture shutter: captures a photo for a specific Registerbogen view
   // and adds it to an existing object with the correct view_type
@@ -546,6 +537,37 @@ export function CaptureScreen() {
       // Fire and forget — camera stays live
       (async () => {
         try {
+          // Retake support: if a media row already exists for this
+          // view_type on this object, remove it (and its file) first so
+          // each view slot owns exactly one photo.
+          const existing = await db.getAllAsync<{ id: string; file_path: string }>(
+            `SELECT id, file_path FROM media
+             WHERE object_id = ?
+               AND view_type = ?
+               AND (media_type IS NULL OR media_type = 'original')`,
+            [objectId, viewType],
+          );
+          if (existing.length > 0) {
+            const ids = existing.map((e) => e.id);
+            const placeholders = ids.map(() => '?').join(',');
+            await db.runAsync(
+              `DELETE FROM media WHERE id IN (${placeholders})`,
+              ids,
+            );
+            // Queue delete syncs + best-effort file cleanup
+            const { SyncEngine: SE2 } = await import('../sync/engine');
+            const se2 = new SE2(db);
+            for (const e of existing) {
+              await se2.queueChange('media', e.id, 'delete', { objectId });
+              try {
+                const f = new File(e.file_path);
+                if (f.exists) f.delete();
+              } catch {
+                // Best-effort
+              }
+            }
+          }
+
           // addMediaToObject handles file copy, SHA-256, audit, sync
           const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
 
@@ -602,9 +624,28 @@ export function CaptureScreen() {
   }, [cameraReady, navigation, triggerShutterFlash]);
 
   const handleLibrary = useCallback(async () => {
-    const results = await pickFromLibrary();
-    if (results.length > 0) await processCapture(results[0]);
-  }, [processCapture]);
+    try {
+      const pick = await pickFromLibrary();
+      if (pick.status === 'permission_denied') {
+        Alert.alert(
+          t('capture.library_permission_title'),
+          t('capture.library_permission_body'),
+          pick.canAskAgain
+            ? [{ text: t('capture.library_permission_cancel') }]
+            : [
+                { text: t('capture.library_permission_cancel'), style: 'cancel' },
+                { text: t('capture.library_permission_open_settings'), onPress: () => Linking.openSettings() },
+              ],
+        );
+        return;
+      }
+      if (pick.status === 'ok' && pick.results.length > 0) {
+        await processCapture(pick.results[0]);
+      }
+    } catch {
+      // Picker threw unexpectedly — don't crash
+    }
+  }, [processCapture, t]);
 
   // ── Post-capture handlers ─────────────────────────────────────────────────
 
@@ -705,24 +746,9 @@ export function CaptureScreen() {
           [shotId, protocolHook.protocol.id, protocolHook.currentShot.order, now, objectId],
         );
         protocolHook.captureShot(shotId, capture.uri);
-      } else {
-        // No protocol active: tag primary media with ansicht_front
-        const now = new Date().toISOString();
-        await db.runAsync(
-          `UPDATE media SET view_type = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
-          [DEFAULT_FIRST_VIEW, now, objectId],
-        );
-        // Sync the view_type update
-        const pRow = await db.getFirstAsync<{ id: string }>(
-          `SELECT id FROM media WHERE object_id = ? AND is_primary = 1`,
-          [objectId],
-        );
-        if (pRow) {
-          const { SyncEngine: SE } = await import('../sync/engine');
-          const se = new SE(db);
-          await se.queueChange('media', pRow.id, 'update', { view_type: DEFAULT_FIRST_VIEW });
-        }
       }
+      // No auto-assigned view_type: view_type is only set when the user
+      // tapped a specific view slot in ViewChecklist (handleViewTypeShutter).
 
       setSessionPhotoCount((prev) => prev + 1);
       // Navigate to AI Review screen for Gemini analysis
@@ -765,7 +791,30 @@ export function CaptureScreen() {
   // ── Document scan from camera ───────────────────────────────────────────────
 
   const handleDocumentScan = useCallback(async () => {
-    const scanResult = await launchDocumentScanner();
+    // Document scanner requires camera — verify permission first
+    if (!permission?.granted) {
+      if (permission?.canAskAgain) {
+        requestPermission();
+      } else {
+        Alert.alert(
+          t('capture.permission_title'),
+          t('capture.permission_body'),
+          [
+            { text: t('capture.library_permission_cancel'), style: 'cancel' },
+            { text: t('capture.permission_open_settings'), onPress: () => Linking.openSettings() },
+          ],
+        );
+      }
+      return;
+    }
+
+    let scanResult: Awaited<ReturnType<typeof launchDocumentScanner>>;
+    try {
+      scanResult = await launchDocumentScanner();
+    } catch {
+      // Scanner threw (e.g. missing permission at OS level) — don't crash
+      return;
+    }
     if (!scanResult) return; // user cancelled
 
     try {
@@ -852,7 +901,7 @@ export function CaptureScreen() {
     } catch {
       Alert.alert(t('common.error'));
     }
-  }, [db, t]);
+  }, [db, t, permission, requestPermission]);
 
   // (Video mode handlers moved to VideoRecordScreen)
 
@@ -979,7 +1028,12 @@ export function CaptureScreen() {
             <Text style={styles.primaryBtnText}>{t('capture.permission_grant')}</Text>
           </Pressable>
         ) : (
-          <Text style={styles.permissionHint}>{t('capture.permission_settings')}</Text>
+          <>
+            <Text style={styles.permissionHint}>{t('capture.permission_settings')}</Text>
+            <Pressable style={[styles.primaryBtn, { marginTop: spacing.md }]} onPress={() => Linking.openSettings()} accessibilityRole="button">
+              <Text style={styles.primaryBtnText}>{t('capture.permission_open_settings')}</Text>
+            </Pressable>
+          </>
         )}
         <Pressable style={[styles.secondaryBtn, { marginTop: spacing.md }]} onPress={handleLibrary} accessibilityRole="button">
           <Text style={styles.secondaryBtnText}>{t('capture.choose_from_library')}</Text>
@@ -1060,7 +1114,7 @@ export function CaptureScreen() {
           style={[
             styles.levelBar,
             {
-              backgroundColor: isLevel ? OVERLAY_LEVEL_FLAT : OVERLAY_LEVEL_TILTED,
+              backgroundColor: isLevel ? colors.cameraLevelFlat : colors.cameraLevelTilted,
               transform: [
                 {
                   rotate: tiltAnim.interpolate({
@@ -1104,7 +1158,7 @@ export function CaptureScreen() {
               <Text style={styles.domainPillText}>
                 {t('home.domainMuseumCollection')}
               </Text>
-              <ChevronDown size={14} color="rgba(255,255,255,0.7)" />
+              <ChevronDown size={14} color={colors.cameraTextDim} />
             </View>
           )}
           <Pressable
@@ -1377,7 +1431,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     right: 0,
     top: '33.33%',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   gridH2: {
     position: 'absolute',
@@ -1385,7 +1439,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     right: 0,
     top: '66.66%',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   gridV1: {
     position: 'absolute',
@@ -1393,7 +1447,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     bottom: 0,
     left: '33.33%',
     width: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   gridV2: {
     position: 'absolute',
@@ -1401,7 +1455,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     bottom: 0,
     left: '66.66%',
     width: StyleSheet.hairlineWidth,
-    backgroundColor: OVERLAY_GRID,
+    backgroundColor: c.cameraGrid,
   },
   // ── Level indicator ─────────────────────────────────────────────────────────
   levelWrap: {
@@ -1424,7 +1478,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     position: 'absolute',
     top: 130,
     left: layout.screenPadding,
-    backgroundColor: OVERLAY_COUNT_BG,
+    backgroundColor: c.cameraCountBg,
     borderRadius: radii.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
@@ -1456,14 +1510,14 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: c.cameraButtonBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   domainPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: c.cameraPillBg,
     borderRadius: 18,
     height: 36,
     paddingHorizontal: 16,
@@ -1477,7 +1531,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   objectTitlePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(45,90,39,0.7)',
+    backgroundColor: c.cameraLevelFlat,
     borderRadius: 18,
     height: 36,
     paddingHorizontal: 16,
@@ -1502,13 +1556,13 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   centerTextMain: {
     fontSize: 15,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.8)',
+    color: c.cameraTextBright,
     textAlign: 'center',
   },
   centerTextSub: {
     fontSize: 12,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.45)',
+    color: c.cameraTextMuted,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -1517,7 +1571,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     position: 'absolute',
     top: spacing.xl,
     alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: c.cameraOverlay,
     borderRadius: radii.full,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
@@ -1534,7 +1588,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     position: 'absolute',
     bottom: 12,
     alignSelf: 'center',
-    backgroundColor: OVERLAY_COUNT_BG,
+    backgroundColor: c.cameraCountBg,
     borderRadius: radii.full,
     paddingHorizontal: 10,
     paddingVertical: 3,
@@ -1595,7 +1649,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   pvTogglePill: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: c.cameraPillBg,
     borderRadius: 24,
     height: 40,
     padding: 3,
@@ -1622,7 +1676,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   pvToggleText: {
     fontSize: 14,
     fontWeight: '400',
-    color: 'rgba(255,255,255,0.7)',
+    color: c.cameraTextDim,
   },
 
   // ── Thumbnail strip ───────────────────────────────────────────────────────
@@ -1649,7 +1703,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   thumbCountBadge: {
     alignSelf: 'center',
-    backgroundColor: OVERLAY_COUNT_BG,
+    backgroundColor: c.cameraCountBg,
     borderRadius: radii.full,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
@@ -1665,7 +1719,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: c.cameraButtonBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1673,7 +1727,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: c.cameraButtonBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1709,7 +1763,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: c.cameraOverlay,
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 6,

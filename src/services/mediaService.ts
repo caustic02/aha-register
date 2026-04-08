@@ -64,12 +64,17 @@ export async function addMediaToObject(
   const privacyTier =
     (await getSetting(db, SETTING_KEYS.DEFAULT_PRIVACY_TIER)) ?? 'public';
 
-  // 4. Determine next sort_order
-  const maxRow = await db.getFirstAsync<{ m: number | null }>(
-    'SELECT MAX(sort_order) as m FROM media WHERE object_id = ?',
+  // 4. Determine next sort_order and whether this photo should become primary.
+  // If the object has no primary media yet, this new photo is promoted to
+  // primary so the list-screen thumbnail query (is_primary = 1) finds it.
+  const existingRow = await db.getFirstAsync<{ maxSort: number | null; hasPrimary: number }>(
+    `SELECT MAX(sort_order) AS maxSort,
+            COALESCE(MAX(CASE WHEN is_primary = 1 THEN 1 ELSE 0 END), 0) AS hasPrimary
+     FROM media WHERE object_id = ?`,
     [objectId],
   );
-  const nextSort = (maxRow?.m ?? -1) + 1;
+  const nextSort = (existingRow?.maxSort ?? -1) + 1;
+  const isPrimary = existingRow?.hasPrimary ? 0 : 1;
 
   // 5. Normalize file type
   const fileType = mimeType.split('/')[0];
@@ -84,7 +89,7 @@ export async function addMediaToObject(
       `INSERT INTO media
          (id, object_id, file_path, file_name, file_type, mime_type, file_size,
           sha256_hash, caption, privacy_tier, is_primary, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         mediaId,
         objectId,
@@ -96,6 +101,7 @@ export async function addMediaToObject(
         sha256,
         options?.caption ?? null,
         privacyTier,
+        isPrimary,
         nextSort,
         now,
         now,

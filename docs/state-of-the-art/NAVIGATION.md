@@ -1,9 +1,9 @@
 # aha! Register — Navigation Architecture
 
-> Last updated: 2026-03-28
+> Last updated: 2026-04-06
 > Status: ACTIVE
 
-React Navigation v6. Architecture is migrating from bottom-tab to single flat RootStack (see `src/navigation/RootStack.tsx`). Tab files still exist but RootStack is the active navigator.
+React Navigation v6. Single flat RootStack (see `src/navigation/RootStack.tsx`). Old MainTabs/BottomTab files still exist but RootStack is the active navigator. All screens must render their own header with a back button since `headerShown: false` is set globally.
 
 ## Quick-ID Screen (added 2026-03-28)
 

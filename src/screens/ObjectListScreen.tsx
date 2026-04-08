@@ -50,6 +50,7 @@ import type { HomeStackParamList } from '../navigation/HomeStack';
 import type { ObjectType } from '../db/types';
 import { useSyncStatuses } from '../hooks/useSyncStatuses';
 import { SyncBadge } from '../components/SyncBadge';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -181,11 +182,20 @@ export function ObjectListScreen({ navigation, route }: Props) {
         conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const order = buildOrderClause(filters.sortBy);
 
+      // Thumbnail: prefer is_primary, fall back to the first photo by
+      // sort_order. Objects created before the is_primary auto-promote fix
+      // may have no primary media — we still want to show a thumbnail.
       const rows = await db.getAllAsync<ObjectRow>(
         `SELECT o.id, o.title, o.object_type, o.created_at,
-                m.file_path AS thumbnail
+                (
+                  SELECT m.file_path FROM media m
+                  WHERE m.object_id = o.id
+                    AND (m.media_type IS NULL OR m.media_type = 'original')
+                    AND m.file_type = 'image'
+                  ORDER BY m.is_primary DESC, m.sort_order ASC, m.created_at ASC
+                  LIMIT 1
+                ) AS thumbnail
          FROM objects o
-         LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
          ${where}
          ${order}`,
         params,
@@ -199,12 +209,9 @@ export function ObjectListScreen({ navigation, route }: Props) {
   useFocusEffect(
     useCallback(() => {
       loadTypes();
-    }, [loadTypes]),
+      loadObjects();
+    }, [loadTypes, loadObjects]),
   );
-
-  useEffect(() => {
-    loadObjects();
-  }, [loadObjects]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────
 
@@ -284,7 +291,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         <ListItem
           title={item.title}
           subtitle={formatRelativeDate(item.created_at)}
-          thumbnail={item.thumbnail ? { uri: item.thumbnail } : undefined}
+          thumbnail={item.thumbnail ? { uri: resolveMediaUri(item.thumbnail) } : undefined}
           badge={{
             label: t(`object_types.${item.object_type}`),
             variant: 'neutral',
@@ -342,7 +349,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         >
           {item.thumbnail ? (
             <Image
-              source={{ uri: item.thumbnail }}
+              source={{ uri: resolveMediaUri(item.thumbnail) }}
               style={styles.gridImage}
               resizeMode="cover"
             />

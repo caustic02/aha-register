@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -66,7 +67,8 @@ function CornerBracket({ corner }: { corner: 'tl' | 'tr' | 'bl' | 'br' }) {
 }
 
 function CenterReticle() {
-  const s = 'rgba(255,255,255,0.5)';
+  const { colors } = useTheme();
+  const s = colors.cameraLevelTilted;
   const w = 1.5;
   return (
     <Svg width={RETICLE_SIZE} height={RETICLE_SIZE} viewBox={`0 0 ${RETICLE_SIZE} ${RETICLE_SIZE}`}>
@@ -217,10 +219,38 @@ export function VideoRecordScreen({ route, navigation }: Props) {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   if (!camPerm?.granted || !micPerm?.granted) {
+    const canAskCamera = camPerm?.canAskAgain !== false;
+    const canAskMic = micPerm?.canAskAgain !== false;
+    const canAskAny = canAskCamera || canAskMic;
+    // Still loading permissions — show spinner
+    if (!camPerm || !micPerm) {
+      return (
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.heroGreen} />
+        </View>
+      );
+    }
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.heroGreen} />
         <Text style={styles.permText}>{t('capture.permission_title')}</Text>
+        <Text style={[styles.permText, { fontSize: 14, marginTop: 8, opacity: 0.7 }]}>{t('capture.permission_body')}</Text>
+        {canAskAny ? (
+          <Pressable
+            style={[styles.topBtn, { marginTop: 20, width: 'auto', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.heroGreen }]}
+            onPress={() => { if (!camPerm.granted) requestCamPerm(); if (!micPerm.granted) requestMicPerm(); }}
+            accessibilityRole="button"
+          >
+            <Text style={styles.permText}>{t('capture.permission_grant')}</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            style={[styles.topBtn, { marginTop: 20, width: 'auto', paddingHorizontal: 20, paddingVertical: 10, backgroundColor: colors.heroGreen }]}
+            onPress={() => Linking.openSettings()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.permText}>{t('capture.permission_open_settings')}</Text>
+          </Pressable>
+        )}
       </View>
     );
   }
@@ -359,16 +389,13 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     top: '60%',    // below the center reticle (which is at 50%)
     alignItems: 'center',
   },
-  // eslint-disable-next-line react-native/no-color-literals
-  guidanceMain: { fontSize: 15, color: 'rgba(255,255,255,0.8)', textAlign: 'center' },
-  // eslint-disable-next-line react-native/no-color-literals
-  guidanceSub: { fontSize: 12, color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: 4 },
+  guidanceMain: { fontSize: 15, color: c.cameraTextBright, textAlign: 'center' },
+  guidanceSub: { fontSize: 12, color: c.cameraTextMuted, textAlign: 'center', marginTop: 4 },
   // Timer
   timerWrap: {
     position: 'absolute', top: 56, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center',
-    // eslint-disable-next-line react-native/no-color-literals
-    backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 16,
+    backgroundColor: c.cameraOverlay, borderRadius: 16,
     paddingHorizontal: 12, paddingVertical: 6, gap: 8, zIndex: 20,
   },
   timerDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.danger },
@@ -386,8 +413,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   circleBtn: {
     width: 48, height: 48, borderRadius: 24,
-    // eslint-disable-next-line react-native/no-color-literals
-    backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: c.cameraButtonBg, alignItems: 'center', justifyContent: 'center',
   },
   shutterBtn: {
     width: 72, height: 72, borderRadius: 36, borderWidth: 4,

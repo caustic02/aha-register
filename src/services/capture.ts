@@ -11,6 +11,11 @@ export type CaptureResult = {
   exif: Record<string, any> | null;
 };
 
+export type PickResult =
+  | { status: 'ok'; results: CaptureResult[] }
+  | { status: 'cancelled' }
+  | { status: 'permission_denied'; canAskAgain: boolean };
+
 /**
  * Launch the device camera. Returns a single CaptureResult or null if cancelled.
  */
@@ -39,12 +44,14 @@ export async function captureFromCamera(): Promise<CaptureResult | null> {
 }
 
 /**
- * Open the media library picker. Returns an array of CaptureResults (up to 10),
- * or an empty array if cancelled.
+ * Open the media library picker. Returns a discriminated result so callers can
+ * distinguish cancellation from permission denial.
  */
-export async function pickFromLibrary(): Promise<CaptureResult[]> {
+export async function pickFromLibrary(): Promise<PickResult> {
   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) return [];
+  if (!perm.granted) {
+    return { status: 'permission_denied', canAskAgain: perm.canAskAgain };
+  }
 
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
@@ -54,15 +61,18 @@ export async function pickFromLibrary(): Promise<CaptureResult[]> {
     selectionLimit: 10,
   });
 
-  if (result.canceled) return [];
+  if (result.canceled) return { status: 'cancelled' };
 
-  return result.assets.map((asset) => ({
-    uri: asset.uri,
-    width: asset.width,
-    height: asset.height,
-    fileName: asset.fileName ?? null,
-    fileSize: asset.fileSize ?? null,
-    mimeType: asset.mimeType ?? 'image/jpeg',
-    exif: asset.exif ?? null,
-  }));
+  return {
+    status: 'ok',
+    results: result.assets.map((asset) => ({
+      uri: asset.uri,
+      width: asset.width,
+      height: asset.height,
+      fileName: asset.fileName ?? null,
+      fileSize: asset.fileSize ?? null,
+      mimeType: asset.mimeType ?? 'image/jpeg',
+      exif: asset.exif ?? null,
+    })),
+  };
 }

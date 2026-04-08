@@ -1,6 +1,6 @@
 # aha! Register — Settings Architecture
 
-> Last updated: 2026-03-16
+> Last updated: 2026-04-06
 > Status: ACTIVE
 
 User-facing configuration is split across two storage layers depending on whether a value needs to be available before the SQLite database is ready.
