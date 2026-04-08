@@ -152,6 +152,8 @@
     "flash_on": "Blitz ein",
     "flash_auto": "Blitz Auto",
     "flip_camera": "Kamera wechseln",
+    "zoom_in": "Vergr\u00f6\u00dfern",
+    "zoom_out": "Verkleinern",
     "ratio_label": "Seitenverh\u00e4ltnis",
     "permission_title": "Kamerazugriff erforderlich",
     "permission_body": "Erlaube den Kamerazugriff, um Objekte zu erfassen und zu dokumentieren.",
@@ -1230,6 +1232,13 @@
     "fieldDescription": "Beschreibung",
     "fieldStylePeriod": "Stil / Epoche",
     "fieldCultureOrigin": "Kultur / Herkunft"
+  },
+  "photo_actions": {
+    "menu_body": "Was m\u00f6chtest du mit diesem Foto tun?",
+    "retake": "Neu aufnehmen",
+    "reassign": "Ansichtstyp \u00e4ndern",
+    "delete_title": "Foto l\u00f6schen?",
+    "delete_body": "Foto f\u00fcr \"{{view}}\" wird entfernt. Diese Aktion kann nicht r\u00fcckg\u00e4ngig gemacht werden."
   },
   "view_types": {
     "ansicht_front": "Ansicht vorne",

@@ -152,6 +152,8 @@
     "flash_on": "Flash On",
     "flash_auto": "Flash Auto",
     "flip_camera": "Flip Camera",
+    "zoom_in": "Zoom in",
+    "zoom_out": "Zoom out",
     "ratio_label": "Aspect Ratio",
     "permission_title": "Camera Access Required",
     "permission_body": "Allow camera access to capture and document objects.",
@@ -1230,6 +1232,13 @@
     "fieldDescription": "Description",
     "fieldStylePeriod": "Style / Period",
     "fieldCultureOrigin": "Culture / Origin"
+  },
+  "photo_actions": {
+    "menu_body": "What would you like to do with this photo?",
+    "retake": "Retake",
+    "reassign": "Change view type",
+    "delete_title": "Delete photo?",
+    "delete_body": "The photo for \"{{view}}\" will be removed. This cannot be undone."
   },
   "view_types": {
     "ansicht_front": "Front view",
