@@ -932,9 +932,6 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     console.log('[handleRunAI] starting multi-image analysis', { count: candidates.length });
 
     try {
-      console.log('[handleRunAI] reading media', { mediaId: pm.id, filePath: pm.file_path.substring(0, 120) });
-      const base64 = await readMediaBase64(pm.file_path);
-      console.log('[handleRunAI] base64 length:', base64.length);
       const { analyzeObject } = await import('../services/ai-analysis');
       const currentExtras: Record<string, unknown> = (() => {
         try {
