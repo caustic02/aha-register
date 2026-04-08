@@ -115,6 +115,16 @@ export class SyncEngine {
       return;
     }
 
+    // Anonymous users (created via "Skip" → signInAnonymously) have no
+    // institution / profile / membership, so every push hits RLS rejection.
+    // Local-only mode: data lives in SQLite until the user signs up.
+    if (await this.transport.isAnonymousSession()) {
+      console.warn('[sync] anonymous session — sync disabled (sign up to enable)');
+      await setSetting(this.db, 'last_sync_error', 'sync disabled for anonymous users');
+      await setSetting(this.db, 'last_sync_attempt', new Date().toISOString());
+      return;
+    }
+
     this.syncing = true;
     beginSyncCycle();
     await setSetting(this.db, 'last_sync_attempt', new Date().toISOString());
