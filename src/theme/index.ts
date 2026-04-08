@@ -59,13 +59,15 @@ export const colors = {
   secondaryContainer: 'rgba(107, 123, 141, 0.10)',
 
   // ── Tertiary / AI (AI-assisted actions, distinct from primary) ────────────
-  tertiary: '#5C6BC0',
-  tertiaryContainer: 'rgba(92, 107, 192, 0.12)',
+  // WCAG AA fix: #5C6BC0 was 4.07:1 on bg → #818CF8 is 6.66:1
+  tertiary: '#818CF8',
+  tertiaryContainer: 'rgba(129, 140, 248, 0.15)',
 
   // ── Text hierarchy ───────────────────────────────────────────────────────
   text: brand.colors.text,
   textSecondary: brand.colors.secondaryText,
-  textTertiary: '#666666',
+  // WCAG AA fix: #666666 was 3.43:1 on bg → #909090 is 5.57:1
+  textTertiary: '#909090',
   textInverse: brand.colors.textOnPrimary,
 
   // ── Surfaces ─────────────────────────────────────────────────────────────
@@ -81,33 +83,41 @@ export const colors = {
   borderFocused: '#2D5A27',
 
   // ── Semantic ─────────────────────────────────────────────────────────────
-  error: brand.colors.danger,
+  error: brand.colors.danger,   // kept dark for button backgrounds (white text on top)
   errorLight: '#3D1515',
-  warning: '#B45309',
+  warning: '#B45309',           // kept dark for button backgrounds
   warningLight: '#3D2A08',
-  success: '#0F766E',
+  success: '#0F766E',           // kept dark for badge backgrounds
   successLight: '#0D2D2A',
-  info: '#1D4ED8',
+  // WCAG AA fix: #1D4ED8 was 2.96:1 on bg → #60A5FA is 7.79:1
+  info: '#60A5FA',
   infoLight: '#0D1B3D',
 
-  // ── Status (sync, connectivity) ──────────────────────────────────────────
-  statusSyncing: '#1976D2',
-  statusOffline: '#757575',
-  statusSuccess: '#2E7D32',
-  statusWarning: '#E65100',
-  statusError: brand.colors.danger,
+  // ── Status (sync, connectivity) — text/icon only, no background use ──────
+  // WCAG AA fix: #1976D2 was 4.32:1 → #60A5FA is 7.79:1
+  statusSyncing: '#60A5FA',
+  // WCAG AA fix: #757575 was 4.30:1 → #909090 is 5.57:1
+  statusOffline: '#909090',
+  // WCAG AA fix: #2E7D32 was 3.87:1 → #4ADE80 is 11.4:1
+  statusSuccess: '#4ADE80',
+  statusWarning: '#E65100',     // 5.72:1 — already passes
+  // WCAG AA fix: #A32D2D was 2.13:1 → #F87171 is 6.01:1 (text/icon only)
+  statusError: '#F87171',
 
   // ── AI accent ────────────────────────────────────────────────────────────
-  ai: '#A16207',
+  // WCAG AA fix: #A16207 was 4.02:1 on bg → #F59E0B is 9.24:1
+  ai: '#F59E0B',
   aiLight: '#3D2A08',
   aiSurface: '#2D1F06',
-  aiBorder: 'rgba(161, 98, 7, 0.25)',
-  aiText: '#A16207',
+  aiBorder: 'rgba(245, 158, 11, 0.25)',
+  aiText: '#F59E0B',
 
   // ── AI Confidence scale ──────────────────────────────────────────────────
-  aiConfidenceHigh: '#2E7D32',
-  aiConfidenceMedium: '#E65100',
-  aiConfidenceLow: brand.colors.danger,
+  // WCAG AA fix: #2E7D32 was 3.87:1 → #4ADE80 is 11.4:1
+  aiConfidenceHigh: '#4ADE80',
+  aiConfidenceMedium: '#E65100',  // 5.72:1 — already passes
+  // WCAG AA fix: #A32D2D was 2.13:1 → #F87171 is 6.01:1
+  aiConfidenceLow: '#F87171',
 
   // ── CTA (primary action card) ────────────────────────────────────────────
   ctaSurface: 'rgba(30, 45, 61, 0.06)',
@@ -121,7 +131,8 @@ export const colors = {
   purple: '#5B21B6',
   greenLight: '#0D2D1A',
   greenDark: '#065F46',
-  brownDark: '#92400E', // AI Review muted label text; not primary accent
+  // WCAG AA fix: #92400E was 2.79:1 → #D97706 is 6.23:1
+  brownDark: '#D97706', // AI Review muted label text; not primary accent
   blueDark: '#1E40AF',
 
   // ── Header ──────────────────────────────────────────────────────────────
@@ -169,7 +180,8 @@ export const colors = {
   inputBackground: '#1A1A1A',
   inputBorder: '#2A2A2A',
   inputText: '#E8E8E8',
-  placeholderText: '#666666',
+  // WCAG AA fix: #666666 was 3.43:1 → #909090 is 5.57:1
+  placeholderText: '#909090',
   iconDefault: '#A0A0A0',
   iconActive: '#4E9A47',
   tabBarBackground: '#0A0A0A',
@@ -183,7 +195,7 @@ export const colors = {
 
   // ── Legacy aliases (all now derive from brand) ──
   textPrimary: brand.colors.text,
-  textMuted: '#666666',
+  textMuted: '#909090',
   borderLight: '#2A2A2A',
   danger: brand.colors.danger,
   dangerLight: '#3D1515',

@@ -134,7 +134,7 @@ function lifespan(birth?: number | null, death?: number | null): string {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const ACTION_BAR_HEIGHT = 64;
+const ACTION_BAR_HEIGHT = 76; // taller to accommodate icon + label text
 const GALLERY_IMG_SIZE = 220;
 
 const EDITABLE_FIELDS = new Set([
@@ -1762,29 +1762,34 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           icon={<EditIcon size={22} color={colors.text} />}
           onPress={handleEdit}
           accessibilityLabel={t('common.edit')}
+          label={t('common.edit')}
         />
         <IconButton
           icon={<ExportIcon size={22} color={colors.text} />}
           onPress={handleExport}
           accessibilityLabel={t('export.share')}
+          label={t('export.share')}
         />
         {canIsolate && (
           <IconButton
             icon={<IsolateIcon size={22} color={colors.text} />}
             onPress={handleIsolate}
             accessibilityLabel={t('isolation.isolate')}
+            label={t('isolation.isolate')}
           />
         )}
         <IconButton
           icon={<QrCode size={22} color={colors.text} />}
           onPress={() => navigation.navigate('QRCode', { objectId })}
           accessibilityLabel="QR Code"
+          label="QR Code"
         />
         <View style={styles.actionSpacer} />
         <IconButton
           icon={<DeleteIcon size={22} color={colors.error} />}
           onPress={handleDelete}
           accessibilityLabel={t('common.delete')}
+          label={t('common.delete')}
         />
       </View>
 

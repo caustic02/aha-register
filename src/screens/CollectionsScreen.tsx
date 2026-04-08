@@ -97,15 +97,17 @@ export function CollectionsScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Pressable
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          hitSlop={touch.hitSlop}
-          accessibilityLabel={t('common.back')}
-          accessibilityRole="button"
-        >
-          <BackIcon size={24} color={colors.text} />
-        </Pressable>
+        {navigation.canGoBack() && (
+          <Pressable
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            hitSlop={touch.hitSlop}
+            accessibilityLabel={t('common.back')}
+            accessibilityRole="button"
+          >
+            <BackIcon size={24} color={colors.text} />
+          </Pressable>
+        )}
         <Text style={styles.headerTitle} accessibilityRole="header">{t('collections.title')}</Text>
         <Pressable
           style={styles.addBtn}
