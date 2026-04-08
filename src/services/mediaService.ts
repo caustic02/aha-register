@@ -169,12 +169,17 @@ export async function setAsPrimary(
 
 /**
  * Deletes a media record and its file from storage.
- * Will not delete the last remaining media for an object.
+ * By default refuses to delete the last remaining media for an object, to
+ * avoid orphaning the object with zero photos. Pass `allowLast: true` from
+ * UI surfaces (e.g. ObjectDetail photo delete) where the user has explicit
+ * intent to empty a slot — the object itself remains and the user can add
+ * a new photo immediately.
  * If the deleted media was primary, promotes the next one.
  */
 export async function deleteMedia(
   db: SQLiteDatabase,
   mediaId: string,
+  options?: { allowLast?: boolean },
 ): Promise<void> {
   const row = await db.getFirstAsync<Media>(
     'SELECT * FROM media WHERE id = ?',
@@ -182,13 +187,15 @@ export async function deleteMedia(
   );
   if (!row) return;
 
-  // Don't allow deleting the only media
-  const countRow = await db.getFirstAsync<{ c: number }>(
-    'SELECT COUNT(*) as c FROM media WHERE object_id = ?',
-    [row.object_id],
-  );
-  if ((countRow?.c ?? 0) <= 1) {
-    throw new Error('LAST_MEDIA');
+  if (!options?.allowLast) {
+    // Don't allow deleting the only media
+    const countRow = await db.getFirstAsync<{ c: number }>(
+      'SELECT COUNT(*) as c FROM media WHERE object_id = ?',
+      [row.object_id],
+    );
+    if ((countRow?.c ?? 0) <= 1) {
+      throw new Error('LAST_MEDIA');
+    }
   }
 
   const wasPrimary = row.is_primary === 1;

@@ -39,8 +39,7 @@ import {
 } from '../services/settingsService';
 import { TypeSelector } from '../components/TypeSelector';
 import { ScanIcon, AddPhotoIcon } from '../theme/icons';
-import { X, ChevronDown, Zap, RefreshCw } from 'lucide-react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { X, ChevronDown, Zap, RefreshCw, Plus, Minus } from 'lucide-react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { ObjectType, RegisterObject, RegisterViewType } from '../db/types';
 import {
@@ -156,17 +155,17 @@ export function CaptureScreen() {
   const [savedId, setSavedId] = useState<string | null>(null);
   const [defaultObjectType, setDefaultObjectType] = useState<ObjectType | null>(null);
 
-  // Pinch-to-zoom
+  // Zoom — pinch-to-zoom was removed because Gesture.Pinch() recreated on every
+  // render caused iOS crashes mid-gesture. Replaced with tap +/- buttons for
+  // stability (see fix/photo-management-camera). Zoom state is clamped 0..1.
+  const ZOOM_STEP = 0.1;
   const [zoom, setZoom] = useState(0);
-  const zoomRef = useRef(0);
-  const baseZoomRef = useRef(0);
-  const pinchGesture = Gesture.Pinch()
-    .onUpdate((e) => {
-      const z = Math.min(1, Math.max(0, baseZoomRef.current + (e.scale - 1) * 0.3));
-      zoomRef.current = z;
-      setZoom(z);
-    })
-    .onEnd(() => { baseZoomRef.current = zoomRef.current; });
+  const handleZoomIn = useCallback(() => {
+    setZoom((z) => Math.min(1, Math.round((z + ZOOM_STEP) * 100) / 100));
+  }, []);
+  const handleZoomOut = useCallback(() => {
+    setZoom((z) => Math.max(0, Math.round((z - ZOOM_STEP) * 100) / 100));
+  }, []);
 
   // Grid overlay
   const [gridEnabled, setGridEnabled] = useState(false);
@@ -1048,7 +1047,6 @@ export function CaptureScreen() {
   return (
     <View style={styles.cameraContainer}>
       {/* Camera preview with aspect-ratio wrapper for bracket positioning */}
-      <GestureDetector gesture={pinchGesture}>
       <View style={styles.cameraPreview}>
         <CameraView
           ref={cameraRef}
@@ -1057,6 +1055,14 @@ export function CaptureScreen() {
           flash={flashMode}
           zoom={zoom}
           ratio={androidRatio}
+          // Continuous autofocus on iOS. expo-camera's inverted naming:
+          // "off" = autofocus continuously when needed (what we want);
+          // "on" = focus once and lock. Default is already "off" but we set
+          // it explicitly so future refactors don't accidentally lock focus.
+          // Android uses CameraX which manages autofocus internally.
+          // NOTE: tap-to-focus and manual focus distance (for macro) are not
+          // exposed by expo-camera 55 — this is a hardware/OS limitation.
+          autofocus="off"
           onCameraReady={() => setCameraReady(true)}
         />
 
@@ -1087,14 +1093,34 @@ export function CaptureScreen() {
           </View>
         )}
 
-        {/* Zoom level label */}
-        {zoom > 0.01 && (
-          <View style={styles.zoomLabel} pointerEvents="none">
+        {/* Zoom controls: tap +/- to adjust zoom 0..1 (replaces pinch-to-zoom).
+            Positioned on the right edge, mid-height, so shutter stays clear. */}
+        <View style={styles.zoomControls}>
+          <Pressable
+            onPress={handleZoomIn}
+            style={styles.zoomButton}
+            hitSlop={touch.hitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={t('capture.zoom_in')}
+            disabled={zoom >= 1}
+          >
+            <Plus size={20} color={colors.white} />
+          </Pressable>
+          <View style={styles.zoomLabelInline}>
             <Text style={styles.zoomLabelText}>{(1 + zoom * 9).toFixed(1)}x</Text>
           </View>
-        )}
+          <Pressable
+            onPress={handleZoomOut}
+            style={styles.zoomButton}
+            hitSlop={touch.hitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={t('capture.zoom_out')}
+            disabled={zoom <= 0}
+          >
+            <Minus size={20} color={colors.white} />
+          </Pressable>
+        </View>
       </View>
-      </GestureDetector>
 
       {/* ── Grid overlay (pointerEvents="none" so touches pass through) */}
       {gridEnabled && (
@@ -1583,15 +1609,29 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     fontWeight: typography.weight.semibold,
     textAlign: 'center',
   },
-  // Zoom label
-  zoomLabel: {
+  // Zoom controls: vertical stack on right edge of camera preview
+  zoomControls: {
     position: 'absolute',
-    bottom: 12,
-    alignSelf: 'center',
+    right: 12,
+    top: '40%',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  zoomButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: c.cameraCountBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomLabelInline: {
     backgroundColor: c.cameraCountBg,
     borderRadius: radii.full,
     paddingHorizontal: 10,
     paddingVertical: 3,
+    minWidth: 48,
+    alignItems: 'center',
   },
   zoomLabelText: {
     color: c.white,

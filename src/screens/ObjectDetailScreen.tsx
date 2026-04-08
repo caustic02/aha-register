@@ -18,6 +18,7 @@ import { useAppTranslation } from '../hooks/useAppTranslation';
 import { useSettings } from '../hooks/useSettings';
 import { File } from 'expo-file-system';
 import { deleteObject, updateReviewStatus } from '../services/objectService';
+import { deleteMedia } from '../services/mediaService';
 import {
   launchDocumentScanner,
   processDocumentScan,
@@ -556,11 +557,15 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
     }
   }, [db, media, t, loadData]);
 
-  const handleViewTypeLongPress = useCallback((mediaId: string, currentViewType: string) => {
-    const buttons = STANDARD_VIEW_TYPES.map((vd) => ({
-      text: t(vd.labelKey),
-      onPress: () => handleReassignViewType(mediaId, currentViewType, vd.key),
-    }));
+  // Opens the reassignment sub-menu (view_type picker + unassign).
+  // Kept separate from the top-level action sheet so each alert stays small.
+  const openReassignMenu = useCallback((mediaId: string, currentViewType: string) => {
+    const buttons = STANDARD_VIEW_TYPES
+      .filter((vd) => vd.key !== currentViewType)
+      .map((vd) => ({
+        text: t(vd.labelKey),
+        onPress: () => handleReassignViewType(mediaId, currentViewType, vd.key),
+      }));
     Alert.alert(
       t('view_types.reassign_title'),
       undefined,
@@ -581,6 +586,61 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       ],
     );
   }, [db, handleReassignViewType, loadData, t]);
+
+  // Delete a single view-slot photo. Uses allowLast=true so an object can
+  // temporarily drop to zero photos (the user can re-add immediately).
+  const handleDeleteViewPhoto = useCallback(async (mediaId: string, viewLabel: string) => {
+    Alert.alert(
+      t('photo_actions.delete_title'),
+      t('photo_actions.delete_body', { view: viewLabel }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMedia(db, mediaId, { allowLast: true });
+              await loadData();
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : String(err);
+              Alert.alert(t('common.error'), msg);
+            }
+          },
+        },
+      ],
+    );
+  }, [db, loadData, t]);
+
+  // Top-level photo slot long-press menu — user picks between Retake (which
+  // navigates to camera and auto-replaces on save), Delete, or Reassign view.
+  // This is the single entrypoint for photo management from ObjectDetail.
+  const handleViewTypeLongPress = useCallback((mediaId: string, currentViewType: string) => {
+    const viewLabel = t(`view_types.${currentViewType}`);
+    Alert.alert(
+      viewLabel,
+      t('photo_actions.menu_body'),
+      [
+        {
+          text: t('photo_actions.retake'),
+          onPress: () => navigation.navigate('CaptureCamera', {
+            viewType: currentViewType as RegisterViewType,
+            objectId,
+          }),
+        },
+        {
+          text: t('photo_actions.reassign'),
+          onPress: () => openReassignMenu(mediaId, currentViewType),
+        },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: () => handleDeleteViewPhoto(mediaId, viewLabel),
+        },
+        { text: t('common.cancel'), style: 'cancel' },
+      ],
+    );
+  }, [t, navigation, objectId, openReassignMenu, handleDeleteViewPhoto]);
 
   // ── Document scan handler ───────────────────────────────────────────────────
 
