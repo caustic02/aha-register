@@ -182,11 +182,20 @@ export function ObjectListScreen({ navigation, route }: Props) {
         conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
       const order = buildOrderClause(filters.sortBy);
 
+      // Thumbnail: prefer is_primary, fall back to the first photo by
+      // sort_order. Objects created before the is_primary auto-promote fix
+      // may have no primary media — we still want to show a thumbnail.
       const rows = await db.getAllAsync<ObjectRow>(
         `SELECT o.id, o.title, o.object_type, o.created_at,
-                m.file_path AS thumbnail
+                (
+                  SELECT m.file_path FROM media m
+                  WHERE m.object_id = o.id
+                    AND (m.media_type IS NULL OR m.media_type = 'original')
+                    AND m.file_type = 'image'
+                  ORDER BY m.is_primary DESC, m.sort_order ASC, m.created_at ASC
+                  LIMIT 1
+                ) AS thumbnail
          FROM objects o
-         LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
          ${where}
          ${order}`,
         params,

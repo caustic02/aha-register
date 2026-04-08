@@ -1252,6 +1252,8 @@
     "not_captured": "Noch nicht aufgenommen",
     "done": "Fertig",
     "add_detail": "Detailfoto hinzufuegen",
+    "retake": "Neu aufnehmen",
+    "retake_confirm": "Diese Ansicht neu aufnehmen?",
     "dimensions_label": "Mass",
     "dimensions_placeholder": "z.B. B: 12cm, H: 8cm",
     "notes_label": "Bemerkung",

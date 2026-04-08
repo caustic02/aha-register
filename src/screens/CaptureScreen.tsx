@@ -43,7 +43,6 @@ import { X, ChevronDown, Zap, RefreshCw } from 'lucide-react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Path } from 'react-native-svg';
 import type { ObjectType, RegisterObject, RegisterViewType } from '../db/types';
-import { DEFAULT_FIRST_VIEW } from '../constants/viewTypes';
 import {
   launchDocumentScanner,
   processDocumentScan,
@@ -472,40 +471,36 @@ export function CaptureScreen() {
       // Build location data from EXIF (fire-and-forget below)
       const photoUri = pic.uri;
       const exif = pic.exif ?? null;
+      const targetObjectId = routeObjectId;
 
       // Fire and forget — camera stays live
       (async () => {
         try {
-          // Extract location from EXIF synchronously enough to pass to quickCapture
-          const meta = await extractMetadata(exif);
-          const location: LocationData | null =
-            meta.latitude != null && meta.longitude != null
-              ? {
-                  latitude: meta.latitude,
-                  longitude: meta.longitude,
-                  altitude: meta.altitude,
-                  accuracy: meta.accuracy,
-                  coordinateSource: meta.coordinateSource ?? 'gps_hardware',
-                }
-              : null;
+          let objectId: string;
 
-          const objectId = await quickCapture(db, photoUri, location);
+          if (targetObjectId) {
+            // Attach to the existing object — never create a new Untitled Object.
+            // No view_type is assigned here; the user picks views from the
+            // ViewChecklist overview. A generic capture leaves view_type NULL.
+            await addMediaToObject(db, targetObjectId, photoUri, 'image/jpeg');
+            objectId = targetObjectId;
+          } else {
+            // No object context: legacy standalone quick capture.
+            const meta = await extractMetadata(exif);
+            const location: LocationData | null =
+              meta.latitude != null && meta.longitude != null
+                ? {
+                    latitude: meta.latitude,
+                    longitude: meta.longitude,
+                    altitude: meta.altitude,
+                    accuracy: meta.accuracy,
+                    coordinateSource: meta.coordinateSource ?? 'gps_hardware',
+                  }
+                : null;
 
-          // Tag the primary media with ansicht_front view_type
-          const now = new Date().toISOString();
-          await db.runAsync(
-            `UPDATE media SET view_type = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
-            [DEFAULT_FIRST_VIEW, now, objectId],
-          );
-          // Sync the view_type update
-          const primaryRow = await db.getFirstAsync<{ id: string }>(
-            `SELECT id FROM media WHERE object_id = ? AND is_primary = 1`,
-            [objectId],
-          );
-          if (primaryRow) {
-            const { SyncEngine: SE } = await import('../sync/engine');
-            const se = new SE(db);
-            await se.queueChange('media', primaryRow.id, 'update', { view_type: DEFAULT_FIRST_VIEW });
+            objectId = await quickCapture(db, photoUri, location);
+            // NO auto view_type assignment — view_type is only set when
+            // the user tapped a specific view slot (handleViewTypeShutter).
           }
 
           setQuickThumbnails((prev) => [...prev, { objectId, uri: photoUri }]);
@@ -521,7 +516,7 @@ export function CaptureScreen() {
     } catch {
       // Camera not ready — ignore
     }
-  }, [cameraReady, db, triggerShutterFlash]);
+  }, [cameraReady, db, triggerShutterFlash, routeObjectId]);
 
   // Multi-view capture shutter: captures a photo for a specific Registerbogen view
   // and adds it to an existing object with the correct view_type
@@ -542,6 +537,37 @@ export function CaptureScreen() {
       // Fire and forget — camera stays live
       (async () => {
         try {
+          // Retake support: if a media row already exists for this
+          // view_type on this object, remove it (and its file) first so
+          // each view slot owns exactly one photo.
+          const existing = await db.getAllAsync<{ id: string; file_path: string }>(
+            `SELECT id, file_path FROM media
+             WHERE object_id = ?
+               AND view_type = ?
+               AND (media_type IS NULL OR media_type = 'original')`,
+            [objectId, viewType],
+          );
+          if (existing.length > 0) {
+            const ids = existing.map((e) => e.id);
+            const placeholders = ids.map(() => '?').join(',');
+            await db.runAsync(
+              `DELETE FROM media WHERE id IN (${placeholders})`,
+              ids,
+            );
+            // Queue delete syncs + best-effort file cleanup
+            const { SyncEngine: SE2 } = await import('../sync/engine');
+            const se2 = new SE2(db);
+            for (const e of existing) {
+              await se2.queueChange('media', e.id, 'delete', { objectId });
+              try {
+                const f = new File(e.file_path);
+                if (f.exists) f.delete();
+              } catch {
+                // Best-effort
+              }
+            }
+          }
+
           // addMediaToObject handles file copy, SHA-256, audit, sync
           const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
 
@@ -720,24 +746,9 @@ export function CaptureScreen() {
           [shotId, protocolHook.protocol.id, protocolHook.currentShot.order, now, objectId],
         );
         protocolHook.captureShot(shotId, capture.uri);
-      } else {
-        // No protocol active: tag primary media with ansicht_front
-        const now = new Date().toISOString();
-        await db.runAsync(
-          `UPDATE media SET view_type = ?, updated_at = ? WHERE object_id = ? AND is_primary = 1`,
-          [DEFAULT_FIRST_VIEW, now, objectId],
-        );
-        // Sync the view_type update
-        const pRow = await db.getFirstAsync<{ id: string }>(
-          `SELECT id FROM media WHERE object_id = ? AND is_primary = 1`,
-          [objectId],
-        );
-        if (pRow) {
-          const { SyncEngine: SE } = await import('../sync/engine');
-          const se = new SE(db);
-          await se.queueChange('media', pRow.id, 'update', { view_type: DEFAULT_FIRST_VIEW });
-        }
       }
+      // No auto-assigned view_type: view_type is only set when the user
+      // tapped a specific view slot in ViewChecklist (handleViewTypeShutter).
 
       setSessionPhotoCount((prev) => prev + 1);
       // Navigate to AI Review screen for Gemini analysis

@@ -1252,6 +1252,8 @@
     "not_captured": "Not yet captured",
     "done": "Done",
     "add_detail": "Add detail photo",
+    "retake": "Retake",
+    "retake_confirm": "Retake this view?",
     "dimensions_label": "Dimensions",
     "dimensions_placeholder": "e.g. W: 12cm, H: 8cm",
     "notes_label": "Notes",

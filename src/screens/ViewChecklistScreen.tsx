@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   Dimensions,
   Image,
   Pressable,
@@ -8,6 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { File } from 'expo-file-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -66,39 +68,77 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
   // No tab nav needed - single stack
 
   const [objectTitle, setObjectTitle] = useState<string | null>(null);
+  const [inventoryNumber, setInventoryNumber] = useState<string | null>(null);
   const [capturedViews, setCapturedViews] = useState<CapturedView[]>([]);
 
-  // Load object title and captured views on focus
+  // Load object title and captured views on focus.
+  // A view only counts as "captured" when its media row exists AND the
+  // underlying file is actually on disk — no ghost checkmarks.
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
 
       (async () => {
-        // Get object title
-        const obj = await db.getFirstAsync<{ title: string }>(
-          `SELECT title FROM objects WHERE id = ?`,
+        // Get object title + inventory number
+        const obj = await db.getFirstAsync<{ title: string; inventory_number: string | null }>(
+          `SELECT title, inventory_number FROM objects WHERE id = ?`,
           [objectId],
         );
-        if (!cancelled && obj) setObjectTitle(obj.title);
+        if (!cancelled && obj) {
+          setObjectTitle(obj.title);
+          setInventoryNumber(obj.inventory_number);
+        }
 
-        // Get captured views for this object
+        // Get media rows with a view_type for this object
         const rows = await db.getAllAsync<{
           id: string;
           view_type: string;
           file_path: string;
         }>(
-          `SELECT id, view_type, file_path FROM media WHERE object_id = ? AND view_type IS NOT NULL AND media_type = 'original'`,
+          `SELECT id, view_type, file_path FROM media
+           WHERE object_id = ?
+             AND view_type IS NOT NULL
+             AND (media_type IS NULL OR media_type = 'original')
+           ORDER BY created_at DESC`,
           [objectId],
         );
-        if (!cancelled) {
-          setCapturedViews(
-            rows.map((r) => ({
+
+        // Verify each file actually exists. Prune DB rows whose files are
+        // missing so the checkmark reflects reality.
+        const verified: CapturedView[] = [];
+        const seen = new Set<string>();
+        const orphans: string[] = [];
+        for (const r of rows) {
+          if (seen.has(r.view_type)) continue; // keep the newest per view_type
+          let exists = false;
+          try {
+            exists = new File(r.file_path).exists;
+          } catch {
+            exists = false;
+          }
+          if (exists) {
+            verified.push({
               viewType: r.view_type as RegisterViewType,
               mediaId: r.id,
               filePath: r.file_path,
-            })),
-          );
+            });
+            seen.add(r.view_type);
+          } else {
+            orphans.push(r.id);
+          }
         }
+        if (orphans.length > 0) {
+          try {
+            const placeholders = orphans.map(() => '?').join(',');
+            await db.runAsync(
+              `DELETE FROM media WHERE id IN (${placeholders})`,
+              orphans,
+            );
+          } catch {
+            // Best-effort cleanup
+          }
+        }
+        if (!cancelled) setCapturedViews(verified);
       })();
 
       return () => { cancelled = true; };
@@ -117,11 +157,31 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
 
   const handleCardPress = useCallback(
     (viewDef: ViewTypeDefinition) => {
-      if (isCaptured(viewDef.key)) return; // Already captured, no action
-      // Navigate to CaptureScreen with viewType param
+      const existing = getThumbnail(viewDef.key);
+      if (existing) {
+        // Already captured — offer retake. handleViewTypeShutter will
+        // replace the existing media row for this view_type on save.
+        Alert.alert(
+          t(viewDef.labelKey),
+          t('view_checklist.retake_confirm') || 'Retake this view?',
+          [
+            { text: t('common.cancel') || 'Cancel', style: 'cancel' },
+            {
+              text: t('view_checklist.retake') || 'Retake',
+              onPress: () =>
+                navigation.navigate('CaptureCamera', {
+                  viewType: viewDef.key,
+                  objectId,
+                }),
+            },
+          ],
+        );
+        return;
+      }
+      // Empty slot — capture a new photo for this view
       navigation.navigate('CaptureCamera', { viewType: viewDef.key, objectId });
     },
-    [navigation, objectId, isCaptured],
+    [navigation, objectId, getThumbnail, t],
   );
 
   const handleDone = useCallback(() => {
@@ -136,8 +196,13 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
     }
   }, [navigation]);
 
-  const subtitle = objectTitle
-    ? t('view_checklist.subtitle_with_title', { title: objectTitle })
+  const titleForSubtitle = objectTitle
+    ? inventoryNumber
+      ? `${objectTitle} · ${inventoryNumber}`
+      : objectTitle
+    : null;
+  const subtitle = titleForSubtitle
+    ? t('view_checklist.subtitle_with_title', { title: titleForSubtitle })
     : t('view_checklist.subtitle_default');
 
   // Only show the 6 standard views in the grid (exclude detail for now, show as separate button)
