@@ -75,11 +75,13 @@ export function QRCodeScreen({ route, navigation }: Props) {
       <View style={s.content}>
         <View style={s.card}>
           <View style={s.qrWrap}>
+            {/* QR code itself stays black-on-white for scannability —
+                a theme-colored QR code can't be decoded reliably. */}
             <QRCode
               value={qrValue}
               size={200}
-              color={colors.text}
-              backgroundColor={colors.white}
+              color="#000000"
+              backgroundColor="#FFFFFF"
               ref={qrRef}
             />
           </View>
@@ -101,7 +103,7 @@ export function QRCodeScreen({ route, navigation }: Props) {
               accessibilityLabel="Share"
               accessibilityRole="button"
             >
-              <Share2 size={18} color={colors.heroGreen} />
+              <Share2 size={18} color={colors.accent} />
               <Text style={s.actionText}>Share</Text>
             </Pressable>
             <View style={s.divider} />
@@ -111,7 +113,7 @@ export function QRCodeScreen({ route, navigation }: Props) {
               accessibilityLabel="Print"
               accessibilityRole="button"
             >
-              <Printer size={18} color={colors.heroGreen} />
+              <Printer size={18} color={colors.accent} />
               <Text style={s.actionText}>Print</Text>
             </Pressable>
           </View>
@@ -148,7 +150,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   card: {
-    backgroundColor: c.surfaceElevated,
+    backgroundColor: c.surface,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: c.border,
@@ -157,16 +159,20 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     width: '100%',
     maxWidth: 320,
   },
+  // Static white behind the QR code — scannability requires high contrast
+  // regardless of app theme, so this is deliberately a hardcoded literal
+  // rather than a theme token.
+  // eslint-disable-next-line react-native/no-color-literals
   qrWrap: {
     padding: spacing.lg,
-    backgroundColor: c.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: radii.md,
     marginBottom: spacing.lg,
   },
   objectTitle: {
     fontSize: 16,
     fontWeight: typography.weight.semibold,
-    color: c.text,
+    color: c.textPrimary,
     textAlign: 'center',
   },
   inventoryNum: {
@@ -176,7 +182,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   url: {
     fontSize: 11,
-    color: c.textTertiary,
+    color: c.textMuted,
     marginTop: spacing.sm,
     fontFamily: 'monospace',
   },
@@ -199,7 +205,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   actionText: {
     fontSize: 13,
     fontWeight: typography.weight.semibold,
-    color: c.heroGreen,
+    color: c.accent,
   },
   divider: {
     width: StyleSheet.hairlineWidth,

@@ -1,8 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -63,7 +65,7 @@ import { readMediaBase64 } from '../utils/readMediaBase64';
 import { useObjectDocuments } from '../hooks/useObjectDocuments';
 import { getProtocol, type CaptureProtocol } from '../config/protocols';
 import { CheckIcon } from '../theme/icons';
-import { Camera, QrCode } from 'lucide-react-native';
+import { Camera, QrCode, Video as VideoIcon } from 'lucide-react-native';
 import { STANDARD_VIEW_TYPES } from '../constants/viewTypes';
 import type { RegisterViewType } from '../db/types';
 import type { RootStackParamList } from '../navigation/RootStack';
@@ -206,21 +208,52 @@ function CompletionRing({ percent }: { percent: number }) {
   );
 }
 
-function EditableField({ label, value, onSave, multiline }: {
+function EditableField({ label, value, onSave, multiline, scrollRef }: {
   label: string;
   value: string | null;
   onSave: (val: string | null) => void;
   multiline?: boolean;
+  /**
+   * Optional parent ScrollView ref. When the input focuses, we measure
+   * its position within the scroll view and scroll it above the
+   * keyboard. Without this, fields in the lower half of the form get
+   * covered by the keyboard on both iOS and Android.
+   */
+  scrollRef?: React.RefObject<ScrollView | null>;
 }) {
   const { colors } = useTheme();
   const sec = useMemo(() => makeSec(colors), [colors]);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? '');
+  const containerRef = useRef<View>(null);
 
   const handlePress = useCallback(() => {
     setDraft(value ?? '');
     setEditing(true);
   }, [value]);
+
+  const handleFocus = useCallback(() => {
+    // Wait one frame so the keyboard has started animating, then measure
+    // the container's absolute y within the parent ScrollView and scroll
+    // so the input sits roughly 1/3 from the top of the visible area.
+    if (!scrollRef?.current || !containerRef.current) return;
+    requestAnimationFrame(() => {
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+      // ScrollView's ref has a getScrollableNode() on native, which is what
+      // measureLayout wants as its relative-to target.
+      const target = (scroll as unknown as { getScrollableNode?: () => number }).getScrollableNode?.() ?? scroll;
+      containerRef.current?.measureLayout(
+        target as number,
+        (_x, y) => {
+          scroll.scrollTo({ y: Math.max(0, y - 120), animated: true });
+        },
+        () => {
+          // Best-effort — measurement can fail mid-layout
+        },
+      );
+    });
+  }, [scrollRef]);
 
   const handleSubmit = useCallback(() => {
     setEditing(false);
@@ -233,12 +266,13 @@ function EditableField({ label, value, onSave, multiline }: {
 
   if (editing) {
     return (
-      <View style={sec.editableContainer}>
+      <View ref={containerRef} style={sec.editableContainer}>
         <Text style={sec.fieldLabel}>{label}</Text>
         <TextInput
           style={[sec.fieldInput, multiline === true && sec.fieldInputMultiline]}
           value={draft}
           onChangeText={setDraft}
+          onFocus={handleFocus}
           onBlur={handleSubmit}
           onSubmitEditing={multiline === true ? undefined : handleSubmit}
           multiline={multiline}
@@ -251,13 +285,110 @@ function EditableField({ label, value, onSave, multiline }: {
   }
 
   return (
-    <Pressable style={sec.editableContainer} onPress={handlePress} hitSlop={4}>
+    <Pressable ref={containerRef} style={sec.editableContainer} onPress={handlePress} hitSlop={4}>
       <Text style={sec.fieldLabel}>{label}</Text>
       <Text style={value ? sec.fieldValue : sec.fieldEmpty} numberOfLines={multiline === true ? 6 : 1}>
         {value || '\u2014'}
       </Text>
     </Pressable>
   );
+}
+
+// ── Multi-image AI result merge ────────────────────────────────────────────
+//
+// When the user runs AI analysis across several selected images of the same
+// object, each call to analyzeObject returns its own AIAnalysisResult. We
+// fold them into a single record by taking the highest-confidence value
+// for each scalar field and unioning the keyword / suggested_artist lists.
+//
+// Rationale: different views capture different cues. A front view may see
+// the title clearly; a detail shot may have better material evidence; a
+// back view may expose condition issues. Rather than losing that signal by
+// picking one image arbitrarily, we keep the strongest observation per
+// field across all analyzed views.
+function mergeAIResults(
+  results: import('../services/ai-analysis').AIAnalysisResult[],
+): import('../services/ai-analysis').AIAnalysisResult {
+  if (results.length === 0) {
+    throw new Error('mergeAIResults: empty input');
+  }
+  if (results.length === 1) {
+    return results[0];
+  }
+
+  type FieldKey = keyof import('../services/ai-analysis').AIAnalysisResult;
+  const scalarFields: FieldKey[] = [
+    'title',
+    'object_type',
+    'date_created',
+    'medium',
+    'dimensions_description',
+    'description',
+    'style_period',
+    'culture_origin',
+    'condition_summary',
+  ];
+
+  // Seed merged from the first result so all fields are present. Then
+  // replace each scalar field with whichever image gave the highest
+  // confidence for it.
+  const merged: import('../services/ai-analysis').AIAnalysisResult = {
+    ...results[0],
+  };
+
+  for (const key of scalarFields) {
+    let best = results[0][key] as import('../services/ai-analysis').AIFieldResult;
+    for (let i = 1; i < results.length; i++) {
+      const candidate = results[i][key] as import('../services/ai-analysis').AIFieldResult | undefined;
+      if (!candidate) continue;
+      const candConf = candidate.confidence ?? 0;
+      const bestConf = best?.confidence ?? 0;
+      if (candConf > bestConf && candidate.value != null) {
+        best = candidate;
+      }
+    }
+    (merged[key] as import('../services/ai-analysis').AIFieldResult) = best;
+  }
+
+  // Keywords: union the arrays, de-duped case-insensitive, keep the order
+  // of first appearance. Use the highest confidence seen.
+  const allKeywords: string[] = [];
+  const seen = new Set<string>();
+  let keywordConf = 0;
+  for (const r of results) {
+    const kws = r.keywords;
+    if (kws && Array.isArray(kws.value)) {
+      for (const k of kws.value) {
+        const lower = k.toLowerCase().trim();
+        if (lower && !seen.has(lower)) {
+          seen.add(lower);
+          allKeywords.push(k);
+        }
+      }
+    }
+    if (kws && kws.confidence > keywordConf) keywordConf = kws.confidence;
+  }
+  if (allKeywords.length > 0) {
+    merged.keywords = { value: allKeywords, confidence: keywordConf };
+  }
+
+  // Suggested artists: concat, de-dupe by name (case-insensitive).
+  const artists: import('../services/ai-analysis').AISuggestedArtist[] = [];
+  const artistNames = new Set<string>();
+  for (const r of results) {
+    const arr = r.suggested_artists?.value;
+    if (!Array.isArray(arr)) continue;
+    for (const a of arr) {
+      const nameKey = (a.name ?? '').toLowerCase().trim();
+      if (nameKey && !artistNames.has(nameKey)) {
+        artistNames.add(nameKey);
+        artists.push(a);
+      }
+    }
+  }
+  merged.suggested_artists = { value: artists };
+
+  return merged;
 }
 
 function ConditionBadge({ status }: { status: string | null | undefined }) {
@@ -298,6 +429,18 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const [annotations, setAnnotations] = useState<AnnotationRow[]>([]);
   const [auditTrail, setAuditTrail] = useState<AuditRow[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
+  // Bug 4: multi-image AI selection. Seeded with every "original"
+  // (non-derivative) photo after media loads. Users can un-check images
+  // they don't want analyzed before tapping "Run AI".
+  const [selectedAiMediaIds, setSelectedAiMediaIds] = useState<Set<string>>(new Set());
+  // Progress counter shown during multi-image analysis: "Analyzing 2 / 4…"
+  const [aiProgress, setAiProgress] = useState<{ done: number; total: number } | null>(null);
+
+  // Scroll ref used by EditableField to nudge the focused TextInput above
+  // the keyboard on iOS/Android. KeyboardAvoidingView alone isn't enough
+  // for inputs that sit in the lower half of a long ScrollView — we also
+  // need to programmatically scrollTo the input's measured y position.
+  const bodyScrollRef = useRef<ScrollView>(null);
 
   // Tab navigation for multi-view capture
   // Single stack - no tab nav needed
@@ -395,6 +538,30 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       loadData();
     }, [loadData]),
   );
+
+  // Seed the AI image selection with all originals whenever media changes.
+  // This runs on initial load and after every capture/delete so the user
+  // always sees a fresh default. Derivatives (isolated background cutouts,
+  // document scans) are excluded — AI analysis runs on the photographs.
+  useEffect(() => {
+    const originals = media.filter(
+      (m) => (!m.media_type || m.media_type === 'original') && m.file_type === 'image',
+    );
+    const nextIds = new Set(originals.map((m) => m.id));
+    setSelectedAiMediaIds((prev) => {
+      // Preserve existing selection state for rows still present; only
+      // add newly arrived IDs. Avoids clobbering a deselect the user made
+      // while media was being loaded or after a background sync.
+      const merged = new Set<string>();
+      for (const id of nextIds) {
+        if (prev.size === 0 || prev.has(id)) merged.add(id);
+      }
+      // If the user had de-selected everything, default to all again
+      // rather than leaving them stuck with no selection.
+      if (merged.size === 0) return nextIds;
+      return merged;
+    });
+  }, [media]);
 
   // ── Handlers ────────────────────────────────────────────────────────────────
 
@@ -744,13 +911,27 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   // ── AI Analysis handler ─────────────────────────────────────────────────────
 
   const handleRunAI = useCallback(async () => {
-    const pm = media.find(m => m.is_primary === 1) ?? media[0];
-    if (!pm) return;
+    // Build the ordered list of images to analyze from the user's current
+    // selection. Primary photo first, then the rest in sort_order so the
+    // first (highest-confidence-wins-ties) image is the canonical view.
+    const candidates = media
+      .filter((m) => (!m.media_type || m.media_type === 'original') && m.file_type === 'image')
+      .filter((m) => selectedAiMediaIds.has(m.id))
+      .sort((a, b) => {
+        if (a.is_primary !== b.is_primary) return b.is_primary - a.is_primary;
+        return a.sort_order - b.sort_order;
+      });
+
+    if (candidates.length === 0) {
+      Alert.alert(t('detail.ai_error'), t('detail.ai_no_images_selected'));
+      return;
+    }
+
     setAiLoading(true);
+    setAiProgress({ done: 0, total: candidates.length });
+    console.log('[handleRunAI] starting multi-image analysis', { count: candidates.length });
+
     try {
-      console.log('[handleRunAI] reading media', { mediaId: pm.id, filePath: pm.file_path.substring(0, 120) });
-      const base64 = await readMediaBase64(pm.file_path);
-      console.log('[handleRunAI] base64 length:', base64.length);
       const { analyzeObject } = await import('../services/ai-analysis');
       const currentExtras: Record<string, unknown> = (() => {
         try {
@@ -761,29 +942,84 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           return {};
         }
       })();
-      const result = await analyzeObject(base64, pm.mime_type, collectionDomain);
-      if (result.success && result.metadata) {
-        const tsd = { ...currentExtras, ...result.metadata };
-        const now = new Date().toISOString();
-        await db.runAsync(
-          'UPDATE objects SET type_specific_data = ?, updated_at = ? WHERE id = ?',
-          [JSON.stringify(tsd), now, objectId],
-        );
-        // Queue sync so AI results are pushed to Supabase on next cycle
-        import('../sync/engine').then(({ SyncEngine: SE }) => {
-          new SE(db).queueChange('objects', objectId, 'update', { type_specific_data: JSON.stringify(tsd) });
-        }).catch(() => {});
-        await loadData();
-        Alert.alert(t('detail.ai_success'));
-      } else {
-        Alert.alert(t('detail.ai_error'), result.error ?? '');
+
+      // Call the edge function once per selected image. The edge function
+      // currently only accepts a single image_base64 per request — sending
+      // all of them in one call would require changing its payload shape.
+      //
+      // TODO(edge-function): Update analyze-object to accept an array of
+      // images in a single request so Gemini can reason across multiple
+      // views (front + back + detail) in one pass. That would replace this
+      // sequential loop and reduce API cost from N calls to 1.
+      //
+      // For now we run them in sequence (not parallel) to keep API usage
+      // predictable and to avoid hitting rate limits on the free Gemini
+      // tier during field documentation.
+      const results: import('../services/ai-analysis').AIAnalysisResult[] = [];
+      const errors: string[] = [];
+      for (let i = 0; i < candidates.length; i++) {
+        const m = candidates[i];
+        try {
+          console.log('[handleRunAI] image', i + 1, '/', candidates.length, m.id);
+          const base64 = await readMediaBase64(m.file_path);
+          const res = await analyzeObject(base64, m.mime_type, collectionDomain);
+          if (res.success && res.metadata) {
+            results.push(res.metadata);
+          } else {
+            errors.push(res.error ?? 'unknown');
+            console.warn('[handleRunAI] image failed:', m.id, res.error);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          errors.push(msg);
+          console.warn('[handleRunAI] image threw:', m.id, msg);
+        }
+        setAiProgress({ done: i + 1, total: candidates.length });
       }
+
+      if (results.length === 0) {
+        Alert.alert(t('detail.ai_error'), errors[0] ?? '');
+        return;
+      }
+
+      // Merge strategy: for each AIFieldResult field, pick the value with
+      // the highest confidence across all image responses. Keywords and
+      // suggested_artists are unioned. This gives us the best-supported
+      // cataloging record even when individual views disagree — e.g. the
+      // front view might see the title clearly while the back view has
+      // better material evidence.
+      const merged = mergeAIResults(results);
+      const tsd = { ...currentExtras, ...merged };
+      const now = new Date().toISOString();
+      await db.runAsync(
+        'UPDATE objects SET type_specific_data = ?, updated_at = ? WHERE id = ?',
+        [JSON.stringify(tsd), now, objectId],
+      );
+      import('../sync/engine').then(({ SyncEngine: SE }) => {
+        new SE(db).queueChange('objects', objectId, 'update', { type_specific_data: JSON.stringify(tsd) });
+      }).catch(() => {});
+      await loadData();
+
+      const msg = errors.length > 0
+        ? `${t('detail.ai_success')} (${results.length}/${candidates.length})`
+        : t('detail.ai_success');
+      Alert.alert(msg);
     } catch (err) {
       Alert.alert(t('detail.ai_error'), err instanceof Error ? err.message : '');
     } finally {
       setAiLoading(false);
+      setAiProgress(null);
     }
-  }, [media, db, objectId, object, collectionDomain, loadData, t]);
+  }, [media, selectedAiMediaIds, db, objectId, object, collectionDomain, loadData, t]);
+
+  const toggleAiMedia = useCallback((mediaId: string) => {
+    setSelectedAiMediaIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(mediaId)) next.delete(mediaId);
+      else next.add(mediaId);
+      return next;
+    });
+  }, []);
 
   // ── Completeness calculation ────────────────────────────────────────────────
 
@@ -1036,11 +1272,23 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         </Text>
       </ScrollView>
 
-      {/* ── SCROLL BODY ────────────────────────────────────────────────────── */}
+      {/* ── SCROLL BODY ──────────────────────────────────────────────────────
+          Wrapped in KeyboardAvoidingView so the inline edit TextInputs in
+          EditableField don't get covered by the on-screen keyboard. iOS
+          uses "padding" behavior (preferred on iOS per RN docs); Android
+          relies on the native android:windowSoftInputMode=adjustResize
+          from the manifest, so no behavior prop there. */}
+      <KeyboardAvoidingView
+        style={styles.kavFlex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={0}
+      >
       <ScrollView
+        ref={bodyScrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {/* ── HERO IMAGE ───────────────────────────────────────────────────── */}
         {primaryMedia && (
@@ -1185,15 +1433,83 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             <MetadataRow label={t('objectDetail.dimensions')} value={aiDimensions} aiGenerated />
           )}
 
+          {/* ── IMAGE SELECTION ────────────────────────────────────────────
+              Shows every original photo attached to the object as a
+              thumbnail grid. Each tile is a checkbox: tap to include or
+              exclude from the AI run. Default is everything selected.
+              Derivatives (isolated cutouts, document scans) are excluded. */}
+          {(() => {
+            const aiCandidates = media.filter(
+              (m) => (!m.media_type || m.media_type === 'original') && m.file_type === 'image',
+            );
+            if (aiCandidates.length === 0) return null;
+            return (
+              <View style={sec.aiPickerBlock}>
+                <View style={sec.aiPickerHeaderRow}>
+                  <Text style={sec.aiPickerTitle}>{t('detail.ai_select_images')}</Text>
+                  <Text style={sec.aiPickerCount}>
+                    {t('detail.ai_selected_count', { count: selectedAiMediaIds.size })}
+                  </Text>
+                </View>
+                <Text style={sec.aiPickerHint}>{t('detail.ai_select_hint')}</Text>
+                <View style={sec.aiPickerGrid}>
+                  {aiCandidates.map((m) => {
+                    const checked = selectedAiMediaIds.has(m.id);
+                    const viewLabel = m.view_type
+                      ? t(`view_types.${m.view_type}`)
+                      : t('view_types.detail');
+                    return (
+                      <Pressable
+                        key={m.id}
+                        style={[sec.aiPickerTile, checked && sec.aiPickerTileChecked]}
+                        onPress={() => toggleAiMedia(m.id)}
+                        disabled={aiLoading}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked }}
+                        accessibilityLabel={viewLabel}
+                      >
+                        <Image
+                          source={{ uri: resolveMediaUri(m.file_path) }}
+                          style={sec.aiPickerThumb}
+                          resizeMode="cover"
+                        />
+                        <View
+                          style={[
+                            sec.aiPickerCheck,
+                            checked ? sec.aiPickerCheckOn : sec.aiPickerCheckOff,
+                          ]}
+                        >
+                          {checked && <CheckIcon size={14} color={colors.white} />}
+                        </View>
+                        <View style={sec.aiPickerLabelBg}>
+                          <Text style={sec.aiPickerLabel} numberOfLines={1}>
+                            {viewLabel}
+                          </Text>
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })()}
+
           <Pressable
             style={[sec.aiButton, aiLoading && sec.aiButtonDisabled]}
             onPress={handleRunAI}
-            disabled={aiLoading}
+            disabled={aiLoading || selectedAiMediaIds.size === 0}
             accessibilityRole="button"
             accessibilityLabel={t('detail.run_ai')}
           >
             {aiLoading ? (
-              <ActivityIndicator size="small" color={colors.accent} />
+              <View style={sec.aiButtonLoading}>
+                <ActivityIndicator size="small" color={colors.accent} />
+                {aiProgress && (
+                  <Text style={sec.aiButtonProgressText}>
+                    {t('detail.ai_analyzing_progress', { done: aiProgress.done, total: aiProgress.total })}
+                  </Text>
+                )}
+              </View>
             ) : (
               <Text style={sec.aiButtonText}>{t('detail.run_ai')}</Text>
             )}
@@ -1202,22 +1518,22 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
         {/* ── IDENTIFICATION ────────────────────────────────────────────────── */}
         <CollapsibleSection title={t('detail.section_identification')}>
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('objects.title')}
             value={object.title === 'Untitled' ? null : object.title}
             onSave={(v) => handleFieldSave('title', v ?? 'Untitled')}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('objects.inventory_number')}
             value={object.inventory_number ?? null}
             onSave={(v) => handleFieldSave('inventory_number', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.old_inv_number')}
             value={object.alte_inventarnummer ?? null}
             onSave={(v) => handleFieldSave('alte_inventarnummer', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.classification')}
             value={object.klassifikation ?? null}
             onSave={(v) => handleFieldSave('klassifikation', v)}
@@ -1244,7 +1560,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             </View>
           )}
 
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.dating')}
             value={object.event_start ?? null}
             onSave={(v) => handleFieldSave('event_start' as string, v)}
@@ -1259,17 +1575,17 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
         {/* ── DESCRIPTION ───────────────────────────────────────────────────── */}
         <CollapsibleSection title={t('detail.section_description')}>
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.material')}
             value={object.material ?? null}
             onSave={(v) => handleFieldSave('material', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.technique')}
             value={object.technik ?? null}
             onSave={(v) => handleFieldSave('technik', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('objects.description')}
             value={object.description}
             onSave={(v) => handleFieldSave('description', v)}
@@ -1277,28 +1593,28 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           />
           <View style={sec.dimensionGrid}>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.height')}
                 value={object.masse_hoehe ?? null}
                 onSave={(v) => handleFieldSave('masse_hoehe', v)}
               />
             </View>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.width')}
                 value={object.masse_breite ?? null}
                 onSave={(v) => handleFieldSave('masse_breite', v)}
               />
             </View>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.depth')}
                 value={object.masse_tiefe ?? null}
                 onSave={(v) => handleFieldSave('masse_tiefe', v)}
               />
             </View>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.unit')}
                 value={object.masse_einheit ?? null}
                 onSave={(v) => handleFieldSave('masse_einheit', v)}
@@ -1307,14 +1623,14 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           </View>
           <View style={sec.dimensionGrid}>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.weight')}
                 value={object.gewicht ?? null}
                 onSave={(v) => handleFieldSave('gewicht', v)}
               />
             </View>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.weight_unit')}
                 value={object.gewicht_einheit ?? null}
                 onSave={(v) => handleFieldSave('gewicht_einheit', v)}
@@ -1323,21 +1639,21 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           </View>
           <View style={sec.dimensionGrid}>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.diameter')}
                 value={object.durchmesser ?? null}
                 onSave={(v) => handleFieldSave('durchmesser', v)}
               />
             </View>
             <View style={sec.dimensionCol}>
-              <EditableField
+              <EditableField scrollRef={bodyScrollRef}
                 label={t('detail.diameter_unit')}
                 value={object.durchmesser_einheit ?? null}
                 onSave={(v) => handleFieldSave('durchmesser_einheit', v)}
               />
             </View>
           </View>
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.format')}
             value={object.format ?? null}
             onSave={(v) => handleFieldSave('format', v)}
@@ -1347,29 +1663,29 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
         {/* ── CONDITION ─────────────────────────────────────────────────────── */}
         <CollapsibleSection title={t('detail.section_condition')} defaultOpen={false}>
           <ConditionBadge status={object.condition_status} />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.current_status')}
             value={object.condition_status ?? null}
             onSave={(v) => handleFieldSave('condition_status', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.condition_notes')}
             value={object.condition_note ?? null}
             onSave={(v) => handleFieldSave('condition_note', v)}
             multiline
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.condition_desc')}
             value={object.erhaltungszustand ?? null}
             onSave={(v) => handleFieldSave('erhaltungszustand', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.condition_desc')}
             value={object.zustandsbeschreibung ?? null}
             onSave={(v) => handleFieldSave('zustandsbeschreibung', v)}
             multiline
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.conservation_needs')}
             value={object.restaurierungsbedarf ?? null}
             onSave={(v) => handleFieldSave('restaurierungsbedarf', v)}
@@ -1379,39 +1695,39 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
         {/* ── PROVENANCE ────────────────────────────────────────────────────── */}
         <CollapsibleSection title={t('detail.section_provenance')} defaultOpen={false}>
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.provenance_chain')}
             value={object.provenienzangaben ?? null}
             onSave={(v) => handleFieldSave('provenienzangaben', v)}
             multiline
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.acquisition_method')}
             value={object.erwerbungsart ?? null}
             onSave={(v) => handleFieldSave('erwerbungsart', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.acquisition_date')}
             value={object.erwerbungsdatum ?? null}
             onSave={(v) => handleFieldSave('erwerbungsdatum', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.source_seller')}
             value={object.veraeusserer ?? null}
             onSave={(v) => handleFieldSave('veraeusserer', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.problematic_provenance')}
             value={object.belastete_provenienz_notizen ?? null}
             onSave={(v) => handleFieldSave('belastete_provenienz_notizen' as string, v)}
             multiline
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.inscriptions')}
             value={object.inschriften ?? null}
             onSave={(v) => handleFieldSave('inschriften', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('objectDetail.keywords')}
             value={object.markierungen ?? null}
             onSave={(v) => handleFieldSave('markierungen', v)}
@@ -1420,33 +1736,33 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
         {/* ── LOCATION ──────────────────────────────────────────────────────── */}
         <CollapsibleSection title={t('detail.section_location')} defaultOpen={false}>
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.building')}
             value={object.standort_gebaeude ?? null}
             onSave={(v) => handleFieldSave('standort_gebaeude', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.floor')}
             value={object.standort_etage ?? null}
             onSave={(v) => handleFieldSave('standort_etage', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.room')}
             value={object.standort_raum ?? null}
             onSave={(v) => handleFieldSave('standort_raum', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.shelf')}
             value={object.standort_regal ?? null}
             onSave={(v) => handleFieldSave('standort_regal', v)}
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.location_notes')}
             value={object.standort_hinweise ?? null}
             onSave={(v) => handleFieldSave('standort_hinweise', v)}
             multiline
           />
-          <EditableField
+          <EditableField scrollRef={bodyScrollRef}
             label={t('detail.current_status')}
             value={object.aktueller_status ?? null}
             onSave={(v) => handleFieldSave('aktueller_status', v)}
@@ -1523,6 +1839,23 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           ) : (
             <Text style={sec.emptyText}>{t('detail.no_annotations')}</Text>
           )}
+
+          {/* ── ADD VIDEO / VOICE RECORDING ────────────────────────────────
+              Regression fix: this entry point was removed in PR #85 when the
+              media gallery section was restructured to match the companion
+              app. The VideoRecord route and VideoRecordScreen were never
+              removed — only the button that opens it. Restoring under
+              Annotations is the natural home: voice narration and recorded
+              comments both sit alongside text annotations conceptually. */}
+          <Pressable
+            style={styles.addVideoBtn}
+            onPress={() => navigation.navigate('VideoRecord', { objectId: object.id })}
+            accessibilityRole="button"
+            accessibilityLabel={t('objectDetail.addVideo')}
+          >
+            <VideoIcon size={18} color={colors.accent} />
+            <Text style={styles.addVideoBtnText}>{t('objectDetail.addVideo')}</Text>
+          </Pressable>
         </CollapsibleSection>
 
         {/* ── DOCUMENTS ─────────────────────────────────────────────────────── */}
@@ -1796,6 +2129,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           label={t('common.delete')}
         />
       </View>
+      </KeyboardAvoidingView>
 
       {/* ── EXPORT MODAL ──────────────────────────────────────────────────── */}
       <ExportStepperModal
@@ -1974,6 +2308,95 @@ function makeSec(c: ColorPalette) {
       fontWeight: typography.weight.semibold,
       color: c.accent,
     },
+    aiButtonLoading: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.sm,
+    },
+    aiButtonProgressText: {
+      fontSize: typography.size.sm,
+      color: c.accent,
+      fontWeight: typography.weight.medium,
+    },
+    // Multi-image AI picker
+    aiPickerBlock: {
+      marginTop: spacing.md,
+      gap: spacing.xs,
+    },
+    aiPickerHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    aiPickerTitle: {
+      fontSize: typography.size.sm,
+      fontWeight: typography.weight.semibold,
+      color: c.textPrimary,
+    },
+    aiPickerCount: {
+      fontSize: typography.size.xs,
+      color: c.textMuted,
+    },
+    aiPickerHint: {
+      fontSize: typography.size.xs,
+      color: c.textMuted,
+      marginBottom: spacing.xs,
+    },
+    aiPickerGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing.sm,
+    },
+    aiPickerTile: {
+      width: 84,
+      height: 84,
+      borderRadius: radii.md,
+      borderWidth: 2,
+      borderColor: c.border,
+      overflow: 'hidden',
+      backgroundColor: c.surface,
+      position: 'relative',
+    },
+    aiPickerTileChecked: {
+      borderColor: c.accent,
+    },
+    aiPickerThumb: {
+      width: '100%',
+      height: '100%',
+    },
+    aiPickerCheck: {
+      position: 'absolute',
+      top: 4,
+      right: 4,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1.5,
+    },
+    aiPickerCheckOn: {
+      backgroundColor: c.accent,
+      borderColor: c.accent,
+    },
+    aiPickerCheckOff: {
+      backgroundColor: c.overlayLight,
+      borderColor: c.white,
+    },
+    aiPickerLabelBg: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: c.overlay,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+    },
+    aiPickerLabel: {
+      fontSize: 10,
+      color: c.white,
+      textAlign: 'center',
+    },
     // Annotations
     annotationItem: {
       paddingVertical: spacing.sm,
@@ -2080,6 +2503,9 @@ function makeStyles(c: ColorPalette) {
       flexShrink: 1,
     },
     // Scroll
+    kavFlex: {
+      flex: 1,
+    },
     scroll: {
       flex: 1,
     },
@@ -2254,14 +2680,14 @@ function makeStyles(c: ColorPalette) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.lg,
       borderWidth: 1.5,
-      borderColor: c.heroGreen,
+      borderColor: c.accent,
       borderRadius: radii.lg,
       minHeight: touch.minTarget,
     },
     addVideoBtnText: {
       fontSize: 14,
       fontWeight: '600',
-      color: c.heroGreen,
+      color: c.accent,
     },
     // Map link card
     mapLinkCard: {
