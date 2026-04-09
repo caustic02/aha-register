@@ -85,7 +85,7 @@ export function QuickIDScreen() {
         if (selectedCollectionId) {
           const linkId = generateId();
           await db.runAsync(
-            `INSERT INTO object_collections (id, object_id, collection_id, created_at)
+            `INSERT INTO object_collections (id, object_id, collection_id, added_at)
              VALUES (?, ?, ?, ?)`,
             [linkId, objectId, selectedCollectionId, now],
           );
