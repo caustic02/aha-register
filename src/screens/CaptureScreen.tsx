@@ -519,9 +519,17 @@ export function CaptureScreen() {
   }, [cameraReady, db, triggerShutterFlash, routeObjectId]);
 
   // Multi-view capture shutter: captures a photo for a specific Registerbogen view
-  // and adds it to an existing object with the correct view_type
+  // and adds it to an existing object with the correct view_type.
+  //
+  // IMPORTANT: This is NOT fire-and-forget. We await all DB work before
+  // navigating, otherwise ViewChecklistScreen's useFocusEffect can re-run
+  // against a DB that doesn't yet contain the new row, and the slot appears
+  // empty even though the capture succeeded.
   const handleViewTypeShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady || !routeViewType || !routeObjectId) return;
+    const viewType = routeViewType;
+    const objectId = routeObjectId;
+    console.log('[viewshot] start', { viewType, objectId });
     try {
       const pic = await cameraRef.current.takePictureAsync({
         quality: 1,
@@ -531,68 +539,69 @@ export function CaptureScreen() {
       triggerShutterFlash();
 
       const photoUri = pic.uri;
-      const viewType = routeViewType;
-      const objectId = routeObjectId;
 
-      // Fire and forget — camera stays live
-      (async () => {
-        try {
-          // Retake support: if a media row already exists for this
-          // view_type on this object, remove it (and its file) first so
-          // each view slot owns exactly one photo.
-          const existing = await db.getAllAsync<{ id: string; file_path: string }>(
-            `SELECT id, file_path FROM media
-             WHERE object_id = ?
-               AND view_type = ?
-               AND (media_type IS NULL OR media_type = 'original')`,
-            [objectId, viewType],
+      try {
+        // Retake support: if a media row already exists for this
+        // view_type on this object, remove it (and its file) first so
+        // each view slot owns exactly one photo.
+        const existing = await db.getAllAsync<{ id: string; file_path: string }>(
+          `SELECT id, file_path FROM media
+           WHERE object_id = ?
+             AND view_type = ?
+             AND (media_type IS NULL OR media_type = 'original')`,
+          [objectId, viewType],
+        );
+        if (existing.length > 0) {
+          console.log('[viewshot] retake: removing', existing.length, 'existing row(s)');
+          const ids = existing.map((e) => e.id);
+          const placeholders = ids.map(() => '?').join(',');
+          await db.runAsync(
+            `DELETE FROM media WHERE id IN (${placeholders})`,
+            ids,
           );
-          if (existing.length > 0) {
-            const ids = existing.map((e) => e.id);
-            const placeholders = ids.map(() => '?').join(',');
-            await db.runAsync(
-              `DELETE FROM media WHERE id IN (${placeholders})`,
-              ids,
-            );
-            // Queue delete syncs + best-effort file cleanup
-            const { SyncEngine: SE2 } = await import('../sync/engine');
-            const se2 = new SE2(db);
-            for (const e of existing) {
-              await se2.queueChange('media', e.id, 'delete', { objectId });
-              try {
-                const f = new File(e.file_path);
-                if (f.exists) f.delete();
-              } catch {
-                // Best-effort
-              }
+          const { SyncEngine: SE2 } = await import('../sync/engine');
+          const se2 = new SE2(db);
+          for (const e of existing) {
+            await se2.queueChange('media', e.id, 'delete', { objectId });
+            try {
+              const f = new File(e.file_path);
+              if (f.exists) f.delete();
+            } catch {
+              // Best-effort
             }
           }
-
-          // addMediaToObject handles file copy, SHA-256, audit, sync
-          const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
-
-          // Tag media with view_type
-          const now = new Date().toISOString();
-          await db.runAsync(
-            `UPDATE media SET view_type = ?, updated_at = ? WHERE id = ?`,
-            [viewType, now, media.id],
-          );
-          // Sync the view_type update
-          const { SyncEngine: SE } = await import('../sync/engine');
-          const se = new SE(db);
-          await se.queueChange('media', media.id, 'update', { view_type: viewType });
-
-          setSessionPhotoCount((prev) => prev + 1);
-          setQuickError(null);
-
-          // Navigate back to ViewChecklist
-          navigation.navigate('ViewChecklist', { objectId });
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          setQuickError(msg);
-          setTimeout(() => setQuickError(null), 3000);
         }
-      })();
+
+        // addMediaToObject handles file copy, SHA-256, audit, sync
+        const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
+        console.log('[viewshot] addMediaToObject done', { mediaId: media.id });
+
+        // Tag media with view_type (UPDATE after INSERT because addMediaToObject
+        // doesn't accept a viewType option yet).
+        const now = new Date().toISOString();
+        await db.runAsync(
+          `UPDATE media SET view_type = ?, updated_at = ? WHERE id = ?`,
+          [viewType, now, media.id],
+        );
+        // Sync the view_type update
+        const { SyncEngine: SE } = await import('../sync/engine');
+        const se = new SE(db);
+        await se.queueChange('media', media.id, 'update', { view_type: viewType });
+
+        setSessionPhotoCount((prev) => prev + 1);
+        setQuickError(null);
+        console.log('[viewshot] success, navigating back to ViewChecklist');
+
+        // Navigate back to ViewChecklist. Because we awaited the DB work
+        // synchronously, ViewChecklistScreen's useFocusEffect will see the
+        // new row when it re-runs on focus.
+        navigation.navigate('ViewChecklist', { objectId });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn('[viewshot] failed:', msg);
+        setQuickError(msg);
+        setTimeout(() => setQuickError(null), 3000);
+      }
     } catch {
       // Camera not ready — ignore
     }

@@ -106,45 +106,73 @@ export async function analyzeObject(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
+  // Breadcrumb: input shape (never log the base64 body itself — too big)
+  console.log('[ai-analysis] call', {
+    url: EDGE_FUNCTION_URL,
+    mime_type,
+    domain,
+    base64Length: image_base64?.length ?? 0,
+    base64Empty: !image_base64,
+  });
+
+  if (!image_base64) {
+    return { success: false, error: 'EMPTY_IMAGE_BASE64' };
+  }
+
   try {
     let token = await getAccessToken();
+    console.log('[ai-analysis] token resolved:', token ? `len=${token.length}` : 'null');
     if (!token) {
       return { success: false, error: 'NO_AUTH_SESSION' };
     }
 
     const payload = JSON.stringify({ image_base64, mime_type, domain });
     let response = await callEdgeFunction(token, payload, controller.signal);
+    console.log('[ai-analysis] first response status:', response.status);
 
     // On 401, get a fresh token (refresh → anonymous fallback) and retry once.
     if (response.status === 401) {
+      console.warn('[ai-analysis] got 401, refreshing token and retrying once');
       token = await getAccessToken();
       if (!token) {
         return { success: false, error: 'NO_AUTH_SESSION' };
       }
       response = await callEdgeFunction(token, payload, controller.signal);
+      console.log('[ai-analysis] retry response status:', response.status);
     }
 
-    const data = await response.json();
+    const data = await response.json().catch((e) => {
+      console.warn('[ai-analysis] response.json() failed:', e);
+      return {};
+    });
 
     if (response.status === 401) {
       return { success: false, error: 'NO_AUTH_SESSION' };
     }
 
     if (!response.ok) {
+      console.warn('[ai-analysis] non-ok response:', response.status, data);
       return {
         success: false,
         error: data.error ?? `Server returned ${response.status}`,
       };
     }
 
+    console.log('[ai-analysis] success:', {
+      model: (data as { model?: string }).model,
+      hasMetadata: !!(data as { metadata?: unknown }).metadata,
+    });
     return data as AIAnalysisResponse;
   } catch (err: unknown) {
     if (err instanceof Error && err.name === 'AbortError') {
+      console.warn('[ai-analysis] aborted (timeout)');
       return { success: false, error: 'Request timed out after 60 seconds' };
     }
+    const msg = err instanceof Error ? err.message : 'Network error';
+    console.warn('[ai-analysis] threw:', msg);
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Network error',
+      error: msg,
     };
   } finally {
     clearTimeout(timeout);

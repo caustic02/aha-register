@@ -1,10 +1,12 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import * as Network from 'expo-network';
+import { File } from 'expo-file-system';
 import { supabase } from './supabase';
 import { getSetting, setSetting } from './settingsService';
 import { generateId } from '../utils/uuid';
 import type { SyncQueueItem } from '../db/types';
 import { uploadMediaToStorage } from './storage-upload';
+import { resolveMediaUri } from '../utils/resolveMediaUri';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -531,10 +533,25 @@ export class SyncTransport {
 
   /**
    * After pulling a media record, ensure file_path is displayable.
-   * - If file_path is already an http(s) URL (e.g. Met CDN), keep it
-   * - If file_path is a local device path from another device, replace
-   *   with Supabase Storage URL from storage_path
-   * - If storage_path exists but file_path is a dead local path, fix it
+   *
+   * Priority order (DO NOT reorder — this preserves local-first behavior):
+   *  1. If file_path is already an http(s) URL (e.g. Met CDN), keep it.
+   *  2. If the LOCAL file at the stored file_path (or its session-adjusted
+   *     form via resolveMediaUri) exists on disk, keep it. This is the
+   *     common case for media just captured on this device — we must NOT
+   *     overwrite it with a remote URL, or the capture pipeline's own
+   *     sync pull cycle will clobber the path and every downstream reader
+   *     (ViewChecklistScreen, ObjectDetailScreen, AI analysis) breaks.
+   *  3. Otherwise, the local file is truly missing (e.g. a record synced
+   *     from another device). Fall back to a public Supabase Storage URL
+   *     derived from storage_path so the image can still display.
+   *
+   * Historical note: this function used to always overwrite file_path when
+   * storage_path was set, which silently wiped local file references after
+   * the first sync cycle. The bucket for user uploads is private, so the
+   * resulting public URL wasn't even loadable — the image appeared broken
+   * and ViewChecklistScreen's file-existence orphan cleanup then DELETED
+   * the row because `new File(httpUrl).exists` returns false.
    */
   private async ensureMediaDisplayPath(
     mediaId: string,
@@ -543,12 +560,32 @@ export class SyncTransport {
     const filePath = row.file_path as string | null;
     const storagePath = row.storage_path as string | null;
 
-    // Already a remote URL — nothing to do
+    // 1. Already a remote URL — nothing to do
     if (filePath?.startsWith('http://') || filePath?.startsWith('https://')) {
       return;
     }
 
-    // Has a Supabase Storage path — construct the public URL
+    // 2. Local file exists — keep it (local-first)
+    if (filePath) {
+      let localExists = false;
+      try {
+        localExists = new File(resolveMediaUri(filePath)).exists;
+      } catch {
+        localExists = false;
+      }
+      if (!localExists) {
+        try {
+          localExists = new File(filePath).exists;
+        } catch {
+          localExists = false;
+        }
+      }
+      if (localExists) {
+        return;
+      }
+    }
+
+    // 3. Local file truly missing — fall back to remote URL
     if (storagePath) {
       // seed-media bucket is public; media bucket is private (needs signed URL)
       const isUserUpload = /^[0-9a-f]{8}-/i.test(storagePath);

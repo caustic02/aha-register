@@ -12,8 +12,27 @@ import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 
 interface AIFieldBadgeProps {
-  confidence?: number; // 0-100
+  /**
+   * Confidence as either a 0–100 integer or a 0–1 float. The component
+   * auto-normalises: values <= 1 are multiplied by 100 before display, so
+   * callers can pass either the Gemini raw JSON shape (0.95) or the
+   * already-scaled form (95). Null / undefined renders nothing.
+   */
+  confidence?: number | null;
   visible: boolean;
+}
+
+/**
+ * Normalize a confidence value to an integer 0–100.
+ * - null/undefined/NaN → null (render nothing)
+ * - value <= 1 → treated as 0–1 float, scaled to 0–100
+ * - value > 1 → treated as already 0–100, clamped
+ */
+function normalizeConfidence(raw: number | null | undefined): number | null {
+  if (raw == null || Number.isNaN(raw)) return null;
+  if (raw <= 0) return 0;
+  const scaled = raw <= 1 ? raw * 100 : raw;
+  return Math.min(100, Math.round(scaled));
 }
 
 export function AIFieldBadge({ confidence, visible }: AIFieldBadgeProps) {
@@ -29,6 +48,8 @@ export function AIFieldBadge({ confidence, visible }: AIFieldBadgeProps) {
 
   if (!visible) return null;
 
+  const pct = normalizeConfidence(confidence);
+
   return (
     <View
       style={styles.pill}
@@ -36,11 +57,11 @@ export function AIFieldBadge({ confidence, visible }: AIFieldBadgeProps) {
       accessibilityLabel={t('aiBadge.aiSuggested')}
     >
       <Text style={styles.label}>{t('aiBadge.ai')}</Text>
-      {confidence != null && confidence > 0 && (
+      {pct != null && pct > 0 && (
         <Text
-          style={[styles.confidence, { color: confidenceColor(confidence) }]}
+          style={[styles.confidence, { color: confidenceColor(pct) }]}
         >
-          {confidence}%
+          {pct}%
         </Text>
       )}
     </View>

@@ -23,7 +23,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "aha! Register uses the camera to photograph and document objects with tamper-evident SHA-256 hashing.",
         "NSPhotoLibraryUsageDescription": "aha! Register accesses photos to import existing images of objects for documentation.",
-        "NSLocationWhenInUseUsageDescription": "aha! Register records GPS coordinates as part of the tamper-evident capture record."
+        "NSLocationWhenInUseUsageDescription": "aha! Register records GPS coordinates as part of the tamper-evident capture record.",
+        "NSMicrophoneUsageDescription": "aha! Register uses the microphone for video narration during object documentation."
       }
     },
     "android": {

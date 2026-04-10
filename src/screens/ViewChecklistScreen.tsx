@@ -72,8 +72,17 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
   const [capturedViews, setCapturedViews] = useState<CapturedView[]>([]);
 
   // Load object title and captured views on focus.
-  // A view only counts as "captured" when its media row exists AND the
-  // underlying file is actually on disk — no ghost checkmarks.
+  //
+  // Row acceptance rules:
+  //  - http(s) URL (e.g. Supabase Storage signed URL, Met CDN) → trust it,
+  //    no local file check — remote content is valid even without a cached copy.
+  //  - local file:// URI → resolve via resolveMediaUri (iOS container UUID can
+  //    change between sessions, so the raw absolute path may be stale) and
+  //    check the resolved URI on disk.
+  //  - NEVER delete media rows from the display path. Deleting here means
+  //    evidence-linked media silently disappears on every focus if the file
+  //    existence check has any false negatives, which was the entry point for
+  //    the "photos don't populate view slots" bug.
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
@@ -102,21 +111,37 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
            ORDER BY created_at DESC`,
           [objectId],
         );
+        console.log('[viewchecklist] loaded', rows.length, 'media rows for', objectId);
 
-        // Verify each file actually exists. Prune DB rows whose files are
-        // missing so the checkmark reflects reality.
         const verified: CapturedView[] = [];
         const seen = new Set<string>();
-        const orphans: string[] = [];
         for (const r of rows) {
           if (seen.has(r.view_type)) continue; // keep the newest per view_type
-          let exists = false;
-          try {
-            exists = new File(r.file_path).exists;
-          } catch {
-            exists = false;
+
+          const isRemote = r.file_path.startsWith('http://') || r.file_path.startsWith('https://');
+          let accept = isRemote;
+          let resolvedPath = r.file_path;
+          if (!isRemote) {
+            // Rebuild the URI for the current session's documents directory and
+            // then check disk — handles iOS container UUID rollover.
+            resolvedPath = resolveMediaUri(r.file_path);
+            try {
+              accept = new File(resolvedPath).exists;
+            } catch {
+              accept = false;
+            }
+            if (!accept) {
+              // Fall back to the raw stored path in case resolveMediaUri
+              // stripped a legitimate prefix.
+              try {
+                accept = new File(r.file_path).exists;
+              } catch {
+                accept = false;
+              }
+            }
           }
-          if (exists) {
+
+          if (accept) {
             verified.push({
               viewType: r.view_type as RegisterViewType,
               mediaId: r.id,
@@ -124,21 +149,13 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
             });
             seen.add(r.view_type);
           } else {
-            orphans.push(r.id);
+            console.warn('[viewchecklist] skipping row (file not found):', r.id, r.file_path.substring(0, 120));
           }
         }
-        if (orphans.length > 0) {
-          try {
-            const placeholders = orphans.map(() => '?').join(',');
-            await db.runAsync(
-              `DELETE FROM media WHERE id IN (${placeholders})`,
-              orphans,
-            );
-          } catch {
-            // Best-effort cleanup
-          }
+        if (!cancelled) {
+          console.log('[viewchecklist] verified', verified.length, '/', rows.length);
+          setCapturedViews(verified);
         }
-        if (!cancelled) setCapturedViews(verified);
       })();
 
       return () => { cancelled = true; };
