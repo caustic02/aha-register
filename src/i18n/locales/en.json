@@ -946,6 +946,13 @@
     "view_failed": "Could not open 3D viewer",
     "no_viewer": "No 3D viewer app installed on this device"
   },
+  "import3d": {
+    "title": "3D Model",
+    "heading": "Import a 3D Model",
+    "description": "Upload a 3D scan or model file. It will be attached as the primary media of a new draft object, which you can then edit and complete.",
+    "uploadButton": "Upload 3D Model",
+    "supportedFormats": "Supported formats: GLB, GLTF, USDZ, OBJ, FBX, PLY"
+  },
   "home": {
     "title": "Collection",
     "personalCollection": "Personal Collection",

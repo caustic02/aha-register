@@ -52,7 +52,6 @@ import {
   getAllCollections,
   type CollectionWithCount,
 } from '../services/collectionService';
-import { importNew3DObject } from '../services/import3D';
 
 // ── Thumbnail URL resolution ─────────────────────────────────────────────────
 
@@ -98,15 +97,12 @@ const SEC_GAP = 40;
 const R = 14; // border radius
 const TOOL_W = (SCREEN_W - PX * 2 - ITEM_GAP * 3) / 4; // exact quarter-width for 4-col grid
 
-// `action: 'import3D'` opens the document picker and creates a new draft
-// object from the selected GLB/GLTF/USDZ/OBJ/FBX/PLY file (see handleToolPress).
-// Other tools navigate directly to the screen named in `nav`.
 const TOOLS = [
   { label: 'Floor Map', nav: 'FloorMap' as const },
   { label: 'QR Codes', nav: 'ObjectList' as const },
   { label: 'Checklists', nav: 'ChecklistOverview' as const },
   { label: 'Export', nav: 'ObjectList' as const },
-  { label: '3D Scan', nav: 'Scan3D' as const, action: 'import3D' as const },
+  { label: '3D Scan', nav: 'Import3D' as const },
   { label: 'Browse', nav: 'ObjectList' as const },
   { label: 'AI Analysis', nav: 'CaptureCamera' as const },
   { label: 'Scan Doc', nav: 'CaptureCamera' as const },
@@ -369,23 +365,14 @@ export function HomeScreen({ navigation }: Props) {
     cleanupOrphanedTierDirs(db).catch(() => {});
   }, [db]);
 
-  // Dispatcher for the tool grid. Most tiles simply navigate to their
-  // target screen. "3D Scan" is special: it opens the document picker
-  // via importNew3DObject, mints a new draft object with the 3D file as
-  // its primary media, and jumps straight to the object detail screen.
+  // Dispatcher for the tool grid — every tile simply navigates to its
+  // target screen. Kept as a wrapper so we have a single hook if we
+  // later need per-tile pre-navigation logic.
   const handleToolPress = useCallback(
-    async (tool: (typeof TOOLS)[number]) => {
-      if ('action' in tool && tool.action === 'import3D') {
-        const newObjectId = await importNew3DObject(db, t);
-        if (newObjectId) {
-          await loadData();
-          navigation.navigate('ObjectDetail', { objectId: newObjectId });
-        }
-        return;
-      }
+    (tool: (typeof TOOLS)[number]) => {
       navigation.navigate(tool.nav);
     },
-    [db, t, loadData, navigation],
+    [navigation],
   );
 
   const { needsAttention, complete } = useMemo(() => {

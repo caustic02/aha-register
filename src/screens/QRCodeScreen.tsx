@@ -11,10 +11,9 @@ import { radii, spacing, touch, typography } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import type { RootStackParamList } from '../navigation/RootStack';
+import { APP_CONFIG } from '../config/constants';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QRCode'>;
-
-const QR_BASE_URL = 'https://register.arthausauction.com/objects';
 
 export function QRCodeScreen({ route, navigation }: Props) {
   const { colors } = useTheme();
@@ -25,7 +24,7 @@ export function QRCodeScreen({ route, navigation }: Props) {
   const [inventoryNumber, setInventoryNumber] = useState<string | null>(null);
   const qrRef = useRef<QRCode>(null);
 
-  const qrValue = `${QR_BASE_URL}/${objectId}`;
+  const qrValue = `${APP_CONFIG.WEB_APP_BASE_URL}/objects/${objectId}`;
 
   useFocusEffect(
     useCallback(() => {

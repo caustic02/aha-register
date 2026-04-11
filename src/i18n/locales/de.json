@@ -946,6 +946,13 @@
     "view_failed": "3D-Betrachter konnte nicht geöffnet werden",
     "no_viewer": "Keine 3D-Betrachter-App auf diesem Gerät installiert"
   },
+  "import3d": {
+    "title": "3D-Modell",
+    "heading": "3D-Modell importieren",
+    "description": "Laden Sie einen 3D-Scan oder eine Modelldatei hoch. Sie wird als Hauptmedium eines neuen Objektentwurfs angehängt, den Sie anschließend bearbeiten und vervollständigen können.",
+    "uploadButton": "3D-Modell hochladen",
+    "supportedFormats": "Unterstützte Formate: GLB, GLTF, USDZ, OBJ, FBX, PLY"
+  },
   "home": {
     "title": "Sammlung",
     "personalCollection": "Pers\u00f6nliche Sammlung",
