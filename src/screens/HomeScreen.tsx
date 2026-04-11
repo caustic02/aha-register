@@ -33,9 +33,6 @@ import {
   FolderPlus,
   FolderOpen,
   AlertCircle,
-  CheckCircle2,
-  RefreshCw,
-  WifiOff,
 } from 'lucide-react-native';
 import Svg, { Path, Rect, Circle, Polyline, Line } from 'react-native-svg';
 import { radii, spacing, touch, typography } from '../theme';
@@ -44,7 +41,6 @@ import { useTheme } from '../theme/ThemeContext';
 import { SkeletonList } from '../components/SkeletonLoader';
 import { formatRelativeDate } from '../utils/format-date';
 import { cleanupOrphanedTierDirs } from '../utils/image-cleanup';
-import { useSyncStatus } from '../hooks/useSyncStatus';
 import { STANDARD_VIEW_TYPES } from '../constants/viewTypes';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
@@ -210,7 +206,6 @@ export function HomeScreen({ navigation }: Props) {
   const db = useDatabase();
   const { t } = useAppTranslation();
   const { collectionDomain } = useSettings();
-  const syncStatus = useSyncStatus();
 
   const insets = useSafeAreaInsets();
   const HEADER_H = insets.top + 56; // safe area + header content
@@ -382,48 +377,6 @@ export function HomeScreen({ navigation }: Props) {
   }, [objects]);
 
   const unfiled = useMemo(() => objects.filter((o) => o.in_collection === 0), [objects]);
-
-  // Sync status — fading "Synced ✓" when a cycle completes
-  const syncState = syncStatus.status; // 'idle' | 'syncing' | 'offline' | 'error'
-  const prevSyncStateRef = useRef(syncState);
-  const [justSynced, setJustSynced] = useState(false);
-
-  useEffect(() => {
-    if (prevSyncStateRef.current === 'syncing' && syncState === 'idle') {
-      setJustSynced(true);
-      const t = setTimeout(() => setJustSynced(false), 3000);
-      return () => clearTimeout(t);
-    }
-    prevSyncStateRef.current = syncState;
-  }, [syncState]);
-
-  const showSyncBar = (syncState === 'syncing' ? syncStatus.pendingCount > 0 : syncState !== 'idle')
-    || justSynced
-    || syncStatus.failedCount > 0
-    || syncStatus.pendingCount > 0;
-
-  const syncColor = justSynced ? colors.statusSuccess
-    : syncState === 'error' || syncState === 'offline' ? colors.statusError
-    : syncState === 'syncing' ? colors.accentText : colors.statusSuccess;
-  const syncBg = justSynced ? colors.successLight
-    : syncState === 'error' || syncState === 'offline' ? colors.errorLight
-    : syncState === 'syncing' ? colors.accent : colors.successLight;
-  const syncBorder = justSynced ? colors.success
-    : syncState === 'error' || syncState === 'offline' ? colors.error
-    : syncState === 'syncing' ? colors.accent : colors.success;
-  const SyncIcon = justSynced ? CheckCircle2
-    : syncState === 'error' ? AlertCircle
-    : syncState === 'offline' ? WifiOff
-    : syncState === 'syncing' ? RefreshCw
-    : CheckCircle2;
-  const syncLabel = justSynced ? 'Synced'
-    : syncState === 'syncing'
-      ? (syncStatus.pendingCount > 0 ? `Syncing ${syncStatus.pendingCount} items...` : 'Syncing...')
-    : syncState === 'offline' ? 'Offline'
-    : syncState === 'error'
-      ? (syncStatus.failedCount > 0 ? `${syncStatus.failedCount} items failed to sync` : 'Sync error')
-    : syncStatus.pendingCount > 0 ? `${syncStatus.pendingCount} pending`
-    : '';
 
   // Storage warning level
   const GB = 1024 * 1024 * 1024;
@@ -613,12 +566,6 @@ export function HomeScreen({ navigation }: Props) {
               <Text style={st.statLabel}>{t('home.statStorage')}</Text>
             </View>
           </View>
-          {showSyncBar && (
-            <View style={[st.syncBar, { backgroundColor: syncBg, borderColor: syncBorder }]} accessibilityLabel={syncLabel} accessibilityLiveRegion="polite">
-              <SyncIcon size={14} color={syncColor} />
-              <Text style={[st.syncText, { color: syncColor }]}>{syncLabel}</Text>
-            </View>
-          )}
         </View>
 
         <View style={{ height: spacing.xl }} />
@@ -779,15 +726,6 @@ function makeStyles(colors: ColorPalette) {
     },
     statValue: { fontSize: 17, fontWeight: typography.weight.bold, color: colors.text },
     statLabel: { fontSize: 11, color: colors.textSecondary },
-
-    // Sync (44px)
-    syncBar: {
-      flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
-      borderRadius: R, borderWidth: 1, borderColor: colors.border,
-      paddingHorizontal: 16, paddingVertical: 16, marginTop: 12, gap: 8,
-    },
-    syncIcon: { flexShrink: 0 },
-    syncText: { fontSize: 12, color: colors.textSecondary },
 
     // Badge (kept for compatibility)
     countBadge: { backgroundColor: colors.warning, borderRadius: radii.full, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
