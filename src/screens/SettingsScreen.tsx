@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   LayoutAnimation,
   Pressable,
@@ -12,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import i18n from 'i18next';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
@@ -48,7 +50,7 @@ import {
   ConservationRecordIcon,
 } from '../theme/icons';
 import { AlertCircle } from 'lucide-react-native';
-import { spacing, touch, typography } from '../theme';
+import { radii, spacing, touch, typography } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme, type ThemePreference } from '../theme/ThemeContext';
 import type { PrivacyTier, ObjectType } from '../db/types';
@@ -62,6 +64,15 @@ const APP_BUILD =
   Constants.expoConfig?.ios?.buildNumber ??
   Constants.expoConfig?.runtimeVersion?.toString() ??
   APP_VERSION;
+
+// OTA update metadata — captured at boot; both can be null in dev/Expo Go
+// or before any OTA has been applied to an embedded build.
+const UPDATE_ID_SHORT =
+  typeof Updates.updateId === 'string' && Updates.updateId.length > 0
+    ? Updates.updateId.slice(0, 8)
+    : null;
+const UPDATE_CREATED_AT: Date | null =
+  Updates.createdAt instanceof Date ? Updates.createdAt : null;
 
 const OBJECT_TYPES: ObjectType[] = [
   'museum_object',
@@ -203,6 +214,9 @@ export function SettingsScreen() {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showObjectType, setShowObjectType] = useState(false);
   const [showFlashMode, setShowFlashMode] = useState(false);
+
+  // OTA update check state
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   // ── Load ────────────────────────────────────────────────────────────────────
 
@@ -369,6 +383,29 @@ export function SettingsScreen() {
       },
     ]);
   }, [db, t]);
+
+  // ── OTA update handler ──────────────────────────────────────────────────────
+
+  const handleCheckUpdate = useCallback(async () => {
+    if (checkingUpdate) return;
+    setCheckingUpdate(true);
+    try {
+      const result = await Updates.checkForUpdateAsync();
+      if (result.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        // Brief message before the reload takes effect.
+        Alert.alert(t('settings.checkUpdate'), t('settings.updating'));
+        await Updates.reloadAsync();
+      } else {
+        Alert.alert(t('settings.checkUpdate'), t('settings.noUpdate'));
+      }
+    } catch (err) {
+      console.warn('[settings] check-for-update failed:', err);
+      Alert.alert(t('settings.checkUpdate'), String(err));
+    } finally {
+      setCheckingUpdate(false);
+    }
+  }, [checkingUpdate, t]);
 
   // ── Data handlers ───────────────────────────────────────────────────────────
 
@@ -890,6 +927,33 @@ export function SettingsScreen() {
             label={t('settings.build')}
             value={APP_BUILD}
           />
+          <MetadataRow
+            label={t('settings.updateId')}
+            value={UPDATE_ID_SHORT ?? undefined}
+          />
+          <MetadataRow
+            label={t('settings.updatedAt')}
+            value={UPDATE_CREATED_AT ? UPDATE_CREATED_AT.toLocaleDateString() : undefined}
+          />
+          <Pressable
+            onPress={handleCheckUpdate}
+            disabled={checkingUpdate}
+            hitSlop={touch.hitSlop}
+            accessibilityRole="button"
+            accessibilityLabel={t('settings.checkUpdate')}
+            accessibilityState={{ disabled: checkingUpdate, busy: checkingUpdate }}
+            style={({ pressed }) => [
+              styles.checkUpdateBtn,
+              pressed && !checkingUpdate && styles.pressed,
+              checkingUpdate && styles.checkUpdateBtnDisabled,
+            ]}
+          >
+            {checkingUpdate ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.checkUpdateBtnText}>{t('settings.checkUpdate')}</Text>
+            )}
+          </Pressable>
           <Divider />
           <ListItem
             title={t('settings.licenses')}
@@ -1083,6 +1147,25 @@ function makeStyles(c: ColorPalette) {
     syncNowText: {
       ...typography.bodyMedium,
       color: c.accent,
+    },
+    // OTA check-for-update button
+    checkUpdateBtn: {
+      backgroundColor: c.accent,
+      borderRadius: radii.md,
+      paddingVertical: spacing.md,
+      paddingHorizontal: spacing.lg,
+      minHeight: touch.minTarget,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: spacing.md,
+    },
+    checkUpdateBtnDisabled: {
+      opacity: 0.6,
+    },
+    checkUpdateBtnText: {
+      ...typography.body,
+      color: c.white,
+      fontWeight: typography.weight.bold,
     },
   });
 }
