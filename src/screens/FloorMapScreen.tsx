@@ -264,7 +264,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
   const loadPins = useCallback(async () => {
     if (!activeMapId) { setPins([]); return; }
     const rows = await db.getAllAsync<PinWithObject>(
-      `SELECT mp.*, o.title as obj_title, m.file_path as obj_file_path,
+      `SELECT mp.*, o.title as obj_title, COALESCE(m.thumbnail_uri, m.file_path) as obj_file_path,
               o.location_room as obj_room, o.location_shelf as obj_shelf
        FROM map_pins mp
        LEFT JOIN objects o ON o.id = mp.object_id
@@ -278,7 +278,7 @@ export function FloorMapScreen({ route, navigation }: Props) {
 
   const loadUnpinnedObjects = useCallback(async () => {
     const rows = await db.getAllAsync<PickerObject>(
-      `SELECT o.id, o.title, m.file_path
+      `SELECT o.id, o.title, COALESCE(m.thumbnail_uri, m.file_path) as file_path
        FROM objects o
        LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
        WHERE o.id NOT IN (SELECT object_id FROM map_pins WHERE object_id IS NOT NULL)

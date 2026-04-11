@@ -935,6 +935,17 @@
     "savedToGallery": "In Galerie gespeichert",
     "permissionNeeded": "Berechtigung für die Fotobibliothek wird zum Speichern benötigt"
   },
+  "model3d": {
+    "import": "3D-Modell importieren",
+    "import_short": "3D",
+    "view": "3D ansehen",
+    "label": "3D-Modell",
+    "attached": "3D-Modell angehängt",
+    "unsupported_format": "Nicht unterstütztes Format. Erlaubt: GLB, GLTF, USDZ, OBJ, FBX, PLY.",
+    "import_failed": "3D-Modell konnte nicht importiert werden",
+    "view_failed": "3D-Betrachter konnte nicht geöffnet werden",
+    "no_viewer": "Keine 3D-Betrachter-App auf diesem Gerät installiert"
+  },
   "home": {
     "title": "Sammlung",
     "personalCollection": "Pers\u00f6nliche Sammlung",

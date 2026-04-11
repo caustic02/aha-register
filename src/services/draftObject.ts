@@ -9,6 +9,7 @@ import { getSetting, SETTING_KEYS } from './settingsService';
 import { copyToMediaStorage, buildStorageName, normalizeFileType } from './captureHelpers';
 import { uploadAndRecordStoragePath } from './storage-upload';
 import { supabase } from './supabase';
+import type { ArchivalData, ImageTierData } from '../utils/image-processing';
 
 export interface CreateDraftParams {
   imageUri: string;
@@ -17,6 +18,8 @@ export interface CreateDraftParams {
   mimeType: string;
   metadata: CaptureMetadata;
   objectType?: string;
+  archival?: ArchivalData;
+  tiers?: ImageTierData;
 }
 
 /**
@@ -35,8 +38,8 @@ export async function createDraftObject(
   const storageName = buildStorageName(mediaId, params.mimeType);
   const destUri = copyToMediaStorage(params.imageUri, mediaId, params.mimeType);
 
-  // 2. Compute SHA-256 hash
-  const sha256 = await computeSHA256(destUri);
+  // 2. SHA-256 — use pre-computed archival hash when available
+  const sha256 = params.archival?.sha256Hash ?? await computeSHA256(destUri);
 
   // 2b. Read default privacy tier from settings
   const privacyTier =
@@ -83,11 +86,16 @@ export async function createDraftObject(
     );
 
     // 4. Insert media record (is_primary=1 → primary display image)
+    const archival = params.archival;
+    const tiers = params.tiers;
     await db.runAsync(
       `INSERT INTO media
          (id, object_id, file_path, file_name, file_type, mime_type, file_size,
-          sha256_hash, privacy_tier, is_primary, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)`,
+          sha256_hash, privacy_tier, is_primary, sort_order,
+          original_file_path, original_mime_type, original_file_size,
+          thumbnail_uri, preview_uri,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?)`,
       [
         mediaId,
         objectId,
@@ -98,6 +106,11 @@ export async function createDraftObject(
         params.fileSize ?? null,
         sha256,
         privacyTier,
+        archival?.archivalUri ?? null,
+        archival ? params.mimeType : null,
+        archival?.originalFileSize ?? null,
+        tiers?.thumbnailUri ?? null,
+        tiers?.previewUri ?? null,
         now,
         now,
       ],

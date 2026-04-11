@@ -188,7 +188,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
       const rows = await db.getAllAsync<ObjectRow>(
         `SELECT o.id, o.title, o.object_type, o.created_at,
                 (
-                  SELECT m.file_path FROM media m
+                  SELECT COALESCE(m.thumbnail_uri, m.file_path) FROM media m
                   WHERE m.object_id = o.id
                     AND (m.media_type IS NULL OR m.media_type = 'original')
                     AND m.file_type = 'image'

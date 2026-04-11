@@ -18,6 +18,7 @@ import { getSetting, SETTING_KEYS } from './settingsService';
 import { copyToMediaStorage, buildStorageName, normalizeFileType } from './captureHelpers';
 import { uploadAndRecordStoragePath } from './storage-upload';
 import { supabase } from './supabase';
+import type { ArchivalData, ImageTierData } from '../utils/image-processing';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -44,6 +45,8 @@ export async function quickCapture(
   db: SQLiteDatabase,
   photoUri: string,
   location: LocationData | null,
+  archival?: ArchivalData,
+  tiers?: ImageTierData,
 ): Promise<string> {
   const objectId = generateId();
   const mediaId = generateId();
@@ -54,8 +57,9 @@ export async function quickCapture(
   const storageName = buildStorageName(mediaId, mimeType);
   const destUri = copyToMediaStorage(photoUri, mediaId, mimeType);
 
-  // 2. SHA-256 on the stored copy — SACRED: happens before any DB write
-  const sha256 = await computeSHA256(destUri);
+  // 2. SHA-256 — use pre-computed archival hash when available,
+  //    otherwise fall back to hashing the stored working copy.
+  const sha256 = archival?.sha256Hash ?? await computeSHA256(destUri);
 
   // 3. Read default privacy tier from settings
   const privacyTier =
@@ -91,8 +95,11 @@ export async function quickCapture(
     await db.runAsync(
       `INSERT INTO media
          (id, object_id, file_path, file_name, file_type, mime_type,
-          sha256_hash, privacy_tier, is_primary, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?)`,
+          sha256_hash, privacy_tier, is_primary, sort_order,
+          original_file_path, original_mime_type, original_file_size,
+          thumbnail_uri, preview_uri,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?, ?, ?, ?)`,
       [
         mediaId,
         objectId,
@@ -102,6 +109,11 @@ export async function quickCapture(
         mimeType,
         sha256,
         privacyTier,
+        archival?.archivalUri ?? null,
+        archival ? mimeType : null,
+        archival?.originalFileSize ?? null,
+        tiers?.thumbnailUri ?? null,
+        tiers?.previewUri ?? null,
         now,
         now,
       ],

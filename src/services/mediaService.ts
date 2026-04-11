@@ -9,6 +9,7 @@ import { getSetting, SETTING_KEYS } from './settingsService';
 import type { Media } from '../db/types';
 import { uploadAndRecordStoragePath } from './storage-upload';
 import { supabase } from './supabase';
+import type { ArchivalData, ImageTierData } from '../utils/image-processing';
 
 /**
  * Returns all media rows for an object, ordered by is_primary DESC, sort_order ASC.
@@ -33,7 +34,7 @@ export async function addMediaToObject(
   objectId: string,
   imageUri: string,
   mimeType: string,
-  options?: { caption?: string; fileName?: string; fileSize?: number },
+  options?: { caption?: string; fileName?: string; fileSize?: number; archival?: ArchivalData; tiers?: ImageTierData },
 ): Promise<Media> {
   const mediaId = generateId();
   const now = new Date().toISOString();
@@ -57,8 +58,8 @@ export async function addMediaToObject(
     throw new Error('FILE_COPY_FAILED: destination file missing after copy');
   }
 
-  // 2. Compute SHA-256 hash on raw bytes
-  const sha256 = await computeSHA256(destUri);
+  // 2. SHA-256 — use pre-computed archival hash when available
+  const sha256 = options?.archival?.sha256Hash ?? await computeSHA256(destUri);
 
   // 3. Read default privacy tier from settings
   const privacyTier =
@@ -85,11 +86,16 @@ export async function addMediaToObject(
 
   // 6. All DB writes in a single transaction
   await db.withTransactionAsync(async () => {
+    const archival = options?.archival;
+    const tiers = options?.tiers;
     await db.runAsync(
       `INSERT INTO media
          (id, object_id, file_path, file_name, file_type, mime_type, file_size,
-          sha256_hash, caption, privacy_tier, is_primary, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          sha256_hash, caption, privacy_tier, is_primary, sort_order,
+          original_file_path, original_mime_type, original_file_size,
+          thumbnail_uri, preview_uri,
+          created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         mediaId,
         objectId,
@@ -103,6 +109,11 @@ export async function addMediaToObject(
         privacyTier,
         isPrimary,
         nextSort,
+        archival?.archivalUri ?? null,
+        archival ? mimeType : null,
+        archival?.originalFileSize ?? null,
+        tiers?.thumbnailUri ?? null,
+        tiers?.previewUri ?? null,
         now,
         now,
       ],

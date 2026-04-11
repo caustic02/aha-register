@@ -52,7 +52,7 @@ export async function getCollectionById(
   if (!collection) return null;
 
   const objects = await db.getAllAsync<CollectionObject>(
-    `SELECT o.id, o.title, o.object_type, o.created_at, m.file_path
+    `SELECT o.id, o.title, o.object_type, o.created_at, COALESCE(m.thumbnail_uri, m.file_path) as file_path
      FROM object_collections oc
      JOIN objects o ON o.id = oc.object_id
      LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
@@ -238,7 +238,7 @@ export async function getObjectsNotInCollection(
   collectionId: string,
 ): Promise<PickerObject[]> {
   return db.getAllAsync<PickerObject>(
-    `SELECT o.id, o.title, o.object_type, m.file_path
+    `SELECT o.id, o.title, o.object_type, COALESCE(m.thumbnail_uri, m.file_path) as file_path
      FROM objects o
      LEFT JOIN media m ON m.object_id = o.id AND m.is_primary = 1
      WHERE o.id NOT IN (

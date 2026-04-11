@@ -275,13 +275,14 @@ const PDF_IMAGE_QUALITY = 0.7;
 
 async function loadImageBase64(media: Media): Promise<ImageData | null> {
   try {
-    const file = new File(media.file_path);
+    const sourceUri = media.preview_uri ?? media.file_path;
+    const file = new File(sourceUri);
     if (!file.exists) return null;
 
     // Resize to max 1200px wide and compress for PDF embedding.
-    // The original file in storage is never modified.
+    // Prefer the preview tier (800px) as source — closer to target size.
     const resized = await manipulateAsync(
-      media.file_path,
+      sourceUri,
       [{ resize: { width: MAX_PDF_IMAGE_PX } }],
       { compress: PDF_IMAGE_QUALITY, format: SaveFormat.JPEG },
     );

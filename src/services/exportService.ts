@@ -59,7 +59,7 @@ async function loadObjectExportData(
   const media: MediaWithBase64[] = [];
   for (const m of mediaRows) {
     try {
-      const file = new File(m.file_path);
+      const file = new File(m.preview_uri ?? m.file_path);
       const base64Data = await file.base64();
       media.push({ ...m, base64Data });
     } catch {

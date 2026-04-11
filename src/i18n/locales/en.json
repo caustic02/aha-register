@@ -935,6 +935,17 @@
     "savedToGallery": "Saved to gallery",
     "permissionNeeded": "Photo library permission is required to save images"
   },
+  "model3d": {
+    "import": "Import 3D Model",
+    "import_short": "3D",
+    "view": "View 3D",
+    "label": "3D Model",
+    "attached": "3D model attached",
+    "unsupported_format": "Unsupported file format. Use GLB, GLTF, USDZ, OBJ, FBX, or PLY.",
+    "import_failed": "Failed to import 3D model",
+    "view_failed": "Could not open 3D viewer",
+    "no_viewer": "No 3D viewer app installed on this device"
+  },
   "home": {
     "title": "Collection",
     "personalCollection": "Personal Collection",

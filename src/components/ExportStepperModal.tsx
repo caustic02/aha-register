@@ -872,7 +872,7 @@ function ImagesStep({
               accessibilityLabel={viewLabel}
             >
               <Image
-                source={{ uri: resolveMediaUri(m.file_path) }}
+                source={{ uri: resolveMediaUri(m.thumbnail_uri ?? m.file_path) }}
                 style={styles.imageThumb}
                 resizeMode="cover"
               />

@@ -43,6 +43,7 @@ import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { SkeletonList } from '../components/SkeletonLoader';
 import { formatRelativeDate } from '../utils/format-date';
+import { cleanupOrphanedTierDirs } from '../utils/image-cleanup';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 import { STANDARD_VIEW_TYPES } from '../constants/viewTypes';
 import type { RootStackParamList } from '../navigation/RootStack';
@@ -51,6 +52,7 @@ import {
   getAllCollections,
   type CollectionWithCount,
 } from '../services/collectionService';
+import { importNew3DObject } from '../services/import3D';
 
 // ── Thumbnail URL resolution ─────────────────────────────────────────────────
 
@@ -75,6 +77,7 @@ interface DashboardObject {
   object_type: string;
   created_at: string;
   file_path: string | null;
+  thumbnail_uri: string | null;
   storage_path: string | null;
   view_count: number;
   has_ai: number;
@@ -95,12 +98,15 @@ const SEC_GAP = 40;
 const R = 14; // border radius
 const TOOL_W = (SCREEN_W - PX * 2 - ITEM_GAP * 3) / 4; // exact quarter-width for 4-col grid
 
+// `action: 'import3D'` opens the document picker and creates a new draft
+// object from the selected GLB/GLTF/USDZ/OBJ/FBX/PLY file (see handleToolPress).
+// Other tools navigate directly to the screen named in `nav`.
 const TOOLS = [
   { label: 'Floor Map', nav: 'FloorMap' as const },
   { label: 'QR Codes', nav: 'ObjectList' as const },
   { label: 'Checklists', nav: 'ChecklistOverview' as const },
   { label: 'Export', nav: 'ObjectList' as const },
-  { label: '3D Scan', nav: 'Scan3D' as const },
+  { label: '3D Scan', nav: 'Scan3D' as const, action: 'import3D' as const },
   { label: 'Browse', nav: 'ObjectList' as const },
   { label: 'AI Analysis', nav: 'CaptureCamera' as const },
   { label: 'Scan Doc', nav: 'CaptureCamera' as const },
@@ -254,7 +260,7 @@ export function HomeScreen({ navigation }: Props) {
       <PressScale style={st.attentionRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
         <View style={obj.file_path ? st.attentionThumb : [st.attentionThumb, st.thumbEmpty]}>
           {obj.file_path ? (
-            <Thumb uri={obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 10 }] as ImageStyle} iconSize={16} fallbackColor={colors.textTertiary} />
+            <Thumb uri={obj.thumbnail_uri ?? obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 10 }] as ImageStyle} iconSize={16} fallbackColor={colors.textTertiary} />
           ) : (
             <CameraIcon size={16} color={colors.textTertiary} />
           )}
@@ -280,7 +286,7 @@ export function HomeScreen({ navigation }: Props) {
       <PressScale style={st.compactRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
         <View style={obj.file_path ? st.compactThumb : [st.compactThumb, st.thumbEmpty]}>
           {obj.file_path ? (
-            <Thumb uri={obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 8 }] as ImageStyle} iconSize={14} fallbackColor={colors.textTertiary} />
+            <Thumb uri={obj.thumbnail_uri ?? obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 8 }] as ImageStyle} iconSize={14} fallbackColor={colors.textTertiary} />
           ) : (
             <CameraIcon size={14} color={colors.textTertiary} />
           )}
@@ -328,7 +334,7 @@ export function HomeScreen({ navigation }: Props) {
         db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM media'),
         db.getFirstAsync<{ total: number }>('SELECT COALESCE(SUM(file_size), 0) as total FROM media'),
         db.getAllAsync<DashboardObject>(
-          `SELECT o.id, o.title, o.description, o.object_type, o.created_at, pm.file_path, pm.storage_path,
+          `SELECT o.id, o.title, o.description, o.object_type, o.created_at, pm.file_path, pm.thumbnail_uri, pm.storage_path,
              COALESCE(vc.view_count, 0) as view_count,
              CASE WHEN o.description IS NOT NULL AND o.description != '' AND o.title IS NOT NULL AND o.title != 'Untitled' AND o.title != '' THEN 1 ELSE 0 END as has_ai,
              CASE WHEN sq.id IS NOT NULL THEN 1 ELSE 0 END as sync_pending,
@@ -355,6 +361,33 @@ export function HomeScreen({ navigation }: Props) {
     FileSystem.getFreeDiskStorageAsync().then((f) => setFreeSpace(f)).catch(() => {});
   }, [loadData]));
 
+  // One-time startup sweep: clean orphaned tier directories (non-blocking)
+  const sweepDoneRef = useRef(false);
+  useEffect(() => {
+    if (sweepDoneRef.current) return;
+    sweepDoneRef.current = true;
+    cleanupOrphanedTierDirs(db).catch(() => {});
+  }, [db]);
+
+  // Dispatcher for the tool grid. Most tiles simply navigate to their
+  // target screen. "3D Scan" is special: it opens the document picker
+  // via importNew3DObject, mints a new draft object with the 3D file as
+  // its primary media, and jumps straight to the object detail screen.
+  const handleToolPress = useCallback(
+    async (tool: (typeof TOOLS)[number]) => {
+      if ('action' in tool && tool.action === 'import3D') {
+        const newObjectId = await importNew3DObject(db, t);
+        if (newObjectId) {
+          await loadData();
+          navigation.navigate('ObjectDetail', { objectId: newObjectId });
+        }
+        return;
+      }
+      navigation.navigate(tool.nav);
+    },
+    [db, t, loadData, navigation],
+  );
+
   const { needsAttention, complete } = useMemo(() => {
     const needs: DashboardObject[] = []; const done: DashboardObject[] = [];
     for (const obj of objects) (isComplete(obj) ? done : needs).push(obj);
@@ -377,20 +410,20 @@ export function HomeScreen({ navigation }: Props) {
     prevSyncStateRef.current = syncState;
   }, [syncState]);
 
-  const showSyncBar = syncState !== 'idle'
+  const showSyncBar = (syncState === 'syncing' ? syncStatus.pendingCount > 0 : syncState !== 'idle')
     || justSynced
     || syncStatus.failedCount > 0
     || syncStatus.pendingCount > 0;
 
   const syncColor = justSynced ? colors.statusSuccess
     : syncState === 'error' || syncState === 'offline' ? colors.statusError
-    : syncState === 'syncing' ? colors.statusWarning : colors.statusSuccess;
+    : syncState === 'syncing' ? colors.accentText : colors.statusSuccess;
   const syncBg = justSynced ? colors.successLight
     : syncState === 'error' || syncState === 'offline' ? colors.errorLight
-    : syncState === 'syncing' ? colors.warningLight : colors.successLight;
+    : syncState === 'syncing' ? colors.accent : colors.successLight;
   const syncBorder = justSynced ? colors.success
     : syncState === 'error' || syncState === 'offline' ? colors.error
-    : syncState === 'syncing' ? colors.warning : colors.success;
+    : syncState === 'syncing' ? colors.accent : colors.success;
   const SyncIcon = justSynced ? CheckCircle2
     : syncState === 'error' ? AlertCircle
     : syncState === 'offline' ? WifiOff
@@ -502,7 +535,7 @@ export function HomeScreen({ navigation }: Props) {
               {unfiled.slice(0, 10).map((item) => (
                 <PressScale key={item.id} style={st.recentCard} onPress={() => navigation.navigate('ObjectDetail', { objectId: item.id })} accessibilityLabel={item.title || 'Untitled'}>
                   {item.file_path ? (
-                    <Thumb uri={item.file_path} style={{ width: '100%', height: '100%' } as ImageStyle} iconSize={22} fallbackColor={colors.textTertiary} />
+                    <Thumb uri={item.thumbnail_uri ?? item.file_path} style={{ width: '100%', height: '100%' } as ImageStyle} iconSize={22} fallbackColor={colors.textTertiary} />
                   ) : (
                     <View style={[StyleSheet.absoluteFill, st.thumbEmpty]}><CameraIcon size={22} color={colors.textTertiary} /></View>
                   )}
@@ -566,7 +599,7 @@ export function HomeScreen({ navigation }: Props) {
           <SectionLabel text="Tools" />
           <View style={st.toolGrid}>
             {TOOLS.map((tool, i) => (
-              <PressScale key={tool.label} style={[st.toolCell, { width: TOOL_W }]} onPress={() => navigation.navigate(tool.nav)} accessibilityLabel={tool.label}>
+              <PressScale key={tool.label} style={[st.toolCell, { width: TOOL_W }]} onPress={() => handleToolPress(tool)} accessibilityLabel={tool.label}>
                 <View style={[st.toolCellIcon, { backgroundColor: colors.surfaceContainer }]}>
                   <ToolSvgIcon index={i} color={TOOL_COLOR} />
                 </View>

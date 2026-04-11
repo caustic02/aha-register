@@ -45,6 +45,7 @@ import { ScaleReferenceScreen } from '../screens/ScaleReferenceScreen';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
 import type { RegisterViewType } from '../db/types';
+import type { ArchivalData, ImageTierData } from '../utils/image-processing';
 import { updateReviewStatus } from '../services/objectService';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useSettings } from '../hooks/useSettings';
@@ -69,6 +70,8 @@ export type RootStackParamList = {
     mimeType: string;
     metadata: CaptureMetadata;
     sha256Hash: string;
+    archival?: ArchivalData;
+    tiers?: ImageTierData;
   };
   AIProcessing: {
     imageUri: string;
