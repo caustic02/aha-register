@@ -32,8 +32,8 @@ function makeStyles(c: ColorPalette) {
       alignItems: 'center',
     },
     chipSelected: {
-      backgroundColor: c.primaryLight,
-      borderColor: c.primary,
+      backgroundColor: c.accentLight,
+      borderColor: c.accent,
     },
     chipUnselected: {
       backgroundColor: c.surface,
@@ -46,7 +46,7 @@ function makeStyles(c: ColorPalette) {
       ...typography.bodySmall,
     },
     chipTextSelected: {
-      color: c.primary,
+      color: c.accent,
       fontWeight: '600',
     },
     chipTextUnselected: {

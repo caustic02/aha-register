@@ -162,7 +162,7 @@ export function DevShowcase() {
           onPress={() => {}}
         />
         <IconButton
-          icon={<Settings size={24} color={colors.primary} />}
+          icon={<Settings size={24} color={colors.accent} />}
           accessibilityLabel="Settings"
           variant="tinted"
           onPress={() => {}}
@@ -181,7 +181,7 @@ export function DevShowcase() {
       <Text style={styles.sectionLabel}>EmptyState</Text>
       <View style={styles.emptyStateContainer}>
         <EmptyState
-          icon={<PackageOpen size={32} color={colors.primary} />}
+          icon={<PackageOpen size={32} color={colors.accent} />}
           title="No objects yet"
           message="Capture your first object to start building your collection."
           actionLabel="Start capture"

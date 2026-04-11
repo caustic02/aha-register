@@ -70,7 +70,7 @@ export function ExportModal({ visible, onClose, data }: ExportModalProps) {
   };
 
   const iconSize = 20;
-  const iconColor = colors.primary;
+  const iconColor = colors.accent;
 
   return (
     <Modal
@@ -99,7 +99,7 @@ export function ExportModal({ visible, onClose, data }: ExportModalProps) {
             onPress={() => handleExport('pdf')}
             rightElement={
               loading === 'pdf' ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.accent} />
               ) : (
                 <ExportIcon size={iconSize} color={iconColor} />
               )
@@ -115,7 +115,7 @@ export function ExportModal({ visible, onClose, data }: ExportModalProps) {
             onPress={() => handleExport('json')}
             rightElement={
               loading === 'json' ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.accent} />
               ) : (
                 <ExportIcon size={iconSize} color={iconColor} />
               )
@@ -131,7 +131,7 @@ export function ExportModal({ visible, onClose, data }: ExportModalProps) {
             onPress={() => handleExport('csv')}
             rightElement={
               loading === 'csv' ? (
-                <ActivityIndicator size="small" color={colors.primary} />
+                <ActivityIndicator size="small" color={colors.accent} />
               ) : (
                 <ExportIcon size={iconSize} color={iconColor} />
               )

@@ -300,7 +300,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
             selectMode ? (
               <View style={styles.checkboxWrap}>
                 {isSelected ? (
-                  <CheckboxFilledIcon size={22} color={colors.primary} />
+                  <CheckboxFilledIcon size={22} color={colors.accent} />
                 ) : (
                   <CheckboxBlankIcon size={22} color={colors.textTertiary} />
                 )}
@@ -361,7 +361,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
           {selectMode && (
             <View style={styles.gridCheckbox}>
               {isSelected ? (
-                <CheckboxFilledIcon size={20} color={colors.primary} />
+                <CheckboxFilledIcon size={20} color={colors.accent} />
               ) : (
                 <CheckboxBlankIcon size={20} color={colors.white} />
               )}
@@ -400,7 +400,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
             {selectedIds.size} {t('collection.selected')}
           </Text>
           <IconButton
-            icon={<ExportIcon size={22} color={colors.primary} />}
+            icon={<ExportIcon size={22} color={colors.accent} />}
             onPress={() => {
               const ids = Array.from(selectedIds);
               setExportSource({
@@ -510,7 +510,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
               <Text style={styles.activeChipText}>
                 {t(`object_types.${type}`)}
               </Text>
-              <CloseIcon size={12} color={colors.primary} />
+              <CloseIcon size={12} color={colors.accent} />
             </Pressable>
           ))}
         </ScrollView>
@@ -654,11 +654,11 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.full,
-    backgroundColor: c.primaryContainer,
+    backgroundColor: c.accentLight,
   },
   activeChipText: {
     ...typography.bodySmall,
-    color: c.primary,
+    color: c.accent,
     fontWeight: '500',
   },
   // Empty state

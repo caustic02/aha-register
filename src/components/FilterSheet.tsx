@@ -226,14 +226,14 @@ function makeStyles(c: ColorPalette) {
       justifyContent: 'center',
     },
     chipActive: {
-      backgroundColor: c.primaryContainer,
+      backgroundColor: c.accentLight,
     },
     chipText: {
       ...typography.bodySmall,
       color: c.secondary,
     },
     chipTextActive: {
-      color: c.primary,
+      color: c.accent,
       fontWeight: '600',
     },
     actions: {

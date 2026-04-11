@@ -531,7 +531,7 @@ export function SettingsScreen() {
                     {t(`settings.institution_type.${type}`)}
                   </Text>
                   {institutionType === type && (
-                    <CheckIcon size={16} color={colors.primary} />
+                    <CheckIcon size={16} color={colors.accent} />
                   )}
                 </Pressable>
               ))}
@@ -562,7 +562,7 @@ export function SettingsScreen() {
               >
                 {SelectedIcon && (
                   <View style={styles.domainIcon}>
-                    <SelectedIcon size={22} color={colors.primary} />
+                    <SelectedIcon size={22} color={colors.accent} />
                   </View>
                 )}
                 <View style={styles.domainContent}>
@@ -604,7 +604,7 @@ export function SettingsScreen() {
                     ]}
                   >
                     <View style={styles.domainIcon}>
-                      <DomainIcon size={22} color={colors.primary} />
+                      <DomainIcon size={22} color={colors.accent} />
                     </View>
                     <View style={styles.domainContent}>
                       <Text
@@ -620,7 +620,7 @@ export function SettingsScreen() {
                       </Text>
                     </View>
                     {isSelected && (
-                      <CheckIcon size={18} color={colors.primary} />
+                      <CheckIcon size={18} color={colors.accent} />
                     )}
                   </Pressable>
                 );
@@ -690,7 +690,7 @@ export function SettingsScreen() {
                     {t(`object_types.${type}`)}
                   </Text>
                   {defaultObjectType === type && (
-                    <CheckIcon size={16} color={colors.primary} />
+                    <CheckIcon size={16} color={colors.accent} />
                   )}
                 </Pressable>
               ))}
@@ -731,7 +731,7 @@ export function SettingsScreen() {
                     </Text>
                   </View>
                   {defaultPrivacy === tier && (
-                    <CheckIcon size={16} color={colors.primary} />
+                    <CheckIcon size={16} color={colors.accent} />
                   )}
                 </Pressable>
               ))}
@@ -751,8 +751,8 @@ export function SettingsScreen() {
             <Switch
               value={aiAnalysisEnabled}
               onValueChange={setAIAnalysisEnabled}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={aiAnalysisEnabled ? colors.primary : colors.textTertiary}
+              trackColor={{ false: colors.border, true: colors.accentLight }}
+              thumbColor={aiAnalysisEnabled ? colors.accent : colors.textTertiary}
               accessibilityLabel={t('settings.aiAnalysis')}
               accessibilityRole="switch"
               accessibilityState={{ checked: aiAnalysisEnabled }}
@@ -774,8 +774,8 @@ export function SettingsScreen() {
             <Switch
               value={showConfidenceScores}
               onValueChange={setShowConfidenceScores}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={showConfidenceScores ? colors.primary : colors.textTertiary}
+              trackColor={{ false: colors.border, true: colors.accentLight }}
+              thumbColor={showConfidenceScores ? colors.accent : colors.textTertiary}
               accessibilityLabel={t('settings.confidenceScores')}
               accessibilityRole="switch"
               accessibilityState={{ checked: showConfidenceScores }}
@@ -795,8 +795,8 @@ export function SettingsScreen() {
             <Switch
               value={cameraGrid}
               onValueChange={handleGridToggle}
-              trackColor={{ false: colors.border, true: colors.primaryLight }}
-              thumbColor={cameraGrid ? colors.primary : colors.textTertiary}
+              trackColor={{ false: colors.border, true: colors.accentLight }}
+              thumbColor={cameraGrid ? colors.accent : colors.textTertiary}
               accessibilityLabel={t('settings.cameraGrid')}
               accessibilityRole="switch"
               accessibilityState={{ checked: cameraGrid }}
@@ -832,7 +832,7 @@ export function SettingsScreen() {
                     {t(`capture.flash_${mode}`)}
                   </Text>
                   {cameraFlashMode === mode && (
-                    <CheckIcon size={16} color={colors.primary} />
+                    <CheckIcon size={16} color={colors.accent} />
                   )}
                 </Pressable>
               ))}
@@ -945,7 +945,7 @@ function makeStyles(c: ColorPalette) {
       borderBottomColor: c.border,
     },
     pickerRowActive: {
-      backgroundColor: c.primarySurface,
+      backgroundColor: c.accentLight,
     },
     pickerText: {
       ...typography.bodySmall,
@@ -953,7 +953,7 @@ function makeStyles(c: ColorPalette) {
       flex: 1,
     },
     pickerTextActive: {
-      color: c.primary,
+      color: c.accent,
       fontWeight: '600',
     },
     pickerContent: {
@@ -997,12 +997,12 @@ function makeStyles(c: ColorPalette) {
       paddingVertical: spacing.sm,
       paddingHorizontal: spacing.sm,
       borderRadius: spacing.sm,
-      backgroundColor: c.primarySurface,
+      backgroundColor: c.accentLight,
       gap: spacing.md,
     },
     changeText: {
       ...typography.caption,
-      color: c.primary,
+      color: c.accent,
       fontWeight: '600',
     },
     domainList: {
@@ -1018,7 +1018,7 @@ function makeStyles(c: ColorPalette) {
       gap: spacing.md,
     },
     domainRowSelected: {
-      backgroundColor: c.primarySurface,
+      backgroundColor: c.accentLight,
     },
     domainIcon: {
       width: 32,
@@ -1034,7 +1034,7 @@ function makeStyles(c: ColorPalette) {
       color: c.text,
     },
     domainLabelSelected: {
-      color: c.primary,
+      color: c.accent,
     },
     domainDescription: {
       ...typography.caption,

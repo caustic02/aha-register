@@ -231,17 +231,17 @@ function makeSiStyles(c: ColorPalette) {
       borderColor: c.border,
     },
     dotActive: {
-      backgroundColor: c.primary,
-      borderColor: c.primary,
+      backgroundColor: c.accent,
+      borderColor: c.accent,
     },
     dotDone: {
-      backgroundColor: c.primary,
-      borderColor: c.primary,
+      backgroundColor: c.accent,
+      borderColor: c.accent,
     },
     dotText: { ...typography.caption, color: c.textTertiary, fontWeight: '600' },
     dotTextActive: { color: c.white },
     label: { ...typography.caption, color: c.textTertiary },
-    labelActive: { color: c.primary, fontWeight: '600' },
+    labelActive: { color: c.accent, fontWeight: '600' },
   });
 }
 
@@ -639,25 +639,25 @@ function FormatStep({
   const formats: { key: ExportFormat; icon: React.ReactNode; title: string; desc: string }[] = [
     {
       key: 'pdf_datasheet',
-      icon: <ExportIcon size={22} color={colors.primary} />,
+      icon: <ExportIcon size={22} color={colors.accent} />,
       title: t('export.format_pdf_datasheet'),
       desc: t('export.pdfDescription'),
     },
     {
       key: 'pdf_condition',
-      icon: <ExportIcon size={22} color={colors.primary} />,
+      icon: <ExportIcon size={22} color={colors.accent} />,
       title: t('export.format_pdf_condition'),
       desc: t('export.csvDescription'),
     },
     {
       key: 'json',
-      icon: <DocumentScanIcon size={22} color={colors.primary} />,
+      icon: <DocumentScanIcon size={22} color={colors.accent} />,
       title: t('export.format_json'),
       desc: t('export.jsonDescription'),
     },
     {
       key: 'csv',
-      icon: <ListViewIcon size={22} color={colors.primary} />,
+      icon: <ListViewIcon size={22} color={colors.accent} />,
       title: t('export.format_csv'),
       desc: t('export.csvDescription'),
     },
@@ -686,7 +686,7 @@ function FormatStep({
               accessibilityRole="button"
               accessibilityLabel={t(p.nameKey)}
             >
-              <Icon size={20} color={colors.primary} />
+              <Icon size={20} color={colors.accent} />
               <Text style={styles.presetName} numberOfLines={1}>
                 {t(p.nameKey)}
               </Text>
@@ -902,7 +902,7 @@ function ImagesStep({
           <Switch
             value={useIsolated}
             onValueChange={(v) => onSetFlag('useIsolated', v)}
-            trackColor={{ false: colors.border, true: colors.primary }}
+            trackColor={{ false: colors.border, true: colors.accent }}
             thumbColor={colors.white}
           />
         </View>
@@ -916,7 +916,7 @@ function ImagesStep({
         <Switch
           value={showDimensions}
           onValueChange={(v) => onSetFlag('showDimensions', v)}
-          trackColor={{ false: colors.border, true: colors.primary }}
+          trackColor={{ false: colors.border, true: colors.accent }}
           thumbColor={colors.white}
         />
       </View>
@@ -1002,7 +1002,7 @@ function ContentStep({
                     if (!allOn && !sections[cat.id]) onToggleSection(cat.id);
                   }
                 }}
-                trackColor={{ false: colors.border, true: colors.primary }}
+                trackColor={{ false: colors.border, true: colors.accent }}
                 thumbColor={colors.white}
               />
             </View>
@@ -1050,7 +1050,7 @@ function ContentStep({
         <Switch
           value={showAiBadges}
           onValueChange={(v) => onSetFlag('showAiBadges', v)}
-          trackColor={{ false: colors.border, true: colors.primary }}
+          trackColor={{ false: colors.border, true: colors.accent }}
           thumbColor={colors.white}
         />
       </View>
@@ -1064,7 +1064,7 @@ function ContentStep({
         <Switch
           value={includeBranding}
           onValueChange={(v) => onSetFlag('includeBranding', v)}
-          trackColor={{ false: colors.border, true: colors.primary }}
+          trackColor={{ false: colors.border, true: colors.accent }}
           thumbColor={colors.white}
         />
       </View>
@@ -1133,8 +1133,8 @@ function makeCsStyles(c: ColorPalette) { return StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxOn: {
-    backgroundColor: c.primary,
-    borderColor: c.primary,
+    backgroundColor: c.accent,
+    borderColor: c.accent,
   },
   fieldLabel: {
     ...typography.bodySmall,
@@ -1273,7 +1273,7 @@ function ExportingStep({
         <>
           <ActivityIndicator
             size="large"
-            color={colors.primary}
+            color={colors.accent}
             style={styles.spinner}
           />
           <Text style={styles.exportingTitle}>
@@ -1504,7 +1504,7 @@ function LegacyExportFlow({
             </Text>
             <View style={styles.cardList}>
               <LegacyFormatCard
-                icon={<ExportIcon size={22} color={colors.primary} />}
+                icon={<ExportIcon size={22} color={colors.accent} />}
                 title={t('export.pdfOption')}
                 description={t('export.pdfDescription')}
                 onPress={() => handleFormatSelect('pdf')}
@@ -1801,7 +1801,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
   presetBannerText: {
     fontSize: 12,
     fontWeight: '600',
-    color: c.primary,
+    color: c.accent,
     textAlign: 'center',
   },
   cardList: {
@@ -1821,8 +1821,8 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     minHeight: touch.minTarget,
   },
   formatCardPressed: {
-    backgroundColor: c.primarySurface,
-    borderColor: c.primary,
+    backgroundColor: c.accentLight,
+    borderColor: c.accent,
   },
   formatIconWrap: {
     width: 36,
@@ -1852,8 +1852,8 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     minHeight: touch.minTarget,
   },
   templateCardActive: {
-    borderColor: c.primary,
-    backgroundColor: c.primarySurface,
+    borderColor: c.accent,
+    backgroundColor: c.accentLight,
   },
   templateHeader: {
     flexDirection: 'row',
@@ -1866,7 +1866,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     color: c.text,
   },
   templateTitleActive: {
-    color: c.primary,
+    color: c.accent,
   },
   templateDesc: {
     ...typography.bodySmall,
@@ -1876,7 +1876,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1895,7 +1895,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     overflow: 'hidden',
   },
   imageCellSelected: {
-    borderColor: c.primary,
+    borderColor: c.accent,
     borderWidth: 2,
   },
   imageThumb: {
@@ -1910,7 +1910,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1939,7 +1939,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
   },
   completenessBarFill: {
     height: '100%' as unknown as number,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     borderRadius: 3,
   },
 
@@ -2014,7 +2014,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
   },
   prevSectionLabel: {
     ...typography.caption,
@@ -2165,7 +2165,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     flex: 1,
   },
   formatBadge: {
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radii.sm,

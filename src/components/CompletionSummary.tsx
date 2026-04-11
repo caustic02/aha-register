@@ -397,7 +397,7 @@ function makeStyles(c: ColorPalette) {
       gap: spacing.md,
     },
     savePrimaryBtn: {
-      backgroundColor: c.primary,
+      backgroundColor: c.accent,
       borderRadius: radii.md,
       paddingVertical: spacing.lg,
       alignItems: 'center',
@@ -412,7 +412,7 @@ function makeStyles(c: ColorPalette) {
     continueBtn: {
       flex: 1,
       borderWidth: 1,
-      borderColor: c.primary,
+      borderColor: c.accent,
       borderRadius: radii.md,
       paddingVertical: spacing.lg,
       alignItems: 'center',
@@ -420,7 +420,7 @@ function makeStyles(c: ColorPalette) {
       justifyContent: 'center',
     },
     continueBtnText: {
-      color: c.primary,
+      color: c.accent,
       fontSize: typography.size.base,
       fontWeight: typography.weight.semibold,
     },

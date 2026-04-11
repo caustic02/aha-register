@@ -223,7 +223,7 @@ export function VocabularyPicker({
               >
                 <CloseIcon
                   size={CHIP_CLOSE_ICON_SIZE}
-                  color={colors.primary}
+                  color={colors.accent}
                   strokeWidth={2}
                 />
               </TouchableOpacity>
@@ -385,7 +385,7 @@ function makeStyles(c: ColorPalette) {
     chip: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: c.primaryLight,
+      backgroundColor: c.accentLight,
       borderRadius: radii.sm,
       paddingHorizontal: spacing.sm,
       paddingVertical: spacing.xs,
@@ -394,7 +394,7 @@ function makeStyles(c: ColorPalette) {
     },
     chipText: {
       ...typography.bodySmall,
-      color: c.primary,
+      color: c.accent,
       flexShrink: 1,
     },
 
@@ -438,7 +438,7 @@ function makeStyles(c: ColorPalette) {
       gap: spacing.sm,
     },
     dropdownItemSelected: {
-      backgroundColor: c.primaryLight,
+      backgroundColor: c.accentLight,
     },
     dropdownItemContent: {
       flex: 1,
@@ -477,7 +477,7 @@ function makeStyles(c: ColorPalette) {
     },
     customTermLabel: {
       ...typography.bodySmall,
-      color: c.primary,
+      color: c.accent,
       fontWeight: '500',
     },
 
@@ -511,15 +511,15 @@ function makeStyles(c: ColorPalette) {
       justifyContent: 'center',
     },
     suggestionChipSelected: {
-      backgroundColor: c.primaryLight,
-      borderColor: c.primary,
+      backgroundColor: c.accentLight,
+      borderColor: c.accent,
     },
     suggestionChipText: {
       ...typography.bodySmall,
       color: c.textSecondary,
     },
     suggestionChipTextSelected: {
-      color: c.primary,
+      color: c.accent,
     },
   });
 }

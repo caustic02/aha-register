@@ -1483,7 +1483,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             {media3d.map((m) => (
               <View key={m.id} style={styles.model3dCard}>
                 <View style={styles.model3dIconBox}>
-                  <Model3dIcon size={28} color={colors.primary} />
+                  <Model3dIcon size={28} color={colors.accent} />
                 </View>
                 <View style={styles.model3dInfo}>
                   <Text style={styles.model3dName} numberOfLines={1}>
@@ -2759,7 +2759,7 @@ function makeStyles(c: ColorPalette) {
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: radii.md,
-      backgroundColor: c.primary,
+      backgroundColor: c.accent,
       minHeight: touch.minTarget,
       justifyContent: 'center',
     },
@@ -2792,7 +2792,7 @@ function makeStyles(c: ColorPalette) {
       width: 8,
       height: 8,
       borderRadius: radii.full,
-      backgroundColor: c.primary,
+      backgroundColor: c.accent,
     },
     // ── Multi-view gallery (Registerbogen) ──────────────────────────────────────
     viewGallerySection: {

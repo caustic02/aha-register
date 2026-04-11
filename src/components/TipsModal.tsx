@@ -105,7 +105,7 @@ function makeStyles(c: ColorPalette) {
       flex: 1,
     },
     dismissBtn: {
-      backgroundColor: c.primary,
+      backgroundColor: c.accent,
       borderRadius: radii.md,
       paddingVertical: spacing.md,
       alignItems: 'center',

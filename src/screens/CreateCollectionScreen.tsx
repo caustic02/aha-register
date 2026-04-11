@@ -182,7 +182,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   saveText: {
     ...typography.bodyMedium,
-    color: c.primary,
+    color: c.accent,
   },
   saveTextDisabled: {
     opacity: 0.4,

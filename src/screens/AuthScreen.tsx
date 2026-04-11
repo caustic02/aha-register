@@ -284,7 +284,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
 
   /* Primary skip/start button */
   startBtn: {
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     borderRadius: radii.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
@@ -362,7 +362,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     textAlign: 'center',
   },
   submitBtn: {
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     borderRadius: radii.md,
     paddingVertical: spacing.lg,
     alignItems: 'center',
@@ -381,7 +381,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   toggleText: {
-    color: c.primary,
+    color: c.accent,
     fontSize: typography.size.base,
     fontWeight: typography.weight.medium,
   },
