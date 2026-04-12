@@ -74,12 +74,18 @@ onboardingComplete=true,  authenticated=true  → NavigationContainer (MainTabs)
 ```ts
 type HomeStackParamList = {
   Home: undefined;
-  ObjectList: undefined;
-  ObjectDetail: { objectId: string };
+  ObjectList: { filterReviewStatus?: string; mode?: 'ai-analysis' | 'qr-assign' } | undefined;
+  ObjectDetail: { objectId: string; autoAction?: 'ai-analysis' };
 };
 ```
 
 **Navigation flow:** `Home` → `ObjectList` (View all link in Recent Captures header) → `ObjectDetail`.
+
+**Tool card mode routing (added 2026-04-12):**
+- AI Analysis card → `ObjectList({ mode: 'ai-analysis' })` → tap object → `ObjectDetail({ autoAction: 'ai-analysis' })` → auto-triggers `handleStartReview`
+- QR Codes card → `ObjectList({ mode: 'qr-assign' })` → tap object → `QRCode({ objectId })`
+- Export card → opens `ExportStepperModal` in browse mode (4-step: objects → fields → format → confirm)
+- Scan Doc card → `CaptureCamera({ mode: 'document-scan' })` → auto-triggers `handleDocumentScan`
 
 > Note: `ObjectDetailScreen` is registered with `React.ComponentType<any>` to avoid TypeScript conflict with its native `ObjectStackParamList` type. The runtime params are identical.
 

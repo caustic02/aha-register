@@ -95,13 +95,13 @@ const TOOL_W = (SCREEN_W - PX * 2 - ITEM_GAP * 3) / 4; // exact quarter-width fo
 
 const TOOLS = [
   { label: 'Floor Map', nav: 'FloorMap' as const },
-  { label: 'QR Codes', nav: 'ObjectList' as const },
+  { label: 'QR Codes', nav: 'ObjectList' as const, action: 'qr-assign' as const },
   { label: 'Checklists', nav: 'ChecklistOverview' as const },
-  { label: 'Export', nav: 'ObjectList' as const },
+  { label: 'Export', nav: null, action: 'export' as const },
   { label: '3D Scan', nav: 'Import3D' as const },
   { label: 'Browse', nav: 'ObjectList' as const },
-  { label: 'AI Analysis', nav: 'CaptureCamera' as const },
-  { label: 'Scan Doc', nav: 'CaptureCamera' as const },
+  { label: 'AI Analysis', nav: 'ObjectList' as const, action: 'ai-analysis' as const },
+  { label: 'Scan Doc', nav: 'CaptureCamera' as const, action: 'document-scan' as const },
   { label: 'Scale Ref', nav: 'ScaleReference' as const },
 ] as const;
 
@@ -360,12 +360,28 @@ export function HomeScreen({ navigation }: Props) {
     cleanupOrphanedTierDirs(db).catch(() => {});
   }, [db]);
 
-  // Dispatcher for the tool grid — every tile simply navigates to its
-  // target screen. Kept as a wrapper so we have a single hook if we
-  // later need per-tile pre-navigation logic.
+  // Dispatcher for the tool grid. Most tiles navigate directly; some
+  // use an action to pass mode params or open modals.
   const handleToolPress = useCallback(
     (tool: (typeof TOOLS)[number]) => {
-      navigation.navigate(tool.nav);
+      if ('action' in tool) {
+        switch (tool.action) {
+          case 'export':
+            setExportSource({ mode: 'browse' });
+            setShowExport(true);
+            return;
+          case 'ai-analysis':
+            navigation.navigate('ObjectList', { mode: 'ai-analysis' });
+            return;
+          case 'qr-assign':
+            navigation.navigate('ObjectList', { mode: 'qr-assign' });
+            return;
+          case 'document-scan':
+            navigation.navigate('CaptureCamera', { mode: 'document-scan' });
+            return;
+        }
+      }
+      if (tool.nav) navigation.navigate(tool.nav);
     },
     [navigation],
   );

@@ -407,11 +407,12 @@ function ConditionBadge({ status }: { status: string | null | undefined }) {
   const sec = useMemo(() => makeSec(colors), [colors]);
   if (!status) return null;
   const lower = status.toLowerCase();
-  const bg = lower === 'good' ? colors.success : lower === 'fair' ? colors.warning : lower === 'poor' ? colors.error : colors.border;
+  const bg = lower === 'good' ? colors.successLight : lower === 'fair' ? colors.warningLight : lower === 'poor' ? colors.errorLight : colors.surface;
+  const fg = lower === 'good' ? colors.success : lower === 'fair' ? colors.warning : lower === 'poor' ? colors.error : colors.text;
 
   return (
     <View style={[sec.conditionPill, { backgroundColor: bg }]}>
-      <Text style={sec.conditionPillText}>{status}</Text>
+      <Text style={[sec.conditionPillText, { color: fg }]}>{status}</Text>
     </View>
   );
 }
@@ -419,7 +420,7 @@ function ConditionBadge({ status }: { status: string | null | undefined }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ObjectDetailScreen({ route, navigation }: Props) {
-  const { objectId } = route.params;
+  const { objectId, autoAction } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
   const { collectionDomain } = useSettings();
@@ -663,6 +664,15 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       await updateReviewStatus(db, objectId, 'needs_review').catch(() => {});
     }
   }, [object, media, db, objectId, navigation]);
+
+  // Auto-trigger AI analysis when navigated with autoAction param
+  const autoActionFiredRef = useRef(false);
+  useEffect(() => {
+    if (autoAction === 'ai-analysis' && object && media.length > 0 && !autoActionFiredRef.current) {
+      autoActionFiredRef.current = true;
+      handleStartReview();
+    }
+  }, [autoAction, object, media, handleStartReview]);
 
   // ── Isolation check ─────────────────────────────────────────────────────────
 

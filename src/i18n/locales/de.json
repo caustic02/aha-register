@@ -622,6 +622,32 @@
     "exportComplete": "Export abgeschlossen",
     "retry": "Erneut versuchen"
   },
+  "exportBrowse": {
+    "title": "Exportieren",
+    "stepObjects": "Objekte",
+    "stepFields": "Felder",
+    "stepFormat": "Format",
+    "stepConfirm": "Best\u00e4tigen",
+    "searchPlaceholder": "Objekte suchen\u2026",
+    "selectAll": "Alle ausw\u00e4hlen",
+    "deselectAll": "Alle abw\u00e4hlen",
+    "fieldsTitle": "Datenfelder",
+    "presetFull": "Vollst\u00e4ndige Daten",
+    "presetFullDesc": "Alle verf\u00fcgbaren Felder inkl. KI-Analyse, Provenienz und Erfassungsdaten",
+    "presetSummary": "Zusammenfassung",
+    "presetSummaryDesc": "Kernfelder: Titel, Typ, Ma\u00dfe, Datum, Zustand",
+    "presetCustom": "Benutzerdefiniert",
+    "presetCustomDesc": "Felder manuell ausw\u00e4hlen",
+    "presetLabel_full": "Vollst\u00e4ndige Daten",
+    "presetLabel_summary": "Zusammenfassung",
+    "presetLabel_custom": "Benutzerdefiniert",
+    "formatTitle": "Exportformat",
+    "confirmTitle": "Pr\u00fcfen & Exportieren",
+    "summaryObjects": "Objekte",
+    "summaryFields": "Felder",
+    "exportNow": "Jetzt exportieren",
+    "exportTitle": "Ausgew\u00e4hlte Objekte"
+  },
   "settings": {
     "title": "Einstellungen",
     "institution": "Institution",
@@ -883,7 +909,9 @@
     "emptySearch": "Keine Objekte gefunden",
     "emptyMessage": "Versuche andere Suchbegriffe oder einen anderen Typ-Filter.",
     "clearFilters": "Filter zur\u00fccksetzen",
-    "viewAll": "Alle anzeigen"
+    "viewAll": "Alle anzeigen",
+    "modeAiAnalysis": "KI-Analyse",
+    "modeQrAssign": "QR-Codes"
   },
   "collection": {
     "filterTitle": "Filter",

@@ -57,15 +57,15 @@ export type RootStackParamList = {
   // Dashboard
   Home: undefined;
   // Objects
-  ObjectList: { filterReviewStatus?: string } | undefined;
-  ObjectDetail: { objectId: string };
+  ObjectList: { filterReviewStatus?: string; mode?: 'ai-analysis' | 'qr-assign' } | undefined;
+  ObjectDetail: { objectId: string; autoAction?: 'ai-analysis' };
   IsolationCompare: { objectId: string; mediaId: string };
   DocumentReview: { mediaId: string };
   VideoRecord: { objectId: string };
   ViewChecklist: { objectId: string };
   // Capture
   QuickID: undefined;
-  CaptureCamera: { viewType?: RegisterViewType; objectId?: string } | undefined;
+  CaptureCamera: { viewType?: RegisterViewType; objectId?: string; mode?: 'document-scan' } | undefined;
   CaptureReview: {
     imageUri: string;
     mimeType: string;

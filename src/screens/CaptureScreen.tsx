@@ -125,6 +125,7 @@ export function CaptureScreen() {
   // Multi-view capture params (from ViewChecklistScreen or QuickIDScreen)
   const routeViewType = route.params?.viewType as RegisterViewType | undefined;
   const routeObjectId = route.params?.objectId as string | undefined;
+  const routeMode = route.params?.mode as 'document-scan' | undefined;
 
   // Object title for display pill (when coming from QuickID or ViewChecklist)
   const [objectTitle, setObjectTitle] = useState<string | null>(null);
@@ -1002,6 +1003,15 @@ export function CaptureScreen() {
       Alert.alert(t('common.error'));
     }
   }, [db, t, permission, requestPermission]);
+
+  // Auto-trigger document scan when launched with mode='document-scan'
+  const docScanAutoRef = useRef(false);
+  useEffect(() => {
+    if (routeMode === 'document-scan' && permission?.granted && !docScanAutoRef.current) {
+      docScanAutoRef.current = true;
+      handleDocumentScan();
+    }
+  }, [routeMode, permission, handleDocumentScan]);
 
   // (Video mode handlers moved to VideoRecordScreen)
 

@@ -622,6 +622,32 @@
     "exportComplete": "Export Complete",
     "retry": "Retry"
   },
+  "exportBrowse": {
+    "title": "Export",
+    "stepObjects": "Objects",
+    "stepFields": "Fields",
+    "stepFormat": "Format",
+    "stepConfirm": "Confirm",
+    "searchPlaceholder": "Search objects\u2026",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "fieldsTitle": "Data Fields",
+    "presetFull": "Full Data",
+    "presetFullDesc": "All available fields including AI analysis, provenance, and capture data",
+    "presetSummary": "Summary",
+    "presetSummaryDesc": "Core identification fields: title, type, dimensions, date, condition",
+    "presetCustom": "Custom",
+    "presetCustomDesc": "Choose which fields to include manually",
+    "presetLabel_full": "Full Data",
+    "presetLabel_summary": "Summary",
+    "presetLabel_custom": "Custom",
+    "formatTitle": "Export Format",
+    "confirmTitle": "Review & Export",
+    "summaryObjects": "Objects",
+    "summaryFields": "Fields",
+    "exportNow": "Export Now",
+    "exportTitle": "Selected Objects"
+  },
   "settings": {
     "title": "Settings",
     "institution": "Institution",
@@ -883,7 +909,9 @@
     "emptySearch": "No objects match your search",
     "emptyMessage": "Try adjusting your search terms or type filter.",
     "clearFilters": "Clear Filters",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "modeAiAnalysis": "AI Analysis",
+    "modeQrAssign": "QR Codes"
   },
   "collection": {
     "filterTitle": "Filter",

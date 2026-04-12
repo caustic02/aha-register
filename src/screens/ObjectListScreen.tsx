@@ -13,8 +13,8 @@ import { FlashList } from '@shopify/flash-list';
 import BottomSheet from '@gorhom/bottom-sheet';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import type { NativeStackScreenProps, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import {
@@ -47,6 +47,7 @@ import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { formatRelativeDate } from '../utils/format-date';
 import type { HomeStackParamList } from '../navigation/HomeStack';
+import type { RootStackParamList } from '../navigation/RootStack';
 import type { ObjectType } from '../db/types';
 import { useSyncStatuses } from '../hooks/useSyncStatuses';
 import { SyncBadge } from '../components/SyncBadge';
@@ -95,8 +96,12 @@ export function ObjectListScreen({ navigation, route }: Props) {
   const { t } = useAppTranslation();
   const filterSheetRef = useRef<BottomSheet>(null);
 
+  // Root-level navigation for cross-stack routes (e.g. QRCode)
+  const rootNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   // Route-param filter for review status (from HomeScreen inbox → "Review all")
   const reviewStatusFilter = route.params?.filterReviewStatus ?? null;
+  const listMode = route.params?.mode ?? null;
 
   const [objects, setObjects] = useState<ObjectRow[]>([]);
   const [availableTypes, setAvailableTypes] = useState<ObjectType[]>([]);
@@ -315,17 +320,21 @@ export function ObjectListScreen({ navigation, route }: Props) {
           onPress={() => {
             if (selectMode) {
               toggleSelection(item.id);
+            } else if (listMode === 'ai-analysis') {
+              navigation.navigate('ObjectDetail', { objectId: item.id, autoAction: 'ai-analysis' });
+            } else if (listMode === 'qr-assign') {
+              rootNav.navigate('QRCode', { objectId: item.id });
             } else {
               navigation.navigate('ObjectDetail', { objectId: item.id });
             }
           }}
           onLongPress={() => {
-            if (!selectMode) enterSelectMode(item.id);
+            if (!selectMode && !listMode) enterSelectMode(item.id);
           }}
         />
       );
     },
-    [navigation, t, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode, colors, styles],
+    [navigation, t, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode, colors, styles, listMode, rootNav],
   );
 
   const renderGridItem = useCallback(
@@ -337,12 +346,16 @@ export function ObjectListScreen({ navigation, route }: Props) {
           onPress={() => {
             if (selectMode) {
               toggleSelection(item.id);
+            } else if (listMode === 'ai-analysis') {
+              navigation.navigate('ObjectDetail', { objectId: item.id, autoAction: 'ai-analysis' });
+            } else if (listMode === 'qr-assign') {
+              rootNav.navigate('QRCode', { objectId: item.id });
             } else {
               navigation.navigate('ObjectDetail', { objectId: item.id });
             }
           }}
           onLongPress={() => {
-            if (!selectMode) enterSelectMode(item.id);
+            if (!selectMode && !listMode) enterSelectMode(item.id);
           }}
           accessibilityRole="button"
           accessibilityLabel={item.title}
@@ -381,7 +394,7 @@ export function ObjectListScreen({ navigation, route }: Props) {
         </Pressable>
       );
     },
-    [navigation, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode, colors, styles],
+    [navigation, selectMode, selectedIds, syncStatuses, toggleSelection, enterSelectMode, colors, styles, listMode, rootNav],
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -422,7 +435,10 @@ export function ObjectListScreen({ navigation, route }: Props) {
             accessibilityLabel={t('common.back')}
           />
           <Text style={styles.headerTitle} accessibilityRole="header">
-            {reviewStatusFilter ? t('inbox.title') : t('objectList.title')}
+            {listMode === 'ai-analysis' ? t('objectList.modeAiAnalysis')
+              : listMode === 'qr-assign' ? t('objectList.modeQrAssign')
+              : reviewStatusFilter ? t('inbox.title')
+              : t('objectList.title')}
           </Text>
           <Badge label={String(objects.length)} variant="neutral" size="sm" />
           <IconButton

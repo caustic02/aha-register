@@ -10,8 +10,8 @@ import { ViewChecklistScreen } from '../screens/ViewChecklistScreen';
 
 export type HomeStackParamList = {
   Home: undefined;
-  ObjectList: { filterReviewStatus?: string } | undefined;
-  ObjectDetail: { objectId: string };
+  ObjectList: { filterReviewStatus?: string; mode?: 'ai-analysis' | 'qr-assign' } | undefined;
+  ObjectDetail: { objectId: string; autoAction?: 'ai-analysis' };
   IsolationCompare: { objectId: string; mediaId: string };
   DocumentReview: { mediaId: string };
   VideoRecord: { objectId: string };
