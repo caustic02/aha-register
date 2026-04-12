@@ -47,17 +47,17 @@ export function OnboardingScreen({ onFinish, onSkip }: Props) {
 
   const slides = [
     {
-      icon: <CaptureTabIcon size={64} color={colors.primary} />,
+      icon: <CaptureTabIcon size={64} color={colors.accent} />,
       title: t('onboarding.slide1Title'),
       body: t('onboarding.slide1Body'),
     },
     {
-      icon: <ViewIcon size={64} color={colors.primary} />,
+      icon: <ViewIcon size={64} color={colors.accent} />,
       title: t('onboarding.slide2Title'),
       body: t('onboarding.slide2Body'),
     },
     {
-      icon: <OfflineIcon size={64} color={colors.primary} />,
+      icon: <OfflineIcon size={64} color={colors.accent} />,
       title: t('onboarding.slide3Title'),
       body: t('onboarding.slide3Body'),
     },
@@ -228,7 +228,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   dotActive: {
     width: 24,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
   },
   // Skip
   skipWrapper: {

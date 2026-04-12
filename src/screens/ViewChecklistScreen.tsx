@@ -103,8 +103,9 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
           id: string;
           view_type: string;
           file_path: string;
+          thumbnail_uri: string | null;
         }>(
-          `SELECT id, view_type, file_path FROM media
+          `SELECT id, view_type, file_path, thumbnail_uri FROM media
            WHERE object_id = ?
              AND view_type IS NOT NULL
              AND (media_type IS NULL OR media_type = 'original')
@@ -145,7 +146,7 @@ export function ViewChecklistScreen({ route, navigation }: Props) {
             verified.push({
               viewType: r.view_type as RegisterViewType,
               mediaId: r.id,
-              filePath: r.file_path,
+              filePath: r.thumbnail_uri ?? r.file_path,
             });
             seen.add(r.view_type);
           } else {

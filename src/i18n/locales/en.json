@@ -622,6 +622,32 @@
     "exportComplete": "Export Complete",
     "retry": "Retry"
   },
+  "exportBrowse": {
+    "title": "Export",
+    "stepObjects": "Objects",
+    "stepFields": "Fields",
+    "stepFormat": "Format",
+    "stepConfirm": "Confirm",
+    "searchPlaceholder": "Search objects\u2026",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "fieldsTitle": "Data Fields",
+    "presetFull": "Full Data",
+    "presetFullDesc": "All available fields including AI analysis, provenance, and capture data",
+    "presetSummary": "Summary",
+    "presetSummaryDesc": "Core identification fields: title, type, dimensions, date, condition",
+    "presetCustom": "Custom",
+    "presetCustomDesc": "Choose which fields to include manually",
+    "presetLabel_full": "Full Data",
+    "presetLabel_summary": "Summary",
+    "presetLabel_custom": "Custom",
+    "formatTitle": "Export Format",
+    "confirmTitle": "Review & Export",
+    "summaryObjects": "Objects",
+    "summaryFields": "Fields",
+    "exportNow": "Export Now",
+    "exportTitle": "Selected Objects"
+  },
   "settings": {
     "title": "Settings",
     "institution": "Institution",
@@ -644,6 +670,11 @@
     "about": "About",
     "version": "Version",
     "build": "Build",
+    "updateId": "Update",
+    "updatedAt": "Updated",
+    "checkUpdate": "Check for Update",
+    "noUpdate": "You're on the latest version",
+    "updating": "Updating...",
     "powered_by": "Powered by TEDE Holdings LLC",
     "account": "Account",
     "signed_in_as": "Signed in as",
@@ -878,7 +909,9 @@
     "emptySearch": "No objects match your search",
     "emptyMessage": "Try adjusting your search terms or type filter.",
     "clearFilters": "Clear Filters",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "modeAiAnalysis": "AI Analysis",
+    "modeQrAssign": "QR Codes"
   },
   "collection": {
     "filterTitle": "Filter",
@@ -934,6 +967,24 @@
     "share": "Share",
     "savedToGallery": "Saved to gallery",
     "permissionNeeded": "Photo library permission is required to save images"
+  },
+  "model3d": {
+    "import": "Import 3D Model",
+    "import_short": "3D",
+    "view": "View 3D",
+    "label": "3D Model",
+    "attached": "3D model attached",
+    "unsupported_format": "Unsupported file format. Use GLB, GLTF, USDZ, OBJ, FBX, or PLY.",
+    "import_failed": "Failed to import 3D model",
+    "view_failed": "Could not open 3D viewer",
+    "no_viewer": "No 3D viewer app installed on this device"
+  },
+  "import3d": {
+    "title": "3D Model",
+    "heading": "Import a 3D Model",
+    "description": "Upload a 3D scan or model file. It will be attached as the primary media of a new draft object, which you can then edit and complete.",
+    "uploadButton": "Upload 3D Model",
+    "supportedFormats": "Supported formats: GLB, GLTF, USDZ, OBJ, FBX, PLY"
   },
   "home": {
     "title": "Collection",

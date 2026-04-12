@@ -102,7 +102,9 @@ export function SkeletonList({ count = 4 }: SkeletonListProps) {
 function makeStyles(c: ColorPalette) {
   return StyleSheet.create({
     base: {
-      backgroundColor: c.surfaceContainer,
+      backgroundColor: c.transparent,
+      borderWidth: 1,
+      borderColor: c.border,
     },
     card: {
       flexDirection: 'row',

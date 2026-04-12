@@ -370,6 +370,9 @@ const MIGRATION_STATEMENTS = [
   `ALTER TABLE media ADD COLUMN original_file_path TEXT`,
   `ALTER TABLE media ADD COLUMN original_mime_type TEXT`,
   `ALTER TABLE media ADD COLUMN original_file_size INTEGER`,
+  // media: four-tier image pipeline (thumb/preview stored alongside working/archival)
+  `ALTER TABLE media ADD COLUMN thumbnail_uri TEXT`,
+  `ALTER TABLE media ADD COLUMN preview_uri TEXT`,
   // institutions: settings (Supabase parity)
   `ALTER TABLE institutions ADD COLUMN settings TEXT`, // JSON
 ];

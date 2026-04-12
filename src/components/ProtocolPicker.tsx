@@ -75,7 +75,7 @@ export function ProtocolPicker({ visible, onSelect, onSkip, suggestedObjectType 
                   accessibilityLabel={name}
                 >
                   <View style={styles.cardHeader}>
-                    <ClipboardList size={20} color={colors.primary} />
+                    <ClipboardList size={20} color={colors.accent} />
                     <Text style={styles.cardName} numberOfLines={1}>{name}</Text>
                     {recommended && (
                       <View style={styles.recommendedBadge}>

@@ -8,6 +8,7 @@
 import type { ObjectExportData } from '../services/exportTemplate';
 import type { ColorPalette } from '../theme';
 import { getProtocol } from '../config/protocols';
+import { APP_CONFIG } from '../config/constants';
 
 // ── Translation function type ───────────────────────────────────────────────
 
@@ -578,7 +579,7 @@ function buildPage1(data: ObjectExportData, now: string, t: TFunc, C: ColorPalet
   <!-- PAGE FOOTER -->
   <div class="page-footer">
     <span>${esc(t('pdf.generated_by'))} &nbsp;|&nbsp; ${now} &nbsp;|&nbsp; ${esc(t('pdf.page_of', { current: 1, total: 2 }))}</span>
-    <span>aharegister.com</span>
+    <span>${APP_CONFIG.WEB_APP_DOMAIN}</span>
   </div>`;
 }
 
@@ -710,7 +711,7 @@ function buildPage2(data: ObjectExportData, now: string, t: TFunc, C: ColorPalet
   <!-- PAGE FOOTER -->
   <div class="page-footer">
     <span>${esc(t('pdf.generated_by'))} &nbsp;|&nbsp; ${now} &nbsp;|&nbsp; ${esc(t('pdf.page_of', { current: 2, total: 2 }))}</span>
-    <span>aharegister.com</span>
+    <span>${APP_CONFIG.WEB_APP_DOMAIN}</span>
   </div>`;
 }
 

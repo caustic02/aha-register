@@ -243,6 +243,23 @@ Template selection calls `applyTemplate(tier, media, domain)` which:
 | ObjectDetailScreen | `object` | Full 5-step stepper |
 | ObjectListScreen | `batch` | Legacy 3-step bottom sheet |
 | CollectionDetailScreen | `collection` | Legacy 3-step bottom sheet |
+| HomeScreen (Export tool card) | `browse` | 4-step browse flow (added 2026-04-12) |
+
+### Browse Export Flow (4-step, added 2026-04-12)
+
+Full-screen stepper launched from the Export tool card on HomeScreen. Lets user select which objects to export without pre-selecting.
+
+| # | Step | Description |
+|---|------|-------------|
+| 1 | **Objects** | Checkbox list of all objects. Search/filter. Select all / deselect all toggle. |
+| 2 | **Fields** | Preset selection: Full Data (all fields), Summary (core fields only), Custom (manual pick — future). |
+| 3 | **Format** | PDF, CSV, or JSON. |
+| 4 | **Confirm** | Summary of selections + Export Now button. |
+
+**Export execution by format:**
+- PDF → `exportBatchToPDF()` (existing batch pipeline)
+- CSV → loads `ExportableObject` per selected object, combines header + rows
+- JSON → loads per object, wraps in JSON array
 
 ### Key Files (D2)
 

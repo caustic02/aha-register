@@ -29,11 +29,11 @@ function makeStyles(c: ColorPalette) {
       backgroundColor: c.transparent,
     },
     filled: {
-      backgroundColor: c.primary,
+      backgroundColor: c.accent,
       borderRadius: radii.full,
     },
     tinted: {
-      backgroundColor: c.primaryLight,
+      backgroundColor: c.accentLight,
       borderRadius: radii.full,
     },
     disabled: {

@@ -29,7 +29,7 @@ function makeStyles(c: ColorPalette) {
     },
     action: {
       ...typography.bodySmall,
-      color: c.primary,
+      color: c.accent,
     },
     pressed: {
       opacity: 0.7,

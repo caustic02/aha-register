@@ -16,11 +16,12 @@ import {
 } from './exportTemplate';
 import { generateObjectReportHTML } from '../templates/object-report';
 import { generateCollectionReportHTML } from '../templates/collection-report';
+import { APP_CONFIG } from '../config/constants';
 
 async function generateQrSvg(objectId: string, colors: ColorPalette): Promise<string | undefined> {
   try {
     return await QRCode.toString(
-      `https://aharegister.com/verify/${objectId}`,
+      `${APP_CONFIG.WEB_APP_BASE_URL}/verify/${objectId}`,
       {
         type: 'svg',
         width: 88,
@@ -59,7 +60,7 @@ async function loadObjectExportData(
   const media: MediaWithBase64[] = [];
   for (const m of mediaRows) {
     try {
-      const file = new File(m.file_path);
+      const file = new File(m.preview_uri ?? m.file_path);
       const base64Data = await file.base64();
       media.push({ ...m, base64Data });
     } catch {

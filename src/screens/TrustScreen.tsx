@@ -78,27 +78,27 @@ export default function TrustScreen({ onContinue, onSkip }: Props) {
         {/* ── 2. Commitment cards ──────────────────────────────────────────── */}
         <View style={styles.commitmentList}>
           <CommitmentCard
-            icon={<OfflineIcon size={24} color={colors.primary} />}
+            icon={<OfflineIcon size={24} color={colors.accent} />}
             title={t('trust.offlineTitle')}
             description={t('trust.offlineDescription')}
           />
           <CommitmentCard
-            icon={<IncidentIcon size={24} color={colors.primary} />}
+            icon={<IncidentIcon size={24} color={colors.accent} />}
             title={t('trust.euTitle')}
             description={t('trust.euDescription')}
           />
           <CommitmentCard
-            icon={<SuccessIcon size={24} color={colors.primary} />}
+            icon={<SuccessIcon size={24} color={colors.accent} />}
             title={t('trust.tamperTitle')}
             description={t('trust.tamperDescription')}
           />
           <CommitmentCard
-            icon={<ViewIcon size={24} color={colors.primary} />}
+            icon={<ViewIcon size={24} color={colors.accent} />}
             title={t('trust.aiTitle')}
             description={t('trust.aiDescription')}
           />
           <CommitmentCard
-            icon={<UserIcon size={24} color={colors.primary} />}
+            icon={<UserIcon size={24} color={colors.accent} />}
             title={t('trust.privacyTitle')}
             description={t('trust.privacyDescription')}
           />

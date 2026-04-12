@@ -9,6 +9,7 @@
 
 import type { ObjectExportData } from '../services/exportTemplate';
 import type { ColorPalette } from '../theme';
+import { APP_CONFIG } from '../config/constants';
 
 // ── Translation function type ───────────────────────────────────────────────
 
@@ -198,7 +199,7 @@ function buildCoverPage(
     </div>
     <div class="cover-footer">
       <span class="cover-institution">${institutionName ? esc(institutionName) : 'aha! Register'}</span>
-      <span class="cover-url">aharegister.com</span>
+      <span class="cover-url">${APP_CONFIG.WEB_APP_DOMAIN}</span>
     </div>
   </div>
   <div class="page-break"></div>`;
@@ -296,7 +297,7 @@ function buildObjectPage(
 
   <div class="page-footer">
     <span>${esc(collectionName)} &nbsp;|&nbsp; ${esc(t('pdf.generated_by'))} &nbsp;|&nbsp; ${now}</span>
-    <span>aharegister.com</span>
+    <span>${APP_CONFIG.WEB_APP_DOMAIN}</span>
   </div>`;
 }
 
@@ -353,7 +354,7 @@ function buildSummaryPage(
 
   <div class="page-footer">
     <span>${esc(collectionName)} &nbsp;|&nbsp; ${objects.length} ${esc(t('pdf.cover_objects'))} &nbsp;|&nbsp; ${esc(t('pdf.generated_by'))} &nbsp;|&nbsp; ${now}</span>
-    <span>aharegister.com</span>
+    <span>${APP_CONFIG.WEB_APP_DOMAIN}</span>
   </div>`;
 }
 

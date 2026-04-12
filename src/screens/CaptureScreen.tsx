@@ -5,6 +5,7 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  AppState,
   Image,
   Linking,
   Platform,
@@ -17,7 +18,7 @@ import {
 import { Accelerometer } from 'expo-sensors';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -31,7 +32,9 @@ import { extractMetadata, type CaptureMetadata } from '../services/metadata';
 import { createDraftObject } from '../services/draftObject';
 import { quickCapture, type LocationData } from '../services/quickCapture';
 import { addMediaToObject } from '../services/mediaService';
-import { computeSHA256 } from '../utils/hash';
+import { processCapture as processCaptureImage } from '../utils/image-processing';
+import type { ArchivalData, ImageTierData } from '../utils/image-processing';
+import { cleanupTierFiles } from '../utils/image-cleanup';
 import {
   getSetting,
   setSetting,
@@ -122,6 +125,7 @@ export function CaptureScreen() {
   // Multi-view capture params (from ViewChecklistScreen or QuickIDScreen)
   const routeViewType = route.params?.viewType as RegisterViewType | undefined;
   const routeObjectId = route.params?.objectId as string | undefined;
+  const routeMode = route.params?.mode as 'document-scan' | undefined;
 
   // Object title for display pill (when coming from QuickID or ViewChecklist)
   const [objectTitle, setObjectTitle] = useState<string | null>(null);
@@ -138,6 +142,34 @@ export function CaptureScreen() {
   // Camera permissions
   const [permission, requestPermission] = useCameraPermissions();
 
+  // Re-check permission when the screen regains focus (e.g. user returns
+  // from navigation) or when the app returns to the foreground (e.g. user
+  // went to Settings to grant camera access and came back). Without this
+  // refresh, the "Camera Access Required" screen would remain stale after
+  // the OS-level permission flips to granted.
+  //
+  // Calling requestPermission() here is safe: once a user has denied with
+  // "don't ask again" (Android canAskAgain=false) or ever denied on iOS,
+  // the native call resolves with the current state without re-prompting.
+  // We gate on permission?.granted === false so we never prompt on first
+  // mount (permission === null) and never churn when already granted.
+  useFocusEffect(
+    useCallback(() => {
+      if (permission && !permission.granted) {
+        requestPermission().catch(() => {});
+      }
+    }, [permission, requestPermission]),
+  );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && permission && !permission.granted) {
+        requestPermission().catch(() => {});
+      }
+    });
+    return () => sub.remove();
+  }, [permission, requestPermission]);
+
   // Camera settings
   const [facing, setFacing] = useState<CameraType>('back');
   const [flashMode, setFlashMode] = useState<FlashMode>('off');
@@ -147,12 +179,15 @@ export function CaptureScreen() {
 
   const cameraRef = useRef<CameraView>(null);
   const protocolFirstObjectIdRef = useRef<string | null>(null);
+  const pipelineRunningRef = useRef(false);
 
   // Capture / form state
   const [phase, setPhase] = useState<Phase>('idle');
   const [capture, setCapture] = useState<CaptureResult | null>(null);
   const [metadata, setMetadata] = useState<CaptureMetadata | null>(null);
   const [hash, setHash] = useState<string | null>(null);
+  const [archival, setArchival] = useState<ArchivalData | null>(null);
+  const [imageTiers, setImageTiers] = useState<ImageTierData | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [defaultObjectType, setDefaultObjectType] = useState<ObjectType | null>(null);
 
@@ -280,17 +315,37 @@ export function CaptureScreen() {
 
   const processCapture = useCallback(
     async (result: CaptureResult) => {
-      setCapture(result);
+      if (pipelineRunningRef.current) return;
+      pipelineRunningRef.current = true;
       setPhase('extracting');
-      const [meta, fileHash, storedType] = await Promise.all([
+      try {
+      const p = await processCaptureImage(result.uri, result.width, result.height);
+      setArchival({
+        archivalUri: p.archival.uri,
+        sha256Hash: p.archival.hash,
+        originalFileSize: p.archival.sizeBytes,
+      });
+      setImageTiers({ thumbnailUri: p.thumb.uri, previewUri: p.preview.uri });
+      setCapture({
+        ...result,
+        uri: p.working.uri,
+        width: p.working.width,
+        height: p.working.height,
+        fileSize: p.working.sizeBytes,
+        mimeType: 'image/jpeg',
+      });
+      const [meta, , storedType] = await Promise.all([
         extractMetadata(result.exif),
-        computeSHA256(result.uri),
+        Promise.resolve(p.archival.hash),
         getSetting(db, SETTING_KEYS.DEFAULT_OBJECT_TYPE),
       ]);
       setMetadata(meta);
-      setHash(fileHash);
+      setHash(p.archival.hash);
       setDefaultObjectType((storedType as ObjectType) ?? null);
       setPhase('preview');
+      } finally {
+        pipelineRunningRef.current = false;
+      }
     },
     [db],
   );
@@ -344,6 +399,8 @@ export function CaptureScreen() {
   // to the same object so the protocol produces ONE object with multiple photos.
   const handleProtocolShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady || !protocolHook.currentShot || !protocolHook.protocol) return;
+    if (pipelineRunningRef.current) return;
+    pipelineRunningRef.current = true;
     try {
       const pic = await cameraRef.current.takePictureAsync({
         quality: 1,
@@ -352,7 +409,10 @@ export function CaptureScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       triggerShutterFlash();
 
-      const photoUri = pic.uri;
+      const p = await processCaptureImage(pic.uri, pic.width, pic.height);
+      const photoUri = p.working.uri;
+      const archivalInfo: ArchivalData = { archivalUri: p.archival.uri, sha256Hash: p.archival.hash, originalFileSize: p.archival.sizeBytes };
+      const tierInfo: ImageTierData = { thumbnailUri: p.thumb.uri, previewUri: p.preview.uri };
       const currentShotId = protocolHook.currentShot.id;
       const currentShotOrder = protocolHook.currentShot.order;
       const currentProtocolId = protocolHook.protocol.id;
@@ -379,13 +439,13 @@ export function CaptureScreen() {
                   }
                 : null;
 
-            objectId = await quickCapture(db, photoUri, location);
+            objectId = await quickCapture(db, photoUri, location, archivalInfo, tierInfo);
             protocolFirstObjectIdRef.current = objectId;
           } else {
             // Subsequent shots: add media to the existing object
             // (addMediaToObject handles file copy, SHA-256, audit, sync internally)
             objectId = existingObjectId;
-            const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
+            const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg', { archival: archivalInfo, tiers: tierInfo });
             newMediaId = media.id;
           }
 
@@ -455,11 +515,15 @@ export function CaptureScreen() {
       })();
     } catch {
       // Camera not ready — ignore
+    } finally {
+      pipelineRunningRef.current = false;
     }
   }, [cameraReady, db, triggerShutterFlash, protocolHook]);
 
   const handleQuickShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady) return;
+    if (pipelineRunningRef.current) return;
+    pipelineRunningRef.current = true;
     try {
       const pic = await cameraRef.current.takePictureAsync({
         quality: 1,
@@ -469,7 +533,10 @@ export function CaptureScreen() {
       triggerShutterFlash();
 
       // Build location data from EXIF (fire-and-forget below)
-      const photoUri = pic.uri;
+      const p = await processCaptureImage(pic.uri, pic.width, pic.height);
+      const photoUri = p.working.uri;
+      const archivalInfo: ArchivalData = { archivalUri: p.archival.uri, sha256Hash: p.archival.hash, originalFileSize: p.archival.sizeBytes };
+      const tierInfo: ImageTierData = { thumbnailUri: p.thumb.uri, previewUri: p.preview.uri };
       const exif = pic.exif ?? null;
       const targetObjectId = routeObjectId;
 
@@ -482,7 +549,7 @@ export function CaptureScreen() {
             // Attach to the existing object — never create a new Untitled Object.
             // No view_type is assigned here; the user picks views from the
             // ViewChecklist overview. A generic capture leaves view_type NULL.
-            await addMediaToObject(db, targetObjectId, photoUri, 'image/jpeg');
+            await addMediaToObject(db, targetObjectId, photoUri, 'image/jpeg', { archival: archivalInfo, tiers: tierInfo });
             objectId = targetObjectId;
           } else {
             // No object context: legacy standalone quick capture.
@@ -498,7 +565,7 @@ export function CaptureScreen() {
                   }
                 : null;
 
-            objectId = await quickCapture(db, photoUri, location);
+            objectId = await quickCapture(db, photoUri, location, archivalInfo, tierInfo);
             // NO auto view_type assignment — view_type is only set when
             // the user tapped a specific view slot (handleViewTypeShutter).
           }
@@ -515,6 +582,8 @@ export function CaptureScreen() {
       })();
     } catch {
       // Camera not ready — ignore
+    } finally {
+      pipelineRunningRef.current = false;
     }
   }, [cameraReady, db, triggerShutterFlash, routeObjectId]);
 
@@ -527,6 +596,8 @@ export function CaptureScreen() {
   // empty even though the capture succeeded.
   const handleViewTypeShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady || !routeViewType || !routeObjectId) return;
+    if (pipelineRunningRef.current) return;
+    pipelineRunningRef.current = true;
     const viewType = routeViewType;
     const objectId = routeObjectId;
     console.log('[viewshot] start', { viewType, objectId });
@@ -538,7 +609,10 @@ export function CaptureScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       triggerShutterFlash();
 
-      const photoUri = pic.uri;
+      const p = await processCaptureImage(pic.uri, pic.width, pic.height);
+      const photoUri = p.working.uri;
+      const archivalInfo: ArchivalData = { archivalUri: p.archival.uri, sha256Hash: p.archival.hash, originalFileSize: p.archival.sizeBytes };
+      const tierInfo: ImageTierData = { thumbnailUri: p.thumb.uri, previewUri: p.preview.uri };
 
       try {
         // Retake support: if a media row already exists for this
@@ -573,7 +647,7 @@ export function CaptureScreen() {
         }
 
         // addMediaToObject handles file copy, SHA-256, audit, sync
-        const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg');
+        const media = await addMediaToObject(db, objectId, photoUri, 'image/jpeg', { archival: archivalInfo, tiers: tierInfo });
         console.log('[viewshot] addMediaToObject done', { mediaId: media.id });
 
         // Tag media with view_type (UPDATE after INSERT because addMediaToObject
@@ -604,11 +678,15 @@ export function CaptureScreen() {
       }
     } catch {
       // Camera not ready — ignore
+    } finally {
+      pipelineRunningRef.current = false;
     }
   }, [cameraReady, db, triggerShutterFlash, routeViewType, routeObjectId, navigation]);
 
   const handleShutter = useCallback(async () => {
     if (!cameraRef.current || !cameraReady) return;
+    if (pipelineRunningRef.current) return;
+    pipelineRunningRef.current = true;
     try {
       const pic = await cameraRef.current.takePictureAsync({
         quality: 1,
@@ -617,18 +695,22 @@ export function CaptureScreen() {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       triggerShutterFlash();
 
-      // Extract metadata + hash, then navigate to review screen
+      // Four-tier pipeline: archival + working + preview + thumb
+      const p = await processCaptureImage(pic.uri, pic.width, pic.height);
       const meta = await extractMetadata(pic.exif ?? null);
-      const fileHash = await computeSHA256(pic.uri);
 
       navigation.navigate('CaptureReview', {
-        imageUri: pic.uri,
+        imageUri: p.working.uri,
         mimeType: 'image/jpeg',
         metadata: meta,
-        sha256Hash: fileHash,
+        sha256Hash: p.archival.hash,
+        archival: { archivalUri: p.archival.uri, sha256Hash: p.archival.hash, originalFileSize: p.archival.sizeBytes },
+        tiers: { thumbnailUri: p.thumb.uri, previewUri: p.preview.uri },
       });
     } catch {
       // Camera not ready or other error — ignore silently
+    } finally {
+      pipelineRunningRef.current = false;
     }
   }, [cameraReady, navigation, triggerShutterFlash]);
 
@@ -670,6 +752,8 @@ export function CaptureScreen() {
           mimeType: capture.mimeType,
           metadata,
           objectType,
+          archival: archival ?? undefined,
+          tiers: imageTiers ?? undefined,
         });
         setSavedId(objectId);
         setSessionPhotoCount((prev) => prev + 1);
@@ -678,7 +762,7 @@ export function CaptureScreen() {
         setPhase('type_select');
       }
     },
-    [capture, metadata, db],
+    [capture, metadata, db, archival, imageTiers],
   );
 
   const handleTypeSelect = useCallback(
@@ -698,14 +782,20 @@ export function CaptureScreen() {
   }, []);
 
   const handleRetake = useCallback(() => {
+    // Clean up tier files from the discarded capture
+    if (archival?.archivalUri) {
+      cleanupTierFiles(archival.archivalUri);
+    }
     setCapture(null);
     setMetadata(null);
     setHash(null);
+    setArchival(null);
+    setImageTiers(null);
     setSavedId(null);
     setDefaultObjectType(null);
     setCameraReady(false);
     setPhase('idle');
-  }, []);
+  }, [archival]);
 
   const handleViewObjects = useCallback(() => {
     const id = savedId;
@@ -728,6 +818,8 @@ export function CaptureScreen() {
         mimeType: capture.mimeType,
         metadata,
         objectType: defaultObjectType ?? 'museum_object',
+        archival: archival ?? undefined,
+        tiers: imageTiers ?? undefined,
       });
 
       // Tag with protocol metadata if a protocol is active
@@ -767,7 +859,7 @@ export function CaptureScreen() {
     } catch {
       setPhase('preview');
     }
-  }, [capture, metadata, db, defaultObjectType, navigation, handleRetake, protocolHook]);
+  }, [capture, metadata, db, defaultObjectType, navigation, handleRetake, protocolHook, archival, imageTiers]);
 
   const handleAnalyzeWithAI = useCallback(async () => {
     if (!capture || !metadata) return;
@@ -911,6 +1003,15 @@ export function CaptureScreen() {
       Alert.alert(t('common.error'));
     }
   }, [db, t, permission, requestPermission]);
+
+  // Auto-trigger document scan when launched with mode='document-scan'
+  const docScanAutoRef = useRef(false);
+  useEffect(() => {
+    if (routeMode === 'document-scan' && permission?.granted && !docScanAutoRef.current) {
+      docScanAutoRef.current = true;
+      handleDocumentScan();
+    }
+  }, [routeMode, permission, handleDocumentScan]);
 
   // (Video mode handlers moved to VideoRecordScreen)
 

@@ -71,6 +71,9 @@ export { CheckSquare as CheckboxFilledIcon } from 'lucide-react-native';
 // ── Isolation icons ──────────────────────────────────────────────────────────
 export { Scissors as IsolateIcon } from 'lucide-react-native';
 
+// ── 3D model icons ───────────────────────────────────────────────────────────
+export { Box as Model3dIcon } from 'lucide-react-native';
+
 // ── Form section icons ──────────────────────────────────────────────────────
 export { Tag as TagIcon } from 'lucide-react-native';
 export { Ruler as RulerIcon } from 'lucide-react-native';

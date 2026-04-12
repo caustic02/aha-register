@@ -333,6 +333,9 @@ export interface Media {
   original_file_path?: string | null;
   original_mime_type?: string | null;
   original_file_size?: number | null;
+  // Four-tier image pipeline
+  thumbnail_uri?: string | null;
+  preview_uri?: string | null;
 }
 
 export interface Annotation {

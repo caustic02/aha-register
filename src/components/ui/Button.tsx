@@ -52,16 +52,18 @@ function makeStyles(c: ColorPalette) {
     },
     // Variants
     primary: {
-      backgroundColor: c.primary,
+      backgroundColor: c.accent,
+      borderWidth: 1,
+      borderColor: c.accent,
     },
     primaryPressed: {
-      backgroundColor: c.primaryDark,
+      backgroundColor: c.accentDark,
       opacity: 0.85,
     },
     secondary: {
       backgroundColor: c.transparent,
       borderWidth: 1.5,
-      borderColor: c.primary,
+      borderColor: c.accent,
     },
     secondaryPressed: {
       opacity: 0.85,
@@ -89,7 +91,7 @@ export function Button({
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const textColor =
-    variant === 'primary' ? colors.textInverse : colors.primary;
+    variant === 'primary' ? colors.accentText : colors.accent;
   const textStyle =
     size === 'sm' ? typography.bodySmall : typography.bodyMedium;
 

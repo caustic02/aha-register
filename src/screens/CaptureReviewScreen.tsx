@@ -12,6 +12,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useAppTranslation } from '../hooks/useAppTranslation';
 import { createDraftObject } from '../services/draftObject';
+import { cleanupTierFiles } from '../utils/image-cleanup';
 import { typography, spacing, radii, touch } from '../theme';
 import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
@@ -23,7 +24,7 @@ import type { RootStackParamList } from '../navigation/RootStack';
 type Props = NativeStackScreenProps<RootStackParamList, 'CaptureReview'>;
 
 export function CaptureReviewScreen({ route, navigation }: Props) {
-  const { imageUri, mimeType, metadata } = route.params;
+  const { imageUri, mimeType, metadata, archival, tiers } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
   const { colors } = useTheme();
@@ -34,8 +35,12 @@ export function CaptureReviewScreen({ route, navigation }: Props) {
   const [saving, setSaving] = useState(false);
 
   const handleRetake = useCallback(() => {
+    // Clean up tier files — user discarded this capture
+    if (archival?.archivalUri) {
+      cleanupTierFiles(archival.archivalUri);
+    }
     navigation.goBack();
-  }, [navigation]);
+  }, [navigation, archival]);
 
   const handleUsePhoto = useCallback(async () => {
     if (saving) return;
@@ -48,6 +53,8 @@ export function CaptureReviewScreen({ route, navigation }: Props) {
         mimeType,
         metadata,
         objectType: 'museum_object',
+        archival,
+        tiers,
       });
 
       // Tag primary media with selected view_type
@@ -70,7 +77,7 @@ export function CaptureReviewScreen({ route, navigation }: Props) {
     } catch {
       setSaving(false);
     }
-  }, [saving, db, imageUri, mimeType, metadata, selectedView, navigation]);
+  }, [saving, db, imageUri, mimeType, metadata, selectedView, navigation, archival, tiers]);
 
   const viewLabel = t(`view_types.${selectedView}`);
 

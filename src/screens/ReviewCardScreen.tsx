@@ -1022,10 +1022,10 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   selectedCollectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: c.primaryLight,
+    backgroundColor: c.accentLight,
     borderRadius: radii.md,
     borderWidth: 1,
-    borderColor: c.primary,
+    borderColor: c.accent,
     padding: spacing.md,
     marginTop: spacing.sm,
   },
@@ -1064,7 +1064,7 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
   },
   chooseCollectionText: {
     ...typography.bodySmall,
-    color: c.primary,
+    color: c.accent,
     fontWeight: '600',
   },
   // Actions
@@ -1136,14 +1136,14 @@ function makeStyles(c: ColorPalette) { return StyleSheet.create({
     marginBottom: spacing.xs,
   },
   sheetItemSelected: {
-    backgroundColor: c.primaryLight,
+    backgroundColor: c.accentLight,
   },
   sheetItemName: {
     ...typography.body,
     color: c.text,
   },
   sheetItemNameSelected: {
-    color: c.primary,
+    color: c.accent,
     fontWeight: '600',
   },
   sheetItemMeta: {

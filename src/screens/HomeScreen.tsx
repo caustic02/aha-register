@@ -33,9 +33,6 @@ import {
   FolderPlus,
   FolderOpen,
   AlertCircle,
-  CheckCircle2,
-  RefreshCw,
-  WifiOff,
 } from 'lucide-react-native';
 import Svg, { Path, Rect, Circle, Polyline, Line } from 'react-native-svg';
 import { radii, spacing, touch, typography } from '../theme';
@@ -43,7 +40,7 @@ import type { ColorPalette } from '../theme';
 import { useTheme } from '../theme/ThemeContext';
 import { SkeletonList } from '../components/SkeletonLoader';
 import { formatRelativeDate } from '../utils/format-date';
-import { useSyncStatus } from '../hooks/useSyncStatus';
+import { cleanupOrphanedTierDirs } from '../utils/image-cleanup';
 import { STANDARD_VIEW_TYPES } from '../constants/viewTypes';
 import type { RootStackParamList } from '../navigation/RootStack';
 import { ExportStepperModal, type ExportSource } from '../components/ExportStepperModal';
@@ -75,6 +72,7 @@ interface DashboardObject {
   object_type: string;
   created_at: string;
   file_path: string | null;
+  thumbnail_uri: string | null;
   storage_path: string | null;
   view_count: number;
   has_ai: number;
@@ -97,13 +95,13 @@ const TOOL_W = (SCREEN_W - PX * 2 - ITEM_GAP * 3) / 4; // exact quarter-width fo
 
 const TOOLS = [
   { label: 'Floor Map', nav: 'FloorMap' as const },
-  { label: 'QR Codes', nav: 'ObjectList' as const },
+  { label: 'QR Codes', nav: 'ObjectList' as const, action: 'qr-assign' as const },
   { label: 'Checklists', nav: 'ChecklistOverview' as const },
-  { label: 'Export', nav: 'ObjectList' as const },
-  { label: '3D Scan', nav: 'Scan3D' as const },
+  { label: 'Export', nav: null, action: 'export' as const },
+  { label: '3D Scan', nav: 'Import3D' as const },
   { label: 'Browse', nav: 'ObjectList' as const },
-  { label: 'AI Analysis', nav: 'CaptureCamera' as const },
-  { label: 'Scan Doc', nav: 'CaptureCamera' as const },
+  { label: 'AI Analysis', nav: 'ObjectList' as const, action: 'ai-analysis' as const },
+  { label: 'Scan Doc', nav: 'CaptureCamera' as const, action: 'document-scan' as const },
   { label: 'Scale Ref', nav: 'ScaleReference' as const },
 ] as const;
 
@@ -208,7 +206,6 @@ export function HomeScreen({ navigation }: Props) {
   const db = useDatabase();
   const { t } = useAppTranslation();
   const { collectionDomain } = useSettings();
-  const syncStatus = useSyncStatus();
 
   const insets = useSafeAreaInsets();
   const HEADER_H = insets.top + 56; // safe area + header content
@@ -254,7 +251,7 @@ export function HomeScreen({ navigation }: Props) {
       <PressScale style={st.attentionRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
         <View style={obj.file_path ? st.attentionThumb : [st.attentionThumb, st.thumbEmpty]}>
           {obj.file_path ? (
-            <Thumb uri={obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 10 }] as ImageStyle} iconSize={16} fallbackColor={colors.textTertiary} />
+            <Thumb uri={obj.thumbnail_uri ?? obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 10 }] as ImageStyle} iconSize={16} fallbackColor={colors.textTertiary} />
           ) : (
             <CameraIcon size={16} color={colors.textTertiary} />
           )}
@@ -280,7 +277,7 @@ export function HomeScreen({ navigation }: Props) {
       <PressScale style={st.compactRow} onPress={onPress} accessibilityRole="button" accessibilityLabel={obj.title}>
         <View style={obj.file_path ? st.compactThumb : [st.compactThumb, st.thumbEmpty]}>
           {obj.file_path ? (
-            <Thumb uri={obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 8 }] as ImageStyle} iconSize={14} fallbackColor={colors.textTertiary} />
+            <Thumb uri={obj.thumbnail_uri ?? obj.file_path} style={[StyleSheet.absoluteFill, { borderRadius: 8 }] as ImageStyle} iconSize={14} fallbackColor={colors.textTertiary} />
           ) : (
             <CameraIcon size={14} color={colors.textTertiary} />
           )}
@@ -328,7 +325,7 @@ export function HomeScreen({ navigation }: Props) {
         db.getFirstAsync<{ count: number }>('SELECT COUNT(*) as count FROM media'),
         db.getFirstAsync<{ total: number }>('SELECT COALESCE(SUM(file_size), 0) as total FROM media'),
         db.getAllAsync<DashboardObject>(
-          `SELECT o.id, o.title, o.description, o.object_type, o.created_at, pm.file_path, pm.storage_path,
+          `SELECT o.id, o.title, o.description, o.object_type, o.created_at, pm.file_path, pm.thumbnail_uri, pm.storage_path,
              COALESCE(vc.view_count, 0) as view_count,
              CASE WHEN o.description IS NOT NULL AND o.description != '' AND o.title IS NOT NULL AND o.title != 'Untitled' AND o.title != '' THEN 1 ELSE 0 END as has_ai,
              CASE WHEN sq.id IS NOT NULL THEN 1 ELSE 0 END as sync_pending,
@@ -355,6 +352,40 @@ export function HomeScreen({ navigation }: Props) {
     FileSystem.getFreeDiskStorageAsync().then((f) => setFreeSpace(f)).catch(() => {});
   }, [loadData]));
 
+  // One-time startup sweep: clean orphaned tier directories (non-blocking)
+  const sweepDoneRef = useRef(false);
+  useEffect(() => {
+    if (sweepDoneRef.current) return;
+    sweepDoneRef.current = true;
+    cleanupOrphanedTierDirs(db).catch(() => {});
+  }, [db]);
+
+  // Dispatcher for the tool grid. Most tiles navigate directly; some
+  // use an action to pass mode params or open modals.
+  const handleToolPress = useCallback(
+    (tool: (typeof TOOLS)[number]) => {
+      if ('action' in tool) {
+        switch (tool.action) {
+          case 'export':
+            setExportSource({ mode: 'browse' });
+            setShowExport(true);
+            return;
+          case 'ai-analysis':
+            navigation.navigate('ObjectList', { mode: 'ai-analysis' });
+            return;
+          case 'qr-assign':
+            navigation.navigate('ObjectList', { mode: 'qr-assign' });
+            return;
+          case 'document-scan':
+            navigation.navigate('CaptureCamera', { mode: 'document-scan' });
+            return;
+        }
+      }
+      if (tool.nav) navigation.navigate(tool.nav);
+    },
+    [navigation],
+  );
+
   const { needsAttention, complete } = useMemo(() => {
     const needs: DashboardObject[] = []; const done: DashboardObject[] = [];
     for (const obj of objects) (isComplete(obj) ? done : needs).push(obj);
@@ -362,48 +393,6 @@ export function HomeScreen({ navigation }: Props) {
   }, [objects]);
 
   const unfiled = useMemo(() => objects.filter((o) => o.in_collection === 0), [objects]);
-
-  // Sync status — fading "Synced ✓" when a cycle completes
-  const syncState = syncStatus.status; // 'idle' | 'syncing' | 'offline' | 'error'
-  const prevSyncStateRef = useRef(syncState);
-  const [justSynced, setJustSynced] = useState(false);
-
-  useEffect(() => {
-    if (prevSyncStateRef.current === 'syncing' && syncState === 'idle') {
-      setJustSynced(true);
-      const t = setTimeout(() => setJustSynced(false), 3000);
-      return () => clearTimeout(t);
-    }
-    prevSyncStateRef.current = syncState;
-  }, [syncState]);
-
-  const showSyncBar = syncState !== 'idle'
-    || justSynced
-    || syncStatus.failedCount > 0
-    || syncStatus.pendingCount > 0;
-
-  const syncColor = justSynced ? colors.statusSuccess
-    : syncState === 'error' || syncState === 'offline' ? colors.statusError
-    : syncState === 'syncing' ? colors.statusWarning : colors.statusSuccess;
-  const syncBg = justSynced ? colors.successLight
-    : syncState === 'error' || syncState === 'offline' ? colors.errorLight
-    : syncState === 'syncing' ? colors.warningLight : colors.successLight;
-  const syncBorder = justSynced ? colors.success
-    : syncState === 'error' || syncState === 'offline' ? colors.error
-    : syncState === 'syncing' ? colors.warning : colors.success;
-  const SyncIcon = justSynced ? CheckCircle2
-    : syncState === 'error' ? AlertCircle
-    : syncState === 'offline' ? WifiOff
-    : syncState === 'syncing' ? RefreshCw
-    : CheckCircle2;
-  const syncLabel = justSynced ? 'Synced'
-    : syncState === 'syncing'
-      ? (syncStatus.pendingCount > 0 ? `Syncing ${syncStatus.pendingCount} items...` : 'Syncing...')
-    : syncState === 'offline' ? 'Offline'
-    : syncState === 'error'
-      ? (syncStatus.failedCount > 0 ? `${syncStatus.failedCount} items failed to sync` : 'Sync error')
-    : syncStatus.pendingCount > 0 ? `${syncStatus.pendingCount} pending`
-    : '';
 
   // Storage warning level
   const GB = 1024 * 1024 * 1024;
@@ -502,7 +491,7 @@ export function HomeScreen({ navigation }: Props) {
               {unfiled.slice(0, 10).map((item) => (
                 <PressScale key={item.id} style={st.recentCard} onPress={() => navigation.navigate('ObjectDetail', { objectId: item.id })} accessibilityLabel={item.title || 'Untitled'}>
                   {item.file_path ? (
-                    <Thumb uri={item.file_path} style={{ width: '100%', height: '100%' } as ImageStyle} iconSize={22} fallbackColor={colors.textTertiary} />
+                    <Thumb uri={item.thumbnail_uri ?? item.file_path} style={{ width: '100%', height: '100%' } as ImageStyle} iconSize={22} fallbackColor={colors.textTertiary} />
                   ) : (
                     <View style={[StyleSheet.absoluteFill, st.thumbEmpty]}><CameraIcon size={22} color={colors.textTertiary} /></View>
                   )}
@@ -566,7 +555,7 @@ export function HomeScreen({ navigation }: Props) {
           <SectionLabel text="Tools" />
           <View style={st.toolGrid}>
             {TOOLS.map((tool, i) => (
-              <PressScale key={tool.label} style={[st.toolCell, { width: TOOL_W }]} onPress={() => navigation.navigate(tool.nav)} accessibilityLabel={tool.label}>
+              <PressScale key={tool.label} style={[st.toolCell, { width: TOOL_W }]} onPress={() => handleToolPress(tool)} accessibilityLabel={tool.label}>
                 <View style={[st.toolCellIcon, { backgroundColor: colors.surfaceContainer }]}>
                   <ToolSvgIcon index={i} color={TOOL_COLOR} />
                 </View>
@@ -593,12 +582,6 @@ export function HomeScreen({ navigation }: Props) {
               <Text style={st.statLabel}>{t('home.statStorage')}</Text>
             </View>
           </View>
-          {showSyncBar && (
-            <View style={[st.syncBar, { backgroundColor: syncBg, borderColor: syncBorder }]} accessibilityLabel={syncLabel} accessibilityLiveRegion="polite">
-              <SyncIcon size={14} color={syncColor} />
-              <Text style={[st.syncText, { color: syncColor }]}>{syncLabel}</Text>
-            </View>
-          )}
         </View>
 
         <View style={{ height: spacing.xl }} />
@@ -759,15 +742,6 @@ function makeStyles(colors: ColorPalette) {
     },
     statValue: { fontSize: 17, fontWeight: typography.weight.bold, color: colors.text },
     statLabel: { fontSize: 11, color: colors.textSecondary },
-
-    // Sync (44px)
-    syncBar: {
-      flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surfaceElevated,
-      borderRadius: R, borderWidth: 1, borderColor: colors.border,
-      paddingHorizontal: 16, paddingVertical: 16, marginTop: 12, gap: 8,
-    },
-    syncIcon: { flexShrink: 0 },
-    syncText: { fontSize: 12, color: colors.textSecondary },
 
     // Badge (kept for compatibility)
     countBadge: { backgroundColor: colors.warning, borderRadius: radii.full, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },

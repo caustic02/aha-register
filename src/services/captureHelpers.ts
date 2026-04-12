@@ -43,16 +43,73 @@ export function buildStorageName(mediaId: string, mimeType: string): string {
 
 // ── File type normalisation ────────────────────────────────────────────────────
 
-export type NormalizedFileType = 'image' | 'video' | 'audio' | 'document';
+export type NormalizedFileType = 'image' | 'video' | 'audio' | 'document' | '3d_scan';
+
+/** File extensions recognised as 3D model formats. */
+const MODEL_3D_EXTENSIONS = new Set([
+  'glb', 'gltf', 'usdz', 'obj', 'fbx', 'ply',
+]);
+
+/** MIME types that map to `3d_scan`. */
+const MODEL_3D_MIMES = new Set([
+  'model/gltf-binary',
+  'model/gltf+json',
+  'model/vnd.usdz+zip',
+  'model/vnd.usd+zip',
+  'model/obj',
+  'model/vnd.pixar.usd',
+]);
 
 /**
- * Normalises the first segment of a MIME type into one of the four
+ * Normalises the first segment of a MIME type into one of the
  * media file types used in the `media` table.
  */
 export function normalizeFileType(mimeType: string): NormalizedFileType {
+  // Check explicit 3D MIME types first
+  if (MODEL_3D_MIMES.has(mimeType)) return '3d_scan';
   const fileType = mimeType.split('/')[0];
+  if (fileType === 'model') return '3d_scan';
   if (fileType === 'image' || fileType === 'video' || fileType === 'audio') {
     return fileType;
   }
   return 'document';
 }
+
+/**
+ * Determine file type from extension when MIME is ambiguous
+ * (Android often sends application/octet-stream for 3D files).
+ */
+export function normalizeFileTypeWithExtension(
+  mimeType: string,
+  fileName: string,
+): NormalizedFileType {
+  const byMime = normalizeFileType(mimeType);
+  if (byMime !== 'document') return byMime;
+  // Fallback: check extension for 3D formats
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  if (MODEL_3D_EXTENSIONS.has(ext)) return '3d_scan';
+  return byMime;
+}
+
+/** MIME type map for 3D file extensions (for document picker results with missing/generic MIME). */
+export function mimeTypeFor3dExtension(fileName: string): string | null {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? '';
+  switch (ext) {
+    case 'glb':  return 'model/gltf-binary';
+    case 'gltf': return 'model/gltf+json';
+    case 'usdz': return 'model/vnd.usdz+zip';
+    case 'obj':  return 'model/obj';
+    case 'fbx':  return 'application/octet-stream';
+    case 'ply':  return 'application/octet-stream';
+    default:     return null;
+  }
+}
+
+/** Accepted MIME types passed to expo-document-picker for 3D import. */
+export const MODEL_3D_PICKER_TYPES = [
+  'model/gltf-binary',
+  'model/gltf+json',
+  'model/vnd.usdz+zip',
+  'model/obj',
+  'application/octet-stream', // catch-all for Android
+];

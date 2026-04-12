@@ -36,6 +36,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { QRCodeScreen } from '../screens/QRCodeScreen';
 import { FloorMapScreen } from '../screens/FloorMapScreen';
 import { Scan3DScreen } from '../screens/Scan3DScreen';
+import { Import3DScreen } from '../screens/Import3DScreen';
 import { ChecklistOverviewScreen } from '../screens/ChecklistOverviewScreen';
 import { CaptureReviewScreen } from '../screens/CaptureReviewScreen';
 import { ScaleReferenceScreen } from '../screens/ScaleReferenceScreen';
@@ -45,6 +46,7 @@ import { ScaleReferenceScreen } from '../screens/ScaleReferenceScreen';
 import type { AIAnalysisResult } from '../services/ai-analysis';
 import type { CaptureMetadata } from '../services/metadata';
 import type { RegisterViewType } from '../db/types';
+import type { ArchivalData, ImageTierData } from '../utils/image-processing';
 import { updateReviewStatus } from '../services/objectService';
 import { useDatabase } from '../contexts/DatabaseContext';
 import { useSettings } from '../hooks/useSettings';
@@ -55,20 +57,22 @@ export type RootStackParamList = {
   // Dashboard
   Home: undefined;
   // Objects
-  ObjectList: { filterReviewStatus?: string } | undefined;
-  ObjectDetail: { objectId: string };
+  ObjectList: { filterReviewStatus?: string; mode?: 'ai-analysis' | 'qr-assign' } | undefined;
+  ObjectDetail: { objectId: string; autoAction?: 'ai-analysis' };
   IsolationCompare: { objectId: string; mediaId: string };
   DocumentReview: { mediaId: string };
   VideoRecord: { objectId: string };
   ViewChecklist: { objectId: string };
   // Capture
   QuickID: undefined;
-  CaptureCamera: { viewType?: RegisterViewType; objectId?: string } | undefined;
+  CaptureCamera: { viewType?: RegisterViewType; objectId?: string; mode?: 'document-scan' } | undefined;
   CaptureReview: {
     imageUri: string;
     mimeType: string;
     metadata: CaptureMetadata;
     sha256Hash: string;
+    archival?: ArchivalData;
+    tiers?: ImageTierData;
   };
   AIProcessing: {
     imageUri: string;
@@ -100,6 +104,7 @@ export type RootStackParamList = {
   QRCode: { objectId: string };
   FloorMap: { objectId?: string; mapId?: string } | undefined;
   Scan3D: undefined;
+  Import3D: undefined;
   ChecklistOverview: undefined;
   ScaleReference: undefined;
 };
@@ -317,6 +322,7 @@ export function RootStack() {
       <Stack.Screen name="QRCode" component={QRCodeScreen} />
       <Stack.Screen name="FloorMap" component={FloorMapScreen} />
       <Stack.Screen name="Scan3D" component={Scan3DScreen} />
+      <Stack.Screen name="Import3D" component={Import3DScreen} />
       <Stack.Screen name="ChecklistOverview" component={ChecklistOverviewScreen} />
       <Stack.Screen name="ScaleReference" component={ScaleReferenceScreen} />
     </Stack.Navigator>

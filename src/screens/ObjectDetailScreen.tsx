@@ -44,6 +44,7 @@ import {
   ExportIcon,
   ForwardIcon,
   IsolateIcon,
+  Model3dIcon,
   ScanIcon,
   WarningIcon,
 } from '../theme/icons';
@@ -73,6 +74,16 @@ import { LocationPicker } from '../components/LocationPicker';
 import { ObjectChecklist } from '../components/ObjectChecklist';
 import { Map as MapIcon } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Sharing from 'expo-sharing';
+import { File, Paths } from 'expo-file-system';
+import {
+  normalizeFileTypeWithExtension,
+  mimeTypeFor3dExtension,
+  MODEL_3D_PICKER_TYPES,
+} from '../services/captureHelpers';
+import { computeSHA256 } from '../utils/hash';
+import { generateId } from '../utils/uuid';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -396,11 +407,12 @@ function ConditionBadge({ status }: { status: string | null | undefined }) {
   const sec = useMemo(() => makeSec(colors), [colors]);
   if (!status) return null;
   const lower = status.toLowerCase();
-  const bg = lower === 'good' ? colors.success : lower === 'fair' ? colors.warning : lower === 'poor' ? colors.error : colors.border;
+  const bg = lower === 'good' ? colors.successLight : lower === 'fair' ? colors.warningLight : lower === 'poor' ? colors.errorLight : colors.surface;
+  const fg = lower === 'good' ? colors.success : lower === 'fair' ? colors.warning : lower === 'poor' ? colors.error : colors.text;
 
   return (
     <View style={[sec.conditionPill, { backgroundColor: bg }]}>
-      <Text style={sec.conditionPillText}>{status}</Text>
+      <Text style={[sec.conditionPillText, { color: fg }]}>{status}</Text>
     </View>
   );
 }
@@ -408,7 +420,7 @@ function ConditionBadge({ status }: { status: string | null | undefined }) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ObjectDetailScreen({ route, navigation }: Props) {
-  const { objectId } = route.params;
+  const { objectId, autoAction } = route.params;
   const db = useDatabase();
   const { t } = useAppTranslation();
   const { collectionDomain } = useSettings();
@@ -632,13 +644,14 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
 
       // Read image base64 for AI processing. `file_path` may be a local URI
       // or a remote URL after sync, so delegate to the shared helper.
-      console.log('[handleStartReview] reading media', { mediaId: pm.id, filePath: pm.file_path.substring(0, 120) });
-      const imageBase64 = await readMediaBase64(pm.file_path);
+      const aiSourceUri = pm.preview_uri ?? pm.file_path;
+      console.log('[handleStartReview] reading media', { mediaId: pm.id, filePath: aiSourceUri.substring(0, 120) });
+      const imageBase64 = await readMediaBase64(aiSourceUri);
       console.log('[handleStartReview] base64 length:', imageBase64.length);
 
       // Navigate to AI processing
       navigation.navigate('AIProcessing', {
-        imageUri: pm.file_path,
+        imageUri: aiSourceUri,
         imageBase64,
         mimeType: pm.mime_type,
         captureMetadata: meta,
@@ -651,6 +664,15 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       await updateReviewStatus(db, objectId, 'needs_review').catch(() => {});
     }
   }, [object, media, db, objectId, navigation]);
+
+  // Auto-trigger AI analysis when navigated with autoAction param
+  const autoActionFiredRef = useRef(false);
+  useEffect(() => {
+    if (autoAction === 'ai-analysis' && object && media.length > 0 && !autoActionFiredRef.current) {
+      autoActionFiredRef.current = true;
+      handleStartReview();
+    }
+  }, [autoAction, object, media, handleStartReview]);
 
   // ── Isolation check ─────────────────────────────────────────────────────────
 
@@ -676,6 +698,101 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       mediaId: pm.id,
     });
   }, [media, navigation, objectId]);
+
+  // ── 3D model import ────────────────────────────────────────────────────────
+
+  const handleImport3D = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: MODEL_3D_PICKER_TYPES,
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      const asset = result.assets[0];
+      const fileName = asset.name;
+      const fileType = normalizeFileTypeWithExtension(
+        asset.mimeType ?? 'application/octet-stream',
+        fileName,
+      );
+      if (fileType !== '3d_scan') {
+        Alert.alert(t('model3d.import'), t('model3d.unsupported_format'));
+        return;
+      }
+
+      // Resolve correct MIME type (Android often reports octet-stream)
+      const resolvedMime =
+        asset.mimeType && asset.mimeType !== 'application/octet-stream'
+          ? asset.mimeType
+          : (mimeTypeFor3dExtension(fileName) ?? 'application/octet-stream');
+
+      // Copy file into media/{uuid}/model.{ext}
+      const mediaId = generateId();
+      const ext = fileName.split('.').pop()?.toLowerCase() ?? 'bin';
+      const dir = `${Paths.document.uri}media/${mediaId}/`;
+      const destUri = `${dir}model.${ext}`;
+      const srcFile = new File(asset.uri);
+      const destFile = new File(destUri);
+      const parentDir = destFile.parentDirectory;
+      if (!parentDir.exists) {
+        parentDir.create({ intermediates: true, idempotent: true });
+      }
+      srcFile.copy(destFile);
+
+      // Hash raw bytes for provenance
+      const hash = await computeSHA256(destUri);
+      const fileSize = destFile.size ?? asset.size ?? 0;
+      const now = new Date().toISOString();
+
+      await db.runAsync(
+        `INSERT INTO media
+          (id, object_id, file_path, file_name, file_type, mime_type, file_size,
+           sha256_hash, privacy_tier, is_primary, sort_order,
+           media_type, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'public', 0, 0, 'original', ?, ?)`,
+        [mediaId, objectId, destUri, fileName, '3d_scan', resolvedMime, fileSize, hash, now, now],
+      );
+
+      import('../sync/engine').then(({ SyncEngine: SE }) => {
+        new SE(db).queueChange('media', mediaId, 'insert', {
+          object_id: objectId,
+          file_path: destUri,
+          file_name: fileName,
+          file_type: '3d_scan',
+          mime_type: resolvedMime,
+          file_size: fileSize,
+          sha256_hash: hash,
+        });
+      }).catch(() => {});
+
+      await loadData();
+    } catch (err) {
+      console.warn('[3d-import] failed:', err);
+      Alert.alert(t('model3d.import'), t('model3d.import_failed'));
+    }
+  }, [db, objectId, loadData, t]);
+
+  const handleView3D = useCallback(async (uri: string, mimeType: string) => {
+    try {
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert(t('model3d.view'), t('model3d.no_viewer'));
+        return;
+      }
+      // Sharing.shareAsync delegates to the native OS chooser.
+      // iOS: USDZ auto-opens in AR Quick Look.
+      // Android: GLB opens in Scene Viewer (Google Play Services for AR).
+      // Other formats: user picks a compatible viewer app.
+      await Sharing.shareAsync(uri, {
+        mimeType,
+        dialogTitle: t('model3d.view'),
+        UTI: mimeType === 'model/vnd.usdz+zip' ? 'com.pixar.universal-scene-description-mobile' : undefined,
+      });
+    } catch (err) {
+      console.warn('[3d-view] failed:', err);
+      Alert.alert(t('model3d.view'), t('model3d.view_failed'));
+    }
+  }, [t]);
 
   // ── View type reassignment ──────────────────────────────────────────────────
 
@@ -960,8 +1077,9 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
       for (let i = 0; i < candidates.length; i++) {
         const m = candidates[i];
         try {
+          const aiUri = m.preview_uri ?? m.file_path;
           console.log('[handleRunAI] image', i + 1, '/', candidates.length, m.id);
-          const base64 = await readMediaBase64(m.file_path);
+          const base64 = await readMediaBase64(aiUri);
           const res = await analyzeObject(base64, m.mime_type, collectionDomain);
           if (res.success && res.metadata) {
             results.push(res.metadata);
@@ -1154,14 +1272,19 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
   const primaryMedia = media.find((m) => m.is_primary === 1) ?? media[0];
 
   const isVideoMedia = (m: Media) => m.file_type === 'video' || m.mime_type.startsWith('video/');
+  const is3dMedia = (m: Media) => m.file_type === '3d_scan';
 
   const handleMediaTap = (m: Media) => {
-    if (isVideoMedia(m)) {
+    if (is3dMedia(m)) {
+      handleView3D(m.file_path, m.mime_type);
+    } else if (isVideoMedia(m)) {
       setVideoPlayerUri(m.file_path);
     } else {
       setViewerUri(resolveMediaUri(m.file_path));
     }
   };
+
+  const media3d = media.filter((m) => m.file_type === '3d_scan');
 
   // Parse AI metadata from type_specific_data JSON
   const extras: Record<string, unknown> = (() => {
@@ -1299,7 +1422,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             accessibilityLabel={primaryMedia.caption ?? object.title}
           >
             <Image
-              source={{ uri: resolveMediaUri(primaryMedia.file_path) }}
+              source={{ uri: resolveMediaUri(primaryMedia.preview_uri ?? primaryMedia.file_path) }}
               style={styles.heroImage}
               resizeMode="cover"
             />
@@ -1341,7 +1464,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                   ]}>
                     {captured ? (
                       <Image
-                        source={{ uri: resolveMediaUri(captured.file_path) }}
+                        source={{ uri: resolveMediaUri(captured.thumbnail_uri ?? captured.file_path) }}
                         style={styles.heroViewThumb}
                         resizeMode="cover"
                       />
@@ -1363,6 +1486,33 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
             })}
           </ScrollView>
         </View>
+
+        {/* ── 3D MODELS ──────────────────────────────────────────────────────── */}
+        {media3d.length > 0 && (
+          <View style={styles.model3dSection}>
+            {media3d.map((m) => (
+              <View key={m.id} style={styles.model3dCard}>
+                <View style={styles.model3dIconBox}>
+                  <Model3dIcon size={28} color={colors.accent} />
+                </View>
+                <View style={styles.model3dInfo}>
+                  <Text style={styles.model3dName} numberOfLines={1}>
+                    {m.file_name}
+                  </Text>
+                  <Text style={styles.model3dLabel}>{t('model3d.label')}</Text>
+                </View>
+                <Pressable
+                  style={styles.model3dViewBtn}
+                  onPress={() => handleView3D(m.file_path, m.mime_type)}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('model3d.view')}
+                >
+                  <Text style={styles.model3dViewBtnText}>{t('model3d.view')}</Text>
+                </Pressable>
+              </View>
+            ))}
+          </View>
+        )}
 
         {/* ── COMPLETION RING + SYNC ────────────────────────────────────────── */}
         <View style={sec.completionRow}>
@@ -1469,7 +1619,7 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
                         accessibilityLabel={viewLabel}
                       >
                         <Image
-                          source={{ uri: resolveMediaUri(m.file_path) }}
+                          source={{ uri: resolveMediaUri(m.thumbnail_uri ?? m.file_path) }}
                           style={sec.aiPickerThumb}
                           resizeMode="cover"
                         />
@@ -2121,6 +2271,12 @@ export function ObjectDetailScreen({ route, navigation }: Props) {
           accessibilityLabel="QR Code"
           label="QR Code"
         />
+        <IconButton
+          icon={<Model3dIcon size={22} color={colors.text} />}
+          onPress={handleImport3D}
+          accessibilityLabel={t('model3d.import')}
+          label={t('model3d.import_short')}
+        />
         <View style={styles.actionSpacer} />
         <IconButton
           icon={<DeleteIcon size={22} color={colors.error} />}
@@ -2570,6 +2726,58 @@ function makeStyles(c: ColorPalette) {
       color: c.success,
       fontWeight: typography.weight.semibold,
     },
+    // 3D model section
+    model3dSection: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      gap: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    model3dCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      padding: spacing.md,
+      backgroundColor: c.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    model3dIconBox: {
+      width: 48,
+      height: 48,
+      borderRadius: radii.sm,
+      backgroundColor: c.primaryContainer,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    model3dInfo: {
+      flex: 1,
+    },
+    model3dName: {
+      ...typography.body,
+      color: c.text,
+      fontWeight: typography.weight.semibold,
+    },
+    model3dLabel: {
+      ...typography.caption,
+      color: c.textSecondary,
+      marginTop: 2,
+    },
+    model3dViewBtn: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: c.accent,
+      minHeight: touch.minTarget,
+      justifyContent: 'center',
+    },
+    model3dViewBtnText: {
+      ...typography.bodySmall,
+      color: c.white,
+      fontWeight: typography.weight.bold,
+    },
     // Gallery
     gallerySection: {
       marginBottom: spacing.xs,
@@ -2594,7 +2802,7 @@ function makeStyles(c: ColorPalette) {
       width: 8,
       height: 8,
       borderRadius: radii.full,
-      backgroundColor: c.primary,
+      backgroundColor: c.accent,
     },
     // ── Multi-view gallery (Registerbogen) ──────────────────────────────────────
     viewGallerySection: {

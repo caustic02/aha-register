@@ -21,7 +21,10 @@
       "Bash(eas:*)",
       "mcp__plugin_supabase_supabase__list_projects",
       "Bash(supabase functions:*)",
-      "Bash(\"C:/Users/mitau/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s emulator-5554 shell pm clear com.tedeholdings.aharegister)"
+      "Bash(\"C:/Users/mitau/AppData/Local/Android/Sdk/platform-tools/adb.exe\" -s emulator-5554 shell pm clear com.tedeholdings.aharegister)",
+      "Bash(BASE_URL=http://localhost:3000 npx playwright test companion-features-new --reporter=list)",
+      "Bash(BASE_URL=http://localhost:3000 npx playwright:*)",
+      "Bash(tasklist /FI \"IMAGENAME eq node.exe\")"
     ]
   }
 }

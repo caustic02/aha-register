@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Switch,
   Text,
+  TextInput as RNTextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -32,6 +33,10 @@ import {
   CloseIcon,
   DocumentScanIcon,
   ListViewIcon,
+  SearchIcon,
+  CheckboxBlankIcon,
+  CheckboxFilledIcon,
+  CameraIcon,
 } from '../theme/icons';
 import { FileText, Zap, Archive, Table, Code } from 'lucide-react-native';
 import { radii, spacing, typography, touch, shadows } from '../theme';
@@ -53,7 +58,8 @@ import type { RegisterObject, Media } from '../db/types';
 export type ExportSource =
   | { mode: 'object'; data: ExportableObject }
   | { mode: 'batch'; objectIds: string[]; title: string }
-  | { mode: 'collection'; collectionId: string; collectionName: string };
+  | { mode: 'collection'; collectionId: string; collectionName: string }
+  | { mode: 'browse' };
 
 interface Props {
   visible: boolean;
@@ -231,17 +237,17 @@ function makeSiStyles(c: ColorPalette) {
       borderColor: c.border,
     },
     dotActive: {
-      backgroundColor: c.primary,
-      borderColor: c.primary,
+      backgroundColor: c.accent,
+      borderColor: c.accent,
     },
     dotDone: {
-      backgroundColor: c.primary,
-      borderColor: c.primary,
+      backgroundColor: c.accent,
+      borderColor: c.accent,
     },
     dotText: { ...typography.caption, color: c.textTertiary, fontWeight: '600' },
     dotTextActive: { color: c.white },
     label: { ...typography.caption, color: c.textTertiary },
-    labelActive: { color: c.primary, fontWeight: '600' },
+    labelActive: { color: c.accent, fontWeight: '600' },
   });
 }
 
@@ -255,18 +261,23 @@ export function ExportStepperModal({
   source,
   onExportComplete,
 }: Props) {
-  const isObjectMode = source?.mode === 'object';
+  const isFullScreen = source?.mode === 'object' || source?.mode === 'browse';
 
   return (
     <Modal
       visible={visible}
-      transparent={!isObjectMode}
+      transparent={!isFullScreen}
       animationType="slide"
       onRequestClose={onClose}
     >
-      {isObjectMode ? (
+      {source?.mode === 'object' ? (
         <ObjectExportFlow
           source={source}
+          onClose={onClose}
+          onExportComplete={onExportComplete}
+        />
+      ) : source?.mode === 'browse' ? (
+        <BrowseExportFlow
           onClose={onClose}
           onExportComplete={onExportComplete}
         />
@@ -639,25 +650,25 @@ function FormatStep({
   const formats: { key: ExportFormat; icon: React.ReactNode; title: string; desc: string }[] = [
     {
       key: 'pdf_datasheet',
-      icon: <ExportIcon size={22} color={colors.primary} />,
+      icon: <ExportIcon size={22} color={colors.accent} />,
       title: t('export.format_pdf_datasheet'),
       desc: t('export.pdfDescription'),
     },
     {
       key: 'pdf_condition',
-      icon: <ExportIcon size={22} color={colors.primary} />,
+      icon: <ExportIcon size={22} color={colors.accent} />,
       title: t('export.format_pdf_condition'),
       desc: t('export.csvDescription'),
     },
     {
       key: 'json',
-      icon: <DocumentScanIcon size={22} color={colors.primary} />,
+      icon: <DocumentScanIcon size={22} color={colors.accent} />,
       title: t('export.format_json'),
       desc: t('export.jsonDescription'),
     },
     {
       key: 'csv',
-      icon: <ListViewIcon size={22} color={colors.primary} />,
+      icon: <ListViewIcon size={22} color={colors.accent} />,
       title: t('export.format_csv'),
       desc: t('export.csvDescription'),
     },
@@ -686,7 +697,7 @@ function FormatStep({
               accessibilityRole="button"
               accessibilityLabel={t(p.nameKey)}
             >
-              <Icon size={20} color={colors.primary} />
+              <Icon size={20} color={colors.accent} />
               <Text style={styles.presetName} numberOfLines={1}>
                 {t(p.nameKey)}
               </Text>
@@ -872,7 +883,7 @@ function ImagesStep({
               accessibilityLabel={viewLabel}
             >
               <Image
-                source={{ uri: resolveMediaUri(m.file_path) }}
+                source={{ uri: resolveMediaUri(m.thumbnail_uri ?? m.file_path) }}
                 style={styles.imageThumb}
                 resizeMode="cover"
               />
@@ -902,7 +913,7 @@ function ImagesStep({
           <Switch
             value={useIsolated}
             onValueChange={(v) => onSetFlag('useIsolated', v)}
-            trackColor={{ false: colors.border, true: colors.primary }}
+            trackColor={{ false: colors.border, true: colors.accent }}
             thumbColor={colors.white}
           />
         </View>
@@ -916,7 +927,7 @@ function ImagesStep({
         <Switch
           value={showDimensions}
           onValueChange={(v) => onSetFlag('showDimensions', v)}
-          trackColor={{ false: colors.border, true: colors.primary }}
+          trackColor={{ false: colors.border, true: colors.accent }}
           thumbColor={colors.white}
         />
       </View>
@@ -1002,7 +1013,7 @@ function ContentStep({
                     if (!allOn && !sections[cat.id]) onToggleSection(cat.id);
                   }
                 }}
-                trackColor={{ false: colors.border, true: colors.primary }}
+                trackColor={{ false: colors.border, true: colors.accent }}
                 thumbColor={colors.white}
               />
             </View>
@@ -1050,7 +1061,7 @@ function ContentStep({
         <Switch
           value={showAiBadges}
           onValueChange={(v) => onSetFlag('showAiBadges', v)}
-          trackColor={{ false: colors.border, true: colors.primary }}
+          trackColor={{ false: colors.border, true: colors.accent }}
           thumbColor={colors.white}
         />
       </View>
@@ -1064,7 +1075,7 @@ function ContentStep({
         <Switch
           value={includeBranding}
           onValueChange={(v) => onSetFlag('includeBranding', v)}
-          trackColor={{ false: colors.border, true: colors.primary }}
+          trackColor={{ false: colors.border, true: colors.accent }}
           thumbColor={colors.white}
         />
       </View>
@@ -1133,8 +1144,8 @@ function makeCsStyles(c: ColorPalette) { return StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxOn: {
-    backgroundColor: c.primary,
-    borderColor: c.primary,
+    backgroundColor: c.accent,
+    borderColor: c.accent,
   },
   fieldLabel: {
     ...typography.bodySmall,
@@ -1273,7 +1284,7 @@ function ExportingStep({
         <>
           <ActivityIndicator
             size="large"
-            color={colors.primary}
+            color={colors.accent}
             style={styles.spinner}
           />
           <Text style={styles.exportingTitle}>
@@ -1330,6 +1341,502 @@ function ExportingStep({
       )}
     </View>
   );
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// BROWSE EXPORT FLOW (4-step: objects → fields → format → confirm & export)
+// ═════════════════════════════════════════════════════════════════════════════
+
+interface BrowseObjectRow {
+  id: string;
+  title: string;
+  object_type: string;
+  thumbnail: string | null;
+}
+
+type BrowseStep = 'objects' | 'fields' | 'format' | 'confirm' | 'exporting';
+
+const BROWSE_STEPS: BrowseStep[] = ['objects', 'fields', 'format', 'confirm'];
+
+type FieldPreset = 'full' | 'summary' | 'custom';
+
+function BrowseExportFlow({
+  onClose,
+  onExportComplete,
+}: {
+  onClose: () => void;
+  onExportComplete?: () => void;
+}) {
+  const db = useDatabase();
+  const { t } = useAppTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeMainStyles(colors), [colors]);
+  const browseStyles = useMemo(() => makeBrowseStyles(colors), [colors]);
+
+  const [step, setStep] = useState<BrowseStep>('objects');
+  const [allObjects, setAllObjects] = useState<BrowseObjectRow[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [searchText, setSearchText] = useState('');
+  const [fieldPreset, setFieldPreset] = useState<FieldPreset>('full');
+  const [format, setFormat] = useState<'pdf' | 'csv' | 'json'>('pdf');
+  const [progress, setProgress] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+
+  // Load all objects on mount
+  useEffect(() => {
+    db.getAllAsync<BrowseObjectRow>(
+      `SELECT o.id, o.title, o.object_type,
+              (SELECT COALESCE(m.thumbnail_uri, m.file_path) FROM media m
+               WHERE m.object_id = o.id
+                 AND (m.media_type IS NULL OR m.media_type = 'original')
+                 AND m.file_type = 'image'
+               ORDER BY m.is_primary DESC, m.sort_order ASC
+               LIMIT 1) AS thumbnail
+       FROM objects o ORDER BY o.created_at DESC`,
+    ).then(setAllObjects).catch(() => setAllObjects([]));
+  }, [db]);
+
+  const filtered = useMemo(() => {
+    if (!searchText.trim()) return allObjects;
+    const q = searchText.toLowerCase();
+    return allObjects.filter(
+      (o) => o.title.toLowerCase().includes(q) || o.object_type.toLowerCase().includes(q),
+    );
+  }, [allObjects, searchText]);
+
+  const allSelected = filtered.length > 0 && filtered.every((o) => selectedIds.has(o.id));
+
+  const toggleObject = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filtered.map((o) => o.id)));
+    }
+  }, [allSelected, filtered]);
+
+  // Step navigation
+  const stepIndex = BROWSE_STEPS.indexOf(step);
+
+  const goBack = useCallback(() => {
+    const idx = BROWSE_STEPS.indexOf(step);
+    if (idx > 0) setStep(BROWSE_STEPS[idx - 1]);
+  }, [step]);
+
+  const goNext = useCallback(() => {
+    const idx = BROWSE_STEPS.indexOf(step);
+    if (idx < BROWSE_STEPS.length - 1) setStep(BROWSE_STEPS[idx + 1]);
+  }, [step]);
+
+  const canNext =
+    step === 'objects' ? selectedIds.size > 0
+    : step === 'fields' ? true
+    : step === 'format' ? true
+    : false;
+
+  // Export execution
+  const handleExport = useCallback(async () => {
+    setStep('exporting');
+    setError(null);
+    setDone(false);
+
+    const ids = Array.from(selectedIds);
+    try {
+      if (format === 'pdf') {
+        setProgress(t('exportStepper.exportingBatch', { count: ids.length }));
+        const uri = await exportBatchToPDF(db, ids, t('exportBrowse.exportTitle'), colors);
+        await sharePDF(uri);
+      } else {
+        // Load ExportableObject for each selected object
+        const items: ExportableObject[] = [];
+        for (const id of ids) {
+          const obj = await db.getFirstAsync<RegisterObject>(
+            'SELECT * FROM objects WHERE id = ?', [id],
+          );
+          if (!obj) continue;
+          const mediaRows = await db.getAllAsync<Media>(
+            'SELECT * FROM media WHERE object_id = ? ORDER BY sort_order ASC', [id],
+          );
+          items.push({ object: obj, media: mediaRows, persons: [] });
+        }
+
+        if (format === 'json') {
+          setProgress(t('exportStepper.exportingBatch', { count: ids.length }));
+          const records = items.map((item) => JSON.parse(exportAsJSON(item)));
+          const combined = JSON.stringify(records, null, 2);
+          const filename = buildExportFilename(t('exportBrowse.exportTitle'), 'json');
+          await shareExport(combined, filename, 'application/json');
+        } else {
+          // CSV: one header + multiple rows
+          setProgress(t('exportStepper.exportingBatch', { count: ids.length }));
+          const lines = items.map((item) => exportAsCSV(item));
+          // Take header from first, rows from all
+          const header = lines[0]?.split('\n')[0] ?? '';
+          const rows = lines.map((l) => l.split('\n')[1] ?? '').filter(Boolean);
+          const combined = [header, ...rows].join('\n') + '\n';
+          const filename = buildExportFilename(t('exportBrowse.exportTitle'), 'csv');
+          await shareExport(combined, filename, 'text/csv');
+        }
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      setDone(true);
+      setProgress('');
+      onExportComplete?.();
+    } catch {
+      setError(t('export.error_message'));
+      setProgress('');
+    }
+  }, [selectedIds, format, db, t, colors, onExportComplete]);
+
+  const stepLabels = useMemo(() => [
+    t('exportBrowse.stepObjects'),
+    t('exportBrowse.stepFields'),
+    t('exportBrowse.stepFormat'),
+    t('exportBrowse.stepConfirm'),
+  ], [t]);
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable
+          onPress={step === 'objects' || step === 'exporting' ? onClose : goBack}
+          style={styles.headerBtn}
+          hitSlop={touch.hitSlop}
+          accessibilityRole="button"
+          accessibilityLabel={step === 'objects' ? t('common.cancel') : t('common.back')}
+        >
+          {step === 'objects' || step === 'exporting' ? (
+            <CloseIcon size={22} color={colors.text} />
+          ) : (
+            <BackIcon size={22} color={colors.text} />
+          )}
+        </Pressable>
+        <Text style={styles.headerTitle} accessibilityRole="header">
+          {t('exportBrowse.title')}
+        </Text>
+        <View style={styles.headerBtn} />
+      </View>
+
+      {/* Step indicator */}
+      {stepIndex >= 0 && (
+        <StepIndicator
+          steps={BROWSE_STEPS as unknown as string[]}
+          current={stepIndex}
+          labels={stepLabels}
+        />
+      )}
+
+      {/* Step content */}
+      <View style={styles.content}>
+        {step === 'objects' && (
+          <View style={browseStyles.flex1}>
+            {/* Search bar */}
+            <View style={browseStyles.searchContainer}>
+              <View style={browseStyles.searchBar}>
+                <SearchIcon size={16} color={colors.textTertiary} />
+                <RNTextInput
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  placeholder={t('exportBrowse.searchPlaceholder')}
+                  placeholderTextColor={colors.textTertiary}
+                  style={browseStyles.searchInput}
+                  autoCapitalize="none"
+                  returnKeyType="search"
+                />
+                {searchText.length > 0 && (
+                  <Pressable onPress={() => setSearchText('')} hitSlop={touch.hitSlop}>
+                    <CloseIcon size={14} color={colors.textTertiary} />
+                  </Pressable>
+                )}
+              </View>
+            </View>
+            {/* Select all toggle */}
+            <Pressable
+              style={browseStyles.selectAllRow}
+              onPress={toggleAll}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: allSelected }}
+            >
+              {allSelected ? (
+                <CheckboxFilledIcon size={20} color={colors.accent} />
+              ) : (
+                <CheckboxBlankIcon size={20} color={colors.textTertiary} />
+              )}
+              <Text style={browseStyles.selectAllText}>
+                {allSelected ? t('exportBrowse.deselectAll') : t('exportBrowse.selectAll')}
+              </Text>
+              <Text style={browseStyles.countBadge}>
+                {selectedIds.size}/{allObjects.length}
+              </Text>
+            </Pressable>
+            {/* Object list */}
+            <ScrollView style={browseStyles.flex1} contentContainerStyle={browseStyles.listContent}>
+              {filtered.map((obj) => {
+                const selected = selectedIds.has(obj.id);
+                return (
+                  <Pressable
+                    key={obj.id}
+                    style={[browseStyles.objectRow, selected && browseStyles.objectRowSelected]}
+                    onPress={() => toggleObject(obj.id)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
+                  >
+                    {selected ? (
+                      <CheckboxFilledIcon size={20} color={colors.accent} />
+                    ) : (
+                      <CheckboxBlankIcon size={20} color={colors.textTertiary} />
+                    )}
+                    {obj.thumbnail ? (
+                      <Image
+                        source={{ uri: resolveMediaUri(obj.thumbnail) }}
+                        style={browseStyles.objectThumb}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={[browseStyles.objectThumb, browseStyles.objectThumbEmpty]}>
+                        <CameraIcon size={14} color={colors.textTertiary} />
+                      </View>
+                    )}
+                    <View style={browseStyles.flex1}>
+                      <Text style={browseStyles.objectTitle} numberOfLines={1}>
+                        {obj.title || t('objects.placeholder_title')}
+                      </Text>
+                      <Text style={browseStyles.objectType} numberOfLines={1}>
+                        {t(`object_types.${obj.object_type}`)}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {step === 'fields' && (
+          <ScrollView contentContainerStyle={styles.stepPad}>
+            <Text style={styles.stepHeading}>{t('exportBrowse.fieldsTitle')}</Text>
+            {([
+              { key: 'full' as const, titleKey: 'exportBrowse.presetFull', descKey: 'exportBrowse.presetFullDesc' },
+              { key: 'summary' as const, titleKey: 'exportBrowse.presetSummary', descKey: 'exportBrowse.presetSummaryDesc' },
+              { key: 'custom' as const, titleKey: 'exportBrowse.presetCustom', descKey: 'exportBrowse.presetCustomDesc' },
+            ] as const).map((preset) => {
+              const isActive = fieldPreset === preset.key;
+              return (
+                <Pressable
+                  key={preset.key}
+                  style={[styles.templateCard, isActive && styles.templateCardActive, { marginBottom: spacing.sm }]}
+                  onPress={() => setFieldPreset(preset.key)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isActive }}
+                >
+                  <View style={styles.templateHeader}>
+                    <Text style={[styles.templateTitle, isActive && styles.templateTitleActive]}>
+                      {t(preset.titleKey)}
+                    </Text>
+                    {isActive && (
+                      <View style={styles.checkCircle}>
+                        <CheckIcon size={14} color={colors.white} />
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.templateDesc}>{t(preset.descKey)}</Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        {step === 'format' && (
+          <ScrollView contentContainerStyle={styles.stepPad}>
+            <Text style={styles.stepHeading}>{t('exportBrowse.formatTitle')}</Text>
+            <View style={styles.cardList}>
+              {([
+                { key: 'pdf' as const, title: t('export.pdfOption'), desc: t('export.pdfDescription'), icon: <ExportIcon size={22} color={colors.accent} /> },
+                { key: 'csv' as const, title: t('export.csvOption'), desc: t('export.csvDescription'), icon: <ListViewIcon size={22} color={colors.accent} /> },
+                { key: 'json' as const, title: t('export.jsonOption'), desc: t('export.jsonDescription'), icon: <DocumentScanIcon size={22} color={colors.accent} /> },
+              ] as const).map((f) => {
+                const isActive = format === f.key;
+                return (
+                  <Pressable
+                    key={f.key}
+                    style={[styles.formatCard, isActive && styles.formatCardPressed]}
+                    onPress={() => setFormat(f.key)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isActive }}
+                  >
+                    <View style={styles.formatIconWrap}>{f.icon}</View>
+                    <View style={styles.formatCardContent}>
+                      <Text style={styles.formatCardTitle}>{f.title}</Text>
+                      <Text style={styles.formatCardDesc}>{f.desc}</Text>
+                    </View>
+                    {isActive && (
+                      <View style={styles.checkCircle}>
+                        <CheckIcon size={14} color={colors.white} />
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+        )}
+
+        {step === 'confirm' && (
+          <ScrollView contentContainerStyle={styles.stepPad}>
+            <Text style={styles.stepHeading}>{t('exportBrowse.confirmTitle')}</Text>
+            <View style={styles.prevSummary}>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>{t('exportBrowse.summaryObjects')}</Text>
+                <Text style={styles.summaryValue}>{selectedIds.size}</Text>
+              </View>
+              <Divider />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>{t('exportBrowse.summaryFields')}</Text>
+                <Text style={styles.summaryValue}>{t(`exportBrowse.presetLabel_${fieldPreset}`)}</Text>
+              </View>
+              <Divider />
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>{t('exportStepper.format')}</Text>
+                <View style={styles.formatBadge}>
+                  <Text style={styles.formatBadgeText}>{format.toUpperCase()}</Text>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        )}
+
+        {step === 'exporting' && (
+          <ExportingStep
+            done={done}
+            error={error}
+            progress={progress}
+            onClose={onClose}
+            onRetry={handleExport}
+            t={t}
+          />
+        )}
+      </View>
+
+      {/* Bottom bar */}
+      {stepIndex >= 0 && (
+        <View style={styles.bottomBar}>
+          {step !== 'objects' && (
+            <Pressable
+              onPress={goBack}
+              style={styles.bottomBack}
+              accessibilityRole="button"
+            >
+              <BackIcon size={18} color={colors.textSecondary} />
+              <Text style={styles.bottomBackText}>{t('common.back')}</Text>
+            </Pressable>
+          )}
+          <View style={styles.bottomNext}>
+            {step === 'confirm' ? (
+              <Button
+                label={t('exportBrowse.exportNow')}
+                variant="primary"
+                size="md"
+                onPress={handleExport}
+                fullWidth
+              />
+            ) : (
+              <Button
+                label={t('common.next')}
+                variant="primary"
+                size="md"
+                onPress={goNext}
+                disabled={!canNext}
+                fullWidth
+              />
+            )}
+          </View>
+        </View>
+      )}
+    </SafeAreaView>
+  );
+}
+
+function makeBrowseStyles(c: ColorPalette) {
+  return StyleSheet.create({
+    flex1: { flex: 1 },
+    listContent: { paddingBottom: spacing['3xl'] },
+    searchContainer: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: c.surfaceContainer,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing.md,
+      height: 40,
+      gap: spacing.sm,
+    },
+    searchInput: {
+      flex: 1,
+      ...typography.body,
+      color: c.text,
+      paddingVertical: 0,
+    },
+    selectAllRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: c.border,
+    },
+    selectAllText: {
+      ...typography.bodyMedium,
+      color: c.text,
+      flex: 1,
+    },
+    countBadge: {
+      ...typography.caption,
+      color: c.textSecondary,
+    },
+    objectRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.sm,
+      gap: spacing.md,
+      minHeight: touch.minTarget,
+    },
+    objectRowSelected: {
+      backgroundColor: c.accentLight,
+    },
+    objectThumb: {
+      width: 40,
+      height: 40,
+      borderRadius: radii.sm,
+      backgroundColor: c.surfaceContainer,
+    },
+    objectThumbEmpty: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    objectTitle: {
+      ...typography.bodyMedium,
+      color: c.text,
+    },
+    objectType: {
+      ...typography.caption,
+      color: c.textSecondary,
+    },
+  });
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -1504,7 +2011,7 @@ function LegacyExportFlow({
             </Text>
             <View style={styles.cardList}>
               <LegacyFormatCard
-                icon={<ExportIcon size={22} color={colors.primary} />}
+                icon={<ExportIcon size={22} color={colors.accent} />}
                 title={t('export.pdfOption')}
                 description={t('export.pdfDescription')}
                 onPress={() => handleFormatSelect('pdf')}
@@ -1801,7 +2308,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
   presetBannerText: {
     fontSize: 12,
     fontWeight: '600',
-    color: c.primary,
+    color: c.accent,
     textAlign: 'center',
   },
   cardList: {
@@ -1821,8 +2328,8 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     minHeight: touch.minTarget,
   },
   formatCardPressed: {
-    backgroundColor: c.primarySurface,
-    borderColor: c.primary,
+    backgroundColor: c.accentLight,
+    borderColor: c.accent,
   },
   formatIconWrap: {
     width: 36,
@@ -1852,8 +2359,8 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     minHeight: touch.minTarget,
   },
   templateCardActive: {
-    borderColor: c.primary,
-    backgroundColor: c.primarySurface,
+    borderColor: c.accent,
+    backgroundColor: c.accentLight,
   },
   templateHeader: {
     flexDirection: 'row',
@@ -1866,7 +2373,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     color: c.text,
   },
   templateTitleActive: {
-    color: c.primary,
+    color: c.accent,
   },
   templateDesc: {
     ...typography.bodySmall,
@@ -1876,7 +2383,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1895,7 +2402,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     overflow: 'hidden',
   },
   imageCellSelected: {
-    borderColor: c.primary,
+    borderColor: c.accent,
     borderWidth: 2,
   },
   imageThumb: {
@@ -1910,7 +2417,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1939,7 +2446,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
   },
   completenessBarFill: {
     height: '100%' as unknown as number,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     borderRadius: 3,
   },
 
@@ -2014,7 +2521,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
   },
   prevSectionLabel: {
     ...typography.caption,
@@ -2165,7 +2672,7 @@ function makeMainStyles(c: ColorPalette) { return StyleSheet.create({
     flex: 1,
   },
   formatBadge: {
-    backgroundColor: c.primary,
+    backgroundColor: c.accent,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: radii.sm,

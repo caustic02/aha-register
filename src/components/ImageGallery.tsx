@@ -88,7 +88,7 @@ export function ImageGallery({ media, onAddPhoto, onSetPrimary, onDelete }: Prop
         onLongPress={() => handleLongPress(item)}
         delayLongPress={400}
       >
-        <Image source={{ uri: resolveMediaUri(item.file_path) }} style={styles.image} />
+        <Image source={{ uri: resolveMediaUri(item.thumbnail_uri ?? item.file_path) }} style={styles.image} />
         {item.is_primary === 1 && media.length > 1 && (
           <View style={styles.primaryBadge}>
             <Text style={styles.primaryBadgeText}>{'\u2605'}</Text>

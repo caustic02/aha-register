@@ -391,12 +391,12 @@ function makeStyles(c: ColorPalette) {
     },
     progressBarFill: {
       height: '100%',
-      backgroundColor: c.tertiary,
+      backgroundColor: c.accent,
       borderRadius: 2,
     },
     stepText: {
       ...typography.bodySmall,
-      color: c.aiText,
+      color: c.accent,
       marginTop: spacing.sm,
       textAlign: 'center',
     },
@@ -407,7 +407,9 @@ function makeStyles(c: ColorPalette) {
       paddingTop: spacing.xl,
     },
     skeletonBlock: {
-      backgroundColor: c.surfaceContainer,
+      backgroundColor: c.transparent,
+      borderWidth: 1,
+      borderColor: c.border,
       borderRadius: radii.sm,
     },
     skeletonTitle: {
